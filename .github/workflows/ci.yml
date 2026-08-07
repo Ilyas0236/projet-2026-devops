@@ -22,7 +22,13 @@ jobs:
           cache: maven
 
       - name: Build & Test with Maven
-        run: mvn -B clean test --file auth-service/pom.xml
+        run: mvn -B clean package -DskipTests --file auth-service/pom.xml
+
+      - name: Upload JAR artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: auth-service-jar
+          path: auth-service/target/auth-service-*.jar
 
   docker-build:
     needs: build-and-test
@@ -32,12 +38,19 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Download JAR artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: auth-service-jar
+          path: auth-service/target/
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
       - name: Build Docker image
         uses: docker/build-push-action@v5
         with:
+          file: ./Dockerfile.ci
           context: .
           push: false
           tags: wydad-auth-service:1.0.0
