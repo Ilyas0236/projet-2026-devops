@@ -16,5 +16,6 @@ public record UserProfileResponse(
         LocalDateTime membershipExpiresAt,
         String referralCode,
         boolean active,
+        boolean kycVerified,
         LocalDateTime createdAt
 ) {}

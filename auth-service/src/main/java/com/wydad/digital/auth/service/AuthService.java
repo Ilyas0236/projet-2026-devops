@@ -3,9 +3,11 @@ package com.wydad.digital.auth.service;
 import com.wydad.digital.auth.dto.*;
 import com.wydad.digital.auth.exception.EmailAlreadyExistsException;
 import com.wydad.digital.auth.exception.UserNotFoundException;
+import com.wydad.digital.auth.model.KycDocument;
 import com.wydad.digital.auth.model.MembershipLevel;
 import com.wydad.digital.auth.model.Role;
 import com.wydad.digital.auth.model.User;
+import com.wydad.digital.auth.repository.KycDocumentRepository;
 import com.wydad.digital.auth.repository.UserRepository;
 import com.wydad.digital.auth.util.JwtUtils;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +23,7 @@ import java.util.UUID;
 public class AuthService {
 
     private final UserRepository userRepository;
+    private final KycDocumentRepository kycDocumentRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtils jwtUtils;
     private final QrCodeService qrCodeService;
@@ -215,18 +218,48 @@ public class AuthService {
         );
     }
 
-    // ============================================
-    // NOUVEAU : OTP Mock
-    // ============================================
     public String sendOtp(OtpRequest request) {
         User user = userRepository.findByEmail(request.email())
                 .orElseThrow(() -> new UserNotFoundException(request.email()));
         String code = otpService.generateOtp(user.getEmail());
-        // En vrai : envoyer par SMS/Email. Ici on retourne le code (mock).
         return code;
     }
 
     public boolean verifyOtp(OtpVerifyRequest request) {
         return otpService.verifyOtp(request.email(), request.code());
+    }
+
+    // ============================================
+    // NOUVEAU : KYC Mock
+    // ============================================
+    public KycResponse uploadKyc(KycUploadRequest request) {
+        User user = userRepository.findByEmail(request.email())
+                .orElseThrow(() -> new UserNotFoundException(request.email()));
+
+        KycDocument doc = KycDocument.builder()
+                .email(request.email())
+                .documentType(request.documentType())
+                .documentNumber(request.documentNumber())
+                .filePath(request.filePath())
+                .verified(false)
+                .build();
+
+        kycDocumentRepository.save(doc);
+        return new KycResponse(doc.getEmail(), doc.getDocumentType(), doc.getDocumentNumber(), doc.isVerified(), doc.getUploadedAt());
+    }
+
+    public KycResponse verifyKyc(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UserNotFoundException(email));
+
+        KycDocument doc = kycDocumentRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Document KYC non trouvé pour cet utilisateur"));
+
+        doc.setVerified(true);
+        user.setKycVerified(true);
+        kycDocumentRepository.save(doc);
+        userRepository.save(user);
+
+        return new KycResponse(doc.getEmail(), doc.getDocumentType(), doc.getDocumentNumber(), doc.isVerified(), doc.getUploadedAt());
     }
 }

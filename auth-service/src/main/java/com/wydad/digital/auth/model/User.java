@@ -49,6 +49,8 @@ public class User {
 
     private String referredBy;
 
+    private boolean kycVerified = false;
+
     private boolean active = true;
 
     @CreationTimestamp

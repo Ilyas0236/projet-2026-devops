@@ -67,6 +67,7 @@ public class AuthController {
                 user.getMembershipExpiresAt(),
                 user.getReferralCode(),
                 user.isActive(),
+                user.isKycVerified(),
                 user.getCreatedAt()
         );
         return ResponseEntity.ok(response);
@@ -83,9 +84,6 @@ public class AuthController {
         return ResponseEntity.ok(authService.checkMembershipStatus(email));
     }
 
-    // ============================================
-    // NOUVEAU : OTP Mock
-    // ============================================
     @PostMapping("/otp/send")
     public ResponseEntity<String> sendOtp(@Valid @RequestBody OtpRequest request) {
         String code = authService.sendOtp(request);
@@ -98,5 +96,15 @@ public class AuthController {
         return valid
                 ? ResponseEntity.ok("OTP validé avec succès")
                 : ResponseEntity.badRequest().body("OTP invalide ou expiré");
+    }
+
+    @PostMapping("/kyc/upload")
+    public ResponseEntity<KycResponse> uploadKyc(@Valid @RequestBody KycUploadRequest request) {
+        return ResponseEntity.ok(authService.uploadKyc(request));
+    }
+
+    @PostMapping("/kyc/verify")
+    public ResponseEntity<KycResponse> verifyKyc(@RequestParam("email") String email) {
+        return ResponseEntity.ok(authService.verifyKyc(email));
     }
 }
