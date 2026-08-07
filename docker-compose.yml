@@ -1,2 +1,45 @@
+version: "3.9"
+
 services:
-  
+  postgres-auth:
+    image: postgres:16-alpine
+    container_name: wydad-postgres-auth
+    environment:
+      POSTGRES_DB: auth_db
+      POSTGRES_USER: wydad
+      POSTGRES_PASSWORD: wydad2024
+    ports:
+      - "5433:5432"
+    volumes:
+      - pg-auth-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U wydad -d auth_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: wydad-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: wydad-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@wydad.ma
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    depends_on:
+      postgres-auth:
+        condition: service_healthy
+
+volumes:
+  pg-auth-data:
