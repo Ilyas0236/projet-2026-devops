@@ -1,11 +1,6 @@
 package com.wydad.digital.auth.controller;
 
-import com.wydad.digital.auth.dto.AuthResponse;
-import com.wydad.digital.auth.dto.LoginRequest;
-import com.wydad.digital.auth.dto.MemberCardResponse;
-import com.wydad.digital.auth.dto.RefreshTokenRequest;
-import com.wydad.digital.auth.dto.RegisterRequest;
-import com.wydad.digital.auth.dto.UserProfileResponse;
+import com.wydad.digital.auth.dto.*;
 import com.wydad.digital.auth.model.User;
 import com.wydad.digital.auth.service.AuthService;
 import com.wydad.digital.auth.util.JwtUtils;
@@ -75,5 +70,22 @@ public class AuthController {
                 user.getCreatedAt()
         );
         return ResponseEntity.ok(response);
+    }
+
+    // ============================================
+    // NOUVEAU : Upgrade niveau d'adhésion
+    // ============================================
+    @PostMapping("/upgrade")
+    public ResponseEntity<AuthResponse> upgradeLevel(@Valid @RequestBody UpgradeRequest request) {
+        return ResponseEntity.ok(authService.upgradeLevel(request));
+    }
+
+    // ============================================
+    // NOUVEAU : Vérifier statut expiration
+    // ============================================
+    @GetMapping("/membership-status")
+    public ResponseEntity<MembershipStatusResponse> checkMembershipStatus(
+            @RequestParam("email") String email) {
+        return ResponseEntity.ok(authService.checkMembershipStatus(email));
     }
 }

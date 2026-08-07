@@ -1,9 +1,6 @@
 package com.wydad.digital.auth.service;
 
-import com.wydad.digital.auth.dto.AuthResponse;
-import com.wydad.digital.auth.dto.LoginRequest;
-import com.wydad.digital.auth.dto.MemberCardResponse;
-import com.wydad.digital.auth.dto.RegisterRequest;
+import com.wydad.digital.auth.dto.*;
 import com.wydad.digital.auth.exception.EmailAlreadyExistsException;
 import com.wydad.digital.auth.exception.UserNotFoundException;
 import com.wydad.digital.auth.model.MembershipLevel;
@@ -16,6 +13,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 
 @Service
@@ -47,7 +45,7 @@ public class AuthService {
                 .membershipExpiresAt(LocalDateTime.now().plusYears(1))
                 .referralCode(UUID.randomUUID().toString().substring(0, 8).toUpperCase())
                 .referredBy(request.referralCode())
-                .active(true)   // ← MANQUE ! C'est pourquoi Postman montre "active": false
+                .active(true)
                 .build();
 
         userRepository.save(user);
@@ -125,7 +123,7 @@ public class AuthService {
         }
     }
 
-    public AuthResponse refreshToken(com.wydad.digital.auth.dto.RefreshTokenRequest request) {
+    public AuthResponse refreshToken(RefreshTokenRequest request) {
         if (!jwtUtils.validateToken(request.refreshToken())) {
             throw new RuntimeException("Refresh token invalide");
         }
@@ -150,5 +148,76 @@ public class AuthService {
     public User getUserByEmail(String email) {
         return userRepository.findByEmail(email)
                 .orElseThrow(() -> new UserNotFoundException(email));
+    }
+
+    // ============================================
+    // NOUVEAU : Upgrade niveau d'adhésion
+    // ============================================
+    public AuthResponse upgradeLevel(UpgradeRequest request) {
+        User user = userRepository.findByEmail(request.email())
+                .orElseThrow(() -> new UserNotFoundException(request.email()));
+
+        // Vérifier que le nouveau niveau est supérieur
+        if (request.newLevel().getPrice() <= user.getMembershipLevel().getPrice()) {
+            throw new RuntimeException("Le nouveau niveau doit être supérieur au niveau actuel");
+        }
+
+        user.setMembershipLevel(request.newLevel());
+        user.setMembershipExpiresAt(LocalDateTime.now().plusYears(1));
+        userRepository.save(user);
+
+        String accessToken = jwtUtils.generateAccessToken(user.getEmail());
+        String refreshToken = jwtUtils.generateRefreshToken(user.getEmail());
+
+        return new AuthResponse(
+                accessToken,
+                refreshToken,
+                user.getEmail(),
+                user.getFirstName(),
+                user.getLastName(),
+                user.getMembershipLevel(),
+                user.getReferralCode()
+        );
+    }
+
+    // ============================================
+    // NOUVEAU : Vérifier expiration adhésion
+    // ============================================
+    public MembershipStatusResponse checkMembershipStatus(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UserNotFoundException(email));
+
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime expiresAt = user.getMembershipExpiresAt();
+        long daysRemaining = ChronoUnit.DAYS.between(now.toLocalDate(), expiresAt.toLocalDate());
+
+        String status;
+        String message;
+
+        if (daysRemaining < 0) {
+            status = "EXPIRE";
+            message = "Votre adhésion a expiré. Renouvelez pour continuer.";
+        } else if (daysRemaining == 0) {
+            status = "J-1";
+            message = "Votre adhésion expire aujourd'hui !";
+        } else if (daysRemaining <= 7) {
+            status = "J-7";
+            message = "Votre adhésion expire dans " + daysRemaining + " jours.";
+        } else if (daysRemaining <= 30) {
+            status = "J-30";
+            message = "Votre adhésion expire dans " + daysRemaining + " jours. Pensez à renouveler.";
+        } else {
+            status = "ACTIF";
+            message = "Adhésion active. Expire le " + expiresAt.toLocalDate() + ".";
+        }
+
+        return new MembershipStatusResponse(
+                user.getEmail(),
+                user.getMembershipLevel(),
+                expiresAt,
+                status,
+                message,
+                (int) daysRemaining
+        );
     }
 }
