@@ -25,6 +25,7 @@ public class AuthService {
     private final JwtUtils jwtUtils;
     private final QrCodeService qrCodeService;
     private final PdfService pdfService;
+    private final OtpService otpService;
 
     public AuthResponse register(RegisterRequest request) {
         if (userRepository.existsByEmail(request.email())) {
@@ -150,14 +151,10 @@ public class AuthService {
                 .orElseThrow(() -> new UserNotFoundException(email));
     }
 
-    // ============================================
-    // NOUVEAU : Upgrade niveau d'adhésion
-    // ============================================
     public AuthResponse upgradeLevel(UpgradeRequest request) {
         User user = userRepository.findByEmail(request.email())
                 .orElseThrow(() -> new UserNotFoundException(request.email()));
 
-        // Vérifier que le nouveau niveau est supérieur
         if (request.newLevel().getPrice() <= user.getMembershipLevel().getPrice()) {
             throw new RuntimeException("Le nouveau niveau doit être supérieur au niveau actuel");
         }
@@ -180,9 +177,6 @@ public class AuthService {
         );
     }
 
-    // ============================================
-    // NOUVEAU : Vérifier expiration adhésion
-    // ============================================
     public MembershipStatusResponse checkMembershipStatus(String email) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UserNotFoundException(email));
@@ -219,5 +213,20 @@ public class AuthService {
                 message,
                 (int) daysRemaining
         );
+    }
+
+    // ============================================
+    // NOUVEAU : OTP Mock
+    // ============================================
+    public String sendOtp(OtpRequest request) {
+        User user = userRepository.findByEmail(request.email())
+                .orElseThrow(() -> new UserNotFoundException(request.email()));
+        String code = otpService.generateOtp(user.getEmail());
+        // En vrai : envoyer par SMS/Email. Ici on retourne le code (mock).
+        return code;
+    }
+
+    public boolean verifyOtp(OtpVerifyRequest request) {
+        return otpService.verifyOtp(request.email(), request.code());
     }
 }

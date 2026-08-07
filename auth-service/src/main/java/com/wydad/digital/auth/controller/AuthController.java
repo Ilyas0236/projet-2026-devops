@@ -72,20 +72,31 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
 
-    // ============================================
-    // NOUVEAU : Upgrade niveau d'adhésion
-    // ============================================
     @PostMapping("/upgrade")
     public ResponseEntity<AuthResponse> upgradeLevel(@Valid @RequestBody UpgradeRequest request) {
         return ResponseEntity.ok(authService.upgradeLevel(request));
     }
 
-    // ============================================
-    // NOUVEAU : Vérifier statut expiration
-    // ============================================
     @GetMapping("/membership-status")
     public ResponseEntity<MembershipStatusResponse> checkMembershipStatus(
             @RequestParam("email") String email) {
         return ResponseEntity.ok(authService.checkMembershipStatus(email));
+    }
+
+    // ============================================
+    // NOUVEAU : OTP Mock
+    // ============================================
+    @PostMapping("/otp/send")
+    public ResponseEntity<String> sendOtp(@Valid @RequestBody OtpRequest request) {
+        String code = authService.sendOtp(request);
+        return ResponseEntity.ok("Code OTP généré (mock): " + code);
+    }
+
+    @PostMapping("/otp/verify")
+    public ResponseEntity<String> verifyOtp(@Valid @RequestBody OtpVerifyRequest request) {
+        boolean valid = authService.verifyOtp(request);
+        return valid
+                ? ResponseEntity.ok("OTP validé avec succès")
+                : ResponseEntity.badRequest().body("OTP invalide ou expiré");
     }
 }
