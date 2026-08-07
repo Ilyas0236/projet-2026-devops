@@ -4,12 +4,15 @@ import com.wydad.digital.auth.dto.*;
 import com.wydad.digital.auth.model.User;
 import com.wydad.digital.auth.service.AuthService;
 import com.wydad.digital.auth.util.JwtUtils;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -25,8 +28,12 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
-        return ResponseEntity.ok(authService.login(request));
+    public ResponseEntity<AuthResponse> login(
+            @Valid @RequestBody LoginRequest request,
+            HttpServletRequest httpRequest) {
+        String ip = getClientIp(httpRequest);
+        String userAgent = httpRequest.getHeader("User-Agent");
+        return ResponseEntity.ok(authService.login(request, ip, userAgent));
     }
 
     @GetMapping("/member-card")
@@ -44,8 +51,12 @@ public class AuthController {
     }
 
     @PostMapping("/refresh")
-    public ResponseEntity<AuthResponse> refreshToken(@Valid @RequestBody RefreshTokenRequest request) {
-        return ResponseEntity.ok(authService.refreshToken(request));
+    public ResponseEntity<AuthResponse> refreshToken(
+            @Valid @RequestBody RefreshTokenRequest request,
+            HttpServletRequest httpRequest) {
+        String ip = getClientIp(httpRequest);
+        String userAgent = httpRequest.getHeader("User-Agent");
+        return ResponseEntity.ok(authService.refreshToken(request, ip, userAgent));
     }
 
     @GetMapping("/me")
@@ -106,5 +117,43 @@ public class AuthController {
     @PostMapping("/kyc/verify")
     public ResponseEntity<KycResponse> verifyKyc(@RequestParam("email") String email) {
         return ResponseEntity.ok(authService.verifyKyc(email));
+    }
+
+    // ============================================
+    // NOUVEAU : Sessions Actives
+    // ============================================
+    @GetMapping("/sessions")
+    public ResponseEntity<List<SessionResponse>> getActiveSessions(
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authHeader) {
+        String token = authHeader.replace("Bearer ", "");
+        String email = jwtUtils.getEmailFromToken(token);
+        return ResponseEntity.ok(authService.getActiveSessions(email, token));
+    }
+
+    @PostMapping("/sessions/revoke")
+    public ResponseEntity<String> revokeSession(
+            @Valid @RequestBody RevokeSessionRequest request,
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authHeader) {
+        String token = authHeader.replace("Bearer ", "");
+        String email = jwtUtils.getEmailFromToken(token);
+        authService.revokeSession(request.sessionId(), email);
+        return ResponseEntity.ok("Session révoquée avec succès");
+    }
+
+    @PostMapping("/sessions/revoke-all")
+    public ResponseEntity<String> revokeAllSessions(
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authHeader) {
+        String token = authHeader.replace("Bearer ", "");
+        String email = jwtUtils.getEmailFromToken(token);
+        authService.revokeAllSessions(email, token);
+        return ResponseEntity.ok("Toutes les autres sessions ont été révoquées");
+    }
+
+    private String getClientIp(HttpServletRequest request) {
+        String xfHeader = request.getHeader("X-Forwarded-For");
+        if (xfHeader == null || xfHeader.isEmpty()) {
+            return request.getRemoteAddr();
+        }
+        return xfHeader.split(",")[0].trim();
     }
 }

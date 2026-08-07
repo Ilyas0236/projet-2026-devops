@@ -3,20 +3,25 @@ package com.wydad.digital.auth.service;
 import com.wydad.digital.auth.dto.*;
 import com.wydad.digital.auth.exception.EmailAlreadyExistsException;
 import com.wydad.digital.auth.exception.UserNotFoundException;
+import com.wydad.digital.auth.model.ActiveSession;
 import com.wydad.digital.auth.model.KycDocument;
 import com.wydad.digital.auth.model.MembershipLevel;
 import com.wydad.digital.auth.model.Role;
 import com.wydad.digital.auth.model.User;
+import com.wydad.digital.auth.repository.ActiveSessionRepository;
 import com.wydad.digital.auth.repository.KycDocumentRepository;
 import com.wydad.digital.auth.repository.UserRepository;
 import com.wydad.digital.auth.util.JwtUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -24,6 +29,7 @@ public class AuthService {
 
     private final UserRepository userRepository;
     private final KycDocumentRepository kycDocumentRepository;
+    private final ActiveSessionRepository activeSessionRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtils jwtUtils;
     private final QrCodeService qrCodeService;
@@ -68,7 +74,7 @@ public class AuthService {
         );
     }
 
-    public AuthResponse login(LoginRequest request) {
+    public AuthResponse login(LoginRequest request, String ipAddress, String userAgent) {
         User user = userRepository.findByEmail(request.email())
                 .orElseThrow(() -> new UserNotFoundException(request.email()));
 
@@ -78,6 +84,9 @@ public class AuthService {
 
         String accessToken = jwtUtils.generateAccessToken(user.getEmail());
         String refreshToken = jwtUtils.generateRefreshToken(user.getEmail());
+
+        // Créer session active
+        createSession(user.getEmail(), accessToken, ipAddress, userAgent);
 
         return new AuthResponse(
                 accessToken,
@@ -127,7 +136,7 @@ public class AuthService {
         }
     }
 
-    public AuthResponse refreshToken(RefreshTokenRequest request) {
+    public AuthResponse refreshToken(RefreshTokenRequest request, String ipAddress, String userAgent) {
         if (!jwtUtils.validateToken(request.refreshToken())) {
             throw new RuntimeException("Refresh token invalide");
         }
@@ -137,6 +146,9 @@ public class AuthService {
 
         String accessToken = jwtUtils.generateAccessToken(email);
         String refreshToken = jwtUtils.generateRefreshToken(email);
+
+        // Créer nouvelle session
+        createSession(email, accessToken, ipAddress, userAgent);
 
         return new AuthResponse(
                 accessToken,
@@ -230,7 +242,7 @@ public class AuthService {
     }
 
     // ============================================
-    // NOUVEAU : KYC Mock
+    // KYC Mock
     // ============================================
     public KycResponse uploadKyc(KycUploadRequest request) {
         User user = userRepository.findByEmail(request.email())
@@ -261,5 +273,58 @@ public class AuthService {
         userRepository.save(user);
 
         return new KycResponse(doc.getEmail(), doc.getDocumentType(), doc.getDocumentNumber(), doc.isVerified(), doc.getUploadedAt());
+    }
+
+    // ============================================
+    // NOUVEAU : Sessions Actives
+    // ============================================
+    private void createSession(String email, String token, String ipAddress, String userAgent) {
+        ActiveSession session = ActiveSession.builder()
+                .email(email)
+                .token(token)
+                .ipAddress(ipAddress != null ? ipAddress : "unknown")
+                .userAgent(userAgent != null ? userAgent : "unknown")
+                .expiresAt(LocalDateTime.now().plusHours(24))
+                .revoked(false)
+                .build();
+        activeSessionRepository.save(session);
+    }
+
+    public List<SessionResponse> getActiveSessions(String email, String currentToken) {
+        List<ActiveSession> sessions = activeSessionRepository.findByEmailAndRevokedFalse(email);
+        return sessions.stream()
+                .map(s -> new SessionResponse(
+                        s.getId(),
+                        s.getIpAddress(),
+                        s.getUserAgent(),
+                        s.getCreatedAt(),
+                        s.getExpiresAt(),
+                        s.getToken().equals(currentToken)
+                ))
+                .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public void revokeSession(Long sessionId, String email) {
+        ActiveSession session = activeSessionRepository.findById(sessionId)
+                .orElseThrow(() -> new RuntimeException("Session non trouvée"));
+
+        if (!session.getEmail().equals(email)) {
+            throw new RuntimeException("Vous ne pouvez pas révoquer cette session");
+        }
+
+        session.setRevoked(true);
+        activeSessionRepository.save(session);
+    }
+
+    @Transactional
+    public void revokeAllSessions(String email, String currentToken) {
+        List<ActiveSession> sessions = activeSessionRepository.findByEmailAndRevokedFalse(email);
+        for (ActiveSession session : sessions) {
+            if (!session.getToken().equals(currentToken)) {
+                session.setRevoked(true);
+                activeSessionRepository.save(session);
+            }
+        }
     }
 }
