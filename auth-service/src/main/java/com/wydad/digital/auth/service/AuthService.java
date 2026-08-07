@@ -47,6 +47,7 @@ public class AuthService {
                 .membershipExpiresAt(LocalDateTime.now().plusYears(1))
                 .referralCode(UUID.randomUUID().toString().substring(0, 8).toUpperCase())
                 .referredBy(request.referralCode())
+                .active(true)   // ← MANQUE ! C'est pourquoi Postman montre "active": false
                 .build();
 
         userRepository.save(user);

@@ -13,7 +13,7 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: create-drop       # ← CHANGÉ ICI
+      ddl-auto:  update        # ← CHANGÉ ICI
     show-sql: true
     properties:
       hibernate:
