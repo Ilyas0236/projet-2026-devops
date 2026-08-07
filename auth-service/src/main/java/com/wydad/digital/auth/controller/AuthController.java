@@ -3,6 +3,7 @@ package com.wydad.digital.auth.controller;
 import com.wydad.digital.auth.dto.AuthResponse;
 import com.wydad.digital.auth.dto.LoginRequest;
 import com.wydad.digital.auth.dto.MemberCardResponse;
+import com.wydad.digital.auth.dto.RefreshTokenRequest;
 import com.wydad.digital.auth.dto.RegisterRequest;
 import com.wydad.digital.auth.service.AuthService;
 import jakarta.validation.Valid;
@@ -41,5 +42,10 @@ public class AuthController {
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=attestation-wac.pdf")
                 .contentType(MediaType.APPLICATION_PDF)
                 .body(pdf);
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<AuthResponse> refreshToken(@Valid @RequestBody RefreshTokenRequest request) {
+        return ResponseEntity.ok(authService.refreshToken(request));
     }
 }

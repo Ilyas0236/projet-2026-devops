@@ -3,6 +3,7 @@ package com.wydad.digital.auth.service;
 import com.wydad.digital.auth.dto.AuthResponse;
 import com.wydad.digital.auth.dto.LoginRequest;
 import com.wydad.digital.auth.dto.MemberCardResponse;
+import com.wydad.digital.auth.dto.RefreshTokenRequest;
 import com.wydad.digital.auth.dto.RegisterRequest;
 import com.wydad.digital.auth.model.User;
 import com.wydad.digital.auth.repository.UserRepository;
@@ -116,5 +117,27 @@ public class AuthService {
         } catch (Exception e) {
             throw new RuntimeException("Erreur generation PDF", e);
         }
+    }
+
+    public AuthResponse refreshToken(RefreshTokenRequest request) {
+        if (!jwtUtils.validateRefreshToken(request.refreshToken())) {
+            throw new RuntimeException("Refresh token invalide");
+        }
+        String email = jwtUtils.getEmailFromToken(request.refreshToken());
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Utilisateur non trouve"));
+
+        String newAccessToken = jwtUtils.generateAccessToken(user.getEmail());
+        String newRefreshToken = jwtUtils.generateRefreshToken(user.getEmail());
+
+        return new AuthResponse(
+                newAccessToken,
+                newRefreshToken,
+                user.getEmail(),
+                user.getFirstName(),
+                user.getLastName(),
+                user.getMembershipLevel(),
+                user.getReferralCode()
+        );
     }
 }
