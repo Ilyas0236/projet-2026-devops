@@ -3,8 +3,11 @@ package com.wydad.digital.auth.service;
 import com.wydad.digital.auth.dto.AuthResponse;
 import com.wydad.digital.auth.dto.LoginRequest;
 import com.wydad.digital.auth.dto.MemberCardResponse;
-import com.wydad.digital.auth.dto.RefreshTokenRequest;
 import com.wydad.digital.auth.dto.RegisterRequest;
+import com.wydad.digital.auth.exception.EmailAlreadyExistsException;
+import com.wydad.digital.auth.exception.UserNotFoundException;
+import com.wydad.digital.auth.model.MembershipLevel;
+import com.wydad.digital.auth.model.Role;
 import com.wydad.digital.auth.model.User;
 import com.wydad.digital.auth.repository.UserRepository;
 import com.wydad.digital.auth.util.JwtUtils;
@@ -12,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Service
@@ -26,10 +30,10 @@ public class AuthService {
 
     public AuthResponse register(RegisterRequest request) {
         if (userRepository.existsByEmail(request.email())) {
-            throw new RuntimeException("Email deja utilise");
+            throw new EmailAlreadyExistsException(request.email());
         }
         if (userRepository.existsByPhone(request.phone())) {
-            throw new RuntimeException("Telephone deja utilise");
+            throw new EmailAlreadyExistsException(request.phone());
         }
 
         User user = User.builder()
@@ -39,6 +43,8 @@ public class AuthService {
                 .firstName(request.firstName())
                 .lastName(request.lastName())
                 .membershipLevel(request.membershipLevel())
+                .role(Role.ADHERENT)
+                .membershipExpiresAt(LocalDateTime.now().plusYears(1))
                 .referralCode(UUID.randomUUID().toString().substring(0, 8).toUpperCase())
                 .referredBy(request.referralCode())
                 .build();
@@ -61,10 +67,10 @@ public class AuthService {
 
     public AuthResponse login(LoginRequest request) {
         User user = userRepository.findByEmail(request.email())
-                .orElseThrow(() -> new RuntimeException("Email ou mot de passe incorrect"));
+                .orElseThrow(() -> new UserNotFoundException(request.email()));
 
         if (!passwordEncoder.matches(request.password(), user.getPassword())) {
-            throw new RuntimeException("Email ou mot de passe incorrect");
+            throw new UserNotFoundException(request.email());
         }
 
         String accessToken = jwtUtils.generateAccessToken(user.getEmail());
@@ -83,7 +89,7 @@ public class AuthService {
 
     public MemberCardResponse getMemberCard(String email) {
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Utilisateur non trouve"));
+                .orElseThrow(() -> new UserNotFoundException(email));
 
         String qrData = String.format("WAC-%s|%s|%s|%s",
                 user.getMembershipLevel(),
@@ -95,7 +101,7 @@ public class AuthService {
         try {
             qrCodeBase64 = qrCodeService.generateQrCode(qrData, 300, 300);
         } catch (Exception e) {
-            throw new RuntimeException("Erreur generation QR Code", e);
+            throw new RuntimeException("Erreur génération QR Code", e);
         }
 
         return new MemberCardResponse(
@@ -110,34 +116,38 @@ public class AuthService {
 
     public byte[] generateAttestation(String email) {
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Utilisateur non trouve"));
-
+                .orElseThrow(() -> new UserNotFoundException(email));
         try {
             return pdfService.generateAttestation(user);
         } catch (Exception e) {
-            throw new RuntimeException("Erreur generation PDF", e);
+            throw new RuntimeException("Erreur génération PDF", e);
         }
     }
 
-    public AuthResponse refreshToken(RefreshTokenRequest request) {
-        if (!jwtUtils.validateRefreshToken(request.refreshToken())) {
+    public AuthResponse refreshToken(com.wydad.digital.auth.dto.RefreshTokenRequest request) {
+        if (!jwtUtils.validateToken(request.refreshToken())) {
             throw new RuntimeException("Refresh token invalide");
         }
         String email = jwtUtils.getEmailFromToken(request.refreshToken());
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Utilisateur non trouve"));
+                .orElseThrow(() -> new UserNotFoundException(email));
 
-        String newAccessToken = jwtUtils.generateAccessToken(user.getEmail());
-        String newRefreshToken = jwtUtils.generateRefreshToken(user.getEmail());
+        String accessToken = jwtUtils.generateAccessToken(email);
+        String refreshToken = jwtUtils.generateRefreshToken(email);
 
         return new AuthResponse(
-                newAccessToken,
-                newRefreshToken,
+                accessToken,
+                refreshToken,
                 user.getEmail(),
                 user.getFirstName(),
                 user.getLastName(),
                 user.getMembershipLevel(),
                 user.getReferralCode()
         );
+    }
+
+    public User getUserByEmail(String email) {
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new UserNotFoundException(email));
     }
 }

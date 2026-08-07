@@ -39,6 +39,12 @@ public class User {
     @Column(nullable = false)
     private MembershipLevel membershipLevel;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private Role role;
+
+    private LocalDateTime membershipExpiresAt;
+
     private String referralCode;
 
     private String referredBy;
