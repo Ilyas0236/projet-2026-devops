@@ -74,6 +74,11 @@ public class ContentController {
         return ResponseEntity.ok(contentService.updateMatchResult(id, scoreWydad, scoreAdversaire));
     }
 
+    @PutMapping("/matches/{id}")
+    public ResponseEntity<MatchResponse> updateMatch(@PathVariable Long id, @Valid @RequestBody MatchRequest request) {
+        return ResponseEntity.ok(contentService.updateMatch(id, request));
+    }
+
     @DeleteMapping("/matches/{id}")
     public ResponseEntity<Void> deleteMatch(@PathVariable Long id) {
         contentService.deleteMatch(id);
@@ -91,6 +96,17 @@ public class ContentController {
         return ResponseEntity.ok(contentService.createClassement(request));
     }
 
+    @PutMapping("/classements/{id}")
+    public ResponseEntity<ClassementResponse> updateClassement(@PathVariable Long id, @Valid @RequestBody ClassementRequest request) {
+        return ResponseEntity.ok(contentService.updateClassement(id, request));
+    }
+
+    @DeleteMapping("/classements/{id}")
+    public ResponseEntity<Void> deleteClassement(@PathVariable Long id) {
+        contentService.deleteClassement(id);
+        return ResponseEntity.noContent().build();
+    }
+
     // ==================== JOUEURS (F5) ====================
     @GetMapping("/joueurs/sport/{sport}")
     public ResponseEntity<List<JoueurResponse>> getJoueursBySport(@PathVariable SportSection sport) {
@@ -100,5 +116,16 @@ public class ContentController {
     @PostMapping("/joueurs")
     public ResponseEntity<JoueurResponse> createJoueur(@Valid @RequestBody JoueurRequest request) {
         return ResponseEntity.ok(contentService.createJoueur(request));
+    }
+
+    @PutMapping("/joueurs/{id}")
+    public ResponseEntity<JoueurResponse> updateJoueur(@PathVariable Long id, @Valid @RequestBody JoueurRequest request) {
+        return ResponseEntity.ok(contentService.updateJoueur(id, request));
+    }
+
+    @DeleteMapping("/joueurs/{id}")
+    public ResponseEntity<Void> deleteJoueur(@PathVariable Long id) {
+        contentService.deleteJoueur(id);
+        return ResponseEntity.noContent().build();
     }
 }

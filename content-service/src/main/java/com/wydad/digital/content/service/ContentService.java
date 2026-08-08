@@ -114,6 +114,22 @@ public class ContentService {
         return mapToMatchResponse(saved);
     }
 
+    public MatchResponse updateMatch(Long id, MatchRequest request) {
+        Match match = matchRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Match non trouvé"));
+        match.setDate(request.date());
+        match.setHeure(request.heure());
+        match.setAdversaire(request.adversaire());
+        match.setCompetition(request.competition());
+        match.setLieu(request.lieu());
+        match.setScoreWydad(request.scoreWydad());
+        match.setScoreAdversaire(request.scoreAdversaire());
+        match.setStatut(request.statut());
+        match.setSport(request.sport());
+        Match saved = matchRepository.save(match);
+        return mapToMatchResponse(saved);
+    }
+
     public void deleteMatch(Long id) {
         matchRepository.deleteById(id);
     }
@@ -157,6 +173,28 @@ public class ContentService {
                 .stream().map(this::mapToClassementResponse).collect(Collectors.toList());
     }
 
+    public ClassementResponse updateClassement(Long id, ClassementRequest request) {
+        Classement c = classementRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Classement non trouvé"));
+        c.setPosition(request.position());
+        c.setEquipe(request.equipe());
+        c.setJoues(request.joues());
+        c.setGagnes(request.gagnes());
+        c.setNuls(request.nuls());
+        c.setPerdus(request.perdus());
+        c.setBp(request.bp());
+        c.setBc(request.bc());
+        c.setPoints(request.points());
+        c.setCompetition(request.competition());
+        c.setSport(request.sport());
+        Classement saved = classementRepository.save(c);
+        return mapToClassementResponse(saved);
+    }
+
+    public void deleteClassement(Long id) {
+        classementRepository.deleteById(id);
+    }
+
     private ClassementResponse mapToClassementResponse(Classement c) {
         return new ClassementResponse(
                 c.getId(), c.getPosition(), c.getEquipe(), c.getJoues(),
@@ -185,6 +223,26 @@ public class ContentService {
     public List<JoueurResponse> getJoueursBySport(SportSection sport) {
         return joueurRepository.findBySport(sport)
                 .stream().map(this::mapToJoueurResponse).collect(Collectors.toList());
+    }
+
+    public JoueurResponse updateJoueur(Long id, JoueurRequest request) {
+        Joueur j = joueurRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Joueur non trouvé"));
+        j.setNom(request.nom());
+        j.setPhotoUrl(request.photoUrl());
+        j.setPoste(request.poste());
+        j.setAge(request.age());
+        j.setNumero(request.numero());
+        j.setSport(request.sport());
+        j.setMatchsJoues(request.matchsJoues());
+        j.setButs(request.buts());
+        j.setPasses(request.passes());
+        Joueur saved = joueurRepository.save(j);
+        return mapToJoueurResponse(saved);
+    }
+
+    public void deleteJoueur(Long id) {
+        joueurRepository.deleteById(id);
     }
 
     private JoueurResponse mapToJoueurResponse(Joueur j) {
