@@ -1,13 +1,13 @@
 server:
-  port: 8082
+  port: ${SERVER_PORT:8082}
 
 spring:
   application:
     name: content-service
   datasource:
-    url: jdbc:postgresql://localhost:5433/content_db
-    username: wydad
-    password: wydad2024
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5433/content_db}
+    username: ${SPRING_DATASOURCE_USERNAME:wydad}
+    password: ${SPRING_DATASOURCE_PASSWORD:wydad2024}
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
