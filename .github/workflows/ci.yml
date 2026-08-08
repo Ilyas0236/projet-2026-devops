@@ -1,0 +1,160 @@
+name: CI/CD Wydad Digital
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  REGISTRY: docker.io
+  IMAGE_PREFIX: ${{ secrets.DOCKER_USERNAME }}/wydad
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Build Parent POM
+        run: mvn -B clean install -N
+
+      - name: Build & Test Auth Service
+        run: mvn -B clean package --file auth-service/pom.xml
+
+      - name: Build & Test Content Service
+        run: mvn -B clean package --file content-service/pom.xml
+
+      - name: Build & Test API Gateway
+        run: mvn -B clean package --file api-gateway/pom.xml
+
+      - name: Upload Auth Service JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: auth-service-jar
+          path: auth-service/target/auth-service-*.jar
+
+      - name: Upload Content Service JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: content-service-jar
+          path: content-service/target/content-service-*.jar
+
+      - name: Upload API Gateway JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-gateway-jar
+          path: api-gateway/target/api-gateway-*.jar
+
+  docker-auth:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download Auth JAR
+        uses: actions/download-artifact@v4
+        with:
+          name: auth-service-jar
+          path: auth-service/target/
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build & Push Auth Service
+        uses: docker/build-push-action@v5
+        with:
+          context: ./auth-service
+          file: ./auth-service/Dockerfile
+          push: true
+          tags: |
+            ${{ env.IMAGE_PREFIX }}-auth:latest
+            ${{ env.IMAGE_PREFIX }}-auth:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  docker-content:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download Content JAR
+        uses: actions/download-artifact@v4
+        with:
+          name: content-service-jar
+          path: content-service/target/
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build & Push Content Service
+        uses: docker/build-push-action@v5
+        with:
+          context: ./content-service
+          file: ./content-service/Dockerfile
+          push: true
+          tags: |
+            ${{ env.IMAGE_PREFIX }}-content:latest
+            ${{ env.IMAGE_PREFIX }}-content:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  docker-gateway:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download Gateway JAR
+        uses: actions/download-artifact@v4
+        with:
+          name: api-gateway-jar
+          path: api-gateway/target/
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build & Push API Gateway
+        uses: docker/build-push-action@v5
+        with:
+          context: ./api-gateway
+          file: ./api-gateway/Dockerfile
+          push: true
+          tags: |
+            ${{ env.IMAGE_PREFIX }}-gateway:latest
+            ${{ env.IMAGE_PREFIX }}-gateway:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
