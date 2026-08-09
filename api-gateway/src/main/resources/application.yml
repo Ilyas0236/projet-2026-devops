@@ -19,6 +19,14 @@ spring:
           uri: ${PAYMENT_SERVICE_URI:http://localhost:8083}
           predicates:
             - Path=/api/payment/**
+        - id: shop-service
+          uri: ${SHOP_SERVICE_URI:http://localhost:8084}
+          predicates:
+            - Path=/api/shop/**
+        - id: ticket-service
+          uri: ${TICKET_SERVICE_URI:http://localhost:8085}
+          predicates:
+            - Path=/api/ticket/**
 
 logging:
   level:

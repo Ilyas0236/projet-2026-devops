@@ -4,3 +4,4 @@
 CREATE DATABASE content_db;
 CREATE DATABASE shop_db;
 CREATE DATABASE payment_db;
+CREATE DATABASE ticket_db;

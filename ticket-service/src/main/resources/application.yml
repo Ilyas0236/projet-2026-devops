@@ -1,0 +1,31 @@
+server:
+  port: ${SERVER_PORT:8085}
+
+spring:
+  application:
+    name: ticket-service
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5433/ticket_db}
+    username: ${SPRING_DATASOURCE_USERNAME:wydad}
+    password: ${SPRING_DATASOURCE_PASSWORD:wydad2024}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+logging:
+  level:
+    com.wydad.digital.ticket: DEBUG
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always

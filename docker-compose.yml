@@ -129,6 +129,27 @@ services:
       retries: 10
       start_period: 60s
 
+  ticket-service:
+    build:
+      context: ./ticket-service
+      dockerfile: Dockerfile
+    container_name: wydad-ticket-service
+    ports:
+      - "8085:8085"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/ticket_db
+      - SPRING_DATASOURCE_USERNAME=wydad
+      - SPRING_DATASOURCE_PASSWORD=wydad2024
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -S -O /dev/null http://localhost:8085/actuator/health 2>&1 | grep -q 'HTTP/' || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+
   api-gateway:
     build:
       context: ./api-gateway
@@ -141,6 +162,7 @@ services:
       - CONTENT_SERVICE_URI=http://content-service:8082
       - PAYMENT_SERVICE_URI=http://payment-service:8083
       - SHOP_SERVICE_URI=http://shop-service:8084
+      - TICKET_SERVICE_URI=http://ticket-service:8085
     depends_on:
       auth-service:
         condition: service_healthy
@@ -149,6 +171,8 @@ services:
       payment-service:
         condition: service_healthy
       shop-service:
+        condition: service_started
+      ticket-service:
         condition: service_started
     healthcheck:
       test: ["CMD-SHELL", "wget -q -S -O /dev/null http://localhost:8080/actuator/health 2>&1 | grep -q 'HTTP/' || exit 1"]
