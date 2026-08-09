@@ -1,7 +1,7 @@
-# ============================================
-# RUNTIME JRE 21
-# ============================================
 FROM eclipse-temurin:21-jre-alpine
+
+# ⬇️ AJOUTE CECI
+RUN apk add --no-cache wget
 
 WORKDIR /app
 

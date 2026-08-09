@@ -2,6 +2,5 @@
 *.iml
 .git/
 .gitignore
+*/target/
 */.dockerignore
-*/Dockerfile
-docker-compose.yml

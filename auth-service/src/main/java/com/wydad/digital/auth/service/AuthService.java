@@ -85,7 +85,6 @@ public class AuthService {
         String accessToken = jwtUtils.generateAccessToken(user.getEmail());
         String refreshToken = jwtUtils.generateRefreshToken(user.getEmail());
 
-        // Créer session active
         createSession(user.getEmail(), accessToken, ipAddress, userAgent);
 
         return new AuthResponse(
@@ -147,7 +146,6 @@ public class AuthService {
         String accessToken = jwtUtils.generateAccessToken(email);
         String refreshToken = jwtUtils.generateRefreshToken(email);
 
-        // Créer nouvelle session
         createSession(email, accessToken, ipAddress, userAgent);
 
         return new AuthResponse(
@@ -276,7 +274,7 @@ public class AuthService {
     }
 
     // ============================================
-    // NOUVEAU : Sessions Actives
+    // Sessions Actives
     // ============================================
     private void createSession(String email, String token, String ipAddress, String userAgent) {
         ActiveSession session = ActiveSession.builder()
@@ -326,5 +324,50 @@ public class AuthService {
                 activeSessionRepository.save(session);
             }
         }
+    }
+
+    // ============================================
+    // UPDATE PROFILE + DELETE ACCOUNT
+    // ============================================
+    public AuthResponse updateProfile(UpdateProfileRequest request) {
+        User user = userRepository.findByEmail(request.email())
+                .orElseThrow(() -> new UserNotFoundException(request.email()));
+
+        user.setFirstName(request.firstName());
+        user.setLastName(request.lastName());
+        if (request.phone() != null) user.setPhone(request.phone());
+        if (request.ville() != null) user.setVille(request.ville());
+        if (request.langue() != null) user.setLangue(request.langue());
+        if (request.timezone() != null) user.setTimezone(request.timezone());
+        if (request.bio() != null) user.setBio(request.bio());
+
+        userRepository.save(user);
+
+        String accessToken = jwtUtils.generateAccessToken(user.getEmail());
+        String refreshToken = jwtUtils.generateRefreshToken(user.getEmail());
+
+        return new AuthResponse(
+                accessToken,
+                refreshToken,
+                user.getEmail(),
+                user.getFirstName(),
+                user.getLastName(),
+                user.getMembershipLevel(),
+                user.getReferralCode()
+        );
+    }
+
+    @Transactional
+    public void deleteAccount(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UserNotFoundException(email));
+
+        activeSessionRepository.deleteByEmail(email);
+
+        kycDocumentRepository.findByEmail(email).ifPresent(doc ->
+                kycDocumentRepository.deleteById(doc.getId())
+        );
+
+        userRepository.delete(user);
     }
 }

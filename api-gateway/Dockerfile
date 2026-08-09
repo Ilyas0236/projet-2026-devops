@@ -1,5 +1,7 @@
-
 FROM eclipse-temurin:21-jre-alpine
+
+# ⬇️ AJOUTE CECI : wget pour le healthcheck Docker
+RUN apk add --no-cache wget
 
 WORKDIR /app
 

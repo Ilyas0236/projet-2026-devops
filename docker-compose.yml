@@ -1,9 +1,9 @@
-version: "3.9"
+version: "3.8"
 
 services:
-  postgres-auth:
+  postgres:
     image: postgres:16-alpine
-    container_name: wydad-postgres-auth
+    container_name: wydad-postgres
     environment:
       POSTGRES_DB: auth_db
       POSTGRES_USER: wydad
@@ -11,7 +11,8 @@ services:
     ports:
       - "5433:5432"
     volumes:
-      - pg-auth-data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-scripts:/docker-entrypoint-initdb.d
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U wydad -d auth_db"]
       interval: 5s
@@ -38,8 +39,76 @@ services:
     ports:
       - "5050:80"
     depends_on:
-      postgres-auth:
+      postgres:
         condition: service_healthy
 
+  auth-service:
+    build:
+      context: ./auth-service
+      dockerfile: Dockerfile
+    container_name: wydad-auth-service
+    ports:
+      - "8081:8081"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/auth_db
+      - SPRING_DATASOURCE_USERNAME=wydad
+      - SPRING_DATASOURCE_PASSWORD=wydad2024
+      - SPRING_REDIS_HOST=redis
+      - SPRING_REDIS_PORT=6379
+      - JWT_SECRET=wydad-secret-key-2024-ne-pas-utiliser-en-production-tres-long-min-256-bits
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -S -O /dev/null http://localhost:8081/actuator/health 2>&1 | grep -q 'HTTP/' || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+
+  content-service:
+    build:
+      context: ./content-service
+      dockerfile: Dockerfile
+    container_name: wydad-content-service
+    ports:
+      - "8082:8082"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/content_db
+      - SPRING_DATASOURCE_USERNAME=wydad
+      - SPRING_DATASOURCE_PASSWORD=wydad2024
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -S -O /dev/null http://localhost:8082/actuator/health 2>&1 | grep -q 'HTTP/' || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+
+  api-gateway:
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    container_name: wydad-api-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      - AUTH_SERVICE_URI=http://auth-service:8081
+      - CONTENT_SERVICE_URI=http://content-service:8082
+    depends_on:
+      auth-service:
+        condition: service_healthy
+      content-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -S -O /dev/null http://localhost:8080/actuator/health 2>&1 | grep -q 'HTTP/' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
 volumes:
-  pg-auth-data:
+  postgres_data:

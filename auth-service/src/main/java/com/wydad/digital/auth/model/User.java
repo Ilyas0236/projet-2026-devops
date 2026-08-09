@@ -49,6 +49,11 @@ public class User {
 
     private String referredBy;
 
+    private String ville;
+    private String langue = "fr";
+    private String timezone = "Africa/Casablanca";
+    private String bio;
+
     private boolean kycVerified = false;
 
     private boolean active = true;

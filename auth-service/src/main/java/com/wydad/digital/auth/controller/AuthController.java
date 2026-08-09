@@ -84,6 +84,22 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
 
+    @PutMapping("/me")
+    public ResponseEntity<AuthResponse> updateProfile(
+            @Valid @RequestBody UpdateProfileRequest request,
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authHeader) {
+        return ResponseEntity.ok(authService.updateProfile(request));
+    }
+
+    @DeleteMapping("/me")
+    public ResponseEntity<String> deleteAccount(
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authHeader) {
+        String token = authHeader.replace("Bearer ", "");
+        String email = jwtUtils.getEmailFromToken(token);
+        authService.deleteAccount(email);
+        return ResponseEntity.ok("Compte supprimé avec succès");
+    }
+
     @PostMapping("/upgrade")
     public ResponseEntity<AuthResponse> upgradeLevel(@Valid @RequestBody UpgradeRequest request) {
         return ResponseEntity.ok(authService.upgradeLevel(request));
@@ -120,7 +136,7 @@ public class AuthController {
     }
 
     // ============================================
-    // NOUVEAU : Sessions Actives
+    // Sessions Actives
     // ============================================
     @GetMapping("/sessions")
     public ResponseEntity<List<SessionResponse>> getActiveSessions(
