@@ -1,0 +1,38 @@
+server:
+  port: ${SERVER_PORT:8086}
+
+spring:
+  application:
+    name: notification-service
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5433/notification_db}
+    username: ${SPRING_DATASOURCE_USERNAME:wydad}
+    password: ${SPRING_DATASOURCE_PASSWORD:wydad2024}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+logging:
+  level:
+    com.wydad.digital.notification: DEBUG
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+
+# Notification API Keys (to be injected via env variables in prod)
+wydad:
+  sendgrid:
+    api-key: ${SENDGRID_API_KEY:mock_sendgrid_key_for_dev}
+  firebase:
+    credentials-path: ${FIREBASE_CREDENTIALS:classpath:firebase-mock.json}

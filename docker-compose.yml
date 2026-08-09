@@ -150,6 +150,27 @@ services:
       retries: 10
       start_period: 60s
 
+  notification-service:
+    build:
+      context: ./notification-service
+      dockerfile: Dockerfile
+    container_name: wydad-notification-service
+    ports:
+      - "8086:8086"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/notification_db
+      - SPRING_DATASOURCE_USERNAME=wydad
+      - SPRING_DATASOURCE_PASSWORD=wydad2024
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -S -O /dev/null http://localhost:8086/actuator/health 2>&1 | grep -q 'HTTP/' || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+
   api-gateway:
     build:
       context: ./api-gateway
@@ -163,6 +184,7 @@ services:
       - PAYMENT_SERVICE_URI=http://payment-service:8083
       - SHOP_SERVICE_URI=http://shop-service:8084
       - TICKET_SERVICE_URI=http://ticket-service:8085
+      - NOTIFICATION_SERVICE_URI=http://notification-service:8086
     depends_on:
       auth-service:
         condition: service_healthy
@@ -173,6 +195,8 @@ services:
       shop-service:
         condition: service_started
       ticket-service:
+        condition: service_started
+      notification-service:
         condition: service_started
     healthcheck:
       test: ["CMD-SHELL", "wget -q -S -O /dev/null http://localhost:8080/actuator/health 2>&1 | grep -q 'HTTP/' || exit 1"]
