@@ -42,37 +42,48 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
         // Content-service POST/PUT/DELETE : JWT obligatoire
         if (path.startsWith("/api/content/")) {
-            String authHeader = request.getHeaders().getFirst("Authorization");
-            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-                exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
-                return exchange.getResponse().setComplete();
-            }
+            return validateAndForward(exchange, chain);
+        }
 
-            String token = authHeader.substring(7);
-            try {
-                SecretKey key = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
-                Jws<Claims> claims = Jwts.parser()
-                        .verifyWith(key)
-                        .build()
-                        .parseSignedClaims(token);
-
-                String email = claims.getPayload().getSubject();
-                String role = claims.getPayload().get("role", String.class);
-
-                ServerHttpRequest mutatedRequest = exchange.getRequest().mutate()
-                        .header("X-User-Email", email)
-                        .header("X-User-Role", role != null ? role : "VISITEUR")
-                        .build();
-
-                return chain.filter(exchange.mutate().request(mutatedRequest).build());
-
-            } catch (JwtException | IllegalArgumentException e) {
-                exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
-                return exchange.getResponse().setComplete();
-            }
+        // Payment-service : JWT obligatoire pour tout
+        if (path.startsWith("/api/payment/")) {
+            return validateAndForward(exchange, chain);
         }
 
         return chain.filter(exchange);
+    }
+
+    private Mono<Void> validateAndForward(ServerWebExchange exchange, GatewayFilterChain chain) {
+        ServerHttpRequest request = exchange.getRequest();
+        String authHeader = request.getHeaders().getFirst("Authorization");
+
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
+            return exchange.getResponse().setComplete();
+        }
+
+        String token = authHeader.substring(7);
+        try {
+            SecretKey key = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
+            Jws<Claims> claims = Jwts.parser()
+                    .verifyWith(key)
+                    .build()
+                    .parseSignedClaims(token);
+
+            String email = claims.getPayload().getSubject();
+            String role = claims.getPayload().get("role", String.class);
+
+            ServerHttpRequest mutatedRequest = exchange.getRequest().mutate()
+                    .header("X-User-Email", email)
+                    .header("X-User-Role", role != null ? role : "VISITEUR")
+                    .build();
+
+            return chain.filter(exchange.mutate().request(mutatedRequest).build());
+
+        } catch (JwtException | IllegalArgumentException e) {
+            exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
+            return exchange.getResponse().setComplete();
+        }
     }
 
     @Override

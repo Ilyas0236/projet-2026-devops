@@ -23,6 +23,7 @@
         <module>auth-service</module>
         <module>content-service</module>
         <module>api-gateway</module>
+        <module>payment-service</module>
 
 
     </modules>

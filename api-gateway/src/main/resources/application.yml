@@ -15,6 +15,10 @@ spring:
           uri: ${CONTENT_SERVICE_URI:http://localhost:8082}
           predicates:
             - Path=/api/content/**
+        - id: payment-service
+          uri: ${PAYMENT_SERVICE_URI:http://localhost:8083}
+          predicates:
+            - Path=/api/payment/**
 
 logging:
   level:
