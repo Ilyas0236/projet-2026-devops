@@ -27,6 +27,7 @@
         <module>shop-service</module>
         <module>ticket-service</module>
         <module>notification-service</module>
+        <module>sports-service</module>
 
 
     </modules>

@@ -31,6 +31,10 @@ spring:
           uri: ${NOTIFICATION_SERVICE_URI:http://localhost:8086}
           predicates:
             - Path=/api/notification/**
+        - id: sports-service
+          uri: ${SPORTS_SERVICE_URI:http://localhost:8087}
+          predicates:
+            - Path=/api/sports/**
 
 logging:
   level:
