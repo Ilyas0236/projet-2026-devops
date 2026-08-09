@@ -60,7 +60,7 @@ public class AuthService {
 
         userRepository.save(user);
 
-        String accessToken = jwtUtils.generateAccessToken(user.getEmail());
+        String accessToken = jwtUtils.generateAccessToken(user.getEmail(), user.getRole().name());
         String refreshToken = jwtUtils.generateRefreshToken(user.getEmail());
 
         return new AuthResponse(
@@ -82,7 +82,7 @@ public class AuthService {
             throw new UserNotFoundException(request.email());
         }
 
-        String accessToken = jwtUtils.generateAccessToken(user.getEmail());
+        String accessToken = jwtUtils.generateAccessToken(user.getEmail(), user.getRole().name());
         String refreshToken = jwtUtils.generateRefreshToken(user.getEmail());
 
         createSession(user.getEmail(), accessToken, ipAddress, userAgent);
@@ -143,7 +143,7 @@ public class AuthService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UserNotFoundException(email));
 
-        String accessToken = jwtUtils.generateAccessToken(email);
+        String accessToken = jwtUtils.generateAccessToken(email, user.getRole().name());
         String refreshToken = jwtUtils.generateRefreshToken(email);
 
         createSession(email, accessToken, ipAddress, userAgent);
@@ -176,7 +176,7 @@ public class AuthService {
         user.setMembershipExpiresAt(LocalDateTime.now().plusYears(1));
         userRepository.save(user);
 
-        String accessToken = jwtUtils.generateAccessToken(user.getEmail());
+        String accessToken = jwtUtils.generateAccessToken(user.getEmail(), user.getRole().name());
         String refreshToken = jwtUtils.generateRefreshToken(user.getEmail());
 
         return new AuthResponse(
@@ -343,7 +343,7 @@ public class AuthService {
 
         userRepository.save(user);
 
-        String accessToken = jwtUtils.generateAccessToken(user.getEmail());
+        String accessToken = jwtUtils.generateAccessToken(user.getEmail(), user.getRole().name());
         String refreshToken = jwtUtils.generateRefreshToken(user.getEmail());
 
         return new AuthResponse(

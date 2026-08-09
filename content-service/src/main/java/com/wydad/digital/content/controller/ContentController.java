@@ -7,6 +7,7 @@ import com.wydad.digital.content.service.ContentService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -35,16 +36,19 @@ public class ContentController {
     }
 
     @PostMapping("/articles")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ArticleResponse> createArticle(@Valid @RequestBody ArticleRequest request) {
         return ResponseEntity.ok(contentService.createArticle(request));
     }
 
     @PutMapping("/articles/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ArticleResponse> updateArticle(@PathVariable Long id, @Valid @RequestBody ArticleRequest request) {
         return ResponseEntity.ok(contentService.updateArticle(id, request));
     }
 
     @DeleteMapping("/articles/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deleteArticle(@PathVariable Long id) {
         contentService.deleteArticle(id);
         return ResponseEntity.noContent().build();
@@ -62,11 +66,13 @@ public class ContentController {
     }
 
     @PostMapping("/matches")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<MatchResponse> createMatch(@Valid @RequestBody MatchRequest request) {
         return ResponseEntity.ok(contentService.createMatch(request));
     }
 
     @PostMapping("/matches/{id}/result")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<MatchResponse> updateMatchResult(
             @PathVariable Long id,
             @RequestParam(name = "scoreWydad") Integer scoreWydad,
@@ -75,11 +81,13 @@ public class ContentController {
     }
 
     @PutMapping("/matches/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<MatchResponse> updateMatch(@PathVariable Long id, @Valid @RequestBody MatchRequest request) {
         return ResponseEntity.ok(contentService.updateMatch(id, request));
     }
 
     @DeleteMapping("/matches/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deleteMatch(@PathVariable Long id) {
         contentService.deleteMatch(id);
         return ResponseEntity.noContent().build();
@@ -92,16 +100,19 @@ public class ContentController {
     }
 
     @PostMapping("/classements")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ClassementResponse> createClassement(@Valid @RequestBody ClassementRequest request) {
         return ResponseEntity.ok(contentService.createClassement(request));
     }
 
     @PutMapping("/classements/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ClassementResponse> updateClassement(@PathVariable Long id, @Valid @RequestBody ClassementRequest request) {
         return ResponseEntity.ok(contentService.updateClassement(id, request));
     }
 
     @DeleteMapping("/classements/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deleteClassement(@PathVariable Long id) {
         contentService.deleteClassement(id);
         return ResponseEntity.noContent().build();
@@ -114,16 +125,19 @@ public class ContentController {
     }
 
     @PostMapping("/joueurs")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<JoueurResponse> createJoueur(@Valid @RequestBody JoueurRequest request) {
         return ResponseEntity.ok(contentService.createJoueur(request));
     }
 
     @PutMapping("/joueurs/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<JoueurResponse> updateJoueur(@PathVariable Long id, @Valid @RequestBody JoueurRequest request) {
         return ResponseEntity.ok(contentService.updateJoueur(id, request));
     }
 
     @DeleteMapping("/joueurs/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deleteJoueur(@PathVariable Long id) {
         contentService.deleteJoueur(id);
         return ResponseEntity.noContent().build();
