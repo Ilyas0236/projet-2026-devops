@@ -24,6 +24,7 @@
         <module>content-service</module>
         <module>api-gateway</module>
         <module>payment-service</module>
+        <module>shop-service</module>
 
 
     </modules>

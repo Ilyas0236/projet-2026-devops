@@ -108,6 +108,27 @@ services:
       retries: 10
       start_period: 60s
 
+  shop-service:
+    build:
+      context: ./shop-service
+      dockerfile: Dockerfile
+    container_name: wydad-shop-service
+    ports:
+      - "8084:8084"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/shop_db
+      - SPRING_DATASOURCE_USERNAME=wydad
+      - SPRING_DATASOURCE_PASSWORD=wydad2024
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -S -O /dev/null http://localhost:8084/actuator/health 2>&1 | grep -q 'HTTP/' || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+
   api-gateway:
     build:
       context: ./api-gateway
@@ -119,6 +140,7 @@ services:
       - AUTH_SERVICE_URI=http://auth-service:8081
       - CONTENT_SERVICE_URI=http://content-service:8082
       - PAYMENT_SERVICE_URI=http://payment-service:8083
+      - SHOP_SERVICE_URI=http://shop-service:8084
     depends_on:
       auth-service:
         condition: service_healthy
@@ -126,6 +148,8 @@ services:
         condition: service_healthy
       payment-service:
         condition: service_healthy
+      shop-service:
+        condition: service_started
     healthcheck:
       test: ["CMD-SHELL", "wget -q -S -O /dev/null http://localhost:8080/actuator/health 2>&1 | grep -q 'HTTP/' || exit 1"]
       interval: 10s

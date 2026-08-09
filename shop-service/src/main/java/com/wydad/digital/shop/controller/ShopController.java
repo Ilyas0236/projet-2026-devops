@@ -1,0 +1,81 @@
+package com.wydad.digital.shop.controller;
+
+import com.wydad.digital.shop.dto.CartItemDto;
+import com.wydad.digital.shop.dto.ProductDto;
+import com.wydad.digital.shop.enums.SportSection;
+import com.wydad.digital.shop.service.CartService;
+import com.wydad.digital.shop.service.ProductService;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/shop")
+@RequiredArgsConstructor
+public class ShopController {
+
+    private final ProductService productService;
+    private final CartService cartService;
+
+    // ========== PRODUITS ==========
+    @GetMapping("/products")
+    public ResponseEntity<Page<ProductDto>> getProducts(
+            @RequestParam(required = false) Long categoryId,
+            @RequestParam(required = false) SportSection sport,
+            @RequestParam(required = false) String search,
+            Pageable pageable) {
+
+        Page<ProductDto> products;
+        if (search != null && !search.isBlank()) {
+            products = productService.searchProducts(search, pageable);
+        } else if (categoryId != null) {
+            products = productService.getProductsByCategory(categoryId, pageable);
+        } else if (sport != null) {
+            products = productService.getProductsBySport(sport, pageable);
+        } else {
+            products = productService.getAllActiveProducts(pageable);
+        }
+        return ResponseEntity.ok(products);
+    }
+
+    @GetMapping("/products/{id}")
+    public ResponseEntity<ProductDto> getProduct(@PathVariable Long id) {
+        return ResponseEntity.ok(productService.getProductById(id));
+    }
+
+    // ========== PANIER ==========
+    @GetMapping("/cart")
+    public ResponseEntity<List<CartItemDto>> getCart(
+            @RequestHeader("X-User-Email") String userEmail) {
+        return ResponseEntity.ok(cartService.getCart(userEmail));
+    }
+
+    @PostMapping("/cart")
+    public ResponseEntity<CartItemDto> addToCart(
+            @RequestHeader("X-User-Email") String userEmail,
+            @Valid @RequestBody CartItemDto dto) {
+        return ResponseEntity.ok(cartService.addToCart(userEmail, dto));
+    }
+
+    @PutMapping("/cart/{cartItemId}")
+    public ResponseEntity<Void> updateCartQuantity(
+            @RequestHeader("X-User-Email") String userEmail,
+            @PathVariable Long cartItemId,
+            @RequestParam Integer quantity) {
+        cartService.updateQuantity(userEmail, cartItemId, quantity);
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/cart/{cartItemId}")
+    public ResponseEntity<Void> removeFromCart(
+            @RequestHeader("X-User-Email") String userEmail,
+            @PathVariable Long cartItemId) {
+        cartService.removeFromCart(userEmail, cartItemId);
+        return ResponseEntity.noContent().build();
+    }
+}
