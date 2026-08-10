@@ -41,8 +41,9 @@ import { AuthService } from '../../services/auth.service';
             <a routerLink="/profil" class="block w-full text-left py-2 px-3 rounded text-gray-700 hover:bg-gray-100 font-medium mb-1" routerLinkActive="bg-gray-100 text-red-700" [routerLinkActiveOptions]="{exact: true}">⚙️ Paramètres du compte</a>
             <a routerLink="/profil/carte" class="block w-full text-left py-2 px-3 rounded text-gray-700 hover:bg-gray-100 font-medium mb-1" routerLinkActive="bg-gray-100 text-red-700">🎟️ Ma Carte Membre</a>
             <a routerLink="/profil/ecash" class="block w-full text-left py-2 px-3 rounded text-gray-700 hover:bg-gray-100 font-medium mb-1" routerLinkActive="bg-gray-100 text-red-700">💰 Porte-Monnaie E-Cash</a>
-            <a routerLink="/profil/billets" class="block w-full text-left py-2 px-3 rounded text-gray-700 hover:bg-gray-100 font-medium mb-1" routerLinkActive="bg-gray-100 text-red-700">🎫 Mes Billets (Bientôt)</a>
-            <a routerLink="/profil/commandes" class="block w-full text-left py-2 px-3 rounded text-gray-700 hover:bg-gray-100 font-medium mb-1" routerLinkActive="bg-gray-100 text-red-700">🛍️ Mes Commandes (Bientôt)</a>
+            <a routerLink="/profil/billets" class="block w-full text-left py-2 px-3 rounded text-gray-700 hover:bg-gray-100 font-medium mb-1" routerLinkActive="bg-gray-100 text-red-700">🎫 Mes Billets</a>
+            <a routerLink="/profil/commandes" class="block w-full text-left py-2 px-3 rounded text-gray-700 hover:bg-gray-100 font-medium mb-1" routerLinkActive="bg-gray-100 text-red-700">📦 Mes Commandes</a>
+            <a routerLink="/academie/mes-enfants" class="block w-full text-left py-2 px-3 rounded text-gray-700 hover:bg-gray-100 font-medium mb-1" routerLinkActive="bg-gray-100 text-red-700">⚽ Mes Enfants (Académie)</a>
           </div>
 
           <button (click)="deleteAccount()" class="btn-danger-outline">Supprimer mon compte</button>

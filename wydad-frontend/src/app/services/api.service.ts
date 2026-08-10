@@ -231,4 +231,15 @@ export class ApiService {
   broadcastNotification(notification: any): Observable<any> {
     return this.http.post<any>(`${this.baseUrl}/notification/broadcast`, notification, { responseType: 'text' as 'json' });
   }
+
+  // ==========================================
+  // ACADEMY SERVICE
+  // ==========================================
+  registerAcademyChild(data: any): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/sports/academy/register`, data);
+  }
+
+  getAcademyChildrenByParent(parentId: number): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/sports/academy/parent/${parentId}`);
+  }
 }

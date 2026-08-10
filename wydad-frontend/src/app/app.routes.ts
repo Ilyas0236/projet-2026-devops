@@ -31,7 +31,8 @@ import { CartComponent } from './components/cart/cart.component';
 import { MesCommandesComponent } from './pages/mes-commandes/mes-commandes.component';
 import { authGuard } from './guards/auth.guard';
 import { adminGuard } from './guards/admin.guard';
-
+import { InscriptionAcademieComponent } from './pages/academie/inscription/inscription.component';
+import { DashboardParentComponent } from './pages/academie/dashboard-parent/dashboard-parent.component';
 export const routes: Routes = [
   {
     path: '',
@@ -55,7 +56,9 @@ export const routes: Routes = [
       { path: 'profil/ecash', component: EcashComponent, canActivate: [authGuard] },
       { path: 'profil/billets', component: MesBilletsComponent, canActivate: [authGuard] },
       { path: 'profil/commandes', component: MesCommandesComponent, canActivate: [authGuard] },
-      { path: 'don', component: DonComponent, canActivate: [authGuard] }
+      { path: 'don', component: DonComponent, canActivate: [authGuard] },
+      { path: 'academie/inscription', component: InscriptionAcademieComponent, canActivate: [authGuard] },
+      { path: 'academie/mes-enfants', component: DashboardParentComponent, canActivate: [authGuard] }
     ]
   },
   {
