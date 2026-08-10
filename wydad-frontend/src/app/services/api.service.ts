@@ -242,4 +242,23 @@ export class ApiService {
   getAcademyChildrenByParent(parentId: number): Observable<any[]> {
     return this.http.get<any[]>(`${this.baseUrl}/sports/academy/parent/${parentId}`);
   }
+
+  // ==========================================
+  // ESPACES METIERS (Joueur & Staff)
+  // ==========================================
+  getPlayerByUserId(userId: number): Observable<any> {
+    return this.http.get<any>(`${this.baseUrl}/sports/players/user/${userId}`);
+  }
+
+  getPlayersByCategory(sportType: string, category: string): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/sports/players/filter?sportType=${sportType}&category=${category}`);
+  }
+
+  createSession(session: any): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/sports/sessions`, session);
+  }
+
+  getSessionsByCategory(sportType: string, category: string): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/sports/sessions/filter?sportType=${sportType}&category=${category}`);
+  }
 }

@@ -44,6 +44,8 @@ import { AuthService } from '../../services/auth.service';
             <a routerLink="/profil/billets" class="block w-full text-left py-2 px-3 rounded text-gray-700 hover:bg-gray-100 font-medium mb-1" routerLinkActive="bg-gray-100 text-red-700">🎫 Mes Billets</a>
             <a routerLink="/profil/commandes" class="block w-full text-left py-2 px-3 rounded text-gray-700 hover:bg-gray-100 font-medium mb-1" routerLinkActive="bg-gray-100 text-red-700">📦 Mes Commandes</a>
             <a routerLink="/academie/mes-enfants" class="block w-full text-left py-2 px-3 rounded text-gray-700 hover:bg-gray-100 font-medium mb-1" routerLinkActive="bg-gray-100 text-red-700">⚽ Mes Enfants (Académie)</a>
+            <a *ngIf="profile?.role === 'PLAYER'" routerLink="/joueur/dashboard" class="block w-full text-left py-2 px-3 rounded text-white bg-wydad-dark hover:bg-black font-bold mb-1 mt-4 transition-colors">🔥 Mon Espace Joueur</a>
+            <a *ngIf="profile?.role === 'STAFF'" routerLink="/staff/dashboard" class="block w-full text-left py-2 px-3 rounded text-white bg-wydad-dark hover:bg-black font-bold mb-1 mt-4 transition-colors">📋 Mon Espace Staff</a>
           </div>
 
           <button (click)="deleteAccount()" class="btn-danger-outline">Supprimer mon compte</button>

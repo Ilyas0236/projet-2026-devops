@@ -33,6 +33,8 @@ import { authGuard } from './guards/auth.guard';
 import { adminGuard } from './guards/admin.guard';
 import { InscriptionAcademieComponent } from './pages/academie/inscription/inscription.component';
 import { DashboardParentComponent } from './pages/academie/dashboard-parent/dashboard-parent.component';
+import { DashboardJoueurComponent } from './pages/espace-joueur/dashboard-joueur/dashboard-joueur.component';
+import { DashboardStaffComponent } from './pages/espace-staff/dashboard-staff/dashboard-staff.component';
 export const routes: Routes = [
   {
     path: '',
@@ -58,7 +60,9 @@ export const routes: Routes = [
       { path: 'profil/commandes', component: MesCommandesComponent, canActivate: [authGuard] },
       { path: 'don', component: DonComponent, canActivate: [authGuard] },
       { path: 'academie/inscription', component: InscriptionAcademieComponent, canActivate: [authGuard] },
-      { path: 'academie/mes-enfants', component: DashboardParentComponent, canActivate: [authGuard] }
+      { path: 'academie/mes-enfants', component: DashboardParentComponent, canActivate: [authGuard] },
+      { path: 'joueur/dashboard', component: DashboardJoueurComponent, canActivate: [authGuard] },
+      { path: 'staff/dashboard', component: DashboardStaffComponent, canActivate: [authGuard] }
     ]
   },
   {

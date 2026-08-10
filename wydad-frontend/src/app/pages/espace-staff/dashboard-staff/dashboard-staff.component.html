@@ -1,0 +1,134 @@
+<div class="pt-32 pb-20 min-h-screen bg-gray-50">
+  <div class="max-w-7xl mx-auto px-6">
+    
+    <div *ngIf="loading" class="flex justify-center py-20">
+      <div class="w-10 h-10 border-4 border-wydad-dark border-t-transparent rounded-full animate-spin"></div>
+    </div>
+
+    <div *ngIf="!loading && staff">
+      <!-- Header -->
+      <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+        <div>
+          <h1 class="font-display text-3xl font-bold uppercase tracking-wider text-wydad-dark">Espace Staff</h1>
+          <p class="text-gray-500">{{ staff.fullName }} • {{ staff.role }} ({{ staff.sportType }} {{ staff.category }})</p>
+        </div>
+        <button (click)="showForm = !showForm" class="bg-wydad-red hover:bg-red-700 text-white px-6 py-2.5 rounded font-bold transition-colors flex items-center gap-2">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+          Planifier une séance
+        </button>
+      </div>
+
+      <!-- Form (Toggleable) -->
+      <div *ngIf="showForm" class="bg-white rounded-2xl shadow-xl border border-gray-100 p-8 mb-8 animate-fade-in relative overflow-hidden">
+        <div class="absolute top-0 left-0 w-2 h-full bg-wydad-red"></div>
+        <div class="flex justify-between items-center mb-6">
+          <h2 class="font-display text-xl font-bold uppercase">Nouvelle Séance</h2>
+          <button (click)="showForm = false" class="text-gray-400 hover:text-gray-700">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+          </button>
+        </div>
+        
+        <form [formGroup]="sessionForm" (ngSubmit)="submitSession()">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div>
+              <label class="block text-sm font-bold text-gray-700 mb-2">Titre de la séance</label>
+              <input type="text" formControlName="title" placeholder="Ex: Entraînement tactique, Récupération..." class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:border-wydad-red">
+            </div>
+            <div>
+              <label class="block text-sm font-bold text-gray-700 mb-2">Date et Heure</label>
+              <input type="datetime-local" formControlName="sessionDate" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:border-wydad-red">
+            </div>
+            <div class="md:col-span-2">
+              <label class="block text-sm font-bold text-gray-700 mb-2">Lieu</label>
+              <input type="text" formControlName="location" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:border-wydad-red">
+            </div>
+            <div class="md:col-span-2">
+              <label class="block text-sm font-bold text-gray-700 mb-2">Description / Consignes</label>
+              <textarea formControlName="description" rows="3" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:border-wydad-red"></textarea>
+            </div>
+          </div>
+          <div class="flex justify-end">
+            <button type="submit" [disabled]="sessionForm.invalid || isSubmitting" class="bg-wydad-dark hover:bg-black text-white px-8 py-3 rounded font-bold transition-colors disabled:opacity-50">
+              {{ isSubmitting ? 'Création...' : 'Créer la séance' }}
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        
+        <!-- Main: Roster -->
+        <div class="lg:col-span-2">
+          <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+              <h3 class="font-display font-bold text-xl uppercase tracking-wider text-wydad-dark">Mon Effectif</h3>
+              <span class="bg-white border border-gray-200 text-gray-600 px-3 py-1 rounded-full text-xs font-bold">{{ players.length }} Joueurs</span>
+            </div>
+            
+            <div class="overflow-x-auto">
+              <table class="w-full text-left border-collapse">
+                <thead>
+                  <tr class="border-b border-gray-200 text-sm text-gray-500 uppercase">
+                    <th class="p-4 font-bold">N°</th>
+                    <th class="p-4 font-bold">Joueur</th>
+                    <th class="p-4 font-bold">Poste</th>
+                    <th class="p-4 font-bold text-center">Matchs</th>
+                    <th class="p-4 font-bold text-center">Buts</th>
+                    <th class="p-4 font-bold text-center">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let player of players" class="border-b border-gray-50 hover:bg-gray-50 transition-colors">
+                    <td class="p-4 font-display font-bold text-gray-400 text-lg">{{ player.jerseyNumber || '-' }}</td>
+                    <td class="p-4 font-bold text-gray-800">{{ player.fullName }}</td>
+                    <td class="p-4 text-gray-600 text-sm">{{ player.position || '-' }}</td>
+                    <td class="p-4 text-center font-medium">{{ player.matchesPlayed || 0 }}</td>
+                    <td class="p-4 text-center font-bold text-wydad-red">{{ player.goals || 0 }}</td>
+                    <td class="p-4 text-center">
+                      <button class="text-gray-400 hover:text-wydad-dark transition-colors" title="Voir fiche médicale/stats détaillées">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+              
+              <div *ngIf="players.length === 0" class="p-8 text-center text-gray-500">
+                Aucun joueur n'est assigné à votre catégorie.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sidebar: Calendar -->
+        <div>
+          <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 h-full">
+            <h3 class="font-display font-bold text-xl uppercase tracking-wider border-b border-gray-100 pb-4 mb-6 text-wydad-dark">Planning ({{ sessions.length }})</h3>
+            
+            <div *ngIf="sessions.length === 0" class="text-center py-8 text-gray-500 text-sm">
+              Le planning est vide.
+            </div>
+
+            <div class="space-y-4">
+              <div *ngFor="let session of sessions" class="flex gap-4 p-4 border border-gray-100 rounded-xl hover:border-wydad-red transition-colors bg-gray-50">
+                <div class="flex flex-col items-center justify-center min-w-[60px]">
+                  <span class="text-wydad-red font-bold text-xs uppercase">{{ session.sessionDate | date:'MMM' }}</span>
+                  <span class="text-2xl font-display font-bold text-gray-800">{{ session.sessionDate | date:'dd' }}</span>
+                </div>
+                <div class="flex-1 py-1 border-l border-gray-200 pl-4">
+                  <h4 class="font-bold text-sm text-gray-800 mb-1 leading-tight">{{ session.title }}</h4>
+                  <div class="flex items-center gap-2 text-xs text-gray-500 font-bold mb-1">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    {{ session.sessionDate | date:'HH:mm' }}
+                  </div>
+                  <div class="text-xs text-gray-500 truncate" [title]="session.location">{{ session.location }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
