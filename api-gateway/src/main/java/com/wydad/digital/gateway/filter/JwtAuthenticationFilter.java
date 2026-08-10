@@ -30,8 +30,8 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         String path = request.getURI().getPath();
         String method = request.getMethod().name();
 
-        // Auth-service : toujours public
-        if (path.startsWith("/api/auth/")) {
+        // Auth-service : public endpoints
+        if (path.equals("/api/auth/login") || path.equals("/api/auth/register") || path.equals("/api/auth/refresh") || path.equals("/api/auth/otp/send") || path.equals("/api/auth/otp/verify") || path.startsWith("/api/auth/member-card") || path.startsWith("/api/auth/attestation")) {
             return chain.filter(exchange);
         }
 
@@ -40,17 +40,9 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
             return chain.filter(exchange);
         }
 
-        // Content-service POST/PUT/DELETE : JWT obligatoire
-        if (path.startsWith("/api/content/")) {
-            return validateAndForward(exchange, chain);
-        }
+        // For all other routes, enforce JWT (this covers /api/auth/me, /api/auth/admin/**, and all other services)
+        return validateAndForward(exchange, chain);
 
-        // Payment-service : JWT obligatoire pour tout
-        if (path.startsWith("/api/payment/")) {
-            return validateAndForward(exchange, chain);
-        }
-
-        return chain.filter(exchange);
     }
 
     private Mono<Void> validateAndForward(ServerWebExchange exchange, GatewayFilterChain chain) {

@@ -6,6 +6,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -28,6 +29,7 @@ public class AcademyController {
     }
 
     @PatchMapping("/{id}/status")
+    @PreAuthorize("hasRole('STAFF') or hasRole('ADMIN')")
     public ResponseEntity<AcademyMemberDto> updateStatus(@PathVariable Long id, @RequestParam Boolean active) {
         return ResponseEntity.ok(academyService.updateChildStatus(id, active));
     }

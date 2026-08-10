@@ -88,4 +88,8 @@ public class NotificationOrchestrator {
     public long countUnread(Long userId) {
         return notificationRepository.countByUserIdAndStatus(userId, NotificationStatus.SENT);
     }
+
+    public List<Notification> getAllNotifications() {
+        return notificationRepository.findAll();
+    }
 }

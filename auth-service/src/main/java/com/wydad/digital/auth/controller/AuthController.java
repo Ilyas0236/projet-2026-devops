@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -60,6 +61,7 @@ public class AuthController {
     }
 
     @GetMapping("/me")
+    @PreAuthorize("hasRole('ADHERENT') or hasRole('ADMIN')")
     public ResponseEntity<UserProfileResponse> getCurrentUser(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authHeader) {
 
@@ -85,6 +87,7 @@ public class AuthController {
     }
 
     @PutMapping("/me")
+    @PreAuthorize("hasRole('ADHERENT') or hasRole('ADMIN')")
     public ResponseEntity<AuthResponse> updateProfile(
             @Valid @RequestBody UpdateProfileRequest request,
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authHeader) {
@@ -92,6 +95,7 @@ public class AuthController {
     }
 
     @DeleteMapping("/me")
+    @PreAuthorize("hasRole('ADHERENT') or hasRole('ADMIN')")
     public ResponseEntity<String> deleteAccount(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authHeader) {
         String token = authHeader.replace("Bearer ", "");
@@ -101,6 +105,7 @@ public class AuthController {
     }
 
     @PostMapping("/upgrade")
+    @PreAuthorize("hasRole('ADHERENT') or hasRole('ADMIN')")
     public ResponseEntity<AuthResponse> upgradeLevel(@Valid @RequestBody UpgradeRequest request) {
         return ResponseEntity.ok(authService.upgradeLevel(request));
     }
@@ -126,6 +131,7 @@ public class AuthController {
     }
 
     @PostMapping("/kyc/upload")
+    @PreAuthorize("hasRole('ADHERENT') or hasRole('ADMIN')")
     public ResponseEntity<KycResponse> uploadKyc(@Valid @RequestBody KycUploadRequest request) {
         return ResponseEntity.ok(authService.uploadKyc(request));
     }
@@ -139,6 +145,7 @@ public class AuthController {
     // Sessions Actives
     // ============================================
     @GetMapping("/sessions")
+    @PreAuthorize("hasRole('ADHERENT') or hasRole('ADMIN')")
     public ResponseEntity<List<SessionResponse>> getActiveSessions(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authHeader) {
         String token = authHeader.replace("Bearer ", "");
@@ -147,6 +154,7 @@ public class AuthController {
     }
 
     @PostMapping("/sessions/revoke")
+    @PreAuthorize("hasRole('ADHERENT') or hasRole('ADMIN')")
     public ResponseEntity<String> revokeSession(
             @Valid @RequestBody RevokeSessionRequest request,
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authHeader) {
@@ -157,6 +165,7 @@ public class AuthController {
     }
 
     @PostMapping("/sessions/revoke-all")
+    @PreAuthorize("hasRole('ADHERENT') or hasRole('ADMIN')")
     public ResponseEntity<String> revokeAllSessions(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authHeader) {
         String token = authHeader.replace("Bearer ", "");
@@ -165,11 +174,27 @@ public class AuthController {
         return ResponseEntity.ok("Toutes les autres sessions ont été révoquées");
     }
 
-    private String getClientIp(HttpServletRequest request) {
-        String xfHeader = request.getHeader("X-Forwarded-For");
-        if (xfHeader == null || xfHeader.isEmpty()) {
-            return request.getRemoteAddr();
-        }
-        return xfHeader.split(",")[0].trim();
+    // ============================================
+    // ADMIN ENDPOINTS
+    // ============================================
+    @GetMapping("/admin/users")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<UserProfileResponse>> getAllUsers() {
+        return ResponseEntity.ok(authService.getAllUsers());
     }
-}
+
+    @PatchMapping("/admin/users/{id}/activate")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<String> toggleUserActiveStatus(@PathVariable Long id, @RequestParam boolean status) {
+        authService.toggleUserActiveStatus(id, status);
+        return ResponseEntity.ok("Statut utilisateur mis à jour");
+    }
+
+    @PatchMapping("/admin/users/{id}/role")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<String> changeUserRole(@PathVariable Long id, @RequestParam String newRole) {
+        authService.changeUserRole(id, newRole);
+        return ResponseEntity.ok("Rôle utilisateur mis à jour");
+    }
+
+    private String getClientIp(HttpServletRequest request) {

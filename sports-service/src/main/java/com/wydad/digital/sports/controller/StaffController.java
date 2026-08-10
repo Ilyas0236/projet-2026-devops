@@ -9,6 +9,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -21,6 +22,7 @@ public class StaffController {
     private final StaffService staffService;
 
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<StaffDto> createOrUpdateStaff(@Valid @RequestBody StaffDto dto) {
         return ResponseEntity.status(HttpStatus.CREATED).body(staffService.createOrUpdateStaff(dto));
     }
@@ -34,6 +36,7 @@ public class StaffController {
 
     // Sessions are managed by staff
     @PostMapping("/sessions")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<SessionDto> createSession(@Valid @RequestBody SessionDto dto) {
         return ResponseEntity.status(HttpStatus.CREATED).body(staffService.createSession(dto));
     }

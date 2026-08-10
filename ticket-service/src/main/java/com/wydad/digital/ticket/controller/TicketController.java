@@ -10,6 +10,7 @@ import com.wydad.digital.ticket.repository.TicketRepository;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -24,6 +25,7 @@ public class TicketController {
     private final TicketRepository ticketRepository;
 
     @PostMapping("/purchase")
+    @PreAuthorize("hasRole('ADHERENT') or hasRole('ADMIN')")
     public ResponseEntity<List<TicketResponse>> purchaseTickets(@Valid @RequestBody PurchaseTicketRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(ticketService.purchaseTickets(request));
     }

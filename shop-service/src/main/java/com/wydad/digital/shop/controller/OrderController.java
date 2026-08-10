@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -18,6 +19,7 @@ public class OrderController {
     private final OrderService orderService;
 
     @PostMapping
+    @PreAuthorize("hasRole('ADHERENT') or hasRole('ADMIN')")
     public ResponseEntity<OrderResponseDto> createOrder(
             @RequestHeader("X-User-Email") String userEmail,
             @Valid @RequestBody OrderRequestDto dto) {
@@ -25,6 +27,7 @@ public class OrderController {
     }
 
     @GetMapping
+    @PreAuthorize("hasRole('ADHERENT') or hasRole('ADMIN')")
     public ResponseEntity<Page<OrderResponseDto>> getMyOrders(
             @RequestHeader("X-User-Email") String userEmail,
             Pageable pageable) {
@@ -32,6 +35,7 @@ public class OrderController {
     }
 
     @GetMapping("/{orderNumber}")
+    @PreAuthorize("hasRole('ADHERENT') or hasRole('ADMIN')")
     public ResponseEntity<OrderResponseDto> getOrder(
             @RequestHeader("X-User-Email") String userEmail,
             @PathVariable String orderNumber) {

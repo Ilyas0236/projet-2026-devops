@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -56,6 +57,7 @@ public class ShopController {
     }
 
     @PostMapping("/cart")
+    @PreAuthorize("hasRole('ADHERENT') or hasRole('ADMIN')")
     public ResponseEntity<CartItemDto> addToCart(
             @RequestHeader("X-User-Email") String userEmail,
             @Valid @RequestBody CartItemDto dto) {
@@ -63,6 +65,7 @@ public class ShopController {
     }
 
     @PutMapping("/cart/{cartItemId}")
+    @PreAuthorize("hasRole('ADHERENT') or hasRole('ADMIN')")
     public ResponseEntity<Void> updateCartQuantity(
             @RequestHeader("X-User-Email") String userEmail,
             @PathVariable Long cartItemId,
@@ -72,6 +75,7 @@ public class ShopController {
     }
 
     @DeleteMapping("/cart/{cartItemId}")
+    @PreAuthorize("hasRole('ADHERENT') or hasRole('ADMIN')")
     public ResponseEntity<Void> removeFromCart(
             @RequestHeader("X-User-Email") String userEmail,
             @PathVariable Long cartItemId) {

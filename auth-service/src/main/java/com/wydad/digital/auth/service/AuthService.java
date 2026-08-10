@@ -70,7 +70,8 @@ public class AuthService {
                 user.getFirstName(),
                 user.getLastName(),
                 user.getMembershipLevel(),
-                user.getReferralCode()
+                user.getReferralCode(),
+                user.getRole().name()
         );
     }
 
@@ -94,7 +95,8 @@ public class AuthService {
                 user.getFirstName(),
                 user.getLastName(),
                 user.getMembershipLevel(),
-                user.getReferralCode()
+                user.getReferralCode(),
+                user.getRole().name()
         );
     }
 
@@ -155,7 +157,8 @@ public class AuthService {
                 user.getFirstName(),
                 user.getLastName(),
                 user.getMembershipLevel(),
-                user.getReferralCode()
+                user.getReferralCode(),
+                user.getRole().name()
         );
     }
 
@@ -186,7 +189,8 @@ public class AuthService {
                 user.getFirstName(),
                 user.getLastName(),
                 user.getMembershipLevel(),
-                user.getReferralCode()
+                user.getReferralCode(),
+                user.getRole().name()
         );
     }
 
@@ -353,7 +357,8 @@ public class AuthService {
                 user.getFirstName(),
                 user.getLastName(),
                 user.getMembershipLevel(),
-                user.getReferralCode()
+                user.getReferralCode(),
+                user.getRole().name()
         );
     }
 
@@ -369,5 +374,41 @@ public class AuthService {
         );
 
         userRepository.delete(user);
+    }
+
+    // ============================================
+    // ADMIN ENDPOINTS
+    // ============================================
+    public List<UserProfileResponse> getAllUsers() {
+        return userRepository.findAll().stream()
+                .map(user -> new UserProfileResponse(
+                        user.getId(),
+                        user.getEmail(),
+                        user.getPhone(),
+                        user.getFirstName(),
+                        user.getLastName(),
+                        user.getMembershipLevel(),
+                        user.getRole(),
+                        user.getMembershipExpiresAt(),
+                        user.getReferralCode(),
+                        user.isActive(),
+                        user.isKycVerified(),
+                        user.getCreatedAt()
+                ))
+                .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public void toggleUserActiveStatus(Long id, boolean status) {
+        User user = userRepository.findById(id).orElseThrow(() -> new RuntimeException("User not found"));
+        user.setActive(status);
+        userRepository.save(user);
+    }
+
+    @Transactional
+    public void changeUserRole(Long id, String roleName) {
+        User user = userRepository.findById(id).orElseThrow(() -> new RuntimeException("User not found"));
+        user.setRole(Role.valueOf(roleName.toUpperCase()));
+        userRepository.save(user);
     }
 }

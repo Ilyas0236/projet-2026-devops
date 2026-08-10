@@ -9,5 +9,6 @@ public record AuthResponse(
         String firstName,
         String lastName,
         MembershipLevel membershipLevel,
-        String referralCode
+        String referralCode,
+        String role
 ) {}
