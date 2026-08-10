@@ -1,0 +1,142 @@
+<div class="space-y-6">
+  <!-- Header -->
+  <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+    <div>
+      <h2 class="text-2xl font-display font-bold uppercase tracking-wider text-white">Gestion des Utilisateurs</h2>
+      <p class="text-sm text-gray-400 mt-1">Gérez les comptes, les rôles et validez les identités (KYC).</p>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="bg-white/5 border border-white/10 rounded-lg p-4 grid grid-cols-1 md:grid-cols-4 gap-4">
+    <div>
+      <label class="block text-xs text-gray-400 uppercase tracking-wider mb-2">Rechercher</label>
+      <input type="text" [(ngModel)]="searchTerm" (ngModelChange)="applyFilters()" placeholder="Nom, email..."
+             class="w-full bg-black border border-white/10 rounded-md px-3 py-2 text-sm text-white focus:border-wydad-red focus:outline-none transition-colors">
+    </div>
+    <div>
+      <label class="block text-xs text-gray-400 uppercase tracking-wider mb-2">Rôle</label>
+      <select [(ngModel)]="roleFilter" (ngModelChange)="applyFilters()"
+              class="w-full bg-black border border-white/10 rounded-md px-3 py-2 text-sm text-white focus:border-wydad-red focus:outline-none">
+        <option value="ALL">Tous les rôles</option>
+        <option value="VISITEUR">Visiteur</option>
+        <option value="ADHERENT">Adhérent</option>
+        <option value="PARENT">Parent</option>
+        <option value="JOUEUR">Joueur</option>
+        <option value="STAFF">Staff</option>
+        <option value="ADMIN">Administrateur</option>
+      </select>
+    </div>
+    <div>
+      <label class="block text-xs text-gray-400 uppercase tracking-wider mb-2">Statut KYC</label>
+      <select [(ngModel)]="kycFilter" (ngModelChange)="applyFilters()"
+              class="w-full bg-black border border-white/10 rounded-md px-3 py-2 text-sm text-white focus:border-wydad-red focus:outline-none">
+        <option value="ALL">Tous les statuts</option>
+        <option value="VERIFIED">Vérifié (Approuvé)</option>
+        <option value="PENDING">En attente (Non vérifié)</option>
+      </select>
+    </div>
+    <div class="flex items-end">
+      <div class="w-full bg-wydad-red/10 border border-wydad-red/20 rounded-md px-3 py-2 text-sm text-wydad-red text-center font-bold">
+        {{ filteredUsers.length }} utilisateurs
+      </div>
+    </div>
+  </div>
+
+  <!-- Loader -->
+  <div *ngIf="loading" class="flex justify-center items-center py-20">
+    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-wydad-red"></div>
+  </div>
+
+  <!-- Table -->
+  <div *ngIf="!loading" class="bg-white/5 border border-white/10 rounded-lg overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full text-left border-collapse">
+        <thead>
+          <tr class="bg-black/50 border-b border-white/10">
+            <th class="py-3 px-4 text-xs font-display font-bold text-gray-400 uppercase tracking-wider">Utilisateur</th>
+            <th class="py-3 px-4 text-xs font-display font-bold text-gray-400 uppercase tracking-wider">Niveau / Role</th>
+            <th class="py-3 px-4 text-xs font-display font-bold text-gray-400 uppercase tracking-wider">KYC (Identité)</th>
+            <th class="py-3 px-4 text-xs font-display font-bold text-gray-400 uppercase tracking-wider">Statut</th>
+            <th class="py-3 px-4 text-xs font-display font-bold text-gray-400 uppercase tracking-wider text-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-white/5">
+          <tr *ngFor="let user of filteredUsers" class="hover:bg-white/5 transition-colors">
+            <td class="py-3 px-4">
+              <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-xs font-bold text-white uppercase">
+                  {{ user.firstName[0] }}{{ user.lastName[0] }}
+                </div>
+                <div>
+                  <div class="font-bold text-sm text-white">{{ user.firstName }} {{ user.lastName }}</div>
+                  <div class="text-xs text-gray-400">{{ user.email }}</div>
+                </div>
+              </div>
+            </td>
+            <td class="py-3 px-4">
+              <div class="flex flex-col gap-1 items-start">
+                <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase"
+                      [ngClass]="{
+                        'bg-red-500/20 text-red-400': user.membershipLevel === 'ROUGE',
+                        'bg-yellow-500/20 text-yellow-400': user.membershipLevel === 'OR',
+                        'bg-blue-500/20 text-blue-400': user.membershipLevel === 'DIAMANT',
+                        'bg-white/20 text-white': user.membershipLevel === 'LEGENDE',
+                        'bg-green-500/20 text-green-400': user.membershipLevel === 'JUNIOR'
+                      }">
+                  {{ user.membershipLevel }}
+                </span>
+                <select [ngModel]="user.role" (ngModelChange)="changeRole(user, $event)"
+                        class="bg-transparent text-xs text-gray-300 border-b border-white/20 focus:border-wydad-red focus:outline-none pb-0.5 cursor-pointer">
+                  <option value="VISITEUR" class="bg-black">Visiteur</option>
+                  <option value="ADHERENT" class="bg-black">Adhérent</option>
+                  <option value="PARENT" class="bg-black">Parent</option>
+                  <option value="JOUEUR" class="bg-black">Joueur</option>
+                  <option value="STAFF" class="bg-black">Staff</option>
+                  <option value="ADMIN" class="bg-black">Admin</option>
+                </select>
+              </div>
+            </td>
+            <td class="py-3 px-4">
+              <div *ngIf="user.kycVerified" class="flex items-center gap-1.5 text-green-400 text-xs font-bold">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><polyline points="9 12 11 14 15 10"></polyline></svg>
+                Vérifié
+              </div>
+              <div *ngIf="!user.kycVerified" class="flex flex-col gap-1 items-start">
+                <span class="flex items-center gap-1.5 text-yellow-400 text-xs">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                  En attente
+                </span>
+                <button (click)="approveKyc(user)" class="text-[10px] text-white hover:text-wydad-red transition-colors underline decoration-dotted underline-offset-2">
+                  Approuver manuellement
+                </button>
+              </div>
+            </td>
+            <td class="py-3 px-4">
+              <button (click)="toggleStatus(user)"
+                      class="px-2 py-1 rounded text-[10px] font-bold uppercase transition-colors"
+                      [ngClass]="user.active ? 'bg-green-500/20 text-green-400 hover:bg-red-500/20 hover:text-red-400' : 'bg-red-500/20 text-red-400 hover:bg-green-500/20 hover:text-green-400'"
+                      [title]="user.active ? 'Désactiver le compte' : 'Activer le compte'">
+                {{ user.active ? 'Actif' : 'Désactivé' }}
+              </button>
+            </td>
+            <td class="py-3 px-4 text-right">
+              <div class="flex items-center justify-end gap-2">
+                <button class="w-8 h-8 rounded bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors" title="Détails (Non implémenté)">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <!-- Empty state -->
+    <div *ngIf="filteredUsers.length === 0 && !loading" class="p-8 text-center border-t border-white/5">
+      <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-white/5 text-gray-500 mb-3">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+      </div>
+      <p class="text-gray-400 text-sm">Aucun utilisateur trouvé.</p>
+    </div>
+  </div>
+</div>

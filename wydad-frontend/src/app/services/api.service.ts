@@ -1,0 +1,234 @@
+import { Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Observable } from 'rxjs';
+
+@Injectable({
+  providedIn: 'root'
+})
+export class ApiService {
+  private baseUrl = 'http://localhost:8080/api';
+
+  constructor(private http: HttpClient) {}
+
+  login(email: string, password: string): Observable<any> {
+    return this.http.post(`${this.baseUrl}/auth/login`, { email, password });
+  }
+
+  getMemberCard(email: string): Observable<any> {
+    return this.http.get(`${this.baseUrl}/auth/member-card?email=${email}`);
+  }
+
+  getAttestation(email: string): Observable<Blob> {
+    return this.http.get(`${this.baseUrl}/auth/attestation?email=${email}`, { responseType: 'blob' });
+  }
+
+  upgradeMembership(email: string, newLevel: string): Observable<any> {
+    return this.http.post(`${this.baseUrl}/auth/upgrade`, { email, newLevel });
+  }
+
+  getArticles(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/content/articles`);
+  }
+
+  getArticleById(id: number): Observable<any> {
+    return this.http.get<any>(`${this.baseUrl}/content/articles/${id}`);
+  }
+
+  createArticle(article: any): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/content/articles`, article);
+  }
+
+  updateArticle(id: number, article: any): Observable<any> {
+    return this.http.put<any>(`${this.baseUrl}/content/articles/${id}`, article);
+  }
+
+  deleteArticle(id: number): Observable<any> {
+    return this.http.delete<any>(`${this.baseUrl}/content/articles/${id}`);
+  }
+
+  getMatches(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/content/matches`);
+  }
+
+  getMatchesByStatut(statut: string): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/content/matches/statut/${statut}`);
+  }
+
+  createMatch(match: any): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/content/matches`, match);
+  }
+
+  updateMatch(id: number, match: any): Observable<any> {
+    return this.http.put<any>(`${this.baseUrl}/content/matches/${id}`, match);
+  }
+
+  deleteMatch(id: number): Observable<any> {
+    return this.http.delete<any>(`${this.baseUrl}/content/matches/${id}`);
+  }
+
+  updateMatchResult(id: number, resultData: any): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/content/matches/${id}/result`, resultData);
+  }
+
+  getClassements(competition: string): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/content/classements/${competition}`);
+  }
+
+  createClassement(classement: any): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/content/classements`, classement);
+  }
+
+  updateClassement(id: number, classement: any): Observable<any> {
+    return this.http.put<any>(`${this.baseUrl}/content/classements/${id}`, classement);
+  }
+
+  deleteClassement(id: number): Observable<any> {
+    return this.http.delete<any>(`${this.baseUrl}/content/classements/${id}`);
+  }
+
+  getJoueursBySport(sport: string): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/content/joueurs/sport/${sport}`);
+  }
+
+  getBalance(email: string): Observable<any> {
+    return this.http.get(`${this.baseUrl}/payment/balance?email=${email}`);
+  }
+
+  getTransactions(email: string): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/payment/transactions?email=${email}`);
+  }
+
+  makeDon(email: string, amount: number, type: string, recuFiscal: boolean): Observable<Blob> {
+    return this.http.post(`${this.baseUrl}/payment/don`, {
+      email, amount, type, recuFiscal
+    }, { responseType: 'blob' });
+  }
+
+  creditWallet(email: string, amount: number, description: string): Observable<any> {
+    return this.http.post(`${this.baseUrl}/payment/credit`, { email, amount, description });
+  }
+
+  payByCard(email: string, cardInfo: any): Observable<any> {
+    return this.http.post(`${this.baseUrl}/payment/card?email=${email}`, cardInfo);
+  }
+
+  // ==========================================
+  // SHOP SERVICE (Boutique)
+  // ==========================================
+  getProducts(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/shop/products`);
+  }
+
+  getProductById(id: number): Observable<any> {
+    return this.http.get<any>(`${this.baseUrl}/shop/products/${id}`);
+  }
+
+  createProduct(product: any): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/shop/products`, product);
+  }
+
+  updateProduct(id: number, product: any): Observable<any> {
+    return this.http.put<any>(`${this.baseUrl}/shop/products/${id}`, product);
+  }
+
+  deleteProduct(id: number): Observable<any> {
+    return this.http.delete<any>(`${this.baseUrl}/shop/products/${id}`);
+  }
+
+  // ========== PANIER (CART) ==========
+  getCart(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/shop/cart`);
+  }
+
+  addToCart(item: any): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/shop/cart`, item);
+  }
+
+  updateCartQuantity(cartItemId: number, quantity: number): Observable<any> {
+    return this.http.put<any>(`${this.baseUrl}/shop/cart/${cartItemId}?quantity=${quantity}`, {});
+  }
+
+  removeFromCart(cartItemId: number): Observable<any> {
+    return this.http.delete<any>(`${this.baseUrl}/shop/cart/${cartItemId}`);
+  }
+
+  // ========== COMMANDES (ORDERS) ==========
+  createOrder(order: any): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/shop/orders`, order);
+  }
+
+  getMyOrders(): Observable<any> {
+    return this.http.get<any>(`${this.baseUrl}/shop/orders`);
+  }
+
+  getOrderByNumber(orderNumber: string): Observable<any> {
+    return this.http.get<any>(`${this.baseUrl}/shop/orders/${orderNumber}`);
+  }
+  // TICKET SERVICE (Billetterie)
+  // ==========================================
+  getEvents(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/ticket/events`);
+  }
+
+  getEventById(id: number): Observable<any> {
+    return this.http.get<any>(`${this.baseUrl}/ticket/events/${id}`);
+  }
+
+  createEvent(event: any): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/ticket/events`, event);
+  }
+
+  updateEvent(id: number, event: any): Observable<any> {
+    return this.http.put<any>(`${this.baseUrl}/ticket/events/${id}`, event);
+  }
+
+  deleteEvent(id: number): Observable<any> {
+    return this.http.delete<any>(`${this.baseUrl}/ticket/events/${id}`);
+  }
+
+  purchaseTickets(purchaseRequest: any): Observable<any[]> {
+    return this.http.post<any[]>(`${this.baseUrl}/ticket/tickets/purchase`, purchaseRequest);
+  }
+
+  getTicketsByUser(userId: number): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/ticket/tickets/user/${userId}`);
+  }
+
+  getTicketByNumber(ticketNumber: string): Observable<any> {
+    return this.http.get<any>(`${this.baseUrl}/ticket/tickets/number/${ticketNumber}`);
+  }
+
+  getTicketPdf(ticketId: number): Observable<Blob> {
+    return this.http.get(`${this.baseUrl}/ticket/tickets/${ticketId}/pdf`, { responseType: 'blob' });
+  }
+
+  // ==========================================
+  // SPORTS SERVICE (Effectif)
+  // ==========================================
+  createPlayer(player: any): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/sports/players`, player);
+  }
+
+  updatePlayer(id: number, player: any): Observable<any> {
+    return this.http.put<any>(`${this.baseUrl}/sports/players/${id}`, player);
+  }
+
+  deletePlayer(id: number): Observable<any> {
+    return this.http.delete<any>(`${this.baseUrl}/sports/players/${id}`);
+  }
+
+  // ==========================================
+  // NOTIFICATION SERVICE
+  // ==========================================
+  getAllNotifications(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/notification/all`);
+  }
+
+  sendNotification(notification: any): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/notification/send`, notification);
+  }
+
+  broadcastNotification(notification: any): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/notification/broadcast`, notification, { responseType: 'text' as 'json' });
+  }
+}

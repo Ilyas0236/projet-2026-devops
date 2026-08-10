@@ -1,0 +1,69 @@
+<!-- boutique.component.html -->
+<div class="min-h-screen bg-wydad-light pt-32 pb-24">
+  
+  <!-- Header -->
+  <div class="max-w-7xl mx-auto px-6 mb-16 text-center">
+    <span class="text-wydad-red font-bold tracking-[0.2em] uppercase text-sm mb-2 block">Officiel</span>
+    <h1 class="font-display font-black text-5xl md:text-6xl uppercase tracking-tighter text-wydad-dark">
+      Wydad <span class="text-wydad-red">Store</span>
+    </h1>
+    <p class="text-gray-500 mt-4 max-w-2xl mx-auto">Découvrez la collection officielle du Wydad Athletic Club. Maillots, survêtements et accessoires exclusifs.</p>
+  </div>
+
+  <!-- Filters -->
+  <div class="max-w-7xl mx-auto px-6 mb-12 flex justify-center gap-4 flex-wrap">
+    <button class="px-6 py-2 bg-wydad-red text-white font-bold uppercase text-sm tracking-wider skew-x-[-10deg] shadow-[0_0_10px_rgba(211,47,47,0.4)]">
+      <span class="skew-x-[10deg] block">Tout Voir</span>
+    </button>
+    <button class="px-6 py-2 border border-gray-300 text-gray-500 hover:text-wydad-dark hover:border-gray-500 font-bold uppercase text-sm tracking-wider skew-x-[-10deg] transition-colors">
+      <span class="skew-x-[10deg] block">Maillots</span>
+    </button>
+    <button class="px-6 py-2 border border-gray-300 text-gray-500 hover:text-wydad-dark hover:border-gray-500 font-bold uppercase text-sm tracking-wider skew-x-[-10deg] transition-colors">
+      <span class="skew-x-[10deg] block">Entraînement</span>
+    </button>
+    <button class="px-6 py-2 border border-gray-300 text-gray-500 hover:text-wydad-dark hover:border-gray-500 font-bold uppercase text-sm tracking-wider skew-x-[-10deg] transition-colors">
+      <span class="skew-x-[10deg] block">Accessoires</span>
+    </button>
+  </div>
+
+  <!-- Products Grid -->
+  <div class="max-w-7xl mx-auto px-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+    
+    <!-- Dynamic Product Card -->
+    <div *ngFor="let product of products" [routerLink]="['/boutique', product.id]" class="group bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-500 border border-gray-100 relative cursor-pointer">
+      <div *ngIf="product.isNew" class="absolute top-4 left-4 z-10 bg-wydad-red text-white text-xs font-bold px-3 py-1 uppercase tracking-wider rounded">Nouveau</div>
+      <div *ngIf="product.isPromo" class="absolute top-4 left-4 z-10 bg-wydad-gold text-wydad-dark text-xs font-bold px-3 py-1 uppercase tracking-wider rounded">Promo</div>
+      
+      <!-- Image Container -->
+      <div class="aspect-[4/5] bg-gray-100 overflow-hidden relative flex items-center justify-center">
+        <div class="w-48 h-48 bg-white/50 rounded-lg transform -rotate-12 group-hover:rotate-0 group-hover:scale-110 transition-all duration-500 flex items-center justify-center shadow-inner overflow-hidden">
+           <img *ngIf="product.imageUrl" [src]="product.imageUrl" class="w-full h-full object-cover">
+           <span *ngIf="!product.imageUrl" class="text-gray-400 font-display font-bold text-center p-2">{{ product.name }}</span>
+        </div>
+      </div>
+      
+      <!-- Content -->
+      <div class="p-6">
+        <div class="flex justify-between items-start mb-2">
+          <h3 class="font-display font-bold text-lg text-wydad-dark uppercase">{{ product.name }}</h3>
+          <div class="flex flex-col items-end">
+            <span class="font-bold text-wydad-red">{{ product.price }} DH</span>
+            <span *ngIf="product.oldPrice" class="text-xs text-gray-400 line-through">{{ product.oldPrice }} DH</span>
+          </div>
+        </div>
+        <p class="text-sm text-gray-500 mb-6">{{ product.description || 'Produit officiel Wydad AC' }}</p>
+        
+        <button class="w-full py-3 bg-wydad-dark text-white font-bold uppercase text-xs tracking-wider group-hover:bg-wydad-red transition-colors duration-300 flex items-center justify-center gap-2">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
+          Voir le produit
+        </button>
+      </div>
+    </div>
+    
+    <!-- Empty state -->
+    <div *ngIf="products.length === 0 && !loading" class="col-span-full text-center py-20 text-gray-500 font-display text-xl">
+      Aucun produit disponible pour le moment.
+    </div>
+
+  </div>
+</div>

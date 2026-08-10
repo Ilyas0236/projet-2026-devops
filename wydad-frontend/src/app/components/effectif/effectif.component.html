@@ -1,0 +1,81 @@
+<!-- effectif.component.html -->
+<div class="min-h-screen bg-wydad-dark text-white pt-32 pb-24 font-sans">
+  
+  <!-- Header -->
+  <div class="max-w-7xl mx-auto px-6 mb-16 text-center">
+    <span class="text-wydad-red font-bold tracking-[0.2em] uppercase text-sm mb-2 block">Saison 2026/2027</span>
+    <h1 class="font-display font-black text-5xl md:text-6xl uppercase tracking-tighter">
+      L'Équipe <span class="text-wydad-red drop-shadow-[0_0_20px_rgba(211,47,47,0.8)]">Première</span>
+    </h1>
+    <p class="text-gray-400 mt-4 max-w-2xl mx-auto">Découvrez les joueurs qui défendent fièrement les couleurs du Wydad Athletic Club.</p>
+  </div>
+
+  <!-- Sport/Category Selector -->
+  <div class="max-w-7xl mx-auto px-6 mb-12 flex justify-center gap-4 flex-wrap">
+    <button (click)="changeSport('FOOTBALL')" [class.bg-wydad-red]="selectedSport === 'FOOTBALL'" [class.text-white]="selectedSport === 'FOOTBALL'" [class.border-wydad-red]="selectedSport === 'FOOTBALL'"
+            class="px-6 py-2 border border-gray-600 text-gray-400 hover:text-white hover:border-gray-400 font-bold uppercase text-sm tracking-wider skew-x-[-10deg] transition-colors">
+      <span class="skew-x-[10deg] block">Football</span>
+    </button>
+    <button (click)="changeSport('BASKETBALL')" [class.bg-wydad-red]="selectedSport === 'BASKETBALL'" [class.text-white]="selectedSport === 'BASKETBALL'" [class.border-wydad-red]="selectedSport === 'BASKETBALL'"
+            class="px-6 py-2 border border-gray-600 text-gray-400 hover:text-white hover:border-gray-400 font-bold uppercase text-sm tracking-wider skew-x-[-10deg] transition-colors">
+      <span class="skew-x-[10deg] block">Basketball</span>
+    </button>
+  </div>
+
+  <!-- Squad Grid -->
+  <div class="max-w-7xl mx-auto px-6">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8" *ngIf="players.length > 0">
+      
+      <!-- Player Card Loop -->
+      <div class="group bg-white/5 rounded-xl overflow-hidden shadow-sm hover:bg-white/10 transition-all duration-500 border border-white/10 relative cursor-pointer" *ngFor="let player of players">
+        
+        <!-- Number & Position Badge -->
+        <div class="absolute top-4 left-4 z-10 flex flex-col gap-1">
+          <span class="bg-wydad-red text-white font-display font-black text-2xl w-12 h-12 flex items-center justify-center rounded shadow-[0_0_15px_rgba(211,47,47,0.5)]">
+            {{ player.numero || '?' }}
+          </span>
+          <span class="bg-black/80 backdrop-blur text-white text-[10px] font-bold uppercase tracking-wider px-2 py-1 text-center rounded border border-white/10">
+            {{ player.poste }}
+          </span>
+        </div>
+        
+        <!-- Image Container -->
+        <div class="aspect-[3/4] bg-gradient-to-t from-black to-transparent overflow-hidden relative flex items-end justify-center">
+          <div class="absolute inset-0 bg-cover bg-center opacity-50 group-hover:opacity-80 transition-opacity duration-500" 
+               [style.backgroundImage]="'url(' + (player.photoUrl || 'https://via.placeholder.com/300x400/121212/ffffff?text=Joueur') + ')'">
+          </div>
+          <!-- Decorative name background -->
+          <span class="absolute bottom-4 font-display font-black text-6xl text-white/5 uppercase tracking-tighter -z-0 whitespace-nowrap overflow-hidden">
+            {{ player.nom.split(' ')[1] || player.nom }}
+          </span>
+          
+          <div class="w-full p-6 relative z-10 bg-gradient-to-t from-black via-black/80 to-transparent">
+            <h3 class="font-display font-bold text-xl text-white uppercase leading-tight mb-1">{{ player.nom }}</h3>
+            <p class="text-sm text-gray-400 mb-4">{{ player.age }} ans</p>
+            
+            <!-- Stats -->
+            <div class="flex justify-between items-center border-t border-white/20 pt-4">
+              <div class="flex flex-col items-center">
+                <span class="font-bold text-lg text-wydad-gold">{{ player.matchsJoues || 0 }}</span>
+                <span class="text-[10px] text-gray-400 uppercase tracking-wider">Matchs</span>
+              </div>
+              <div class="flex flex-col items-center">
+                <span class="font-bold text-lg text-wydad-gold">{{ player.buts || 0 }}</span>
+                <span class="text-[10px] text-gray-400 uppercase tracking-wider">{{ getGoalLabel() }}</span>
+              </div>
+              <div class="flex flex-col items-center">
+                <span class="font-bold text-lg text-wydad-gold">{{ player.passes || 0 }}</span>
+                <span class="text-[10px] text-gray-400 uppercase tracking-wider">Passes</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Empty State -->
+    <div *ngIf="players.length === 0" class="text-center py-20 bg-white/5 rounded-xl border border-white/10">
+      <span class="text-gray-400 font-display text-xl">L'effectif {{ selectedSport | lowercase }} sera bientôt disponible.</span>
+    </div>
+  </div>
+</div>

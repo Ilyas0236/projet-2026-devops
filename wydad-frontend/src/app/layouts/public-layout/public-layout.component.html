@@ -1,0 +1,100 @@
+<!-- public-layout.component.html -->
+<div class="min-h-screen bg-wydad-dark text-wydad-light font-sans selection:bg-wydad-red selection:text-white">
+  <!-- Navbar -->
+  <header class="fixed top-0 left-0 right-0 z-50 transition-all duration-300" [class.bg-black]="isScrolled" [class.bg-transparent]="!isScrolled" [class.backdrop-blur-md]="isScrolled" [class.bg-opacity-80]="isScrolled">
+    <div class="max-w-7xl mx-auto px-6 h-24 flex items-center justify-between">
+      
+      <!-- Logo -->
+      <a href="/" class="flex items-center gap-3 group">
+        <div class="w-16 h-16 rounded-full bg-wydad-red flex items-center justify-center text-white font-display font-bold text-2xl shadow-[0_0_15px_rgba(211,47,47,0.5)] group-hover:scale-105 transition-transform duration-300">
+          WAC
+        </div>
+        <div class="hidden md:flex flex-col uppercase tracking-widest leading-tight">
+          <span class="font-bold text-lg text-white">Wydad</span>
+          <span class="text-xs text-gray-400">Athletic Club</span>
+        </div>
+      </a>
+
+      <!-- Desktop Nav -->
+      <nav class="hidden lg:flex items-center gap-6 font-display text-sm font-medium tracking-wide uppercase">
+        <a routerLink="/" class="text-white hover:text-wydad-red transition-colors duration-300">Club</a>
+        <a routerLink="/actualites" class="text-white hover:text-wydad-red transition-colors duration-300">Actualités</a>
+        <a routerLink="/matchs" class="text-white hover:text-wydad-red transition-colors duration-300">Matchs</a>
+        <a routerLink="/classements" class="text-white hover:text-wydad-red transition-colors duration-300">Classements</a>
+        <a routerLink="/effectif" class="text-white hover:text-wydad-red transition-colors duration-300">Équipe</a>
+        <a routerLink="/billetterie" class="text-white hover:text-wydad-red transition-colors duration-300 relative group">
+          Billetterie
+          <span class="absolute -top-3 -right-4 bg-wydad-red text-white text-[10px] px-2 py-0.5 rounded-full animate-pulse">HOT</span>
+        </a>
+        <a routerLink="/boutique" class="text-white hover:text-wydad-red transition-colors duration-300">Boutique</a>
+      </nav>
+
+      <!-- Actions -->
+      <div class="flex items-center gap-4">
+        <a routerLink="/panier" class="hidden md:flex w-10 h-10 items-center justify-center text-white hover:text-wydad-red transition-colors" title="Mon Panier">
+          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+        </a>
+        <a routerLink="/adhesion" class="hidden md:inline-block px-4 py-2 border border-white text-white hover:bg-white hover:text-red-700 font-bold transition">Adhérer</a>
+        <a routerLink="/profil" class="hidden md:flex items-center gap-2 px-6 py-2.5 bg-wydad-red hover:bg-red-700 text-white font-display uppercase text-sm font-bold tracking-wider rounded-none skew-x-[-10deg] transition-all duration-300 hover:shadow-[0_0_20px_rgba(211,47,47,0.6)]">
+          <span class="skew-x-[10deg]">Mon Espace</span>
+        </a>
+        <!-- Mobile Menu Btn -->
+        <button class="lg:hidden w-10 h-10 flex flex-col justify-center gap-1.5 items-center text-white">
+          <span class="w-6 h-0.5 bg-current rounded"></span>
+          <span class="w-6 h-0.5 bg-current rounded"></span>
+          <span class="w-4 h-0.5 bg-current rounded self-end mr-2"></span>
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main>
+    <router-outlet></router-outlet>
+  </main>
+
+  <!-- Premium Footer -->
+  <footer class="bg-black text-white pt-20 pb-10 border-t border-white/10">
+    <div class="max-w-7xl mx-auto px-6">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
+        <div class="col-span-1 md:col-span-1">
+          <div class="w-20 h-20 rounded-full bg-wydad-red flex items-center justify-center text-white font-display font-bold text-3xl mb-6">WAC</div>
+          <p class="text-gray-400 text-sm leading-relaxed">Le club de la nation. Fierté, passion et gloire depuis 1937. Dima Wydad.</p>
+        </div>
+        <div>
+          <h4 class="font-display font-bold text-lg uppercase tracking-wider mb-6 border-b border-wydad-red pb-2 inline-block">Le Club</h4>
+          <ul class="space-y-3 text-gray-400 text-sm">
+            <li><a href="#" class="hover:text-white hover:translate-x-2 inline-block transition-transform duration-300">Histoire</a></li>
+            <li><a href="#" class="hover:text-white hover:translate-x-2 inline-block transition-transform duration-300">Palmarès</a></li>
+            <li><a href="#" class="hover:text-white hover:translate-x-2 inline-block transition-transform duration-300">Staff Technique</a></li>
+            <li><a href="#" class="hover:text-white hover:translate-x-2 inline-block transition-transform duration-300">Académie</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="font-display font-bold text-lg uppercase tracking-wider mb-6 border-b border-wydad-red pb-2 inline-block">Services</h4>
+          <ul class="space-y-3 text-gray-400 text-sm">
+            <li><a routerLink="/billetterie" class="hover:text-white hover:translate-x-2 inline-block transition-transform duration-300">Billetterie</a></li>
+            <li><a routerLink="/boutique" class="hover:text-white hover:translate-x-2 inline-block transition-transform duration-300">Boutique Officielle</a></li>
+            <li><a href="#" class="hover:text-white hover:translate-x-2 inline-block transition-transform duration-300">WAC TV</a></li>
+            <li><a href="#" class="hover:text-white hover:translate-x-2 inline-block transition-transform duration-300">Contact</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="font-display font-bold text-lg uppercase tracking-wider mb-6 border-b border-wydad-red pb-2 inline-block">Sponsors</h4>
+          <div class="grid grid-cols-2 gap-4 opacity-50 grayscale hover:grayscale-0 transition-all duration-500">
+            <div class="h-12 bg-white/10 rounded flex items-center justify-center">Sponsor 1</div>
+            <div class="h-12 bg-white/10 rounded flex items-center justify-center">Sponsor 2</div>
+          </div>
+        </div>
+      </div>
+      <div class="border-t border-white/10 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-gray-500">
+        <p>&copy; 2026 Wydad Athletic Club. Tous droits réservés.</p>
+        <div class="flex gap-4">
+          <a href="#" class="hover:text-white transition-colors duration-300">Mentions Légales</a>
+          <a href="#" class="hover:text-white transition-colors duration-300">Politique de Confidentialité</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+</div>
