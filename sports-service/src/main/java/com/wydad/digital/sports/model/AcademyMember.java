@@ -34,6 +34,11 @@ public class AcademyMember {
     @Column(length = 2000)
     private String medicalHistory;
 
+    private String bloodType;
+    private String allergies;
+    private String emergencyContactName;
+    private String emergencyContactPhone;
+
     @Builder.Default
     private Boolean active = true;
 

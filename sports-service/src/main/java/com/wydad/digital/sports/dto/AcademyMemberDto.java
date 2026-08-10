@@ -16,5 +16,9 @@ public class AcademyMemberDto {
     @NotNull private SportType sportType;
     private String level;
     private String medicalHistory;
+    private String bloodType;
+    private String allergies;
+    private String emergencyContactName;
+    private String emergencyContactPhone;
     private Boolean active;
 }
