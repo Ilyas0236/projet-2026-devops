@@ -289,18 +289,18 @@ export class ApiService {
   // GAMIFICATION & ENGAGEMENT
   // ==========================================
   getUserPoints(userId: number): Observable<any> {
-    return this.http.get<any>(`http://localhost:8088/api/gamification/points/${userId}`);
+    return this.http.get<any>(`${this.baseUrl}/gamification/points/${userId}`);
   }
 
   getLeaderboard(): Observable<any[]> {
-    return this.http.get<any[]>(`http://localhost:8088/api/gamification/leaderboard`);
+    return this.http.get<any[]>(`${this.baseUrl}/gamification/leaderboard`);
   }
 
   submitPrediction(prediction: any): Observable<any> {
-    return this.http.post<any>(`http://localhost:8088/api/gamification/predictions`, prediction);
+    return this.http.post<any>(`${this.baseUrl}/gamification/predictions`, prediction);
   }
 
   getUserPredictions(userId: number): Observable<any[]> {
-    return this.http.get<any[]>(`http://localhost:8088/api/gamification/predictions/user/${userId}`);
+    return this.http.get<any[]>(`${this.baseUrl}/gamification/predictions/user/${userId}`);
   }
 }

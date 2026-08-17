@@ -30,6 +30,11 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         String path = request.getURI().getPath();
         String method = request.getMethod().name();
 
+        // Bypass OPTIONS requests for CORS preflight
+        if ("OPTIONS".equals(method)) {
+            return chain.filter(exchange);
+        }
+
         // Auth-service : public endpoints
         if (path.equals("/api/auth/login") || path.equals("/api/auth/register") || path.equals("/api/auth/refresh") || path.equals("/api/auth/otp/send") || path.equals("/api/auth/otp/verify") || path.startsWith("/api/auth/member-card") || path.startsWith("/api/auth/attestation")) {
             return chain.filter(exchange);

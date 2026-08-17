@@ -27,14 +27,7 @@ export class HomeComponent implements OnInit {
         }
       },
       error: () => {
-        // Fallback for demo
-        this.nextMatch = {
-          homeTeam: 'Wydad AC',
-          awayTeam: 'Raja CA',
-          competition: 'Botola Pro - J12',
-          eventDate: '2026-08-25T20:00:00',
-          venue: 'Stade Mohammed V, Casablanca'
-        };
+        this.nextMatch = null;
       }
     });
 
@@ -44,20 +37,7 @@ export class HomeComponent implements OnInit {
         this.articles = data.slice(0, 2); // Get top 2 news
       },
       error: () => {
-        // Fallback for demo
-        this.articles = [
-          {
-            title: "Préparation intensive avant le Derby de Casablanca",
-            category: "Équipe Première",
-            excerpt: "L'équipe s'entraîne d'arrache-pied au complexe Mohamed Benjelloun.",
-            imageUrl: "https://images.unsplash.com/photo-1518605368461-1e1e34cad454?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80"
-          },
-          {
-            title: "Les U19 remportent le tournoi international",
-            category: "Académie",
-            imageUrl: "https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
-          }
-        ];
+        this.articles = [];
       }
     });
   }

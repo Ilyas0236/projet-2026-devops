@@ -35,6 +35,10 @@ spring:
           uri: ${SPORTS_SERVICE_URI:http://localhost:8087}
           predicates:
             - Path=/api/sports/**
+        - id: gamification-service
+          uri: ${GAMIFICATION_SERVICE_URI:http://localhost:8088}
+          predicates:
+            - Path=/api/gamification/**
 
 logging:
   level:
