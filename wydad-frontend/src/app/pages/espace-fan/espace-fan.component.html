@@ -1,0 +1,140 @@
+<div class="pt-32 pb-20 min-h-screen bg-gray-50">
+  <div class="max-w-7xl mx-auto px-6">
+    
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-4">
+      <div>
+        <h1 class="font-display text-4xl font-bold uppercase tracking-wider text-wydad-dark">Espace Fan</h1>
+        <p class="text-gray-500 mt-2">Gagnez des points, débloquez des badges et prouvez votre ferveur !</p>
+      </div>
+    </div>
+
+    <!-- Non connecté -->
+    <div *ngIf="!userId" class="bg-white rounded-xl shadow-sm p-12 text-center border border-gray-100 mb-8">
+      <div class="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-400">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+      </div>
+      <h2 class="text-2xl font-bold text-gray-800 mb-2">Connectez-vous pour jouer</h2>
+      <p class="text-gray-500 mb-6 max-w-md mx-auto">Vous devez posséder un compte Wydad pour accumuler des points et participer aux pronostics.</p>
+      <a routerLink="/login" class="bg-wydad-red hover:bg-red-700 text-white px-8 py-3 rounded font-bold transition-colors inline-block">Se connecter</a>
+    </div>
+
+    <!-- Chargement -->
+    <div *ngIf="userId && loading" class="flex justify-center py-20">
+      <div class="w-10 h-10 border-4 border-wydad-dark border-t-transparent rounded-full animate-spin"></div>
+    </div>
+
+    <div *ngIf="userId && !loading" class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      
+      <!-- Colonne de gauche (Dashboard & Pronostics) -->
+      <div class="lg:col-span-2 space-y-8">
+        
+        <!-- Dashboard Points -->
+        <div class="bg-gradient-to-r from-wydad-dark to-gray-800 rounded-xl shadow-lg p-8 text-white relative overflow-hidden">
+          <div class="absolute top-0 right-0 p-8 opacity-10">
+            <svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+          </div>
+          <div class="relative z-10 flex flex-col md:flex-row items-center gap-8">
+            <div class="w-24 h-24 bg-white/10 rounded-full border-4 border-wydad-red flex items-center justify-center flex-shrink-0">
+              <span class="font-display font-bold text-3xl">Niv {{ pointsData?.level }}</span>
+            </div>
+            <div class="flex-1 text-center md:text-left">
+              <h2 class="text-3xl font-bold mb-1">{{ pointsData?.totalPoints }} PTS</h2>
+              <p class="text-gray-300 text-sm mb-4">Total accumulé</p>
+              
+              <!-- Barre de progression -->
+              <div class="w-full bg-black/30 rounded-full h-2 mb-2 overflow-hidden">
+                <div class="bg-wydad-red h-2 rounded-full" [style.width.%]="(pointsData?.totalPoints % 500) / 500 * 100"></div>
+              </div>
+              <p class="text-xs text-gray-400 text-right">{{ pointsData?.pointsToNextLevel }} pts avant le niveau {{ pointsData?.level + 1 }}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section Pronostics -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+          <div class="flex items-center justify-between mb-6">
+            <h3 class="font-bold text-xl text-gray-800 flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-wydad-red" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
+              Pronostics (+10 pts)
+            </h3>
+            <span class="bg-green-100 text-green-800 text-xs font-bold px-2 py-1 rounded">Score Exact = +100 pts</span>
+          </div>
+
+          <div class="space-y-4">
+            <div *ngIf="matches.length === 0" class="text-center text-gray-500 py-6">
+              Aucun match à venir pour le moment.
+            </div>
+
+            <div *ngFor="let match of matches" class="border border-gray-100 rounded-xl p-4 flex flex-col md:flex-row items-center justify-between gap-4 hover:shadow-md transition-shadow">
+              <!-- Info Match -->
+              <div class="flex-1 text-center md:text-left">
+                <p class="text-xs text-gray-400 font-bold mb-2">{{ match.competition }} • {{ match.dateHeure | date:'dd/MM/yyyy HH:mm' }}</p>
+                <div class="flex items-center justify-center md:justify-start gap-4 font-display font-bold text-lg">
+                  <span class="w-24 text-right">{{ match.equipeDomicile }}</span>
+                  <span class="text-gray-300">VS</span>
+                  <span class="w-24 text-left">{{ match.equipeExterieur }}</span>
+                </div>
+              </div>
+
+              <!-- Formulaire ou Résultat -->
+              <div *ngIf="!hasPredicted(match.id)" class="flex items-center gap-3">
+                <input type="number" [(ngModel)]="predictionForm[match.id].homeScore" min="0" max="15" class="w-14 h-12 text-center text-xl font-bold border border-gray-300 rounded focus:border-wydad-red outline-none">
+                <span class="font-bold text-gray-400">-</span>
+                <input type="number" [(ngModel)]="predictionForm[match.id].awayScore" min="0" max="15" class="w-14 h-12 text-center text-xl font-bold border border-gray-300 rounded focus:border-wydad-red outline-none">
+                
+                <button (click)="submitPrediction(match.id)" [disabled]="submittingMatchId === match.id" class="ml-2 bg-wydad-dark hover:bg-black text-white p-3 rounded transition-colors disabled:opacity-50">
+                  <svg *ngIf="submittingMatchId !== match.id" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>
+                  <div *ngIf="submittingMatchId === match.id" class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                </button>
+              </div>
+
+              <div *ngIf="hasPredicted(match.id)" class="bg-gray-50 px-6 py-2 rounded-lg border border-gray-200 text-center">
+                <p class="text-xs text-gray-500 mb-1">Votre Pronostic</p>
+                <div class="font-display font-bold text-2xl text-wydad-red tracking-widest">
+                  {{ getPrediction(match.id).predictedHomeScore }} - {{ getPrediction(match.id).predictedAwayScore }}
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Colonne de droite (Leaderboard) -->
+      <div>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden sticky top-32">
+          <div class="bg-gray-50 p-6 border-b border-gray-100 flex items-center justify-between">
+            <h3 class="font-bold text-lg text-gray-800 flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-yellow-500" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 2a1 1 0 01.932.638l2.15 5.518 5.926.476a1 1 0 01.564 1.748l-4.5 3.82.49 5.864a1 1 0 01-1.5.952L10 17.51l-5.062 3.504a1 1 0 01-1.5-.952l.49-5.864-4.5-3.82a1 1 0 01.564-1.748l5.926-.476 2.15-5.518A1 1 0 0110 2z" clip-rule="evenodd" /></svg>
+              Classement Général
+            </h3>
+          </div>
+          
+          <div class="divide-y divide-gray-100">
+            <div *ngIf="leaderboard.length === 0" class="p-6 text-center text-gray-500 text-sm">
+              Aucun classement pour le moment.
+            </div>
+
+            <div *ngFor="let user of leaderboard; let i = index" class="p-4 flex items-center gap-4 hover:bg-gray-50 transition-colors" [class.bg-red-50]="user.userId === userId">
+              <div class="w-8 font-display font-bold text-lg text-center" 
+                   [ngClass]="{'text-yellow-500': i === 0, 'text-gray-400': i === 1, 'text-orange-400': i === 2, 'text-gray-300': i > 2}">
+                #{{ i + 1 }}
+              </div>
+              <div class="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 font-bold text-sm">
+                {{ user.userId }}
+              </div>
+              <div class="flex-1">
+                <p class="font-bold text-gray-800 text-sm">Supporter #{{ user.userId }}</p>
+                <p class="text-xs text-gray-500">Niveau {{ user.level }}</p>
+              </div>
+              <div class="font-bold text-wydad-red">
+                {{ user.totalPoints }}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>

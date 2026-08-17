@@ -1,32 +1,26 @@
-# Walkthrough: Espace Effectif, Joueur & Staff (Version Dynamique)
+# Walkthrough: Espace Fan & Gamification
 
 ## 🎯 Ce qui a été accompli
 
-L'application a été mise à jour pour gérer de façon complètement dynamique la création des profils et l'interconnexion entre le système d'authentification (`auth-service`) et le système de gestion sportive (`sports-service`). Plus aucune donnée n'est codée en dur.
+Le module d'engagement des supporters (Gamification) a été intégré avec succès de bout en bout (Architecture Microservices + UI).
 
-### 1. Gestion de l'Effectif Professionnelle (Admin)
-L'administrateur peut maintenant créer un compte de connexion ET un profil sportif en une seule action depuis l'interface `Gestion de l'Effectif` :
-* **Nouveau workflow** : 
-  1. Lors de l'ajout d'un joueur, l'admin saisit un email et un mot de passe.
-  2. Le frontend fait un premier appel API vers `auth-service` (via la nouvelle route `POST /api/auth/admin/users/create`) pour créer l'utilisateur avec le rôle `JOUEUR`.
-  3. Dès que le compte est créé, le frontend fait un deuxième appel vers `sports-service` pour créer le profil du joueur, le reliant automatiquement à son nouveau `userId`.
-* **Interface Modifiée** : La pop-up "Ajouter un Joueur" a été entièrement revue (sections "Compte de connexion", "Identité", "Profil Sportif", "Biométrie").
+### 1. Nouveau Microservice `gamification-service` (Port 8085)
+Plutôt que d'encombrer les services existants, un tout nouveau microservice dédié a été créé.
+* **Système de Points (`UserPoints`)** : Permet de stocker le total de points et le "Niveau" d'un utilisateur. Chaque niveau requiert 500 points.
+* **Pronostics (`Prediction`)** : Les utilisateurs peuvent parier sur le score exact (Home/Away) des prochains matchs. Chaque pronostic rapporte automatiquement 10 points bonus de participation.
+* **Classement (Leaderboard)** : Un point de terminaison dédié permet de lister le top 50 des meilleurs supporters du Wydad.
+* *Note technique* : Le service est enregistré sur Eureka, connecté à PostgreSQL et build sans erreur.
 
-### 2. Récupération Dynamique du Profil Staff
-L'espace Staff n'utilise plus de données fictives (mock) :
-* **Stockage de l'ID Utilisateur** : Le processus de login dans l'application (`auth.service.ts`) enregistre désormais l'`ID` de l'utilisateur de manière sécurisée.
-* **Nouvel Endpoint Sports** : Création de la méthode `GET /api/sports/staff/user/{userId}` pour récupérer la configuration exacte d'un membre du staff (ex: son sport et sa catégorie assignée).
-* **Affichage Dynamique** : À l'ouverture du `DashboardStaffComponent`, l'application identifie le staff connecté et récupère la liste des joueurs et des séances de SA catégorie.
-
-### 3. Modifications Techniques Backend
-* **`AuthResponse` (auth-service)** : Ajout de la propriété `id` pour retourner l'identifiant de la base de données dès la connexion ou la création de compte.
-* **`AuthService` (auth-service)** : Implémentation complète de la fonction de création de compte par un admin sans passer par les validations strictes d'un utilisateur externe (via `adminCreateUser`).
-* **`StaffController` & `StaffService` (sports-service)** : Ajout de la gestion de profil Staff via l'ID du User authentifié.
-* **Builds** : Tous les microservices ont été compilés avec succès.
+### 2. Frontend : `EspaceFanComponent`
+Une toute nouvelle page dédiée aux "Jeux & Fan Zone" a été ajoutée à l'application Angular.
+* **Intégration Navbar** : Ajout d'un lien "Fan Zone" avec une icône étoile dans la barre de navigation principale.
+* **Tableau de Bord Personnel** : Si l'utilisateur est connecté, il voit sa jauge de progression vers le niveau suivant et son solde de points actuel.
+* **Zone de Pronostics** : L'interface récupère automatiquement les **5 prochains matchs à venir** (via le `sports-service`) et propose un petit formulaire pour saisir le score. Une fois soumis, le pronostic est enregistré et affiché en rouge.
+* **Classement Général** : Une colonne de droite affiche en temps réel les meilleurs supporters de l'application.
 
 > [!TIP]
-> **Prochaine étape possible** : Faire la même logique d'automatisation pour la création des membres du Staff (création du User + création du profil Staff dans le sports-service) depuis un espace "Admin Staff".
+> **Prochaine étape possible** : Lier l'attribution des points à d'autres actions réelles. Par exemple : déclencher une augmentation de 100 points dans le `ticket-service` quand un utilisateur achète un billet de match !
 
-## 📸 Aperçu
+## 📸 Aperçu de l'Interface
 
 ![Architecture des Appels](/C:/Users/USER/.gemini/antigravity/brain/9fd67fe7-96f4-4a0f-873e-f26210cfa716/media__1786367117617.png)

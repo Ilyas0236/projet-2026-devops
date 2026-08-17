@@ -35,6 +35,7 @@ import { InscriptionAcademieComponent } from './pages/academie/inscription/inscr
 import { DashboardParentComponent } from './pages/academie/dashboard-parent/dashboard-parent.component';
 import { DashboardJoueurComponent } from './pages/espace-joueur/dashboard-joueur/dashboard-joueur.component';
 import { DashboardStaffComponent } from './pages/espace-staff/dashboard-staff/dashboard-staff.component';
+import { EspaceFanComponent } from './pages/espace-fan/espace-fan.component';
 export const routes: Routes = [
   {
     path: '',
@@ -52,6 +53,7 @@ export const routes: Routes = [
       { path: 'billetterie', component: BilletterieComponent },
       { path: 'billetterie/:id', component: BilletterieDetailComponent },
       { path: 'effectif', component: EffectifComponent },
+      { path: 'espace-fan', component: EspaceFanComponent },
       { path: 'panier', component: CartComponent, canActivate: [authGuard] },
       { path: 'profil', component: ProfilComponent, canActivate: [authGuard] },
       { path: 'profil/carte', component: CarteMembreComponent, canActivate: [authGuard] },

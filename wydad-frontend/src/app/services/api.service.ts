@@ -284,4 +284,23 @@ export class ApiService {
   toggleUserActive(userId: number, status: boolean): Observable<any> {
     return this.http.patch(`${this.baseUrl}/auth/admin/users/${userId}/activate?status=${status}`, {}, { responseType: 'text' as 'json' });
   }
+
+  // ==========================================
+  // GAMIFICATION & ENGAGEMENT
+  // ==========================================
+  getUserPoints(userId: number): Observable<any> {
+    return this.http.get<any>(`http://localhost:8088/api/gamification/points/${userId}`);
+  }
+
+  getLeaderboard(): Observable<any[]> {
+    return this.http.get<any[]>(`http://localhost:8088/api/gamification/leaderboard`);
+  }
+
+  submitPrediction(prediction: any): Observable<any> {
+    return this.http.post<any>(`http://localhost:8088/api/gamification/predictions`, prediction);
+  }
+
+  getUserPredictions(userId: number): Observable<any[]> {
+    return this.http.get<any[]>(`http://localhost:8088/api/gamification/predictions/user/${userId}`);
+  }
 }

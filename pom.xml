@@ -28,8 +28,7 @@
         <module>ticket-service</module>
         <module>notification-service</module>
         <module>sports-service</module>
-
-
+        <module>gamification-service</module>
     </modules>
 
     <dependencyManagement>
