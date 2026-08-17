@@ -3,6 +3,7 @@ package com.wydad.digital.auth.dto;
 import com.wydad.digital.auth.model.MembershipLevel;
 
 public record AuthResponse(
+        Long id,
         String accessToken,
         String refreshToken,
         String email,

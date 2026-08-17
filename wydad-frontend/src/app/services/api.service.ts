@@ -261,4 +261,27 @@ export class ApiService {
   getSessionsByCategory(sportType: string, category: string): Observable<any[]> {
     return this.http.get<any[]>(`${this.baseUrl}/sports/sessions/filter?sportType=${sportType}&category=${category}`);
   }
+
+  getStaffByUserId(userId: number): Observable<any> {
+    return this.http.get<any>(`${this.baseUrl}/sports/staff/user/${userId}`);
+  }
+
+  // ==========================================
+  // ADMIN : Gestion des Comptes
+  // ==========================================
+  adminCreateUser(data: any): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/auth/admin/users/create`, data);
+  }
+
+  getAllUsers(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/auth/admin/users`);
+  }
+
+  changeUserRole(userId: number, newRole: string): Observable<any> {
+    return this.http.patch(`${this.baseUrl}/auth/admin/users/${userId}/role?newRole=${newRole}`, {}, { responseType: 'text' as 'json' });
+  }
+
+  toggleUserActive(userId: number, status: boolean): Observable<any> {
+    return this.http.patch(`${this.baseUrl}/auth/admin/users/${userId}/activate?status=${status}`, {}, { responseType: 'text' as 'json' });
+  }
 }

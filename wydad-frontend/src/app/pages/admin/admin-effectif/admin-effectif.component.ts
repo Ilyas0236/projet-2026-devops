@@ -14,20 +14,27 @@ export class AdminEffectifComponent implements OnInit {
   loading = true;
   showModal = false;
   selectedSportFilter = 'FOOTBALL';
-  
+  isSaving = false;
+  saveError = '';
+
+  // Formulaire complet : Compte + Profil Sportif
   newPlayer = {
-    nom: '',
-    prenom: '',
-    dateNaissance: '1995-01-01',
-    age: 28,
-    nationalite: 'Maroc',
-    sport: 'FOOTBALL',
-    role: 'PLAYER',
-    poste: 'Milieu',
-    numero: 10,
-    matchsJoues: 0,
-    buts: 0,
-    passes: 0
+    // Compte utilisateur (auth-service)
+    email: '',
+    password: '',
+    // Profil sportif (sports-service)
+    fullName: '',
+    sportType: 'FOOTBALL',
+    category: 'SENIOR',
+    position: 'Milieu',
+    jerseyNumber: 99,
+    nationality: 'Maroc',
+    height: null as number | null,
+    weight: null as number | null,
+    birthDate: '1995-01-01',
+    matchesPlayed: 0,
+    goals: 0,
+    assists: 0
   };
 
   api = inject(ApiService);
@@ -38,9 +45,9 @@ export class AdminEffectifComponent implements OnInit {
 
   loadPlayers() {
     this.loading = true;
-    this.api.getJoueursBySport(this.selectedSportFilter).subscribe({
+    this.api.getPlayersByCategory(this.selectedSportFilter, 'SENIOR').subscribe({
       next: (data) => {
-        this.players = data.sort((a, b) => (a.numero || 99) - (b.numero || 99));
+        this.players = data.sort((a: any, b: any) => (a.jerseyNumber || 99) - (b.jerseyNumber || 99));
         this.loading = false;
       },
       error: (err) => {
@@ -52,39 +59,89 @@ export class AdminEffectifComponent implements OnInit {
 
   openAddModal() {
     this.newPlayer = {
-      nom: '',
-      prenom: '',
-      dateNaissance: '1995-01-01',
-      age: 25,
-      nationalite: 'Maroc',
-      sport: this.selectedSportFilter,
-      role: 'PLAYER',
-      poste: 'Milieu',
-      numero: 99,
-      matchsJoues: 0,
-      buts: 0,
-      passes: 0
+      email: '',
+      password: '',
+      fullName: '',
+      sportType: this.selectedSportFilter,
+      category: 'SENIOR',
+      position: 'Milieu',
+      jerseyNumber: 99,
+      nationality: 'Maroc',
+      height: null,
+      weight: null,
+      birthDate: '1995-01-01',
+      matchesPlayed: 0,
+      goals: 0,
+      assists: 0
     };
+    this.saveError = '';
     this.showModal = true;
   }
 
   closeAddModal() {
     this.showModal = false;
+    this.saveError = '';
   }
 
   savePlayer() {
-    // Basic split for nom/prenom to respect entity
-    const parts = this.newPlayer.nom.split(' ');
-    this.newPlayer.prenom = parts[0] || '';
-    
-    this.api.createPlayer(this.newPlayer).subscribe({
-      next: (res) => {
-        this.loadPlayers();
-        this.closeAddModal();
+    if (!this.newPlayer.email || !this.newPlayer.password || !this.newPlayer.fullName) {
+      this.saveError = 'Veuillez remplir tous les champs obligatoires (Email, Mot de passe, Nom complet).';
+      return;
+    }
+    this.isSaving = true;
+    this.saveError = '';
+
+    const nameParts = this.newPlayer.fullName.split(' ');
+    const firstName = nameParts[0] || '';
+    const lastName = nameParts.slice(1).join(' ') || firstName;
+
+    // Étape 1: Créer le compte utilisateur avec le rôle JOUEUR
+    this.api.adminCreateUser({
+      email: this.newPlayer.email,
+      password: this.newPlayer.password,
+      firstName: firstName,
+      lastName: lastName,
+      role: 'JOUEUR'
+    }).subscribe({
+      next: (createdUser: any) => {
+        // Étape 2: Créer le profil sportif lié à ce compte
+        const playerPayload = {
+          userId: createdUser.id,
+          fullName: this.newPlayer.fullName,
+          sportType: this.newPlayer.sportType,
+          category: this.newPlayer.category,
+          position: this.newPlayer.position,
+          jerseyNumber: this.newPlayer.jerseyNumber,
+          nationality: this.newPlayer.nationality,
+          height: this.newPlayer.height,
+          weight: this.newPlayer.weight,
+          birthDate: this.newPlayer.birthDate,
+          matchesPlayed: this.newPlayer.matchesPlayed,
+          goals: this.newPlayer.goals,
+          assists: this.newPlayer.assists
+        };
+
+        this.api.createPlayer(playerPayload).subscribe({
+          next: () => {
+            this.isSaving = false;
+            this.closeAddModal();
+            this.loadPlayers();
+          },
+          error: (err) => {
+            console.error('Erreur création profil sportif', err);
+            this.saveError = 'Compte créé mais erreur lors de la création du profil sportif. Veuillez réessayer.';
+            this.isSaving = false;
+          }
+        });
       },
       error: (err) => {
-        console.error('Erreur création joueur', err);
-        alert('Erreur lors de la création du joueur');
+        console.error('Erreur création compte', err);
+        if (err.status === 409 || err.error?.message?.includes('existe')) {
+          this.saveError = 'Cet email est déjà utilisé par un autre compte.';
+        } else {
+          this.saveError = 'Erreur lors de la création du compte utilisateur.';
+        }
+        this.isSaving = false;
       }
     });
   }

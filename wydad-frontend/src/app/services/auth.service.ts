@@ -25,6 +25,7 @@ export class AuthService {
     return this.http.post(`${this.baseUrl}/login`, { email, password }).pipe(
       tap((res: any) => {
         localStorage.setItem('wydad_token', res.accessToken);
+        localStorage.setItem('wydad_user_id', res.id);
         localStorage.setItem('wydad_email', res.email);
         localStorage.setItem('wydad_first_name', res.firstName);
         localStorage.setItem('wydad_last_name', res.lastName);
@@ -38,6 +39,7 @@ export class AuthService {
     return this.http.post(`${this.baseUrl}/register`, userData).pipe(
       tap((res: any) => {
         localStorage.setItem('wydad_token', res.accessToken);
+        localStorage.setItem('wydad_user_id', res.id);
         localStorage.setItem('wydad_email', res.email);
         localStorage.setItem('wydad_first_name', res.firstName);
         localStorage.setItem('wydad_last_name', res.lastName);
@@ -52,7 +54,18 @@ export class AuthService {
     localStorage.removeItem('wydad_email');
     localStorage.removeItem('wydad_first_name');
     localStorage.removeItem('wydad_last_name');
+    localStorage.removeItem('wydad_role');
+    localStorage.removeItem('wydad_user_id');
     this.currentUserSubject.next(null);
+  }
+
+  getCurrentUserId(): number | null {
+    const id = localStorage.getItem('wydad_user_id');
+    return id ? parseInt(id, 10) : null;
+  }
+
+  getRole(): string | null {
+    return localStorage.getItem('wydad_role');
   }
 
   getProfile(): Observable<any> {

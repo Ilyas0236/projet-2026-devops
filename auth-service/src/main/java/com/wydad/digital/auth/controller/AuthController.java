@@ -8,6 +8,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -195,6 +196,12 @@ public class AuthController {
     public ResponseEntity<String> changeUserRole(@PathVariable Long id, @RequestParam String newRole) {
         authService.changeUserRole(id, newRole);
         return ResponseEntity.ok("Rôle utilisateur mis à jour");
+    }
+
+    @PostMapping("/admin/users/create")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<UserProfileResponse> adminCreateUser(@Valid @RequestBody AdminCreateUserRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(authService.adminCreateUser(request));
     }
 
     private String getClientIp(HttpServletRequest request) {

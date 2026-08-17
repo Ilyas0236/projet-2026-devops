@@ -34,6 +34,11 @@ public class StaffController {
         return ResponseEntity.ok(staffService.getStaffByTeam(sportType, category));
     }
 
+    @GetMapping("/user/{userId}")
+    public ResponseEntity<StaffDto> getStaffByUserId(@PathVariable Long userId) {
+        return ResponseEntity.ok(staffService.getStaffByUserId(userId));
+    }
+
     // Sessions are managed by staff
     @PostMapping("/sessions")
     @PreAuthorize("hasRole('ADMIN')")

@@ -64,6 +64,7 @@ public class AuthService {
         String refreshToken = jwtUtils.generateRefreshToken(user.getEmail());
 
         return new AuthResponse(
+                user.getId(),
                 accessToken,
                 refreshToken,
                 user.getEmail(),
@@ -89,6 +90,7 @@ public class AuthService {
         createSession(user.getEmail(), accessToken, ipAddress, userAgent);
 
         return new AuthResponse(
+                user.getId(),
                 accessToken,
                 refreshToken,
                 user.getEmail(),
@@ -151,6 +153,7 @@ public class AuthService {
         createSession(email, accessToken, ipAddress, userAgent);
 
         return new AuthResponse(
+                user.getId(),
                 accessToken,
                 refreshToken,
                 user.getEmail(),
@@ -183,6 +186,7 @@ public class AuthService {
         String refreshToken = jwtUtils.generateRefreshToken(user.getEmail());
 
         return new AuthResponse(
+                user.getId(),
                 accessToken,
                 refreshToken,
                 user.getEmail(),
@@ -351,6 +355,7 @@ public class AuthService {
         String refreshToken = jwtUtils.generateRefreshToken(user.getEmail());
 
         return new AuthResponse(
+                user.getId(),
                 accessToken,
                 refreshToken,
                 user.getEmail(),
@@ -410,5 +415,45 @@ public class AuthService {
         User user = userRepository.findById(id).orElseThrow(() -> new RuntimeException("User not found"));
         user.setRole(Role.valueOf(roleName.toUpperCase()));
         userRepository.save(user);
+    }
+
+    @Transactional
+    public UserProfileResponse adminCreateUser(AdminCreateUserRequest request) {
+        if (userRepository.existsByEmail(request.email())) {
+            throw new EmailAlreadyExistsException(request.email());
+        }
+
+        Role role = Role.valueOf(request.role().toUpperCase());
+        MembershipLevel level = request.membershipLevel() != null ? request.membershipLevel() : MembershipLevel.ROUGE;
+
+        User user = User.builder()
+                .email(request.email())
+                .phone(request.phone() != null ? request.phone() : "")
+                .password(passwordEncoder.encode(request.password()))
+                .firstName(request.firstName())
+                .lastName(request.lastName())
+                .membershipLevel(level)
+                .role(role)
+                .membershipExpiresAt(LocalDateTime.now().plusYears(1))
+                .referralCode(UUID.randomUUID().toString().substring(0, 8).toUpperCase())
+                .active(true)
+                .build();
+
+        userRepository.save(user);
+
+        return new UserProfileResponse(
+                user.getId(),
+                user.getEmail(),
+                user.getPhone(),
+                user.getFirstName(),
+                user.getLastName(),
+                user.getMembershipLevel(),
+                user.getRole(),
+                user.getMembershipExpiresAt(),
+                user.getReferralCode(),
+                user.isActive(),
+                user.isKycVerified(),
+                user.getCreatedAt()
+        );
     }
 }

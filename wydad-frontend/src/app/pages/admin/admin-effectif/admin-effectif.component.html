@@ -5,13 +5,15 @@
   <div class="p-6 border-b border-gray-200 flex justify-between items-center bg-gray-50">
     <div>
       <h2 class="font-display font-bold text-xl text-gray-800">Gestion de l'Effectif</h2>
-      <p class="text-sm text-gray-500 mt-1">Gérez les joueurs et le staff technique.</p>
+      <p class="text-sm text-gray-500 mt-1">Créez les comptes joueurs et gérez leurs profils sportifs.</p>
     </div>
     <div class="flex gap-3">
       <!-- Sport Filter -->
       <select [(ngModel)]="selectedSportFilter" (change)="loadPlayers()" class="border border-gray-300 rounded-lg px-3 py-2 outline-none focus:border-wydad-red text-sm">
         <option value="FOOTBALL">Football</option>
         <option value="BASKETBALL">Basketball</option>
+        <option value="HANDBALL">Handball</option>
+        <option value="VOLLEYBALL">Volleyball</option>
       </select>
       <button (click)="openAddModal()" class="bg-wydad-red hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-colors">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
@@ -26,47 +28,52 @@
       <thead>
         <tr class="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider border-b border-gray-200">
           <th class="px-6 py-4 font-medium w-16">#</th>
-          <th class="px-6 py-4 font-medium">Nom & Prénom</th>
+          <th class="px-6 py-4 font-medium">Joueur</th>
           <th class="px-6 py-4 font-medium">Poste</th>
-          <th class="px-6 py-4 font-medium">Matchs Joués</th>
-          <th class="px-6 py-4 font-medium">Buts / Points</th>
+          <th class="px-6 py-4 font-medium">Catégorie</th>
+          <th class="px-6 py-4 font-medium text-center">Matchs</th>
+          <th class="px-6 py-4 font-medium text-center">Buts</th>
+          <th class="px-6 py-4 font-medium text-center">Passes</th>
           <th class="px-6 py-4 font-medium text-right">Actions</th>
         </tr>
       </thead>
       <tbody class="divide-y divide-gray-100">
         <tr *ngFor="let player of players" class="hover:bg-gray-50 transition-colors">
-          <td class="px-6 py-4 font-display font-bold text-gray-400 text-lg">{{ player.numero }}</td>
+          <td class="px-6 py-4 font-display font-bold text-gray-400 text-lg">{{ player.jerseyNumber || '-' }}</td>
           <td class="px-6 py-4">
             <div class="flex items-center gap-3">
-              <div class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden">
-                <img *ngIf="player.photoUrl" [src]="player.photoUrl" class="w-full h-full object-cover">
-                <span *ngIf="!player.photoUrl" class="text-gray-400 font-bold font-display">{{ player.nom.charAt(0) }}</span>
+              <div class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden border border-gray-200">
+                <span class="text-gray-400 font-bold font-display">{{ player.fullName?.charAt(0) }}</span>
               </div>
               <div class="flex flex-col">
-                <span class="font-bold text-gray-800">{{ player.nom }}</span>
-                <span class="text-xs text-gray-500">{{ player.age }} ans | {{ player.nationalite }}</span>
+                <span class="font-bold text-gray-800">{{ player.fullName }}</span>
+                <span class="text-xs text-gray-500">{{ player.nationality || '-' }}</span>
               </div>
             </div>
           </td>
           <td class="px-6 py-4 text-gray-600 font-medium text-sm">
-            <span class="bg-gray-100 px-2 py-1 rounded text-xs border border-gray-200">{{ player.poste }}</span>
+            <span class="bg-gray-100 px-2 py-1 rounded text-xs border border-gray-200">{{ player.position || '-' }}</span>
           </td>
-          <td class="px-6 py-4 text-gray-800">{{ player.matchsJoues || 0 }}</td>
-          <td class="px-6 py-4 text-gray-800 font-bold text-wydad-red">{{ player.buts || 0 }}</td>
+          <td class="px-6 py-4 text-gray-600 text-sm">{{ player.category }}</td>
+          <td class="px-6 py-4 text-gray-800 text-center">{{ player.matchesPlayed || 0 }}</td>
+          <td class="px-6 py-4 text-center font-bold text-wydad-red">{{ player.goals || 0 }}</td>
+          <td class="px-6 py-4 text-center text-blue-600 font-medium">{{ player.assists || 0 }}</td>
           <td class="px-6 py-4 text-right">
-            <button class="text-blue-600 hover:text-blue-800 mr-3 transition-colors">Éditer</button>
-            <button (click)="deletePlayer(player.id)" class="text-red-600 hover:text-red-800 transition-colors">Retirer</button>
+            <button (click)="deletePlayer(player.id)" class="text-red-600 hover:text-red-800 transition-colors text-sm font-medium">Retirer</button>
           </td>
         </tr>
         
         <tr *ngIf="players.length === 0 && !loading">
-          <td colspan="6" class="px-6 py-8 text-center text-gray-500">
+          <td colspan="8" class="px-6 py-8 text-center text-gray-500">
             Aucun joueur dans cet effectif.
           </td>
         </tr>
         <tr *ngIf="loading">
-          <td colspan="6" class="px-6 py-8 text-center text-gray-500">
-            Chargement de l'effectif...
+          <td colspan="8" class="px-6 py-8 text-center text-gray-500">
+            <div class="flex items-center justify-center gap-2">
+              <div class="w-5 h-5 border-2 border-wydad-red border-t-transparent rounded-full animate-spin"></div>
+              Chargement de l'effectif...
+            </div>
           </td>
         </tr>
       </tbody>
@@ -74,67 +81,152 @@
   </div>
 </div>
 
-<!-- Modal Overlay (Mockup for adding player) -->
+<!-- ============================================ -->
+<!-- MODAL : Création Joueur (Compte + Profil)    -->
+<!-- ============================================ -->
 <div *ngIf="showModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center backdrop-blur-sm">
-  <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl overflow-hidden">
-    <div class="p-6 border-b border-gray-100 flex justify-between items-center">
-      <h3 class="font-bold text-lg">Ajouter un Joueur</h3>
-      <button (click)="closeAddModal()" class="text-gray-400 hover:text-gray-600">
+  <div class="bg-white rounded-xl shadow-2xl w-full max-w-3xl overflow-hidden">
+    <div class="p-6 border-b border-gray-100 flex justify-between items-center bg-wydad-dark">
+      <div>
+        <h3 class="font-bold text-lg text-white">Créer un Joueur</h3>
+        <p class="text-gray-300 text-xs mt-1">Un compte de connexion sera automatiquement créé pour ce joueur.</p>
+      </div>
+      <button (click)="closeAddModal()" class="text-gray-300 hover:text-white">
         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
       </button>
     </div>
     
-    <div class="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
-      <div class="flex gap-4">
-        <div class="flex-[2]">
-          <label class="block text-sm font-medium text-gray-700 mb-1">Nom complet</label>
-          <input type="text" [(ngModel)]="newPlayer.nom" class="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:border-wydad-red focus:ring-1 focus:ring-wydad-red">
-        </div>
-        <div class="flex-1">
-          <label class="block text-sm font-medium text-gray-700 mb-1">Âge</label>
-          <input type="number" [(ngModel)]="newPlayer.age" class="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:border-wydad-red focus:ring-1 focus:ring-wydad-red">
-        </div>
-      </div>
+    <div class="p-6 space-y-6 max-h-[70vh] overflow-y-auto">
       
-      <div class="flex gap-4">
-        <div class="flex-1">
-          <label class="block text-sm font-medium text-gray-700 mb-1">Poste</label>
-          <select [(ngModel)]="newPlayer.poste" class="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:border-wydad-red focus:ring-1 focus:ring-wydad-red">
-            <option value="Gardien">Gardien</option>
-            <option value="Défenseur">Défenseur</option>
-            <option value="Milieu">Milieu</option>
-            <option value="Attaquant">Attaquant</option>
-          </select>
-        </div>
-        <div class="flex-1">
-          <label class="block text-sm font-medium text-gray-700 mb-1">Numéro</label>
-          <input type="number" [(ngModel)]="newPlayer.numero" class="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:border-wydad-red focus:ring-1 focus:ring-wydad-red">
-        </div>
-        <div class="flex-1">
-          <label class="block text-sm font-medium text-gray-700 mb-1">Nationalité</label>
-          <input type="text" [(ngModel)]="newPlayer.nationalite" class="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:border-wydad-red focus:ring-1 focus:ring-wydad-red">
+      <!-- Section 1: Compte de connexion -->
+      <div>
+        <h4 class="text-sm font-bold uppercase tracking-wider text-gray-500 mb-3 flex items-center gap-2">
+          <span class="w-6 h-6 bg-wydad-red text-white rounded-full text-xs flex items-center justify-center font-bold">1</span>
+          Compte de connexion
+        </h4>
+        <div class="flex gap-4 bg-gray-50 p-4 rounded-lg border border-gray-100">
+          <div class="flex-1">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+            <input type="email" [(ngModel)]="newPlayer.email" placeholder="joueur@wydad.ma" class="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:border-wydad-red focus:ring-1 focus:ring-wydad-red">
+          </div>
+          <div class="flex-1">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Mot de passe *</label>
+            <input type="password" [(ngModel)]="newPlayer.password" placeholder="Min. 6 caractères" class="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:border-wydad-red focus:ring-1 focus:ring-wydad-red">
+          </div>
         </div>
       </div>
 
-      <div class="flex gap-4">
-        <div class="flex-1">
-          <label class="block text-sm font-medium text-gray-700 mb-1">Matchs Joués</label>
-          <input type="number" [(ngModel)]="newPlayer.matchsJoues" class="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:border-wydad-red focus:ring-1 focus:ring-wydad-red">
+      <!-- Section 2: Identité -->
+      <div>
+        <h4 class="text-sm font-bold uppercase tracking-wider text-gray-500 mb-3 flex items-center gap-2">
+          <span class="w-6 h-6 bg-wydad-red text-white rounded-full text-xs flex items-center justify-center font-bold">2</span>
+          Identité du joueur
+        </h4>
+        <div class="grid grid-cols-3 gap-4">
+          <div class="col-span-2">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Nom complet *</label>
+            <input type="text" [(ngModel)]="newPlayer.fullName" placeholder="Prénom Nom" class="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:border-wydad-red focus:ring-1 focus:ring-wydad-red">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Nationalité</label>
+            <input type="text" [(ngModel)]="newPlayer.nationality" class="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:border-wydad-red focus:ring-1 focus:ring-wydad-red">
+          </div>
         </div>
-        <div class="flex-1">
-          <label class="block text-sm font-medium text-gray-700 mb-1">Buts / Points</label>
-          <input type="number" [(ngModel)]="newPlayer.buts" class="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:border-wydad-red focus:ring-1 focus:ring-wydad-red">
+      </div>
+
+      <!-- Section 3: Profil Sportif -->
+      <div>
+        <h4 class="text-sm font-bold uppercase tracking-wider text-gray-500 mb-3 flex items-center gap-2">
+          <span class="w-6 h-6 bg-wydad-red text-white rounded-full text-xs flex items-center justify-center font-bold">3</span>
+          Profil sportif
+        </h4>
+        <div class="grid grid-cols-4 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Sport</label>
+            <select [(ngModel)]="newPlayer.sportType" class="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:border-wydad-red focus:ring-1 focus:ring-wydad-red">
+              <option value="FOOTBALL">Football</option>
+              <option value="BASKETBALL">Basketball</option>
+              <option value="HANDBALL">Handball</option>
+              <option value="VOLLEYBALL">Volleyball</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Catégorie</label>
+            <select [(ngModel)]="newPlayer.category" class="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:border-wydad-red focus:ring-1 focus:ring-wydad-red">
+              <option value="SENIOR">Senior</option>
+              <option value="ESPOIR">Espoir</option>
+              <option value="JUNIOR">Junior</option>
+              <option value="CADET">Cadet</option>
+              <option value="MINIME">Minime</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Poste</label>
+            <select [(ngModel)]="newPlayer.position" class="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:border-wydad-red focus:ring-1 focus:ring-wydad-red">
+              <option value="Gardien">Gardien</option>
+              <option value="Défenseur">Défenseur</option>
+              <option value="Milieu">Milieu</option>
+              <option value="Attaquant">Attaquant</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">N° Maillot</label>
+            <input type="number" [(ngModel)]="newPlayer.jerseyNumber" class="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:border-wydad-red focus:ring-1 focus:ring-wydad-red">
+          </div>
         </div>
-        <div class="flex-1">
-          <label class="block text-sm font-medium text-gray-700 mb-1">Passes Décisives</label>
-          <input type="number" [(ngModel)]="newPlayer.passes" class="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:border-wydad-red focus:ring-1 focus:ring-wydad-red">
+      </div>
+
+      <!-- Section 4: Biométrie -->
+      <div>
+        <h4 class="text-sm font-bold uppercase tracking-wider text-gray-500 mb-3 flex items-center gap-2">
+          <span class="w-6 h-6 bg-wydad-red text-white rounded-full text-xs flex items-center justify-center font-bold">4</span>
+          Biométrie & Statistiques
+        </h4>
+        <div class="grid grid-cols-3 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Taille (cm)</label>
+            <input type="number" [(ngModel)]="newPlayer.height" placeholder="180" class="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:border-wydad-red focus:ring-1 focus:ring-wydad-red">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Poids (kg)</label>
+            <input type="number" [(ngModel)]="newPlayer.weight" placeholder="75" class="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:border-wydad-red focus:ring-1 focus:ring-wydad-red">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Date de naissance</label>
+            <input type="date" [(ngModel)]="newPlayer.birthDate" class="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:border-wydad-red focus:ring-1 focus:ring-wydad-red">
+          </div>
         </div>
+        <div class="grid grid-cols-3 gap-4 mt-3">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Matchs Joués</label>
+            <input type="number" [(ngModel)]="newPlayer.matchesPlayed" class="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:border-wydad-red focus:ring-1 focus:ring-wydad-red">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Buts</label>
+            <input type="number" [(ngModel)]="newPlayer.goals" class="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:border-wydad-red focus:ring-1 focus:ring-wydad-red">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Passes Décisives</label>
+            <input type="number" [(ngModel)]="newPlayer.assists" class="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:border-wydad-red focus:ring-1 focus:ring-wydad-red">
+          </div>
+        </div>
+      </div>
+
+      <!-- Error Message -->
+      <div *ngIf="saveError" class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm font-medium">
+        ⚠️ {{ saveError }}
       </div>
     </div>
     
-    <div class="p-6 bg-gray-50 border-t border-gray-100 flex justify-end gap-3">
-      <button (click)="closeAddModal()" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 font-medium transition-colors">Annuler</button>
-      <button (click)="savePlayer()" class="px-4 py-2 bg-wydad-red hover:bg-red-700 text-white rounded-lg font-medium transition-colors">Ajouter à l'effectif</button>
+    <div class="p-6 bg-gray-50 border-t border-gray-100 flex justify-between items-center">
+      <span class="text-xs text-gray-400">* Champs obligatoires</span>
+      <div class="flex gap-3">
+        <button (click)="closeAddModal()" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 font-medium transition-colors">Annuler</button>
+        <button (click)="savePlayer()" [disabled]="isSaving" class="px-6 py-2 bg-wydad-red hover:bg-red-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 flex items-center gap-2">
+          <div *ngIf="isSaving" class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+          {{ isSaving ? 'Création en cours...' : 'Créer le compte & ajouter' }}
+        </button>
+      </div>
     </div>
   </div>
 </div>

@@ -20,6 +20,7 @@ export class DashboardStaffComponent implements OnInit {
   players: any[] = [];
   sessions: any[] = [];
   loading = true;
+  staffNotFound = false;
 
   sessionForm!: FormGroup;
   isSubmitting = false;
@@ -33,31 +34,42 @@ export class DashboardStaffComponent implements OnInit {
       sessionDate: ['', Validators.required]
     });
 
-    // In a real app, we'd have a getStaffByUserId endpoint.
-    // For this MVP, we can simulate fetching staff data or just fetch all players for a specific category if we know it.
-    // Since we don't have getStaffByUserId implemented in the backend yet, let's just fetch SENIOR FOOTBALL players for now as a mock staff context.
-    
-    // Mocking staff context
-    this.staff = {
-      fullName: 'Coach Principal',
-      role: 'Entraîneur',
-      sportType: 'FOOTBALL',
-      category: 'SENIOR'
-    };
-
-    this.loadDashboardData();
+    // Charger le profil staff depuis le backend via l'ID utilisateur connecté
+    const userId = this.auth.getCurrentUserId();
+    if (userId) {
+      this.api.getStaffByUserId(userId).subscribe({
+        next: (data) => {
+          this.staff = data;
+          this.loadDashboardData();
+        },
+        error: (err) => {
+          console.error('Profil staff non trouvé', err);
+          this.staffNotFound = true;
+          this.loading = false;
+        }
+      });
+    } else {
+      this.staffNotFound = true;
+      this.loading = false;
+    }
   }
 
   loadDashboardData() {
-    this.api.getPlayersByCategory(this.staff.sportType, this.staff.category).subscribe({
+    const sport = this.staff.sportType;
+    const category = this.staff.assignedCategory || this.staff.category;
+
+    this.api.getPlayersByCategory(sport, category).subscribe({
       next: (data) => {
         this.players = data;
         this.loading = false;
       },
-      error: (err) => console.error(err)
+      error: (err) => {
+        console.error(err);
+        this.loading = false;
+      }
     });
 
-    this.api.getSessionsByCategory(this.staff.sportType, this.staff.category).subscribe({
+    this.api.getSessionsByCategory(sport, category).subscribe({
       next: (data) => {
         this.sessions = data;
       },
@@ -69,11 +81,14 @@ export class DashboardStaffComponent implements OnInit {
     if (this.sessionForm.invalid) return;
     this.isSubmitting = true;
 
+    const sport = this.staff.sportType;
+    const category = this.staff.assignedCategory || this.staff.category;
+
     const payload = {
       ...this.sessionForm.value,
-      sportType: this.staff.sportType,
-      category: this.staff.category,
-      createdByStaffId: 1 // Mock staff ID
+      sportType: sport,
+      category: category,
+      createdByStaffId: this.staff.id
     };
 
     this.api.createSession(payload).subscribe({

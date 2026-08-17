@@ -4,13 +4,20 @@
     <div *ngIf="loading" class="flex justify-center py-20">
       <div class="w-10 h-10 border-4 border-wydad-dark border-t-transparent rounded-full animate-spin"></div>
     </div>
+    <div *ngIf="!loading && staffNotFound" class="bg-white rounded-xl shadow-sm p-12 text-center border border-gray-100">
+      <div class="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-400">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+      </div>
+      <h2 class="text-2xl font-bold text-gray-800 mb-2">Profil Staff non trouvé</h2>
+      <p class="text-gray-500">Votre compte n'est pas lié à un profil staff. L'administrateur doit d'abord créer votre profil.</p>
+    </div>
 
     <div *ngIf="!loading && staff">
       <!-- Header -->
       <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
         <div>
           <h1 class="font-display text-3xl font-bold uppercase tracking-wider text-wydad-dark">Espace Staff</h1>
-          <p class="text-gray-500">{{ staff.fullName }} • {{ staff.role }} ({{ staff.sportType }} {{ staff.category }})</p>
+          <p class="text-gray-500">{{ staff.fullName }} • {{ staff.role }} ({{ staff.sportType }} {{ staff.assignedCategory || staff.category }})</p>
         </div>
         <button (click)="showForm = !showForm" class="bg-wydad-red hover:bg-red-700 text-white px-6 py-2.5 rounded font-bold transition-colors flex items-center gap-2">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>

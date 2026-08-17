@@ -39,6 +39,12 @@ public class StaffService {
                 .stream().map(this::mapToDto).collect(Collectors.toList());
     }
 
+    public StaffDto getStaffByUserId(Long userId) {
+        Staff staff = staffRepository.findByUserId(userId)
+                .orElseThrow(() -> new EntityNotFoundException("Profil staff non trouvé"));
+        return mapToDto(staff);
+    }
+
     public SessionDto createSession(SessionDto dto) {
         Staff staff = staffRepository.findById(dto.getCreatedByStaffId())
                 .orElseThrow(() -> new EntityNotFoundException("Staff non trouvé"));
