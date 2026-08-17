@@ -31,7 +31,7 @@ public class DataInitializer implements CommandLineRunner {
                     .password(passwordEncoder.encode("DimaWydad2026"))
                     .firstName("Super")
                     .lastName("Admin")
-                    .membershipLevel(MembershipLevel.NONE)
+                    .membershipLevel(MembershipLevel.ROUGE)
                     .role(Role.ADMIN)
                     .membershipExpiresAt(LocalDateTime.now().plusYears(100))
                     .referralCode("ADMINWAC")
