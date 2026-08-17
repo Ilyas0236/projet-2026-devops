@@ -1,1 +1,54 @@
-<p>login works!</p>
+<div class="flex min-h-screen bg-surface-0">
+  <!-- Left Side (Hero Image) -->
+  <div class="hidden lg:flex w-1/2 relative bg-surface-0 zellige-bg items-center justify-center" style="background-image: url('assets/images/backgrounds/login-bg.jpg'); background-size: cover; background-position: center;">
+    <div class="absolute inset-0 bg-gradient-to-t from-surface-0 via-surface-1/80 to-surface-0/90 z-0"></div>
+    <div class="relative z-10 text-center px-12 animate-fade-in-up">
+      <h1 class="text-9xl font-display text-wydad-red font-bold mb-4 opacity-90 drop-shadow-xl">WAC</h1>
+      <h2 class="text-3xl font-display text-text-primary uppercase tracking-widest mb-6">Wydad Athletic Club</h2>
+      <p class="text-text-secondary text-lg max-w-md mx-auto">Rejoignez la famille des Rouges. L'histoire s'écrit avec vous.</p>
+    </div>
+  </div>
+
+  <!-- Right Side (Form) -->
+  <div class="w-full lg:w-1/2 flex items-center justify-center bg-surface-1 p-8 sm:p-12 lg:p-16 relative">
+    <div class="w-full max-w-md animate-scale-in">
+      
+      <div class="text-center mb-10">
+        <h2 class="text-4xl font-display text-text-primary uppercase tracking-wide mb-2">Connexion</h2>
+        <p class="text-text-secondary">Accédez à votre espace Wydad AC</p>
+      </div>
+
+      <div class="wydad-card p-8 sm:p-10 rounded-2xl bg-surface-3 border border-white/5 shadow-2xl">
+        <div class="form-group mb-6">
+          <label class="wydad-label block mb-2 text-text-secondary text-sm uppercase tracking-wider font-semibold">Email</label>
+          <input type="email" class="wydad-input w-full bg-surface-2 border border-white/10 text-text-primary rounded-lg px-4 py-3 focus:border-wydad-red focus:ring-1 focus:ring-wydad-red transition-colors" [(ngModel)]="email" placeholder="donateur@wydad.ma">
+        </div>
+        
+        <div class="form-group mb-8">
+          <label class="wydad-label block mb-2 text-text-secondary text-sm uppercase tracking-wider font-semibold">Mot de passe</label>
+          <input type="password" class="wydad-input w-full bg-surface-2 border border-white/10 text-text-primary rounded-lg px-4 py-3 focus:border-wydad-red focus:ring-1 focus:ring-wydad-red transition-colors" [(ngModel)]="password" placeholder="••••••••">
+        </div>
+
+        <button class="wydad-btn-primary wydad-btn-skew w-full py-4 bg-wydad-red hover:bg-red-700 text-white font-display uppercase tracking-widest text-lg rounded transition-all transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed" (click)="login()" [disabled]="loading">
+          <span class="inline-block -skew-x-[15deg]">{{ loading ? 'Connexion...' : 'Se connecter' }}</span>
+        </button>
+
+        <div *ngIf="error" class="mt-6 p-4 bg-wydad-red/10 border border-wydad-red/20 text-wydad-red rounded-lg text-center font-medium animate-fade-in">
+          {{ error }}
+        </div>
+        <div *ngIf="token" class="mt-6 p-4 bg-green-500/10 border border-green-500/20 text-green-400 rounded-lg text-center font-medium animate-fade-in">
+          ✅ Connecté ! Token stocké.
+        </div>
+
+        <div class="relative flex items-center justify-center mt-10 mb-8">
+          <div class="absolute inset-x-0 h-px bg-white/10"></div>
+          <span class="relative bg-surface-3 px-4 text-text-tertiary text-sm">Ou</span>
+        </div>
+
+        <div class="text-center">
+          <p class="text-text-secondary mb-4">Pas encore de compte ? <a routerLink="/register" class="inline-block text-wydad-red hover:text-wydad-gold font-semibold transition-colors uppercase text-sm tracking-wider ml-1">Créer un compte</a></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

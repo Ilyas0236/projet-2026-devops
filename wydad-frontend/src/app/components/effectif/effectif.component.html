@@ -1,81 +1,119 @@
-<!-- effectif.component.html -->
-<div class="min-h-screen bg-wydad-dark text-white pt-32 pb-24 font-sans">
-  
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- WYDAD DIGITAL — EFFECTIF (Premium Dark Mode)              -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="min-h-screen bg-surface-0 text-white pt-28 pb-24">
+
   <!-- Header -->
-  <div class="max-w-7xl mx-auto px-6 mb-16 text-center">
-    <span class="text-wydad-red font-bold tracking-[0.2em] uppercase text-sm mb-2 block">Saison 2026/2027</span>
-    <h1 class="font-display font-black text-5xl md:text-6xl uppercase tracking-tighter">
-      L'Équipe <span class="text-wydad-red drop-shadow-[0_0_20px_rgba(211,47,47,0.8)]">Première</span>
+  <div class="container-wydad mb-16 text-center relative">
+    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[300px] bg-red-glow opacity-30 pointer-events-none"></div>
+    <span class="text-wydad-red font-bold tracking-[0.3em] uppercase text-xs mb-3 block relative z-10 animate-fade-in-up" style="animation-delay: 0.1s; opacity: 0;">Saison 2026/2027</span>
+    <h1 class="font-display font-black text-hero uppercase tracking-tighter relative z-10 animate-fade-in-up" style="animation-delay: 0.2s; opacity: 0;">
+      L'Équipe <span class="text-wydad-red">Première</span>
     </h1>
-    <p class="text-gray-400 mt-4 max-w-2xl mx-auto">Découvrez les joueurs qui défendent fièrement les couleurs du Wydad Athletic Club.</p>
+    <p class="text-text-secondary mt-4 max-w-2xl mx-auto relative z-10 animate-fade-in-up" style="animation-delay: 0.3s; opacity: 0;">
+      Découvrez les joueurs qui défendent fièrement les couleurs du Wydad Athletic Club.
+    </p>
   </div>
 
-  <!-- Sport/Category Selector -->
-  <div class="max-w-7xl mx-auto px-6 mb-12 flex justify-center gap-4 flex-wrap">
-    <button (click)="changeSport('FOOTBALL')" [class.bg-wydad-red]="selectedSport === 'FOOTBALL'" [class.text-white]="selectedSport === 'FOOTBALL'" [class.border-wydad-red]="selectedSport === 'FOOTBALL'"
-            class="px-6 py-2 border border-gray-600 text-gray-400 hover:text-white hover:border-gray-400 font-bold uppercase text-sm tracking-wider skew-x-[-10deg] transition-colors">
+  <!-- Sport Selector -->
+  <div class="container-wydad mb-14 flex justify-center gap-3 flex-wrap animate-fade-in-up" style="animation-delay: 0.4s; opacity: 0;">
+    <button (click)="changeSport('FOOTBALL')"
+            class="px-7 py-2.5 font-display font-bold uppercase text-xs tracking-wider transform skew-x-[-10deg] transition-all duration-300 border"
+            [ngClass]="{
+              'bg-wydad-red text-white border-wydad-red shadow-glow-red': selectedSport === 'FOOTBALL',
+              'border-white/10 text-text-secondary hover:border-white/30': selectedSport !== 'FOOTBALL'
+            }">
       <span class="skew-x-[10deg] block">Football</span>
     </button>
-    <button (click)="changeSport('BASKETBALL')" [class.bg-wydad-red]="selectedSport === 'BASKETBALL'" [class.text-white]="selectedSport === 'BASKETBALL'" [class.border-wydad-red]="selectedSport === 'BASKETBALL'"
-            class="px-6 py-2 border border-gray-600 text-gray-400 hover:text-white hover:border-gray-400 font-bold uppercase text-sm tracking-wider skew-x-[-10deg] transition-colors">
+    <button (click)="changeSport('BASKETBALL')"
+            class="px-7 py-2.5 font-display font-bold uppercase text-xs tracking-wider transform skew-x-[-10deg] transition-all duration-300 border"
+            [ngClass]="{
+              'bg-wydad-red text-white border-wydad-red shadow-glow-red': selectedSport === 'BASKETBALL',
+              'border-white/10 text-text-secondary hover:border-white/30': selectedSport !== 'BASKETBALL'
+            }">
       <span class="skew-x-[10deg] block">Basketball</span>
     </button>
   </div>
 
   <!-- Squad Grid -->
-  <div class="max-w-7xl mx-auto px-6">
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8" *ngIf="players.length > 0">
-      
-      <!-- Player Card Loop -->
-      <div class="group bg-white/5 rounded-xl overflow-hidden shadow-sm hover:bg-white/10 transition-all duration-500 border border-white/10 relative cursor-pointer" *ngFor="let player of players">
-        
-        <!-- Number & Position Badge -->
-        <div class="absolute top-4 left-4 z-10 flex flex-col gap-1">
-          <span class="bg-wydad-red text-white font-display font-black text-2xl w-12 h-12 flex items-center justify-center rounded shadow-[0_0_15px_rgba(211,47,47,0.5)]">
-            {{ player.numero || '?' }}
+  <div class="container-wydad">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6" *ngIf="players.length > 0">
+
+      <!-- Player Card -->
+      <div *ngFor="let player of players; let i = index"
+           class="group rounded-2xl overflow-hidden relative cursor-pointer bg-surface-3 border border-white/[0.04] hover:border-white/10 transition-all duration-500 hover:shadow-card-hover animate-fade-in-up"
+           [style.animation-delay]="(i * 0.06) + 's'"
+           style="opacity: 0;">
+
+        <!-- Number Badge -->
+        <div class="absolute top-4 left-4 z-20 flex flex-col gap-1.5">
+          <span class="bg-wydad-red text-white font-display font-black text-xl w-11 h-11 flex items-center justify-center rounded-lg shadow-glow-red">
+            {{ player.jerseyNumber || '?' }}
           </span>
-          <span class="bg-black/80 backdrop-blur text-white text-[10px] font-bold uppercase tracking-wider px-2 py-1 text-center rounded border border-white/10">
-            {{ player.poste }}
+          <span class="glass text-white text-[9px] font-bold uppercase tracking-wider px-2 py-1 text-center rounded">
+            {{ player.position }}
           </span>
         </div>
-        
-        <!-- Image Container -->
-        <div class="aspect-[3/4] bg-gradient-to-t from-black to-transparent overflow-hidden relative flex items-end justify-center">
-          <div class="absolute inset-0 bg-cover bg-center opacity-50 group-hover:opacity-80 transition-opacity duration-500" 
-               [style.backgroundImage]="'url(' + (player.photoUrl || 'https://via.placeholder.com/300x400/121212/ffffff?text=Joueur') + ')'">
-          </div>
-          <!-- Decorative name background -->
-          <span class="absolute bottom-4 font-display font-black text-6xl text-white/5 uppercase tracking-tighter -z-0 whitespace-nowrap overflow-hidden">
-            {{ player.nom.split(' ')[1] || player.nom }}
+
+        <!-- Nationality flag (if available) -->
+        <div class="absolute top-4 right-4 z-20" *ngIf="player.nationality">
+          <span class="text-[10px] font-semibold text-text-tertiary bg-surface-2/80 backdrop-blur-sm px-2 py-1 rounded">
+            {{ player.nationality }}
           </span>
-          
-          <div class="w-full p-6 relative z-10 bg-gradient-to-t from-black via-black/80 to-transparent">
-            <h3 class="font-display font-bold text-xl text-white uppercase leading-tight mb-1">{{ player.nom }}</h3>
-            <p class="text-sm text-gray-400 mb-4">{{ player.age }} ans</p>
-            
-            <!-- Stats -->
-            <div class="flex justify-between items-center border-t border-white/20 pt-4">
-              <div class="flex flex-col items-center">
-                <span class="font-bold text-lg text-wydad-gold">{{ player.matchsJoues || 0 }}</span>
-                <span class="text-[10px] text-gray-400 uppercase tracking-wider">Matchs</span>
-              </div>
-              <div class="flex flex-col items-center">
-                <span class="font-bold text-lg text-wydad-gold">{{ player.buts || 0 }}</span>
-                <span class="text-[10px] text-gray-400 uppercase tracking-wider">{{ getGoalLabel() }}</span>
-              </div>
-              <div class="flex flex-col items-center">
-                <span class="font-bold text-lg text-wydad-gold">{{ player.passes || 0 }}</span>
-                <span class="text-[10px] text-gray-400 uppercase tracking-wider">Passes</span>
-              </div>
-            </div>
+        </div>
+
+        <!-- Image Container -->
+        <div class="aspect-[3/4] overflow-hidden relative">
+          <!-- Player photo -->
+          <div class="absolute inset-0 bg-cover bg-top opacity-60 group-hover:opacity-90 group-hover:scale-105 transition-all duration-700"
+               [style.backgroundImage]="'url(' + (player.photoUrl ? api.getMediaUrl(player.photoUrl) : '') + ')'">
+          </div>
+          <!-- Default if no photo -->
+          <div *ngIf="!player.photoUrl" class="absolute inset-0 flex items-center justify-center bg-surface-2">
+            <svg class="w-24 h-24 text-surface-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+          </div>
+
+          <!-- Gradient overlay -->
+          <div class="absolute inset-0 bg-gradient-to-t from-surface-3 via-surface-3/40 to-transparent"></div>
+
+          <!-- Decorative name watermark -->
+          <span class="absolute bottom-14 left-0 right-0 font-display font-black text-[4rem] text-white/[0.03] uppercase tracking-tighter whitespace-nowrap overflow-hidden text-center pointer-events-none">
+            {{ player.fullName?.split(' ')[1] || player.fullName }}
+          </span>
+
+          <!-- Player info overlay -->
+          <div class="absolute bottom-0 left-0 w-full p-5 relative z-10">
+            <h3 class="font-display font-bold text-lg text-white uppercase leading-tight mb-0.5">{{ player.fullName }}</h3>
+            <p class="text-xs text-text-tertiary">{{ getAge(player.birthDate) }} ans</p>
+          </div>
+        </div>
+
+        <!-- Stats bar -->
+        <div class="p-4 flex justify-between items-center border-t border-white/[0.04]">
+          <div class="flex flex-col items-center flex-1">
+            <span class="font-display font-bold text-lg text-wydad-gold">{{ player.matchesPlayed || 0 }}</span>
+            <span class="text-[9px] text-text-muted uppercase tracking-wider font-semibold">Matchs</span>
+          </div>
+          <div class="w-px h-8 bg-white/[0.06]"></div>
+          <div class="flex flex-col items-center flex-1">
+            <span class="font-display font-bold text-lg text-wydad-gold">{{ player.goals || 0 }}</span>
+            <span class="text-[9px] text-text-muted uppercase tracking-wider font-semibold">{{ getGoalLabel() }}</span>
+          </div>
+          <div class="w-px h-8 bg-white/[0.06]"></div>
+          <div class="flex flex-col items-center flex-1">
+            <span class="font-display font-bold text-lg text-wydad-gold">{{ player.assists || 0 }}</span>
+            <span class="text-[9px] text-text-muted uppercase tracking-wider font-semibold">Passes</span>
           </div>
         </div>
       </div>
     </div>
-    
+
     <!-- Empty State -->
-    <div *ngIf="players.length === 0" class="text-center py-20 bg-white/5 rounded-xl border border-white/10">
-      <span class="text-gray-400 font-display text-xl">L'effectif {{ selectedSport | lowercase }} sera bientôt disponible.</span>
+    <div *ngIf="players.length === 0" class="glass rounded-2xl text-center py-20">
+      <svg class="w-16 h-16 text-text-muted mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+      </svg>
+      <p class="text-text-tertiary font-display text-lg uppercase tracking-wider">L'effectif {{ selectedSport | lowercase }} sera bientôt disponible</p>
     </div>
   </div>
 </div>

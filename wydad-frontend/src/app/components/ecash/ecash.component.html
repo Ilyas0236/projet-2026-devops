@@ -1,1 +1,262 @@
-<p>ecash works!</p>
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- WYDAD DIGITAL — E-CASH (Premium Dark Mode)                -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="min-h-screen bg-surface-0 text-white pt-28 pb-24">
+
+  <!-- Header -->
+  <div class="container-wydad mb-12 relative">
+    <span class="text-wydad-red font-bold tracking-[0.2em] uppercase text-xs mb-2 block animate-fade-in-up" style="animation-delay: 0.1s; opacity: 0;">Finances</span>
+    <h1 class="font-display font-black text-4xl md:text-5xl uppercase tracking-tighter animate-fade-in-up" style="animation-delay: 0.2s; opacity: 0;">
+      Porte-Monnaie <span class="text-wydad-red">E-Cash</span>
+    </h1>
+    <p class="text-text-secondary mt-4 max-w-2xl animate-fade-in-up" style="animation-delay: 0.3s; opacity: 0;">
+      Votre solde, vos transactions, vos dons et rechargements sécurisés.
+    </p>
+  </div>
+
+  <div class="container-wydad" *ngIf="balance; else notConnected">
+    <div class="flex flex-col lg:flex-row gap-8 items-start">
+      
+      <!-- ─── SIDEBAR / BALANCE & ACTIONS ──────────────────────── -->
+      <div class="w-full lg:w-[400px] flex-shrink-0 flex flex-col gap-6 animate-fade-in-up" style="animation-delay: 0.4s; opacity: 0;">
+        
+        <!-- Balance Card -->
+        <div class="relative overflow-hidden rounded-[2rem] p-8 aspect-video flex flex-col justify-between shadow-2xl group border border-white/10"
+             style="background: linear-gradient(135deg, #111 0%, #1a1a24 100%);">
+          <!-- Glow -->
+          <div class="absolute -inset-[100%] bg-gradient-to-tr from-transparent via-wydad-red/10 to-transparent group-hover:translate-x-full group-hover:translate-y-full transition-transform duration-1000 pointer-events-none"></div>
+          
+          <div class="relative z-10 flex justify-between items-start">
+            <div>
+              <span class="text-[10px] font-bold uppercase tracking-[0.2em] text-text-tertiary">Solde Disponible</span>
+              <div class="mt-2 flex items-baseline gap-2">
+                <span class="font-display font-black text-4xl md:text-5xl text-white">{{ balance.balance | number:'1.2-2' }}</span>
+                <span class="font-display font-bold text-xl text-wydad-red">MAD</span>
+              </div>
+            </div>
+            <div class="w-10 h-10 rounded-full bg-surface-3 flex items-center justify-center text-wydad-red shadow-glow-red">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+            </div>
+          </div>
+          
+          <div class="relative z-10 text-xs text-text-tertiary flex justify-between items-end">
+            <span>Mis à jour le {{ balance.updatedAt | date:'dd/MM/yyyy HH:mm' }}</span>
+            <span class="font-mono text-[10px] tracking-widest opacity-50">WYDAD PAY</span>
+          </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="flex gap-4">
+          <button (click)="toggleActionForm('credit')" 
+                  class="flex-1 py-4 rounded-2xl font-display font-bold uppercase text-xs tracking-wider transition-all duration-300 border shadow-lg flex flex-col items-center gap-2"
+                  [ngClass]="{
+                    'bg-wydad-red text-white border-wydad-red shadow-glow-red': activeForm === 'credit',
+                    'bg-surface-2 border-white/10 text-text-secondary hover:bg-surface-3': activeForm !== 'credit'
+                  }">
+            <span class="text-2xl mb-1">💳</span>
+            Recharger
+          </button>
+          
+          <button (click)="toggleActionForm('don')" 
+                  class="flex-1 py-4 rounded-2xl font-display font-bold uppercase text-xs tracking-wider transition-all duration-300 border shadow-lg flex flex-col items-center gap-2"
+                  [ngClass]="{
+                    'bg-wydad-red text-white border-wydad-red shadow-glow-red': activeForm === 'don',
+                    'bg-surface-2 border-white/10 text-text-secondary hover:bg-surface-3': activeForm !== 'don'
+                  }">
+            <span class="text-2xl mb-1">❤️</span>
+            Faire un Don
+          </button>
+        </div>
+        
+        <!-- Forms Area -->
+        <div class="overflow-hidden transition-all duration-500">
+          
+          <!-- CREDIT FORM -->
+          <div *ngIf="activeForm === 'credit'" class="glass-strong rounded-3xl p-6 border border-white/5 animate-fade-in-up shadow-card">
+            <h3 class="font-display font-bold text-lg uppercase tracking-wider mb-2">Recharger mon E-Cash</h3>
+            <p class="text-text-secondary text-xs mb-6">Ajoutez des fonds pour vos futurs achats (billetterie, boutique).</p>
+            
+            <div class="flex gap-2 mb-6 p-1 bg-surface-2 rounded-lg">
+              <button (click)="creditMode = 'card'" class="flex-1 py-2 rounded font-bold text-xs uppercase tracking-wider transition-colors" [class.bg-surface-4]="creditMode === 'card'" [class.text-white]="creditMode === 'card'" [class.text-text-tertiary]="creditMode !== 'card'">Carte</button>
+              <button (click)="creditMode = 'direct'" class="flex-1 py-2 rounded font-bold text-xs uppercase tracking-wider transition-colors" [class.bg-surface-4]="creditMode === 'direct'" [class.text-white]="creditMode === 'direct'" [class.text-text-tertiary]="creditMode !== 'direct'">Direct (Démo)</button>
+            </div>
+
+            <!-- Card Mode -->
+            <div *ngIf="creditMode === 'card'" class="space-y-4 animate-fade-in">
+              <div>
+                <label class="wydad-label text-xs">Montant (MAD)</label>
+                <input type="number" [(ngModel)]="cardAmount" placeholder="200" min="1" class="wydad-input py-2">
+              </div>
+              <div>
+                <label class="wydad-label text-xs">Numéro de carte</label>
+                <div class="relative">
+                  <input type="text" [(ngModel)]="cardNumber" placeholder="1234 5678 1234 5678" maxlength="16" class="wydad-input py-2 font-mono tracking-widest pl-10">
+                  <svg class="w-5 h-5 text-text-tertiary absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+                </div>
+              </div>
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label class="wydad-label text-xs">Expiration</label>
+                  <input type="text" [(ngModel)]="cardExpiry" placeholder="MM/AA" maxlength="5" class="wydad-input py-2 text-center">
+                </div>
+                <div>
+                  <label class="wydad-label text-xs">CVV</label>
+                  <input type="password" [(ngModel)]="cardCvv" placeholder="•••" maxlength="3" class="wydad-input py-2 text-center tracking-widest">
+                </div>
+              </div>
+              <div>
+                <label class="wydad-label text-xs">Code OTP (démo)</label>
+                <input type="text" [(ngModel)]="cardOtp" placeholder="123456" maxlength="6" class="wydad-input py-2 text-center font-mono tracking-widest">
+                <p class="text-[10px] text-text-tertiary mt-1 text-center">Saisissez n'importe quel code à 6 chiffres.</p>
+              </div>
+              
+              <button (click)="payByCard()" [disabled]="processing || !isValidCardForm()" class="wydad-btn-primary w-full py-3 mt-2 text-sm">
+                {{ processing ? 'Traitement...' : 'Payer ' + (cardAmount || 0) + ' MAD' }}
+              </button>
+            </div>
+
+            <!-- Direct Mode -->
+            <div *ngIf="creditMode === 'direct'" class="space-y-4 animate-fade-in">
+              <div>
+                <label class="wydad-label text-xs">Montant (MAD)</label>
+                <input type="number" [(ngModel)]="directAmount" placeholder="500" min="1" class="wydad-input py-2">
+              </div>
+              <div>
+                <label class="wydad-label text-xs">Description</label>
+                <input type="text" [(ngModel)]="directDescription" placeholder="Recharge de test" class="wydad-input py-2">
+              </div>
+              <button (click)="creditDirect()" [disabled]="processing || directAmount < 1" class="wydad-btn-primary w-full py-3 mt-2 text-sm">
+                {{ processing ? 'Crédit en cours...' : 'Créditer ' + (directAmount || 0) + ' MAD' }}
+              </button>
+            </div>
+
+            <div *ngIf="creditMessage" class="mt-4 p-3 bg-green-500/10 border border-green-500/20 text-green-400 rounded-lg text-xs text-center">
+              {{ creditMessage }}
+            </div>
+            <div *ngIf="creditError" class="mt-4 p-3 bg-red-500/10 border border-red-500/20 text-red-400 rounded-lg text-xs text-center">
+              {{ creditError }}
+            </div>
+          </div>
+
+          <!-- DONATION FORM -->
+          <div *ngIf="activeForm === 'don'" class="glass-strong rounded-3xl p-6 border border-white/5 animate-fade-in-up shadow-card">
+            <h3 class="font-display font-bold text-lg uppercase tracking-wider mb-2 text-wydad-red">Soutenir le Club</h3>
+            <p class="text-text-secondary text-xs mb-6">Soutenez les projets d'infrastructure et de formation du Wydad.</p>
+            
+            <div class="space-y-5">
+              <div>
+                <label class="wydad-label text-xs">Montant du don (MAD)</label>
+                <input type="number" [(ngModel)]="donAmount" placeholder="100" min="10" class="wydad-input py-3 text-center text-xl font-display font-bold">
+              </div>
+              
+              <div class="flex gap-4">
+                <label class="flex-1 flex items-center justify-center gap-2 p-3 rounded-xl border cursor-pointer transition-colors"
+                       [ngClass]="{
+                         'bg-wydad-red border-wydad-red text-white': donType === 'PONCTUEL',
+                         'bg-surface-2 border-white/10 text-text-secondary': donType !== 'PONCTUEL'
+                       }">
+                  <input type="radio" name="donType" [(ngModel)]="donType" value="PONCTUEL" class="hidden">
+                  <span class="text-xs font-bold uppercase tracking-wider">Ponctuel</span>
+                </label>
+                <label class="flex-1 flex items-center justify-center gap-2 p-3 rounded-xl border cursor-pointer transition-colors"
+                       [ngClass]="{
+                         'bg-wydad-red border-wydad-red text-white': donType === 'MENSUEL',
+                         'bg-surface-2 border-white/10 text-text-secondary': donType !== 'MENSUEL'
+                       }">
+                  <input type="radio" name="donType" [(ngModel)]="donType" value="MENSUEL" class="hidden">
+                  <span class="text-xs font-bold uppercase tracking-wider">Mensuel</span>
+                </label>
+              </div>
+
+              <label class="flex items-start gap-3 p-3 rounded-xl bg-surface-2 border border-white/5 cursor-pointer hover:bg-surface-3 transition-colors">
+                <input type="checkbox" [(ngModel)]="recuFiscal" class="mt-1 accent-wydad-red w-4 h-4 rounded">
+                <div class="flex flex-col">
+                  <span class="text-sm text-white font-medium">Reçu fiscal officiel</span>
+                  <span class="text-[10px] text-text-tertiary">Recevoir un reçu PDF déductible d'impôts.</span>
+                </div>
+              </label>
+
+              <button (click)="makeDon()" [disabled]="donAmount < 10 || processing" class="wydad-btn-primary w-full py-3 text-sm">
+                {{ processing ? 'Validation...' : 'Confirmer mon don' }}
+              </button>
+            </div>
+
+            <div *ngIf="donMessage" class="mt-4 p-3 bg-green-500/10 border border-green-500/20 text-green-400 rounded-lg text-xs text-center">
+              {{ donMessage }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── MAIN CONTENT / TRANSACTIONS ─────────────────────── -->
+      <div class="flex-1 min-w-0 animate-fade-in-up" style="animation-delay: 0.5s; opacity: 0;">
+        <div class="flex items-center justify-between mb-6">
+          <h2 class="font-display font-bold text-2xl uppercase tracking-wider">Historique</h2>
+          <span class="text-xs text-text-tertiary uppercase tracking-wider font-bold">Dernières opérations</span>
+        </div>
+
+        <div class="glass-strong rounded-3xl p-2 md:p-6 shadow-card">
+          <div class="flex flex-col gap-2">
+            
+            <div *ngFor="let tx of transactions" 
+                 class="flex items-center justify-between p-4 md:p-5 rounded-2xl transition-colors hover:bg-surface-3 border border-transparent hover:border-white/5 group">
+              
+              <div class="flex items-center gap-4">
+                <div class="w-12 h-12 rounded-full flex items-center justify-center text-xl shrink-0"
+                     [ngClass]="{
+                       'bg-green-500/10 text-green-500': tx.type === 'CREDIT',
+                       'bg-red-500/10 text-red-500': tx.type === 'DEBIT',
+                       'bg-wydad-red/10 text-wydad-red': tx.type === 'DON'
+                     }">
+                  <svg *ngIf="tx.type === 'CREDIT'" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>
+                  <svg *ngIf="tx.type === 'DEBIT'" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
+                  <svg *ngIf="tx.type === 'DON'" class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
+                </div>
+                <div>
+                  <div class="font-bold text-sm md:text-base text-white mb-1 group-hover:text-wydad-red transition-colors">{{ tx.description }}</div>
+                  <div class="flex flex-wrap items-center gap-2 text-[10px] md:text-xs">
+                    <span class="text-text-tertiary">{{ tx.createdAt | date:'dd/MM/yy HH:mm' }}</span>
+                    <span class="text-text-muted">•</span>
+                    <span class="font-mono bg-surface-4 text-text-secondary px-1.5 py-0.5 rounded tracking-wider">Ref: {{ tx.reference }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="font-display font-black text-lg md:text-xl whitespace-nowrap"
+                   [class.text-green-500]="tx.type === 'CREDIT'"
+                   [class.text-red-500]="tx.type === 'DEBIT'"
+                   [class.text-wydad-red]="tx.type === 'DON'">
+                {{ tx.type === 'CREDIT' ? '+' : '-' }}{{ tx.amount | number:'1.2-2' }} <span class="text-xs font-sans opacity-70 ml-1">MAD</span>
+              </div>
+              
+            </div>
+
+            <div *ngIf="transactions.length === 0" class="text-center py-16">
+              <div class="w-16 h-16 rounded-full bg-surface-2 mx-auto flex items-center justify-center text-3xl mb-4 opacity-50">📜</div>
+              <p class="text-text-tertiary font-display text-lg uppercase tracking-wider">Aucune transaction pour le moment.</p>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- NOT CONNECTED STATE -->
+  <ng-template #notConnected>
+    <div class="container-wydad flex justify-center py-20 animate-fade-in-up">
+      <div class="glass rounded-3xl p-12 max-w-md w-full text-center border border-white/10">
+        <div class="w-20 h-20 bg-surface-3 rounded-full flex items-center justify-center text-4xl mx-auto mb-6 border border-white/5 shadow-glow-red">
+          🔒
+        </div>
+        <h2 class="font-display font-bold text-2xl uppercase tracking-wider mb-3">Espace Réservé</h2>
+        <p class="text-text-secondary text-sm mb-8">Connectez-vous pour accéder à votre porte-monnaie E-Cash et vos avantages.</p>
+        <button (click)="goLogin()" class="wydad-btn-primary w-full py-3.5">
+          Se connecter
+        </button>
+      </div>
+    </div>
+  </ng-template>
+
+</div>

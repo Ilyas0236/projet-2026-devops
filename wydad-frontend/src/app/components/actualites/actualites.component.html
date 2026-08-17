@@ -1,1 +1,114 @@
-<p>actualites works!</p>
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- WYDAD DIGITAL — ACTUALITÉS (Premium Dark Mode)            -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="min-h-screen bg-surface-0 text-white pt-28 pb-24 zellige-bg">
+
+  <!-- Header -->
+  <div class="container-wydad mb-16 text-center relative">
+    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[300px] bg-red-glow opacity-30 pointer-events-none"></div>
+    <span class="text-wydad-red font-bold tracking-[0.3em] uppercase text-xs mb-3 block relative z-10 animate-fade-in-up" style="animation-delay: 0.1s; opacity: 0;">Inside WAC</span>
+    <h1 class="font-display font-black text-hero uppercase tracking-tighter relative z-10 animate-fade-in-up" style="animation-delay: 0.2s; opacity: 0;">
+      À la <span class="text-wydad-red">Une</span>
+    </h1>
+    <p class="text-text-secondary mt-4 max-w-2xl mx-auto relative z-10 animate-fade-in-up" style="animation-delay: 0.3s; opacity: 0;">
+      Toute l'actualité du club : football, basket, handball, volley et plus.
+    </p>
+  </div>
+
+  <div class="container-wydad">
+    <!-- Sport Filters -->
+    <div class="flex justify-center gap-3 flex-wrap mb-12 animate-fade-in-up" style="animation-delay: 0.4s; opacity: 0;">
+      <button (click)="filter = 'ALL'"
+              class="px-6 py-2.5 rounded-full font-display font-bold uppercase text-xs tracking-wider transition-all duration-300 border"
+              [ngClass]="{
+                'bg-wydad-red text-white border-wydad-red shadow-glow-red': filter === 'ALL',
+                'bg-surface-2 border-white/10 text-text-secondary hover:bg-surface-3': filter !== 'ALL'
+              }">
+        Tous
+      </button>
+      <button (click)="filter = 'FOOTBALL'"
+              class="px-6 py-2.5 rounded-full font-display font-bold uppercase text-xs tracking-wider transition-all duration-300 border"
+              [ngClass]="{
+                'bg-wydad-red text-white border-wydad-red shadow-glow-red': filter === 'FOOTBALL',
+                'bg-surface-2 border-white/10 text-text-secondary hover:bg-surface-3': filter !== 'FOOTBALL'
+              }">
+        ⚽ Football
+      </button>
+      <button (click)="filter = 'BASKET'"
+              class="px-6 py-2.5 rounded-full font-display font-bold uppercase text-xs tracking-wider transition-all duration-300 border"
+              [ngClass]="{
+                'bg-wydad-red text-white border-wydad-red shadow-glow-red': filter === 'BASKET',
+                'bg-surface-2 border-white/10 text-text-secondary hover:bg-surface-3': filter !== 'BASKET'
+              }">
+        🏀 Basket
+      </button>
+      <button (click)="filter = 'HAND'"
+              class="px-6 py-2.5 rounded-full font-display font-bold uppercase text-xs tracking-wider transition-all duration-300 border"
+              [ngClass]="{
+                'bg-wydad-red text-white border-wydad-red shadow-glow-red': filter === 'HAND',
+                'bg-surface-2 border-white/10 text-text-secondary hover:bg-surface-3': filter !== 'HAND'
+              }">
+        🤾 Hand
+      </button>
+      <button (click)="filter = 'VOLLEY'"
+              class="px-6 py-2.5 rounded-full font-display font-bold uppercase text-xs tracking-wider transition-all duration-300 border"
+              [ngClass]="{
+                'bg-wydad-red text-white border-wydad-red shadow-glow-red': filter === 'VOLLEY',
+                'bg-surface-2 border-white/10 text-text-secondary hover:bg-surface-3': filter !== 'VOLLEY'
+              }">
+        🏐 Volley
+      </button>
+    </div>
+
+    <!-- News Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+      <div *ngFor="let article of filteredArticles(); let i = index" 
+           class="wydad-card group rounded-[2rem] overflow-hidden flex flex-col h-full animate-fade-in-up"
+           [style.animation-delay]="(0.5 + (i * 0.1)) + 's'" style="opacity: 0;">
+        
+        <!-- Image Container -->
+        <div class="relative h-64 overflow-hidden">
+          <div class="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110"
+               [style.backgroundImage]="'url(' + (article.imageUrl || 'assets/images/defaults/default-news.jpg') + ')'">
+          </div>
+          <div class="absolute inset-0 bg-gradient-to-t from-surface-1 via-transparent to-transparent"></div>
+          
+          <!-- Category Badge -->
+          <div class="absolute top-4 left-4 z-10">
+            <span class="bg-wydad-red text-white text-[10px] font-bold uppercase tracking-[0.15em] px-3 py-1.5 rounded-full backdrop-blur-md">
+              {{ article.sport }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Content -->
+        <div class="p-8 flex flex-col flex-1 relative z-10 bg-surface-1">
+          <div class="text-xs text-text-tertiary mb-3 font-semibold uppercase tracking-wider">
+            {{ article.createdAt | date: 'dd MMM yyyy' }}
+          </div>
+          
+          <h2 class="font-display font-bold text-2xl uppercase tracking-wider text-white mb-4 leading-tight group-hover:text-wydad-red transition-colors line-clamp-2">
+            {{ article.titre }}
+          </h2>
+          
+          <p class="text-text-secondary text-sm mb-6 flex-1 line-clamp-3">
+            {{ article.contenu }}
+          </p>
+          
+          <div class="flex items-center justify-between border-t border-white/[0.04] pt-4 mt-auto">
+            <span class="text-xs text-text-muted font-medium">✍️ Par <span class="text-white">{{ article.auteur }}</span></span>
+            <button class="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center text-text-secondary group-hover:bg-wydad-red group-hover:text-white group-hover:border-transparent transition-all">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Empty state -->
+    <div *ngIf="filteredArticles().length === 0" class="glass rounded-3xl text-center py-24 w-full animate-fade-in-up">
+      <div class="w-16 h-16 bg-surface-3 rounded-full flex items-center justify-center text-3xl mx-auto mb-4 opacity-50">📰</div>
+      <p class="text-text-tertiary font-display text-lg uppercase tracking-wider">Aucune actualité dans cette section.</p>
+    </div>
+  </div>
+</div>

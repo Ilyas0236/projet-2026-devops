@@ -2,8 +2,8 @@ import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { ApiService } from '../../../services/api.service';
-import { AuthService } from '../../../services/auth.service';
+import { ApiService } from '../../services/api.service';
+import { AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'app-espace-fan',
@@ -37,26 +37,26 @@ export class EspaceFanComponent implements OnInit {
 
   loadGamificationData() {
     // Charger les points de l'utilisateur
-    this.api.getUserPoints(this.userId!).subscribe({
-      next: (data) => {
+    this.api.getUserPoints(this.userId as number).subscribe({
+      next: (data: any) => {
         this.pointsData = data;
         this.checkLoading();
       },
-      error: (err) => console.error('Erreur points', err)
+      error: (err: any) => console.error('Erreur points', err)
     });
 
     // Charger le leaderboard
     this.api.getLeaderboard().subscribe({
-      next: (data) => {
+      next: (data: any) => {
         this.leaderboard = data;
         this.checkLoading();
       },
-      error: (err) => console.error('Erreur leaderboard', err)
+      error: (err: any) => console.error('Erreur leaderboard', err)
     });
 
     // Charger les matchs pour les pronostics (les prochains matchs)
     this.api.getMatches().subscribe({
-      next: (data) => {
+      next: (data: any) => {
         // Filtrer les matchs à venir
         this.matches = data.filter((m: any) => new Date(m.dateHeure) > new Date())
                            .sort((a: any, b: any) => new Date(a.dateHeure).getTime() - new Date(b.dateHeure).getTime())
@@ -69,16 +69,16 @@ export class EspaceFanComponent implements OnInit {
 
         this.checkLoading();
       },
-      error: (err) => console.error('Erreur matchs', err)
+      error: (err: any) => console.error('Erreur matchs', err)
     });
 
     // Charger l'historique des pronostics
-    this.api.getUserPredictions(this.userId!).subscribe({
-      next: (data) => {
+    this.api.getUserPredictions(this.userId as number).subscribe({
+      next: (data: any) => {
         this.predictions = data;
         this.checkLoading();
       },
-      error: (err) => console.error('Erreur pronostics', err)
+      error: (err: any) => console.error('Erreur pronostics', err)
     });
   }
 
@@ -113,14 +113,14 @@ export class EspaceFanComponent implements OnInit {
     };
 
     this.api.submitPrediction(payload).subscribe({
-      next: (res) => {
+      next: (res: any) => {
         this.predictions.unshift(res); // Ajouter à l'historique
         this.submittingMatchId = null;
         
         // Mettre à jour les points (bonus de participation)
-        this.api.getUserPoints(this.userId!).subscribe(data => this.pointsData = data);
+        this.api.getUserPoints(this.userId as number).subscribe((data: any) => this.pointsData = data);
       },
-      error: (err) => {
+      error: (err: any) => {
         console.error('Erreur pronostic', err);
         alert('Erreur lors de la soumission de votre pronostic.');
         this.submittingMatchId = null;

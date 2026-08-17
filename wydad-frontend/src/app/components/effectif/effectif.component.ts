@@ -27,40 +27,40 @@ export class EffectifComponent implements OnInit {
         // Mock data for display purposes if backend is not fully reachable
         this.players = [
           {
-            nom: 'Yahya Jabrane',
-            numero: 5,
-            poste: 'Milieu',
-            age: 32,
-            matchsJoues: 150,
-            buts: 12,
-            passes: 8,
+            fullName: 'Yahya Jabrane',
+            jerseyNumber: 5,
+            position: 'Milieu',
+            birthDate: '1991-06-18',
+            matchesPlayed: 150,
+            goals: 12,
+            assists: 8,
           },
           {
-            nom: 'Ayoub El Amloud',
-            numero: 22,
-            poste: 'Défenseur',
-            age: 29,
-            matchsJoues: 120,
-            buts: 5,
-            passes: 15,
+            fullName: 'Ayoub El Amloud',
+            jerseyNumber: 22,
+            position: 'Défenseur',
+            birthDate: '1994-04-08',
+            matchesPlayed: 120,
+            goals: 5,
+            assists: 15,
           },
           {
-            nom: 'Youssef El Motie',
-            numero: 32,
-            poste: 'Gardien',
-            age: 28,
-            matchsJoues: 60,
-            buts: 0,
-            passes: 1,
+            fullName: 'Youssef El Motie',
+            jerseyNumber: 32,
+            position: 'Gardien',
+            birthDate: '1994-12-16',
+            matchesPlayed: 60,
+            goals: 0,
+            assists: 1,
           },
           {
-            nom: 'Hamdou El Houni',
-            numero: 10,
-            poste: 'Attaquant',
-            age: 30,
-            matchsJoues: 30,
-            buts: 8,
-            passes: 5,
+            fullName: 'Hamdou El Houni',
+            jerseyNumber: 10,
+            position: 'Attaquant',
+            birthDate: '1994-02-12',
+            matchesPlayed: 30,
+            goals: 8,
+            assists: 5,
           },
         ];
       },
@@ -74,5 +74,11 @@ export class EffectifComponent implements OnInit {
 
   getGoalLabel(): string {
     return this.selectedSport === 'BASKETBALL' ? 'Points' : 'Buts';
+  }
+
+  getAge(birthDate: string): number {
+    if (!birthDate) return 0;
+    const diff = Date.now() - new Date(birthDate).getTime();
+    return Math.abs(new Date(diff).getUTCFullYear() - 1970);
   }
 }

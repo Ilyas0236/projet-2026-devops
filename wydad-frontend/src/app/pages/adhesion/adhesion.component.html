@@ -1,0 +1,80 @@
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- WYDAD DIGITAL — ADHESION (Premium Dark Mode)              -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="min-h-screen bg-surface-0 text-white">
+
+  <!-- Hero Header -->
+  <div class="relative py-24 md:py-32 overflow-hidden zellige-bg">
+    <div class="absolute inset-0 bg-gradient-to-b from-wydad-red/10 to-surface-0"></div>
+    <div class="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-wydad-gold to-transparent"></div>
+    <div class="container-wydad relative z-10 text-center">
+      <span class="text-wydad-gold font-bold tracking-[0.3em] uppercase text-xs mb-4 block animate-fade-in-up" style="animation-delay: 0.1s; opacity: 0;">Carte d'Adhésion WAC</span>
+      <h1 class="font-display font-black text-hero uppercase tracking-tighter mb-6 animate-fade-in-up" style="animation-delay: 0.2s; opacity: 0;">
+        Rejoignez La <span class="text-wydad-gold">Famille</span>
+      </h1>
+      <p class="text-text-secondary text-lg max-w-2xl mx-auto animate-fade-in-up" style="animation-delay: 0.3s; opacity: 0;">
+        Choisissez votre niveau d'adhésion et profitez d'avantages exclusifs. Soutenez votre club, vivez des expériences uniques.
+      </p>
+    </div>
+  </div>
+
+  <!-- Pricing Cards -->
+  <div class="container-wydad py-16 md:py-24">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5">
+
+      <div *ngFor="let tier of tiers; let i = index"
+           class="relative flex flex-col rounded-2xl overflow-hidden border transition-all duration-500 animate-fade-in-up"
+           [class]="tier.borderColor + ' ' + (tier.glowClass || '') + ' bg-gradient-to-b ' + tier.bgGradient"
+           [class.lg:-translate-y-4]="tier.popular"
+           [class.lg:scale-105]="tier.popular"
+           [style.animation-delay]="(i * 0.1) + 's'"
+           style="opacity: 0;">
+
+        <!-- Popular badge -->
+        <div *ngIf="tier.popular" class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-wydad-gold via-wydad-gold-light to-wydad-gold"></div>
+        <div *ngIf="tier.popular" class="absolute top-3 right-3 z-10">
+          <span class="wydad-badge-gold text-[8px]">Populaire</span>
+        </div>
+
+        <!-- Card Header -->
+        <div class="p-6 text-center border-b border-white/[0.04]">
+          <h3 class="font-display font-bold text-xl uppercase tracking-wider" [class]="tier.color">{{ tier.name }}</h3>
+          <div class="mt-3 flex items-baseline justify-center gap-1">
+            <span class="font-display font-black text-4xl text-white">{{ tier.price }}</span>
+            <span class="text-text-tertiary text-sm">MAD/an</span>
+          </div>
+        </div>
+
+        <!-- Features -->
+        <div class="p-6 flex-1">
+          <ul class="space-y-3">
+            <li *ngFor="let feature of tier.features"
+                class="flex items-start gap-3 text-sm"
+                [class.text-text-secondary]="feature.enabled"
+                [class.text-text-muted]="!feature.enabled"
+                [class.line-through]="!feature.enabled">
+              <svg *ngIf="feature.enabled" class="w-4 h-4 mt-0.5 flex-shrink-0 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+              </svg>
+              <svg *ngIf="!feature.enabled" class="w-4 h-4 mt-0.5 flex-shrink-0 text-text-muted" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
+              </svg>
+              {{ feature.text }}
+            </li>
+          </ul>
+        </div>
+
+        <!-- CTA -->
+        <div class="p-6 pt-0">
+          <button (click)="selectLevel(tier.level)"
+                  class="w-full py-3.5 rounded-xl font-display font-bold uppercase tracking-wider text-sm transition-all duration-300"
+                  [class]="tier.btnClass">
+            {{ tier.price === '0' ? 'Devenir Fan' : 'S\'inscrire' }}
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>

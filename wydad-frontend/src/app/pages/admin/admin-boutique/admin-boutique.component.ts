@@ -19,7 +19,8 @@ export class AdminBoutiqueComponent implements OnInit {
     price: 0,
     stock: 0,
     category: 'MAILLOT',
-    description: 'Produit officiel'
+    description: 'Produit officiel',
+    mainImageUrl: ''
   };
 
   api = inject(ApiService);
@@ -43,7 +44,7 @@ export class AdminBoutiqueComponent implements OnInit {
   }
 
   openAddModal() {
-    this.newProduct = { name: '', price: 0, stock: 0, category: 'MAILLOT', description: 'Produit officiel' };
+    this.newProduct = { name: '', price: 0, stock: 0, category: 'MAILLOT', description: 'Produit officiel', mainImageUrl: '' };
     this.showModal = true;
   }
 
@@ -71,5 +72,25 @@ export class AdminBoutiqueComponent implements OnInit {
         error: (err) => console.error('Erreur suppression', err)
       });
     }
+  }
+
+  uploadingPhoto = false;
+
+  uploadPhoto(event: any) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    this.uploadingPhoto = true;
+    this.api.uploadMedia(file).subscribe({
+      next: (res) => {
+        this.newProduct.mainImageUrl = res.url;
+        this.uploadingPhoto = false;
+      },
+      error: (err) => {
+        console.error('Erreur upload', err);
+        this.uploadingPhoto = false;
+        alert('Erreur lors du chargement de la photo.');
+      }
+    });
   }
 }

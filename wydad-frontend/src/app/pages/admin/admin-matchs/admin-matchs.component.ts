@@ -36,7 +36,10 @@ import { ApiService } from '../../../services/api.service';
           </thead>
           <tbody class="divide-y divide-white/5">
             <tr *ngFor="let item of matchs" class="hover:bg-white/5 transition-colors">
-              <td class="py-3 px-4 text-sm text-white font-bold">{{ item.homeTeam }} - {{ item.awayTeam }}</td>
+              <td class="py-3 px-4 text-sm text-white font-bold flex items-center gap-2">
+                <img *ngIf="item.adversaireLogoUrl" [src]="apiService.getMediaUrl(item.adversaireLogoUrl)" class="w-8 h-8 object-contain rounded" alt="logo">
+                {{ item.homeTeam }} - {{ item.awayTeam }}
+              </td>
               <td class="py-3 px-4 text-xs text-gray-400">{{ item.matchDate | date:'medium' }}</td>
               <td class="py-3 px-4 text-xs text-gray-400">{{ item.competition }}</td>
               <td class="py-3 px-4 text-sm font-bold" [ngClass]="{'text-wydad-red': item.statut === 'TERMINE', 'text-yellow-400': item.statut === 'EN_COURS', 'text-gray-400': item.statut === 'A_VENIR'}">
@@ -91,6 +94,19 @@ import { ApiService } from '../../../services/api.service';
               </select>
             </div>
           </div>
+
+          <!-- Upload logo adversaire -->
+          <div class="mb-4">
+            <label class="block text-xs text-gray-400 uppercase mb-1">Logo Adversaire</label>
+            <div class="flex items-center gap-4">
+              <label class="cursor-pointer bg-zinc-800 border border-white/10 hover:border-wydad-red text-white px-4 py-2 rounded text-sm transition-colors">
+                📷 Choisir une image
+                <input type="file" accept="image/*" (change)="uploadLogo($event)" class="hidden">
+              </label>
+              <img *ngIf="currentMatch.adversaireLogoUrl" [src]="apiService.getMediaUrl(currentMatch.adversaireLogoUrl)" class="w-12 h-12 object-contain rounded border border-white/10" alt="preview">
+              <span *ngIf="uploading" class="text-xs text-yellow-400 animate-pulse">Envoi en cours...</span>
+            </div>
+          </div>
           
           <div class="mt-8 flex justify-end gap-3">
             <button (click)="closeModal()" class="px-4 py-2 text-gray-400 hover:text-white uppercase text-sm font-bold">Annuler</button>
@@ -108,7 +124,7 @@ export class AdminMatchsComponent implements OnInit {
   isEdit = false;
   currentMatch: any = {};
 
-  constructor(private apiService: ApiService) {}
+  constructor(public apiService: ApiService) {}
 
   ngOnInit() {
     this.loadMatchs();
@@ -137,9 +153,27 @@ export class AdminMatchsComponent implements OnInit {
       }
     } else {
       this.isEdit = false;
-      this.currentMatch = { homeTeam: 'Wydad AC', awayTeam: '', matchDate: '', venue: 'Stade Mohammed V', competition: 'Botola Pro', statut: 'A_VENIR' };
+      this.currentMatch = { homeTeam: 'Wydad AC', awayTeam: '', matchDate: '', venue: 'Stade Mohammed V', competition: 'Botola Pro', statut: 'A_VENIR', adversaireLogoUrl: '' };
     }
     this.showModal = true;
+  }
+
+  uploading = false;
+
+  uploadLogo(event: any) {
+    const file = event.target.files[0];
+    if (!file) return;
+    this.uploading = true;
+    this.apiService.uploadMedia(file).subscribe({
+      next: (res) => {
+        this.currentMatch.adversaireLogoUrl = res.url;
+        this.uploading = false;
+      },
+      error: () => {
+        this.uploading = false;
+        alert('Erreur lors de l\'upload du logo.');
+      }
+    });
   }
 
   openScoreModal(match: any) {

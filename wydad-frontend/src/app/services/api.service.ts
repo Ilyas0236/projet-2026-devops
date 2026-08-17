@@ -303,4 +303,19 @@ export class ApiService {
   getUserPredictions(userId: number): Observable<any[]> {
     return this.http.get<any[]>(`${this.baseUrl}/gamification/predictions/user/${userId}`);
   }
+
+  // ==========================================
+  // MEDIA UPLOAD
+  // ==========================================
+  uploadMedia(file: File): Observable<any> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.http.post<any>(`${this.baseUrl}/content/media/upload`, formData);
+  }
+
+  getMediaUrl(relativeUrl: string): string {
+    if (!relativeUrl) return '';
+    if (relativeUrl.startsWith('http')) return relativeUrl;
+    return `http://localhost:8080${relativeUrl}`;
+  }
 }

@@ -1,0 +1,338 @@
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- WYDAD DIGITAL — PROFIL & ESPACE PERSONNEL                 -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="min-h-screen bg-surface-0 text-white pt-28 pb-24">
+
+  <!-- Header -->
+  <div class="container-wydad mb-12 relative">
+    <span class="text-wydad-red font-bold tracking-[0.2em] uppercase text-xs mb-2 block">Mon Compte</span>
+    <h1 class="font-display font-black text-4xl md:text-5xl uppercase tracking-tighter">
+      Espace <span class="text-wydad-red">Personnel</span>
+    </h1>
+  </div>
+
+  <div class="container-wydad">
+    <div class="flex flex-col lg:flex-row gap-8 items-start">
+      
+      <!-- ─── SIDEBAR / PROFILE INFO ──────────────────────────── -->
+      <div class="w-full lg:w-[350px] flex-shrink-0">
+        <div class="glass-strong rounded-2xl overflow-hidden shadow-card sticky top-28">
+          <!-- Accent line top -->
+          <div class="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-wydad-red via-wydad-red/50 to-transparent"></div>
+          
+          <div class="p-6 text-center border-b border-white/[0.04]">
+            <div class="w-24 h-24 rounded-full bg-surface-3 flex items-center justify-center text-3xl mx-auto mb-4 border border-white/10 shadow-glow-red">
+              🔴
+            </div>
+            <h2 class="font-display font-bold text-2xl uppercase tracking-wider mb-2">{{ profile?.firstName }} {{ profile?.lastName }}</h2>
+            <div class="flex justify-center gap-2 mb-2">
+              <span class="bg-surface-4 text-text-secondary text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded">{{ profile?.role }}</span>
+              <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded"
+                    [ngClass]="{
+                      'bg-wydad-red text-white': profile?.membershipLevel === 'ROUGE',
+                      'bg-wydad-gold text-black': profile?.membershipLevel === 'OR',
+                      'bg-[#b9f2ff] text-black': profile?.membershipLevel === 'DIAMANT',
+                      'bg-[#9c27b0] text-white': profile?.membershipLevel === 'LEGENDE',
+                      'bg-surface-4 text-text-muted': !profile?.membershipLevel
+                    }">
+                {{ profile?.membershipLevel || 'FAN' }}
+              </span>
+            </div>
+          </div>
+
+          <!-- Meta info -->
+          <div class="p-6 bg-surface-2/30 border-b border-white/[0.04] space-y-3 text-sm text-text-secondary">
+            <div class="flex items-center gap-3">
+              <span class="w-5 text-center">📧</span>
+              <span class="truncate">{{ profile?.email }}</span>
+            </div>
+            <div class="flex items-center gap-3">
+              <span class="w-5 text-center">📞</span>
+              <span>{{ profile?.phone || 'Non renseigné' }}</span>
+            </div>
+            <div class="flex items-center gap-3">
+              <span class="w-5 text-center">🎟️</span>
+              <span class="font-mono text-xs bg-surface-4 px-1.5 py-0.5 rounded text-white">{{ profile?.referralCode }}</span>
+            </div>
+            <div class="flex items-center gap-3">
+              <span class="w-5 text-center">🛡️</span>
+              <span class="font-semibold" [class.text-green-500]="profile?.kycVerified" [class.text-yellow-500]="!profile?.kycVerified">
+                {{ profile?.kycVerified ? '✅ KYC Vérifié' : '⚠️ KYC Non vérifié' }}
+              </span>
+            </div>
+          </div>
+
+          <!-- Nav links -->
+          <div class="p-4 flex flex-col gap-1">
+            <a routerLink="/profil" class="px-4 py-3 rounded-lg text-sm font-medium transition-colors hover:bg-surface-4" routerLinkActive="bg-wydad-red/10 text-wydad-red font-bold" [routerLinkActiveOptions]="{exact: true}">⚙️ Paramètres du compte</a>
+            <a routerLink="/profil/carte" class="px-4 py-3 rounded-lg text-sm font-medium transition-colors hover:bg-surface-4 text-text-secondary" routerLinkActive="bg-wydad-red/10 text-wydad-red font-bold">🎟️ Ma Carte Membre</a>
+            <a routerLink="/profil/ecash" class="px-4 py-3 rounded-lg text-sm font-medium transition-colors hover:bg-surface-4 text-text-secondary" routerLinkActive="bg-wydad-red/10 text-wydad-red font-bold">💰 WydadPay (E-Cash)</a>
+            <a routerLink="/profil/billets" class="px-4 py-3 rounded-lg text-sm font-medium transition-colors hover:bg-surface-4 text-text-secondary" routerLinkActive="bg-wydad-red/10 text-wydad-red font-bold">🎫 Mes Billets</a>
+            <a routerLink="/profil/commandes" class="px-4 py-3 rounded-lg text-sm font-medium transition-colors hover:bg-surface-4 text-text-secondary" routerLinkActive="bg-wydad-red/10 text-wydad-red font-bold">📦 Mes Commandes</a>
+            
+            <div class="h-px bg-white/[0.06] my-2"></div>
+            
+            <a *ngIf="profile?.role === 'PLAYER'" routerLink="/joueur/dashboard" class="px-4 py-3 rounded-lg text-sm font-bold bg-wydad-gold text-black hover:bg-wydad-gold-light transition-colors text-center uppercase tracking-wider mt-2">🔥 Espace Joueur</a>
+            <a *ngIf="profile?.role === 'STAFF'" routerLink="/staff/dashboard" class="px-4 py-3 rounded-lg text-sm font-bold bg-wydad-gold text-black hover:bg-wydad-gold-light transition-colors text-center uppercase tracking-wider mt-2">📋 Espace Staff</a>
+          </div>
+
+          <!-- Logout / Delete -->
+          <div class="p-6 bg-surface-2/30 border-t border-white/[0.04]">
+            <button (click)="deleteAccount()" class="w-full py-2.5 border border-red-500/30 text-red-500 rounded-lg text-xs font-bold uppercase tracking-wider hover:bg-red-500/10 transition-colors">
+              Supprimer mon compte
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── MAIN CONTENT ────────────────────────────────────── -->
+      <div class="flex-1 min-w-0">
+        
+        <!-- Tabs -->
+        <div class="flex gap-2 mb-8 overflow-x-auto pb-2 scrollbar-hide">
+          <button (click)="activeTab = 'info'"
+                  class="whitespace-nowrap px-6 py-3 rounded-xl font-display font-bold uppercase text-xs tracking-wider transition-all duration-300 border"
+                  [ngClass]="{
+                    'bg-wydad-red text-white border-wydad-red': activeTab === 'info',
+                    'bg-surface-2 border-white/10 text-text-secondary': activeTab !== 'info'
+                  }">
+            📝 Infos
+          </button>
+          <button (click)="activeTab = 'sessions'"
+                  class="whitespace-nowrap px-6 py-3 rounded-xl font-display font-bold uppercase text-xs tracking-wider transition-all duration-300 border"
+                  [ngClass]="{
+                    'bg-wydad-red text-white border-wydad-red': activeTab === 'sessions',
+                    'bg-surface-2 border-white/10 text-text-secondary': activeTab !== 'sessions'
+                  }">
+            💻 Sessions
+          </button>
+          <button (click)="activeTab = 'kyc'"
+                  class="whitespace-nowrap px-6 py-3 rounded-xl font-display font-bold uppercase text-xs tracking-wider transition-all duration-300 border"
+                  [ngClass]="{
+                    'bg-wydad-red text-white border-wydad-red': activeTab === 'kyc',
+                    'bg-surface-2 border-white/10 text-text-secondary': activeTab !== 'kyc'
+                  }">
+            🛡️ Identité (KYC)
+          </button>
+          <button (click)="activeTab = 'otp'"
+                  class="whitespace-nowrap px-6 py-3 rounded-xl font-display font-bold uppercase text-xs tracking-wider transition-all duration-300 border"
+                  [ngClass]="{
+                    'bg-wydad-red text-white border-wydad-red': activeTab === 'otp',
+                    'bg-surface-2 border-white/10 text-text-secondary': activeTab !== 'otp'
+                  }">
+            📱 Sécurité 2FA
+          </button>
+        </div>
+
+        <div class="glass-strong rounded-3xl p-6 md:p-10 shadow-card">
+          
+          <!-- TAB: INFO -->
+          <div *ngIf="activeTab === 'info'" class="animate-fade-in">
+            <h3 class="font-display font-bold text-2xl uppercase tracking-wider mb-6">Informations Personnelles</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+              <div>
+                <label class="wydad-label">Prénom</label>
+                <input type="text" [(ngModel)]="editFirstName" class="wydad-input">
+              </div>
+              <div>
+                <label class="wydad-label">Nom</label>
+                <input type="text" [(ngModel)]="editLastName" class="wydad-input">
+              </div>
+            </div>
+
+            <div class="mb-6">
+              <label class="wydad-label">Téléphone</label>
+              <input type="text" [(ngModel)]="editPhone" class="wydad-input">
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+              <div>
+                <label class="wydad-label">Ville</label>
+                <input type="text" [(ngModel)]="editVille" placeholder="Casablanca" class="wydad-input">
+              </div>
+              <div>
+                <label class="wydad-label">Langue</label>
+                <select [(ngModel)]="editLangue" class="wydad-input bg-surface-2">
+                  <option value="">Sélectionnez</option>
+                  <option value="FR">Français</option>
+                  <option value="AR">Arabe</option>
+                  <option value="EN">Anglais</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="mb-8">
+              <label class="wydad-label">Biographie (Profil Public)</label>
+              <textarea [(ngModel)]="editBio" rows="4" class="wydad-input" placeholder="Parlez-nous de vous, votre passion pour le WAC..."></textarea>
+            </div>
+
+            <button (click)="updateProfile()" [disabled]="saving" class="wydad-btn-primary w-full md:w-auto px-10 py-3">
+              {{ saving ? 'Enregistrement...' : 'Enregistrer les modifications' }}
+            </button>
+            
+            <div *ngIf="infoMsg" class="mt-6 p-4 bg-green-500/10 border border-green-500/20 text-green-400 rounded-lg text-sm text-center">
+              {{ infoMsg }}
+            </div>
+            <div *ngIf="infoErr" class="mt-6 p-4 bg-red-500/10 border border-red-500/20 text-red-400 rounded-lg text-sm text-center">
+              {{ infoErr }}
+            </div>
+          </div>
+
+          <!-- TAB: SESSIONS -->
+          <div *ngIf="activeTab === 'sessions'" class="animate-fade-in">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+              <div>
+                <h3 class="font-display font-bold text-2xl uppercase tracking-wider mb-2">Sessions Actives</h3>
+                <p class="text-text-secondary text-sm">Gérez les appareils connectés à votre compte.</p>
+              </div>
+              <button (click)="revokeAllSessions()" class="wydad-btn-secondary border-red-500/30 text-red-400 hover:bg-red-500/10 text-xs px-4 py-2">
+                Déconnecter tout le reste
+              </button>
+            </div>
+
+            <div class="space-y-4">
+              <div *ngFor="let session of sessions" 
+                   class="flex items-center justify-between p-5 rounded-xl border transition-colors"
+                   [ngClass]="{
+                     'bg-surface-3 border-white/10': !session.isCurrent,
+                     'bg-wydad-red/10 border-wydad-red/30': session.isCurrent
+                   }">
+                
+                <div class="flex items-center gap-4">
+                  <div class="w-12 h-12 rounded-full bg-surface-4 flex items-center justify-center text-xl">
+                    {{ session.device.includes('iPhone') ? '📱' : '💻' }}
+                  </div>
+                  <div>
+                    <div class="flex items-center gap-3 mb-1">
+                      <strong class="text-white">{{ session.device }}</strong>
+                      <span *ngIf="session.isCurrent" class="text-[9px] uppercase tracking-wider font-bold bg-wydad-red text-white px-2 py-0.5 rounded">Session Actuelle</span>
+                    </div>
+                    <div class="flex gap-4 text-xs text-text-tertiary">
+                      <span>IP: {{ session.ipAddress }}</span>
+                      <span>•</span>
+                      <span>Dernière activité: {{ session.lastActiveAt | date:'dd/MM/yy HH:mm' }}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <button *ngIf="!session.isCurrent" (click)="revokeSession(session.id)" class="text-text-muted hover:text-red-500 p-2 transition-colors">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                </button>
+              </div>
+
+              <div *ngIf="sessions.length === 0" class="text-center py-12 text-text-muted">
+                Aucune session enregistrée.
+              </div>
+            </div>
+
+            <div *ngIf="sessionMsg" class="mt-6 p-4 bg-green-500/10 border border-green-500/20 text-green-400 rounded-lg text-sm text-center">
+              {{ sessionMsg }}
+            </div>
+          </div>
+
+          <!-- TAB: KYC -->
+          <div *ngIf="activeTab === 'kyc'" class="animate-fade-in">
+            <h3 class="font-display font-bold text-2xl uppercase tracking-wider mb-2">Vérification d'Identité (KYC)</h3>
+            <p class="text-text-secondary text-sm mb-8">Pour accéder à l'intégralité des services du Wydad E-Cash et sécuriser votre compte supporter, vous devez fournir une pièce d'identité valide.</p>
+            
+            <!-- Verified State -->
+            <div *ngIf="profile?.kycVerified" class="bg-green-500/10 border border-green-500/20 rounded-2xl p-8 text-center">
+              <div class="w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center text-3xl mx-auto mb-4">✅</div>
+              <h4 class="font-display font-bold text-xl text-green-400 uppercase tracking-wider mb-2">Compte Vérifié</h4>
+              <p class="text-text-secondary text-sm">Vos documents d'identité ont été approuvés par nos administrateurs. Vous avez un accès complet aux services.</p>
+            </div>
+
+            <!-- Unverified Form -->
+            <div *ngIf="!profile?.kycVerified" class="space-y-6">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label class="wydad-label">Type de document</label>
+                  <select [(ngModel)]="kycDocType" class="wydad-input bg-surface-2">
+                    <option value="CIN">Carte d'Identité Nationale (CIN)</option>
+                    <option value="PASSPORT">Passeport</option>
+                    <option value="PERMIS">Permis de conduire</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="wydad-label">Numéro de document</label>
+                  <input type="text" [(ngModel)]="kycDocNumber" placeholder="Ex: BE123456" class="wydad-input">
+                </div>
+              </div>
+
+              <div>
+                <label class="wydad-label">Chemin du document (Faux fichier pour démo)</label>
+                <div class="flex">
+                  <input type="text" [(ngModel)]="kycFilePath" placeholder="Ex: cin-recto-verso.jpg" class="wydad-input rounded-r-none border-r-0">
+                  <button class="bg-surface-4 px-4 rounded-r-lg border border-white/10 border-l-0 text-text-secondary text-sm font-bold">Parcourir</button>
+                </div>
+              </div>
+              
+              <div class="pt-4 flex flex-col sm:flex-row gap-4">
+                <button (click)="uploadKyc()" [disabled]="kycUploading || !kycDocNumber || !kycFilePath" class="wydad-btn-primary flex-1 py-3">
+                  {{ kycUploading ? 'Upload en cours...' : '1. Envoyer le document' }}
+                </button>
+                <button (click)="verifyKyc()" [disabled]="!kycUploaded || kycVerifying" class="wydad-btn-secondary border-green-500/30 text-green-500 hover:bg-green-500/10 flex-1 py-3">
+                  {{ kycVerifying ? 'Vérification...' : '2. Simuler Validation Admin' }}
+                </button>
+              </div>
+
+              <div *ngIf="kycMsg" class="p-4 bg-green-500/10 border border-green-500/20 text-green-400 rounded-lg text-sm text-center">
+                {{ kycMsg }}
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB: OTP -->
+          <div *ngIf="activeTab === 'otp'" class="animate-fade-in">
+            <h3 class="font-display font-bold text-2xl uppercase tracking-wider mb-2">Sécurité Double Facteur (2FA)</h3>
+            <p class="text-text-secondary text-sm mb-8">Validez vos transactions importantes (telles que les débits E-cash importants ou les changements de sécurité) par code temporaire envoyé par SMS.</p>
+            
+            <div class="max-w-md mx-auto bg-surface-2 p-6 md:p-8 rounded-2xl border border-white/[0.04]">
+              
+              <div *ngIf="!otpSent" class="space-y-6">
+                <div>
+                  <label class="wydad-label">Numéro de téléphone</label>
+                  <input type="text" [(ngModel)]="otpPhone" [placeholder]="profile?.phone || '+212 600-000000'" class="wydad-input text-center text-lg">
+                </div>
+                <button (click)="sendOtp()" [disabled]="otpSending" class="wydad-btn-primary w-full py-3">
+                  {{ otpSending ? 'Envoi...' : 'Recevoir un code SMS' }}
+                </button>
+              </div>
+
+              <div *ngIf="otpSent" class="space-y-6 animate-fade-in-up">
+                <div class="text-center">
+                  <div class="w-16 h-16 rounded-full bg-surface-3 mx-auto flex items-center justify-center mb-4">💬</div>
+                  <p class="text-text-secondary text-sm">Nous avons envoyé un code de vérification au <br><strong class="text-white">{{ otpPhone || profile?.phone }}</strong></p>
+                </div>
+                
+                <div *ngIf="mockOtpCode" class="p-4 bg-wydad-gold/10 border border-wydad-gold/20 text-wydad-gold rounded-lg text-sm text-center font-mono">
+                  Code de démo : <strong class="text-lg">{{ mockOtpCode }}</strong>
+                </div>
+
+                <div>
+                  <input type="text" [(ngModel)]="otpCode" placeholder="000000" class="wydad-input text-center text-3xl font-mono tracking-[0.5em] font-bold py-4">
+                </div>
+                
+                <div class="flex gap-3">
+                  <button (click)="otpSent = false" class="wydad-btn-secondary flex-1 py-3 text-xs">Annuler</button>
+                  <button (click)="verifyOtp()" [disabled]="otpVerifying || otpCode.length < 4" class="wydad-btn-primary flex-[2] py-3 text-xs">
+                    {{ otpVerifying ? 'Validation...' : 'Valider le code' }}
+                  </button>
+                </div>
+              </div>
+
+              <div *ngIf="otpMsg" class="mt-6 p-4 bg-green-500/10 border border-green-500/20 text-green-400 rounded-lg text-sm text-center">
+                {{ otpMsg }}
+              </div>
+              <div *ngIf="otpErr" class="mt-6 p-4 bg-red-500/10 border border-red-500/20 text-red-400 rounded-lg text-sm text-center">
+                {{ otpErr }}
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

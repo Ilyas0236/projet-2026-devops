@@ -1,0 +1,88 @@
+<div class="flex min-h-screen bg-surface-0 flex-row-reverse">
+  <!-- Right Side (Hero Image - Mirrored) -->
+  <div class="hidden lg:flex w-1/2 relative bg-surface-0 zellige-bg items-center justify-center" style="background-image: url('assets/images/backgrounds/register-bg.jpg'); background-size: cover; background-position: center; transform: scaleX(-1);">
+    <div class="absolute inset-0 bg-gradient-to-t from-surface-0 via-surface-1/80 to-surface-0/90 z-0"></div>
+    <div class="relative z-10 text-center px-12 animate-fade-in-up" style="transform: scaleX(-1);">
+      <h1 class="text-9xl font-display text-wydad-red font-bold mb-4 opacity-90 drop-shadow-xl">WAC</h1>
+      <h2 class="text-3xl font-display text-text-primary uppercase tracking-widest mb-6">Devenez Membre</h2>
+      <p class="text-text-secondary text-lg max-w-md mx-auto">Inscrivez-vous et soutenez votre club de cœur.</p>
+    </div>
+  </div>
+
+  <!-- Left Side (Form) -->
+  <div class="w-full lg:w-1/2 flex items-center justify-center bg-surface-1 p-6 sm:p-10 lg:p-12 relative overflow-y-auto h-screen">
+    <div class="w-full max-w-lg animate-scale-in my-auto py-8">
+      
+      <div class="text-center mb-8">
+        <h2 class="text-3xl sm:text-4xl font-display text-text-primary uppercase tracking-wide mb-2">Inscription</h2>
+        <p class="text-text-secondary">Supporter Wydad Athletic Club</p>
+      </div>
+
+      <div class="wydad-card p-6 sm:p-8 rounded-2xl bg-surface-3 border border-white/5 shadow-2xl">
+        
+        <h3 class="text-text-primary font-display uppercase tracking-wider mb-4 border-b border-white/10 pb-2 text-lg">Informations Personnelles</h3>
+        <div class="flex flex-col sm:flex-row gap-4 mb-4">
+          <div class="form-group flex-1">
+            <label class="wydad-label block mb-1 text-text-secondary text-xs uppercase tracking-wider font-semibold">Prénom</label>
+            <input type="text" class="wydad-input w-full bg-surface-2 border border-white/10 text-text-primary rounded-lg px-4 py-2.5 focus:border-wydad-red focus:ring-1 focus:ring-wydad-red transition-colors" [(ngModel)]="firstName" placeholder="Prénom">
+          </div>
+          <div class="form-group flex-1">
+            <label class="wydad-label block mb-1 text-text-secondary text-xs uppercase tracking-wider font-semibold">Nom</label>
+            <input type="text" class="wydad-input w-full bg-surface-2 border border-white/10 text-text-primary rounded-lg px-4 py-2.5 focus:border-wydad-red focus:ring-1 focus:ring-wydad-red transition-colors" [(ngModel)]="lastName" placeholder="Nom">
+          </div>
+        </div>
+
+        <div class="form-group mb-4">
+          <label class="wydad-label block mb-1 text-text-secondary text-xs uppercase tracking-wider font-semibold">Email</label>
+          <input type="email" class="wydad-input w-full bg-surface-2 border border-white/10 text-text-primary rounded-lg px-4 py-2.5 focus:border-wydad-red focus:ring-1 focus:ring-wydad-red transition-colors" [(ngModel)]="email" placeholder="exemple@wydad.ma">
+        </div>
+
+        <div class="form-group mb-4">
+          <label class="wydad-label block mb-1 text-text-secondary text-xs uppercase tracking-wider font-semibold">Téléphone</label>
+          <input type="text" class="wydad-input w-full bg-surface-2 border border-white/10 text-text-primary rounded-lg px-4 py-2.5 focus:border-wydad-red focus:ring-1 focus:ring-wydad-red transition-colors" [(ngModel)]="phone" placeholder="+212 600-000000">
+        </div>
+
+        <div class="form-group mb-8">
+          <label class="wydad-label block mb-1 text-text-secondary text-xs uppercase tracking-wider font-semibold">Mot de passe</label>
+          <input type="password" class="wydad-input w-full bg-surface-2 border border-white/10 text-text-primary rounded-lg px-4 py-2.5 focus:border-wydad-red focus:ring-1 focus:ring-wydad-red transition-colors" [(ngModel)]="password" placeholder="Minimum 6 caractères">
+        </div>
+
+        <h3 class="text-text-primary font-display uppercase tracking-wider mb-4 border-b border-white/10 pb-2 text-lg">Adhésion</h3>
+        <div class="form-group mb-4">
+          <label class="wydad-label block mb-1 text-text-secondary text-xs uppercase tracking-wider font-semibold">Niveau d'Adhésion</label>
+          <select class="wydad-input w-full bg-surface-2 border border-white/10 text-text-primary rounded-lg px-4 py-2.5 focus:border-wydad-red focus:ring-1 focus:ring-wydad-red transition-colors appearance-none" [(ngModel)]="membershipLevel">
+            <option value="ROUGE" class="bg-surface-2 text-text-primary">Rouge (500 DH/an)</option>
+            <option value="OR" class="bg-surface-2 text-wydad-gold">Or (1 200 DH/an)</option>
+            <option value="DIAMANT" class="bg-surface-2 text-blue-300">Diamant (3 000 DH/an)</option>
+            <option value="JUNIOR" class="bg-surface-2 text-text-primary">Junior (200 DH/an)</option>
+          </select>
+        </div>
+
+        <div class="form-group mb-8">
+          <label class="wydad-label block mb-1 text-text-secondary text-xs uppercase tracking-wider font-semibold">Code de parrainage (Optionnel)</label>
+          <input type="text" class="wydad-input w-full bg-surface-2 border border-white/10 text-text-primary rounded-lg px-4 py-2.5 focus:border-wydad-red focus:ring-1 focus:ring-wydad-red transition-colors" [(ngModel)]="referralCode" placeholder="Ex: WAC-REF-123">
+        </div>
+
+        <button class="wydad-btn-primary wydad-btn-skew w-full py-4 bg-wydad-red hover:bg-red-700 text-white font-display uppercase tracking-widest text-lg rounded transition-all transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100" (click)="register()" [disabled]="loading || !isValidForm()">
+          <span class="inline-block -skew-x-[15deg]">{{ loading ? 'Création du compte...' : 'Créer mon compte' }}</span>
+        </button>
+
+        <div *ngIf="error" class="mt-4 p-3 bg-wydad-red/10 border border-wydad-red/20 text-wydad-red rounded-lg text-center text-sm font-medium animate-fade-in">
+          {{ error }}
+        </div>
+        <div *ngIf="success" class="mt-4 p-3 bg-green-500/10 border border-green-500/20 text-green-400 rounded-lg text-center text-sm font-medium animate-fade-in">
+          ✅ Compte créé avec succès ! Redirection vers la page de connexion...
+        </div>
+
+        <div class="relative flex items-center justify-center mt-8 mb-6">
+          <div class="absolute inset-x-0 h-px bg-white/10"></div>
+          <span class="relative bg-surface-3 px-4 text-text-tertiary text-sm">Déjà membre ?</span>
+        </div>
+
+        <div class="text-center">
+          <a routerLink="/login" class="inline-block text-wydad-red hover:text-wydad-gold font-semibold transition-colors uppercase text-sm tracking-wider">Se connecter</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

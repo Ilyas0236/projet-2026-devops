@@ -34,6 +34,8 @@ public class Product {
     private Double averageRating = 0.0;
     private Integer reviewCount = 0;
 
+    private String mainImageUrl;
+
     @Enumerated(EnumType.STRING)
     private SportSection sportSection;
 

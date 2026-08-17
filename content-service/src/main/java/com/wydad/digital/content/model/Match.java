@@ -29,6 +29,8 @@ public class Match {
     @Column(nullable = false)
     private String adversaire;
 
+    private String adversaireLogoUrl;
+
     @Column(nullable = false)
     private String competition;
 

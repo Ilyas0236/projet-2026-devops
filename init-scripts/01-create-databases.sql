@@ -7,3 +7,4 @@ CREATE DATABASE payment_db;
 CREATE DATABASE ticket_db;
 CREATE DATABASE notification_db;
 CREATE DATABASE sports_db;
+CREATE DATABASE wydad_gamification;

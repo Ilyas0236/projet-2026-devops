@@ -1,68 +1,105 @@
-<!-- boutique.component.html -->
-<div class="min-h-screen bg-wydad-light pt-32 pb-24">
-  
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- WYDAD DIGITAL — BOUTIQUE (Premium Dark Mode)              -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="min-h-screen bg-surface-0 pt-28 pb-24">
+
   <!-- Header -->
-  <div class="max-w-7xl mx-auto px-6 mb-16 text-center">
-    <span class="text-wydad-red font-bold tracking-[0.2em] uppercase text-sm mb-2 block">Officiel</span>
-    <h1 class="font-display font-black text-5xl md:text-6xl uppercase tracking-tighter text-wydad-dark">
+  <div class="container-wydad mb-16 text-center relative">
+    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[300px] bg-red-glow opacity-30 pointer-events-none"></div>
+    <span class="text-wydad-red font-bold tracking-[0.3em] uppercase text-xs mb-3 block relative z-10 animate-fade-in-up" style="animation-delay: 0.1s; opacity: 0;">Boutique Officielle</span>
+    <h1 class="font-display font-black text-hero uppercase tracking-tighter text-white relative z-10 animate-fade-in-up" style="animation-delay: 0.2s; opacity: 0;">
       Wydad <span class="text-wydad-red">Store</span>
     </h1>
-    <p class="text-gray-500 mt-4 max-w-2xl mx-auto">Découvrez la collection officielle du Wydad Athletic Club. Maillots, survêtements et accessoires exclusifs.</p>
+    <p class="text-text-secondary mt-4 max-w-2xl mx-auto relative z-10 animate-fade-in-up" style="animation-delay: 0.3s; opacity: 0;">
+      Découvrez la collection officielle du Wydad Athletic Club. Maillots, survêtements et accessoires exclusifs.
+    </p>
   </div>
 
   <!-- Filters -->
-  <div class="max-w-7xl mx-auto px-6 mb-12 flex justify-center gap-4 flex-wrap">
-    <button class="px-6 py-2 bg-wydad-red text-white font-bold uppercase text-sm tracking-wider skew-x-[-10deg] shadow-[0_0_10px_rgba(211,47,47,0.4)]">
-      <span class="skew-x-[10deg] block">Tout Voir</span>
+  <div class="container-wydad mb-12 flex justify-center gap-3 flex-wrap animate-fade-in-up" style="animation-delay: 0.4s; opacity: 0;">
+    <button class="wydad-btn-skew px-6 py-2.5 text-xs shadow-glow-red">
+      <span>Tout Voir</span>
     </button>
-    <button class="px-6 py-2 border border-gray-300 text-gray-500 hover:text-wydad-dark hover:border-gray-500 font-bold uppercase text-sm tracking-wider skew-x-[-10deg] transition-colors">
+    <button class="wydad-btn-secondary px-6 py-2.5 text-xs font-display tracking-wider uppercase transform skew-x-[-10deg]">
       <span class="skew-x-[10deg] block">Maillots</span>
     </button>
-    <button class="px-6 py-2 border border-gray-300 text-gray-500 hover:text-wydad-dark hover:border-gray-500 font-bold uppercase text-sm tracking-wider skew-x-[-10deg] transition-colors">
+    <button class="wydad-btn-secondary px-6 py-2.5 text-xs font-display tracking-wider uppercase transform skew-x-[-10deg]">
       <span class="skew-x-[10deg] block">Entraînement</span>
     </button>
-    <button class="px-6 py-2 border border-gray-300 text-gray-500 hover:text-wydad-dark hover:border-gray-500 font-bold uppercase text-sm tracking-wider skew-x-[-10deg] transition-colors">
+    <button class="wydad-btn-secondary px-6 py-2.5 text-xs font-display tracking-wider uppercase transform skew-x-[-10deg]">
       <span class="skew-x-[10deg] block">Accessoires</span>
     </button>
   </div>
 
   <!-- Products Grid -->
-  <div class="max-w-7xl mx-auto px-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-    
-    <!-- Dynamic Product Card -->
-    <div *ngFor="let product of products" [routerLink]="['/boutique', product.id]" class="group bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-500 border border-gray-100 relative cursor-pointer">
-      <div *ngIf="product.isNew" class="absolute top-4 left-4 z-10 bg-wydad-red text-white text-xs font-bold px-3 py-1 uppercase tracking-wider rounded">Nouveau</div>
-      <div *ngIf="product.isPromo" class="absolute top-4 left-4 z-10 bg-wydad-gold text-wydad-dark text-xs font-bold px-3 py-1 uppercase tracking-wider rounded">Promo</div>
-      
+  <div class="container-wydad grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+
+    <!-- Product Card -->
+    <div *ngFor="let product of products; let i = index"
+         [routerLink]="['/boutique', product.id]"
+         class="group wydad-card-interactive rounded-2xl overflow-hidden relative animate-fade-in-up"
+         [style.animation-delay]="(i * 0.08) + 's'"
+         style="opacity: 0;">
+
+      <!-- Badges -->
+      <div *ngIf="product.isNew" class="absolute top-4 left-4 z-10">
+        <span class="wydad-badge text-[9px]">Nouveau</span>
+      </div>
+      <div *ngIf="product.isPromo" class="absolute top-4 left-4 z-10">
+        <span class="wydad-badge-gold text-[9px]">Promo</span>
+      </div>
+
       <!-- Image Container -->
-      <div class="aspect-[4/5] bg-gray-100 overflow-hidden relative flex items-center justify-center">
-        <div class="w-48 h-48 bg-white/50 rounded-lg transform -rotate-12 group-hover:rotate-0 group-hover:scale-110 transition-all duration-500 flex items-center justify-center shadow-inner overflow-hidden">
-           <img *ngIf="product.imageUrl" [src]="product.imageUrl" class="w-full h-full object-cover">
-           <span *ngIf="!product.imageUrl" class="text-gray-400 font-display font-bold text-center p-2">{{ product.name }}</span>
+      <div class="aspect-[4/5] bg-surface-2 overflow-hidden relative flex items-center justify-center">
+        <!-- Product image with hover zoom -->
+        <div class="w-full h-full flex items-center justify-center p-8 group-hover:scale-110 transition-transform duration-700">
+          <img *ngIf="product.mainImageUrl"
+               [src]="api.getMediaUrl(product.mainImageUrl)"
+               class="max-w-full max-h-full object-contain drop-shadow-2xl"
+               [alt]="product.name">
+          <span *ngIf="!product.mainImageUrl"
+                class="text-text-tertiary font-display font-bold text-center text-sm uppercase tracking-wider">{{ product.name }}</span>
+        </div>
+
+        <!-- Quick view overlay -->
+        <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+          <span class="wydad-btn-primary px-6 py-2.5 text-xs translate-y-4 group-hover:translate-y-0 transition-transform duration-300">Voir le produit</span>
         </div>
       </div>
-      
+
       <!-- Content -->
-      <div class="p-6">
+      <div class="p-5">
         <div class="flex justify-between items-start mb-2">
-          <h3 class="font-display font-bold text-lg text-wydad-dark uppercase">{{ product.name }}</h3>
-          <div class="flex flex-col items-end">
-            <span class="font-bold text-wydad-red">{{ product.price }} DH</span>
-            <span *ngIf="product.oldPrice" class="text-xs text-gray-400 line-through">{{ product.oldPrice }} DH</span>
+          <h3 class="font-display font-bold text-base text-white uppercase tracking-wide leading-tight flex-1 pr-3">{{ product.name }}</h3>
+          <div class="flex flex-col items-end flex-shrink-0">
+            <span class="font-display font-bold text-lg text-wydad-red">{{ product.price }} <span class="text-xs text-text-tertiary">DH</span></span>
+            <span *ngIf="product.oldPrice" class="text-xs text-text-tertiary line-through">{{ product.oldPrice }} DH</span>
           </div>
         </div>
-        <p class="text-sm text-gray-500 mb-6">{{ product.description || 'Produit officiel Wydad AC' }}</p>
-        
-        <button class="w-full py-3 bg-wydad-dark text-white font-bold uppercase text-xs tracking-wider group-hover:bg-wydad-red transition-colors duration-300 flex items-center justify-center gap-2">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
-          Voir le produit
-        </button>
+        <p class="text-sm text-text-tertiary line-clamp-1">{{ product.description || 'Produit officiel Wydad AC' }}</p>
       </div>
     </div>
-    
+
+    <!-- Loading skeleton -->
+    <div *ngIf="loading" class="col-span-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div *ngFor="let s of [1,2,3,4]" class="rounded-2xl overflow-hidden bg-surface-3 border border-white/[0.04]">
+        <div class="aspect-[4/5] skeleton"></div>
+        <div class="p-5 space-y-3">
+          <div class="h-4 skeleton w-3/4"></div>
+          <div class="h-3 skeleton w-1/2"></div>
+        </div>
+      </div>
+    </div>
+
     <!-- Empty state -->
-    <div *ngIf="products.length === 0 && !loading" class="col-span-full text-center py-20 text-gray-500 font-display text-xl">
-      Aucun produit disponible pour le moment.
+    <div *ngIf="products.length === 0 && !loading" class="col-span-full text-center py-24">
+      <div class="glass rounded-2xl p-12 max-w-md mx-auto">
+        <svg class="w-16 h-16 text-text-muted mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
+        </svg>
+        <p class="text-text-tertiary font-display text-lg uppercase tracking-wider">Aucun produit disponible</p>
+        <p class="text-text-muted text-sm mt-2">La boutique sera bientôt approvisionnée.</p>
+      </div>
     </div>
 
   </div>

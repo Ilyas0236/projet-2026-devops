@@ -47,7 +47,7 @@ import { ApiService } from '../../services/api.service';
         <h2>📰 Dernières Actualités</h2>
         <div class="news-grid">
           <div class="news-card" *ngFor="let article of articles" [routerLink]="['/actualites', article.id]">
-            <div class="news-image" [style.backgroundImage]="'url(' + (article.imageUrl || 'https://via.placeholder.com/400x250/d32f2f/ffffff?text=WYDAD') + ')'"></div>
+            <div class="news-image" [style.backgroundImage]="'url(' + (article.imageUrl || 'assets/images/defaults/default-news.jpg') + ')'"></div>
             <div class="news-body">
               <span class="sport-tag">{{ article.sport }}</span>
               <h3>{{ article.titre }}</h3>
@@ -116,7 +116,7 @@ import { ApiService } from '../../services/api.service';
     .hero-overlay {
       position: absolute;
       inset: 0;
-      background: url('https://www.transparenttextures.com/patterns/black-scales.png');
+      background: url('assets/images/backgrounds/black-scales.png');
       opacity: 0.3;
     }
     .hero-content {

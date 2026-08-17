@@ -11,9 +11,14 @@ import { CommonModule } from '@angular/common';
 })
 export class PublicLayoutComponent {
   isScrolled = false;
+  isMobileMenuOpen = false;
 
   @HostListener('window:scroll', [])
   onWindowScroll() {
     this.isScrolled = window.scrollY > 50;
+  }
+
+  toggleMobileMenu() {
+    this.isMobileMenuOpen = !this.isMobileMenuOpen;
   }
 }

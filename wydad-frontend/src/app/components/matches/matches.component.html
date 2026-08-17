@@ -1,0 +1,174 @@
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- WYDAD DIGITAL — MATCHS & RÉSULTATS (Premium Dark Mode)    -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="min-h-screen bg-surface-0 text-white pt-28 pb-24">
+
+  <!-- Header -->
+  <div class="container-wydad mb-16 text-center relative">
+    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[300px] bg-red-glow opacity-30 pointer-events-none"></div>
+    <span class="text-wydad-red font-bold tracking-[0.3em] uppercase text-xs mb-3 block relative z-10">Calendrier</span>
+    <h1 class="font-display font-black text-hero uppercase tracking-tighter relative z-10">
+      Matchs & <span class="text-wydad-red">Résultats</span>
+    </h1>
+    <p class="text-text-secondary mt-4 max-w-2xl mx-auto relative z-10">
+      Suivez toutes les rencontres du Wydad AC dans toutes les disciplines.
+    </p>
+  </div>
+
+  <div class="container-wydad">
+    <!-- Sport Filters -->
+    <div class="flex justify-center gap-3 flex-wrap mb-8">
+      <button (click)="filterSport('ALL')"
+              class="px-5 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition-all duration-300 border"
+              [ngClass]="{
+                'bg-wydad-red text-white border-wydad-red': selectedSport === 'ALL',
+                'border-white/10 text-text-secondary hover:border-white/30': selectedSport !== 'ALL'
+              }">
+        Tous les Sports
+      </button>
+      <button (click)="filterSport('FOOTBALL')"
+              class="px-5 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition-all duration-300 border"
+              [ngClass]="{
+                'bg-wydad-red text-white border-wydad-red': selectedSport === 'FOOTBALL',
+                'border-white/10 text-text-secondary hover:border-white/30': selectedSport !== 'FOOTBALL'
+              }">
+        ⚽ Football
+      </button>
+      <button (click)="filterSport('BASKETBALL')"
+              class="px-5 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition-all duration-300 border"
+              [ngClass]="{
+                'bg-wydad-red text-white border-wydad-red': selectedSport === 'BASKETBALL',
+                'border-white/10 text-text-secondary hover:border-white/30': selectedSport !== 'BASKETBALL'
+              }">
+        🏀 Basketball
+      </button>
+      <button (click)="filterSport('HANDBALL')"
+              class="px-5 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition-all duration-300 border"
+              [ngClass]="{
+                'bg-wydad-red text-white border-wydad-red': selectedSport === 'HANDBALL',
+                'border-white/10 text-text-secondary hover:border-white/30': selectedSport !== 'HANDBALL'
+              }">
+        🤾 Handball
+      </button>
+    </div>
+
+    <!-- Tabs -->
+    <div class="flex justify-center gap-1 mb-12 bg-surface-2 rounded-xl p-1 max-w-md mx-auto">
+      <button (click)="activeTab = 'calendar'"
+              class="flex-1 py-3 px-4 rounded-lg font-display font-bold uppercase text-xs tracking-wider transition-all duration-300"
+              [class.bg-wydad-red]="activeTab === 'calendar'"
+              [class.text-white]="activeTab === 'calendar'"
+              [class.text-text-tertiary]="activeTab !== 'calendar'">
+        📅 À venir
+      </button>
+      <button (click)="activeTab = 'results'"
+              class="flex-1 py-3 px-4 rounded-lg font-display font-bold uppercase text-xs tracking-wider transition-all duration-300"
+              [class.bg-wydad-red]="activeTab === 'results'"
+              [class.text-white]="activeTab === 'results'"
+              [class.text-text-tertiary]="activeTab !== 'results'">
+        🏆 Résultats
+      </button>
+    </div>
+
+    <!-- CALENDAR TAB -->
+    <div *ngIf="activeTab === 'calendar'" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div *ngFor="let match of filteredMatches(); let i = index"
+           class="wydad-card rounded-2xl overflow-hidden animate-fade-in-up"
+           [style.animation-delay]="(i * 0.05) + 's'" style="opacity: 0;">
+        <!-- Top color bar -->
+        <div class="h-[2px] bg-gradient-to-r from-wydad-red to-transparent"></div>
+        <div class="p-6">
+          <!-- Header -->
+          <div class="flex justify-between items-center mb-5">
+            <span class="text-wydad-red font-bold text-[10px] uppercase tracking-[0.15em]">{{ match.competition }}</span>
+            <span class="text-[10px] font-semibold text-text-muted bg-surface-4 px-2 py-0.5 rounded">{{ match.sport }}</span>
+          </div>
+          <!-- Teams -->
+          <div class="flex items-center justify-between gap-4 mb-5">
+            <div class="flex flex-col items-center gap-1 flex-1">
+              <span class="font-display font-bold text-sm text-wydad-red uppercase">WAC</span>
+            </div>
+            <span class="font-display font-black text-xl text-text-muted">VS</span>
+            <div class="flex flex-col items-center gap-1 flex-1">
+              <span class="font-display font-bold text-sm text-white uppercase text-center">{{ match.adversaire }}</span>
+            </div>
+          </div>
+          <!-- Details -->
+          <div class="border-t border-white/[0.04] pt-4 space-y-2 text-sm text-text-secondary">
+            <div class="flex items-center gap-2">
+              <svg class="w-3.5 h-3.5 text-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              {{ match.date | date:'dd/MM/yyyy' }} · {{ match.heure ? match.heure.substring(0, 5) : 'À confirmer' }}
+            </div>
+            <div class="flex items-center gap-2">
+              <svg class="w-3.5 h-3.5 text-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+              {{ match.lieu }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RESULTS TAB -->
+    <div *ngIf="activeTab === 'results'" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div *ngFor="let match of filteredMatches(); let i = index"
+           class="wydad-card rounded-2xl overflow-hidden animate-fade-in-up"
+           [style.animation-delay]="(i * 0.05) + 's'" style="opacity: 0;">
+        <div class="h-[2px] bg-gradient-to-r from-surface-5 to-transparent"></div>
+        <div class="p-6">
+          <!-- Header -->
+          <div class="flex justify-between items-center mb-5">
+            <span class="text-text-tertiary font-bold text-[10px] uppercase tracking-[0.15em]">{{ match.competition }}</span>
+            <span class="text-[10px] font-semibold text-text-muted bg-surface-4 px-2 py-0.5 rounded">{{ match.sport }}</span>
+          </div>
+          <!-- Score -->
+          <div class="flex items-center justify-between gap-3 mb-5">
+            <div class="flex flex-col items-center gap-1 flex-1">
+              <span class="font-display font-bold text-sm text-wydad-red uppercase">WAC</span>
+            </div>
+            <div class="flex items-center gap-3">
+              <span class="font-display font-black text-3xl rounded-lg w-12 h-12 flex items-center justify-center"
+                    [ngClass]="{
+                      'text-green-400 bg-green-500/10': match.scoreWydad > match.scoreAdversaire,
+                      'text-wydad-red bg-wydad-red/10': match.scoreWydad < match.scoreAdversaire,
+                      'text-text-secondary bg-surface-4': match.scoreWydad === match.scoreAdversaire
+                    }">
+                {{ match.scoreWydad }}
+              </span>
+              <span class="text-text-muted font-mono text-sm">-</span>
+              <span class="font-display font-black text-3xl rounded-lg w-12 h-12 flex items-center justify-center"
+                    [ngClass]="{
+                      'text-green-400 bg-green-500/10': match.scoreAdversaire > match.scoreWydad,
+                      'text-wydad-red bg-wydad-red/10': match.scoreAdversaire < match.scoreWydad,
+                      'text-text-secondary bg-surface-4': match.scoreWydad === match.scoreAdversaire
+                    }">
+                {{ match.scoreAdversaire }}
+              </span>
+            </div>
+            <div class="flex flex-col items-center gap-1 flex-1">
+              <span class="font-display font-bold text-sm text-white uppercase text-center">{{ match.adversaire }}</span>
+            </div>
+          </div>
+          <!-- Outcome & Details -->
+          <div class="border-t border-white/[0.04] pt-4 flex justify-between items-center">
+            <span class="text-xs text-text-tertiary">{{ match.date | date:'dd/MM/yyyy' }} · {{ match.lieu }}</span>
+            <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded"
+                  [ngClass]="{
+                    'bg-green-500/15 text-green-400': match.scoreWydad > match.scoreAdversaire,
+                    'bg-surface-4 text-text-secondary': match.scoreWydad === match.scoreAdversaire,
+                    'bg-wydad-red/15 text-wydad-red': match.scoreWydad < match.scoreAdversaire
+                  }">
+              {{ match.scoreWydad > match.scoreAdversaire ? 'Victoire' : match.scoreWydad === match.scoreAdversaire ? 'Nul' : 'Défaite' }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Empty state -->
+    <div *ngIf="filteredMatches().length === 0" class="glass rounded-2xl text-center py-20 col-span-full">
+      <p class="text-text-tertiary font-display text-lg uppercase tracking-wider">
+        {{ activeTab === 'calendar' ? 'Aucun match à venir programmé' : 'Aucun résultat disponible' }}
+      </p>
+    </div>
+  </div>
+</div>

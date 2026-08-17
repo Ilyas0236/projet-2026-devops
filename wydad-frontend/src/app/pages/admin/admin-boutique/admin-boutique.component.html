@@ -27,14 +27,9 @@
       </thead>
       <tbody class="divide-y divide-gray-100">
         <tr *ngFor="let product of products" class="hover:bg-gray-50 transition-colors">
-          <td class="px-6 py-4">
-            <div class="flex items-center gap-3">
-              <div class="w-10 h-10 rounded bg-gray-100 flex items-center justify-center overflow-hidden">
-                <img *ngIf="product.imageUrl" [src]="product.imageUrl" class="w-full h-full object-cover">
-                <span *ngIf="!product.imageUrl" class="text-gray-400 text-xs">IMG</span>
-              </div>
-              <span class="font-medium text-gray-800">{{ product.name }}</span>
-            </div>
+          <td class="px-6 py-4 font-medium text-gray-900 flex items-center gap-3">
+            <img *ngIf="product.mainImageUrl" [src]="api.getMediaUrl(product.mainImageUrl)" class="w-10 h-10 object-cover rounded bg-gray-100" alt="prod">
+            {{ product.name }}
           </td>
           <td class="px-6 py-4 text-gray-600 text-sm">{{ product.category }}</td>
           <td class="px-6 py-4 text-gray-800 font-bold">{{ product.price }} DH</td>
@@ -97,6 +92,19 @@
           <option value="TRAINING">Entraînement</option>
           <option value="ACCESSORY">Accessoire</option>
         </select>
+      </div>
+
+      <!-- Image upload -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Image Principale</label>
+        <div class="flex items-center gap-4 border border-gray-300 p-3 rounded-lg bg-gray-50">
+          <label class="cursor-pointer bg-white border border-gray-300 hover:border-wydad-red text-gray-700 hover:text-wydad-red px-4 py-2 rounded text-sm transition-colors shadow-sm">
+            📷 Choisir
+            <input type="file" accept="image/*" (change)="uploadPhoto($event)" class="hidden">
+          </label>
+          <img *ngIf="newProduct.mainImageUrl" [src]="api.getMediaUrl(newProduct.mainImageUrl)" class="w-12 h-12 object-cover rounded border border-gray-200" alt="preview">
+          <span *ngIf="uploadingPhoto" class="text-xs text-wydad-red animate-pulse">Envoi en cours...</span>
+        </div>
       </div>
     </div>
     

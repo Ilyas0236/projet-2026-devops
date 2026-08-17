@@ -75,9 +75,16 @@ import { ApiService } from '../../../services/api.service';
                 <input type="text" [(ngModel)]="currentArticle.category" class="w-full bg-black border border-white/10 rounded px-3 py-2 text-white">
               </div>
               <div>
-                <label class="block text-xs text-gray-400 uppercase mb-1">URL de l'image</label>
-                <input type="text" [(ngModel)]="currentArticle.imageUrl" class="w-full bg-black border border-white/10 rounded px-3 py-2 text-white">
+              <label class="block text-xs text-gray-400 uppercase mb-1">Image de couverture</label>
+              <div class="flex items-center gap-4">
+                <label class="cursor-pointer bg-zinc-800 border border-white/10 hover:border-wydad-red text-white px-4 py-2 rounded text-sm transition-colors">
+                  📷 Choisir
+                  <input type="file" accept="image/*" (change)="uploadPhoto($event)" class="hidden">
+                </label>
+                <img *ngIf="currentArticle.imageUrl" [src]="apiService.getMediaUrl(currentArticle.imageUrl)" class="h-10 object-cover rounded border border-white/10" alt="preview">
+                <span *ngIf="uploadingPhoto" class="text-xs text-yellow-400 animate-pulse">Envoi en cours...</span>
               </div>
+            </div>
             </div>
           </div>
           
@@ -97,7 +104,7 @@ export class AdminActualitesComponent implements OnInit {
   isEdit = false;
   currentArticle: any = {};
 
-  constructor(private apiService: ApiService) {}
+  constructor(public apiService: ApiService) {}
 
   ngOnInit() {
     this.loadArticles();
@@ -150,5 +157,25 @@ export class AdminActualitesComponent implements OnInit {
     if (confirm('Voulez-vous vraiment supprimer cet article ?')) {
       this.apiService.deleteArticle(id).subscribe(() => this.loadArticles());
     }
+  }
+
+  uploadingPhoto = false;
+
+  uploadPhoto(event: any) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    this.uploadingPhoto = true;
+    this.apiService.uploadMedia(file).subscribe({
+      next: (res) => {
+        this.currentArticle.imageUrl = res.url;
+        this.uploadingPhoto = false;
+      },
+      error: (err) => {
+        console.error('Erreur upload', err);
+        this.uploadingPhoto = false;
+        alert('Erreur lors du chargement de la photo.');
+      }
+    });
   }
 }

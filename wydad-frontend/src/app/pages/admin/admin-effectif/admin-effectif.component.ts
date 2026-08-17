@@ -34,7 +34,8 @@ export class AdminEffectifComponent implements OnInit {
     birthDate: '1995-01-01',
     matchesPlayed: 0,
     goals: 0,
-    assists: 0
+    assists: 0,
+    photoUrl: ''
   };
 
   api = inject(ApiService);
@@ -72,7 +73,8 @@ export class AdminEffectifComponent implements OnInit {
       birthDate: '1995-01-01',
       matchesPlayed: 0,
       goals: 0,
-      assists: 0
+      assists: 0,
+      photoUrl: ''
     };
     this.saveError = '';
     this.showModal = true;
@@ -118,7 +120,8 @@ export class AdminEffectifComponent implements OnInit {
           birthDate: this.newPlayer.birthDate,
           matchesPlayed: this.newPlayer.matchesPlayed,
           goals: this.newPlayer.goals,
-          assists: this.newPlayer.assists
+          assists: this.newPlayer.assists,
+          photoUrl: this.newPlayer.photoUrl
         };
 
         this.api.createPlayer(playerPayload).subscribe({
@@ -153,5 +156,25 @@ export class AdminEffectifComponent implements OnInit {
         error: (err) => console.error('Erreur suppression', err)
       });
     }
+  }
+
+  uploadingPhoto = false;
+
+  uploadPhoto(event: any) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    this.uploadingPhoto = true;
+    this.api.uploadMedia(file).subscribe({
+      next: (res) => {
+        this.newPlayer.photoUrl = res.url;
+        this.uploadingPhoto = false;
+      },
+      error: (err) => {
+        console.error('Erreur upload', err);
+        this.uploadingPhoto = false;
+        alert('Erreur lors du chargement de la photo.');
+      }
+    });
   }
 }
