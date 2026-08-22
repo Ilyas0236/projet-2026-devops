@@ -26,6 +26,19 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
+        // Sécurité : supprimer TOUJOURS les headers d'identité fournis par le client
+        // (sinon un utilisateur peut s'attribuer X-User-Role: ADMIN et contourner
+        // les @PreAuthorize des microservices qui font confiance à ces headers).
+        ServerHttpRequest sanitizedRequest = exchange.getRequest().mutate()
+                .headers(h -> {
+                    h.remove("X-User-Email");
+                    h.remove("X-User-Role");
+                    h.remove("X-User-Id");
+                })
+                .build();
+        final ServerWebExchange sanitizedExchange = exchange.mutate().request(sanitizedRequest).build();
+        exchange = sanitizedExchange;
+
         ServerHttpRequest request = exchange.getRequest();
         String path = request.getURI().getPath();
         String method = request.getMethod().name();
@@ -76,8 +89,10 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
             String role = claims.getPayload().get("role", String.class);
 
             ServerHttpRequest mutatedRequest = exchange.getRequest().mutate()
-                    .header("X-User-Email", email)
-                    .header("X-User-Role", role != null ? role : "VISITEUR")
+                    .headers(h -> {
+                        h.set("X-User-Email", email);
+                        h.set("X-User-Role", role != null ? role : "VISITEUR");
+                    })
                     .build();
 
             return chain.filter(exchange.mutate().request(mutatedRequest).build());
