@@ -4,11 +4,12 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../services/api.service';
 import { AuthService } from '../../services/auth.service';
+import { ErrorBannerComponent } from '../../components/error-banner/error-banner.component';
 
 @Component({
   selector: 'app-boutique-detail',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ErrorBannerComponent],
   template: `
     <div class="min-h-screen bg-wydad-light pt-32 pb-24 font-sans">
       <div class="max-w-7xl mx-auto px-6" *ngIf="loading">
@@ -134,7 +135,12 @@ import { AuthService } from '../../services/auth.service';
         </div>
       </div>
 
-      <div class="max-w-7xl mx-auto px-6 text-center py-20" *ngIf="!loading && !product">
+      <div class="max-w-7xl mx-auto px-6" *ngIf="loadError && !loading">
+        <app-error-banner message="Impossible de charger ce produit."
+                          detail="Il est peut-être indisponible ou la connexion a échoué." (retry)="retry()" />
+      </div>
+
+      <div class="max-w-7xl mx-auto px-6 text-center py-20" *ngIf="!loading && !product && !loadError">
         <h2 class="text-2xl font-bold text-gray-700">Produit introuvable</h2>
         <button (click)="router.navigate(['/boutique'])" class="mt-6 bg-wydad-red text-white font-bold py-3 px-8 rounded-full">Retour à la boutique</button>
       </div>
@@ -144,6 +150,7 @@ import { AuthService } from '../../services/auth.service';
 export class BoutiqueDetailComponent implements OnInit {
   product: any = null;
   loading = true;
+  loadError = false;
   mainImage: string | null = null;
 
   availableSizes: string[] = [];
@@ -172,7 +179,30 @@ export class BoutiqueDetailComponent implements OnInit {
           this.extractVariants(data.variants || []);
           this.loading = false;
         },
-        error: () => { this.loading = false; }
+        error: () => {
+          this.loadError = true;
+          this.loading = false;
+        }
+      });
+    }
+  }
+
+  retry() {
+    const id = this.route.snapshot.paramMap.get('id');
+    if (id) {
+      this.loadError = false;
+      this.loading = true;
+      this.api.getProductById(Number(id)).subscribe({
+        next: (data) => {
+          this.product = data;
+          this.mainImage = data.images?.[0] || null;
+          this.extractVariants(data.variants || []);
+          this.loading = false;
+        },
+        error: () => {
+          this.loadError = true;
+          this.loading = false;
+        }
       });
     }
   }

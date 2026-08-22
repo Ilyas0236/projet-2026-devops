@@ -4,15 +4,21 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../services/api.service';
 import { AuthService } from '../../services/auth.service';
+import { ErrorBannerComponent } from '../../components/error-banner/error-banner.component';
 
 @Component({
   selector: 'app-billetterie-detail',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ErrorBannerComponent],
   template: `
     <div class="min-h-screen bg-wydad-dark text-white pt-32 pb-24 font-sans">
       <div class="max-w-7xl mx-auto px-6" *ngIf="loading">
         <div class="text-center py-20 text-gray-400">Chargement de l'événement...</div>
+      </div>
+
+      <div class="max-w-7xl mx-auto px-6" *ngIf="loadError && !loading">
+        <app-error-banner message="Impossible de charger cet événement."
+                          detail="Il est peut-être indisponible ou la connexion a échoué." (retry)="retry()" />
       </div>
 
       <div class="max-w-7xl mx-auto px-6" *ngIf="!loading && event">
@@ -135,6 +141,7 @@ import { AuthService } from '../../services/auth.service';
 export class BilletterieDetailComponent implements OnInit {
   event: any = null;
   loading = true;
+  loadError = false;
   selectedSection: any = null;
   quantity = 1;
   isLoggedIn = false;
@@ -175,9 +182,19 @@ export class BilletterieDetailComponent implements OnInit {
         this.loading = false;
       },
       error: () => {
+        this.loadError = true;
         this.loading = false;
       }
     });
+  }
+
+  retry() {
+    const eventId = this.route.snapshot.paramMap.get('id');
+    if (eventId) {
+      this.loadError = false;
+      this.loading = true;
+      this.loadEvent(Number(eventId));
+    }
   }
 
   selectSection(section: any) {
