@@ -4,11 +4,12 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { ApiService } from '../../services/api.service';
 import { AuthService } from '../../services/auth.service';
+import { ErrorBannerComponent } from '../../components/error-banner/error-banner.component';
 
 @Component({
   selector: 'app-cart',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, RouterModule, ErrorBannerComponent],
   template: `
     <div class="page-header">
       <h1>🛒 Mon Panier</h1>
@@ -17,6 +18,9 @@ import { AuthService } from '../../services/auth.service';
 
     <div class="container">
       <!-- Loading -->
+      <app-error-banner *ngIf="loadError && !loading" message="Impossible de charger le panier."
+                        detail="Verifiez votre connexion et reessayez." (retry)="loadCart()" />
+
       <div *ngIf="loading" class="text-center py-20 text-gray-500">Chargement du panier...</div>
 
       <!-- Empty cart -->
@@ -206,6 +210,7 @@ import { AuthService } from '../../services/auth.service';
 export class CartComponent implements OnInit {
   items: any[] = [];
   loading = true;
+  loadError = false;
   ordering = false;
   orderError = '';
 
@@ -230,7 +235,7 @@ export class CartComponent implements OnInit {
   loadCart() {
     this.api.getCart().subscribe({
       next: (data) => { this.items = data; this.loading = false; },
-      error: () => { this.loading = false; }
+      error: () => { this.loadError = true; this.loading = false; }
     });
   }
 
@@ -243,14 +248,14 @@ export class CartComponent implements OnInit {
     if (newQ < 1) return;
     this.api.updateCartQuantity(item.id, newQ).subscribe({
       next: () => { item.quantity = newQ; },
-      error: () => {}
+      error: () => this.loadCart()
     });
   }
 
   removeItem(cartItemId: number) {
     this.api.removeFromCart(cartItemId).subscribe({
       next: () => { this.items = this.items.filter(i => i.id !== cartItemId); },
-      error: () => {}
+      error: () => this.loadCart()
     });
   }
 
