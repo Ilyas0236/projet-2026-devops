@@ -3,11 +3,12 @@ import { CommonModule } from '@angular/common';
 import { ApiService } from '../../services/api.service';
 import { AuthService } from '../../services/auth.service';
 import { Router, RouterModule } from '@angular/router';
+import { ErrorBannerComponent } from '../../components/error-banner/error-banner.component';
 
 @Component({
   selector: 'app-mes-billets',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, ErrorBannerComponent],
   template: `
     <div class="page-header">
       <h1>🎫 Mes Billets</h1>
@@ -34,6 +35,9 @@ import { Router, RouterModule } from '@angular/router';
         <!-- Contenu Billets -->
         <div class="w-full md:w-3/4">
           
+          <app-error-banner *ngIf="loadError && !loading" message="Impossible de charger vos billets."
+                            detail="Vérifiez votre connexion et réessayez." (retry)="retry()" />
+
           <div *ngIf="loading" class="text-center py-10 text-gray-500">
             Chargement de vos billets...
           </div>
@@ -127,6 +131,7 @@ import { Router, RouterModule } from '@angular/router';
 export class MesBilletsComponent implements OnInit {
   tickets: any[] = [];
   loading = true;
+  loadError = false;
   isLoggedIn = false;
   downloadingId: number | null = null;
   
@@ -152,7 +157,20 @@ export class MesBilletsComponent implements OnInit {
         this.loading = false;
       },
       error: () => {
+        this.loadError = true;
         this.loading = false;
+      }
+    });
+  }
+
+  retry() {
+    this.loadError = false;
+    this.loading = true;
+    this.auth.currentUser$.subscribe(email => {
+      if (email) {
+        this.auth.getProfile().subscribe(profile => {
+          this.loadTickets(profile.id);
+        });
       }
     });
   }

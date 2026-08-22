@@ -99,6 +99,10 @@
       </div>
     </div>
 
+    <!-- Erreur de chargement -->
+    <app-error-banner *ngIf="loadError && !loading" message="Impossible de charger la billetterie."
+                      detail="Vérifiez votre connexion et réessayez." (retry)="retry()" />
+
     <!-- Loading skeleton -->
     <div *ngIf="loading" class="space-y-6">
       <div *ngFor="let s of [1,2,3]" class="glass rounded-2xl p-8">

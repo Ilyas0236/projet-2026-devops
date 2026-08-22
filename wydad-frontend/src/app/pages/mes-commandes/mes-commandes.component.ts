@@ -1,13 +1,14 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
+import { ErrorBannerComponent } from '../../components/error-banner/error-banner.component';
 import { ApiService } from '../../services/api.service';
 import { AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'app-mes-commandes',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, ErrorBannerComponent],
   template: `
     <div class="page-header">
       <h1>🛍️ Mes Commandes</h1>
@@ -31,6 +32,9 @@ import { AuthService } from '../../services/auth.service';
 
         <!-- Orders List -->
         <div class="w-full md:w-3/4">
+          <app-error-banner *ngIf="loadError && !loading" message="Impossible de charger vos commandes."
+                            detail="Vérifiez votre connexion et réessayez." (retry)="retry()" />
+
           <div *ngIf="loading" class="text-center py-10 text-gray-500">Chargement de vos commandes...</div>
 
           <div *ngIf="!loading && orders.length === 0" class="empty-state">
@@ -199,6 +203,7 @@ import { AuthService } from '../../services/auth.service';
 export class MesCommandesComponent implements OnInit {
   orders: any[] = [];
   loading = true;
+  loadError = false;
   isLoggedIn = false;
   expandedOrder: string | null = null;
 
@@ -219,8 +224,17 @@ export class MesCommandesComponent implements OnInit {
         this.orders = data?.content || data || [];
         this.loading = false;
       },
-      error: () => { this.loading = false; }
+      error: () => {
+        this.loadError = true;
+        this.loading = false;
+      }
     });
+  }
+
+  retry() {
+    this.loadError = false;
+    this.loading = true;
+    this.ngOnInit();
   }
 
   toggleOrder(orderNumber: string) {
