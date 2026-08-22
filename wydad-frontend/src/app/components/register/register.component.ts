@@ -1,7 +1,7 @@
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 
 @Component({
@@ -24,6 +24,17 @@ export class RegisterComponent {
 
   authService = inject(AuthService);
   router = inject(Router);
+  route = inject(ActivatedRoute);
+
+  private static readonly ALLOWED_LEVELS = ['JUNIOR', 'ROUGE', 'OR', 'DIAMANT'];
+
+  constructor() {
+    // Pre-selection du niveau depuis la page adhesion (?level=OR)
+    const level = this.route.snapshot.queryParamMap.get('level');
+    if (level && RegisterComponent.ALLOWED_LEVELS.includes(level)) {
+      this.membershipLevel = level;
+    }
+  }
 
   isValidForm(): boolean {
     return (
