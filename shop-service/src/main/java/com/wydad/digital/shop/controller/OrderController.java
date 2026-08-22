@@ -47,4 +47,20 @@ public class OrderController {
     public ResponseEntity<Page<OrderResponseDto>> getAllOrders(Pageable pageable) {
         return ResponseEntity.ok(orderService.getAllOrders(pageable));
     }
+
+    /**
+     * ADMIN : changement de statut d'une commande (préparation, expédition,
+     * livraison, annulation, remboursement). Transitions validées côté service.
+     */
+    @PatchMapping("/{orderNumber}/status")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<OrderResponseDto> updateOrderStatus(
+            @PathVariable String orderNumber,
+            @RequestBody UpdateStatusRequest body) {
+        return ResponseEntity.ok(orderService.updateOrderStatus(
+                orderNumber, body.status(), body.comment()));
+    }
+
+    public record UpdateStatusRequest(String status, String comment) {
+    }
 }

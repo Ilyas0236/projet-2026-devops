@@ -17,6 +17,8 @@ public class OrderItem {
     private ShopOrder order;
 
     private Long productId;
+    /** Variante commandée : permet la restitution du stock en cas d'annulation/remboursement. */
+    private Long variantId;
     private String productName;
     private String productImage;
     private String variantInfo;
