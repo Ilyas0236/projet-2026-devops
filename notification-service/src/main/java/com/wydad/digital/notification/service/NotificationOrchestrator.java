@@ -1,5 +1,6 @@
 package com.wydad.digital.notification.service;
 
+import com.wydad.digital.notification.client.AuthServiceClient;
 import com.wydad.digital.notification.dto.NotificationRequest;
 import com.wydad.digital.notification.enums.NotificationStatus;
 import com.wydad.digital.notification.enums.NotificationType;
@@ -19,6 +20,7 @@ public class NotificationOrchestrator {
     private final NotificationRepository notificationRepository;
     private final EmailService emailService;
     private final PushNotificationService pushNotificationService;
+    private final AuthServiceClient authServiceClient;
 
     public Notification processNotification(NotificationRequest request) {
         Notification notification = Notification.builder()
@@ -96,5 +98,31 @@ public class NotificationOrchestrator {
 
     public List<Notification> getAllNotifications() {
         return notificationRepository.findAll();
+    }
+
+    /**
+     * Broadcast réel : fan-out vers tous les utilisateurs actifs (via
+     * auth-service, appel interne authentifié). Retourne le nombre de
+     * notifications créées.
+     */
+    @org.springframework.transaction.annotation.Transactional
+    public int broadcast(NotificationRequest template) {
+        List<AuthServiceClient.Recipient> recipients = authServiceClient.fetchActiveRecipients();
+        int created = 0;
+        for (AuthServiceClient.Recipient recipient : recipients) {
+            NotificationRequest request = new NotificationRequest();
+            request.setUserId(recipient.userId());
+            request.setTitle(template.getTitle());
+            request.setMessage(template.getMessage());
+            request.setType(template.getType());
+            request.setUserEmail(recipient.email());
+            request.setTargetUrl(template.getTargetUrl());
+            request.setImageUrl(template.getImageUrl());
+            processNotification(request);
+            created++;
+        }
+        log.info("📢 Broadcast : {} notification(s) créée(s) pour {} destinataire(s)",
+                created, recipients.size());
+        return created;
     }
 }

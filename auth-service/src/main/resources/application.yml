@@ -23,6 +23,9 @@ jwt:
   expiration: 86400000
   refresh-expiration: 604800000
 
+wydad:
+  internal-secret: ${WYDAD_INTERNAL_SECRET:}
+
 logging:
   level:
     com.wydad.digital.auth: DEBUG

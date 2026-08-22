@@ -386,21 +386,32 @@ public class AuthService {
     // ============================================
     public List<UserProfileResponse> getAllUsers() {
         return userRepository.findAll().stream()
-                .map(user -> new UserProfileResponse(
-                        user.getId(),
-                        user.getEmail(),
-                        user.getPhone(),
-                        user.getFirstName(),
-                        user.getLastName(),
-                        user.getMembershipLevel(),
-                        user.getRole(),
-                        user.getMembershipExpiresAt(),
-                        user.getReferralCode(),
-                        user.isActive(),
-                        user.isKycVerified(),
-                        user.getCreatedAt()
-                ))
+                .map(this::mapToProfile)
                 .collect(Collectors.toList());
+    }
+
+    /** Destinataires actifs pour le broadcast du notification-service (interne). */
+    public List<UserProfileResponse> getAllActiveUsers() {
+        return userRepository.findByIsActiveTrue().stream()
+                .map(this::mapToProfile)
+                .collect(Collectors.toList());
+    }
+
+    private UserProfileResponse mapToProfile(User user) {
+        return new UserProfileResponse(
+                user.getId(),
+                user.getEmail(),
+                user.getPhone(),
+                user.getFirstName(),
+                user.getLastName(),
+                user.getMembershipLevel(),
+                user.getRole(),
+                user.getMembershipExpiresAt(),
+                user.getReferralCode(),
+                user.isActive(),
+                user.isKycVerified(),
+                user.getCreatedAt()
+        );
     }
 
     @Transactional

@@ -33,9 +33,9 @@ public class NotificationController {
     @PostMapping("/broadcast")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<String> broadcastNotification(@Valid @RequestBody NotificationRequest request) {
-        // En vrai, il faudrait récupérer tous les users et envoyer en batch (RabbitMQ/Kafka)
-        // Pour le MVP, on simule juste l'acceptation de la requête
-        return ResponseEntity.accepted().body("Broadcast planifié");
+        // Fan-out réel vers tous les utilisateurs actifs (via auth-service)
+        int created = orchestrator.broadcast(request);
+        return ResponseEntity.accepted().body("Broadcast effectué : " + created + " notification(s) créée(s)");
     }
 
     @GetMapping("/user/{userId}")

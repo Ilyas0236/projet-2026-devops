@@ -23,6 +23,7 @@ public class AuthController {
 
     private final AuthService authService;
     private final JwtUtils jwtUtils;
+    private final com.wydad.digital.auth.config.InternalSecretValidator internalSecretValidator;
 
     @PostMapping("/register")
     public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest request) {
@@ -259,6 +260,20 @@ public class AuthController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<UserProfileResponse> adminCreateUser(@Valid @RequestBody AdminCreateUserRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(authService.adminCreateUser(request));
+    }
+
+    /**
+     * Endpoint interne service-a-service (notification-service -> broadcast).
+     * Protege par le secret partage X-Internal-Secret ; jamais expose via la
+     * gateway (route bloquee cote gateway pour /api/auth/internal/**).
+     */
+    @GetMapping("/internal/recipients")
+    public ResponseEntity<List<UserProfileResponse>> internalRecipients(
+            @RequestHeader(value = "X-Internal-Secret", required = false) String secret) {
+        if (!internalSecretValidator.isInternalCallAuthorized(secret)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        return ResponseEntity.ok(authService.getAllActiveUsers());
     }
 
     private String getClientIp(HttpServletRequest request) {

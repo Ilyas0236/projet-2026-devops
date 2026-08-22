@@ -7,6 +7,25 @@ spring:
   cloud:
     gateway:
       routes:
+        # Endpoints internes service-a-service : jamais joignables depuis l'exterieur.
+        # Doivent preceder les routes des services concernes (la premiere route
+        # matchante gagne).
+        - id: block-notification-internal
+          uri: no://op
+          predicates:
+            - Path=/api/notification/internal/**
+          filters:
+            - name: SetStatus
+              args:
+                status: FORBIDDEN
+        - id: block-auth-internal
+          uri: no://op
+          predicates:
+            - Path=/api/auth/internal/**
+          filters:
+            - name: SetStatus
+              args:
+                status: FORBIDDEN
         - id: auth-service
           uri: ${AUTH_SERVICE_URI:http://localhost:8081}
           predicates:
@@ -27,15 +46,6 @@ spring:
           uri: ${TICKET_SERVICE_URI:http://localhost:8085}
           predicates:
             - Path=/api/ticket/**
-        # Endpoint interne service-a-service : jamais joignable depuis l'exterieur
-        - id: block-notification-internal
-          uri: no://op
-          predicates:
-            - Path=/api/notification/internal/**
-          filters:
-            - name: SetStatus
-              args:
-                status: FORBIDDEN
         - id: sports-service
           uri: ${SPORTS_SERVICE_URI:http://localhost:8087}
           predicates:
@@ -44,6 +54,10 @@ spring:
           uri: ${GAMIFICATION_SERVICE_URI:http://localhost:8088}
           predicates:
             - Path=/api/gamification/**
+        - id: notification-service
+          uri: ${NOTIFICATION_SERVICE_URI:http://localhost:8086}
+          predicates:
+            - Path=/api/notification/**
 
 logging:
   level:

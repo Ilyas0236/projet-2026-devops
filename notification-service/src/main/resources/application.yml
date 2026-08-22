@@ -32,6 +32,9 @@ management:
 
 # Notification API Keys (to be injected via env variables in prod)
 wydad:
+  internal-secret: ${WYDAD_INTERNAL_SECRET:}
+  notification-service-uri: ${NOTIFICATION_SERVICE_URI:http://notification-service:8086}
+  auth-service-uri: ${AUTH_SERVICE_URI:http://auth-service:8081}
   sendgrid:
     api-key: ${SENDGRID_API_KEY:mock_sendgrid_key_for_dev}
   firebase:
