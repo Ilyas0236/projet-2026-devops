@@ -89,6 +89,11 @@ public class NotificationOrchestrator {
         return notificationRepository.countByUserIdAndStatus(userId, NotificationStatus.SENT);
     }
 
+    public Notification getById(Long notificationId) {
+        return notificationRepository.findById(notificationId)
+                .orElseThrow(() -> new RuntimeException("Notification non trouvée"));
+    }
+
     public List<Notification> getAllNotifications() {
         return notificationRepository.findAll();
     }

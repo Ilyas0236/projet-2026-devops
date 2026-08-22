@@ -20,20 +20,31 @@ import java.util.List;
 public class UserContextFilter extends OncePerRequestFilter {
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
+protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws ServletException, IOException {
+        try {
+            String email = request.getHeader("X-User-Email");
+            String role = request.getHeader("X-User-Role");
+            String userIdHeader = request.getHeader("X-User-Id");
 
-        String email = request.getHeader("X-User-Email");
-        String role = request.getHeader("X-User-Role");
+            if (email != null && role != null) {
+                List<GrantedAuthority> authorities = Collections.singletonList(
+                        new SimpleGrantedAuthority("ROLE_" + role)
+                );
+                Authentication auth = new UsernamePasswordAuthenticationToken(email, null, authorities);
+                SecurityContextHolder.getContext().setAuthentication(auth);
+            }
 
-        if (email != null && role != null) {
-            List<GrantedAuthority> authorities = Collections.singletonList(
-                    new SimpleGrantedAuthority("ROLE_" + role)
-            );
-            Authentication auth = new UsernamePasswordAuthenticationToken(email, null, authorities);
-            SecurityContextHolder.getContext().setAuthentication(auth);
+            // Expose l'ID/email/rôle pour les contrôleurs (ownership checks)
+            if (userIdHeader != null) {
+                UserContext.setCurrentUserId(Long.parseLong(userIdHeader));
+            }
+            UserContext.setCurrentUserEmail(email);
+            UserContext.setCurrentUserRole(role);
+
+            chain.doFilter(request, response);
+        } finally {
+            UserContext.clear();
         }
-
-        chain.doFilter(request, response);
     }
 }

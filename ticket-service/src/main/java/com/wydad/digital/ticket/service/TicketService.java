@@ -2,6 +2,7 @@ package com.wydad.digital.ticket.service;
 
 import com.wydad.digital.ticket.dto.*;
 import com.wydad.digital.ticket.enums.TicketStatus;
+import com.wydad.digital.ticket.filter.UserContext;
 import com.wydad.digital.ticket.model.Event;
 import com.wydad.digital.ticket.model.Section;
 import com.wydad.digital.ticket.model.Ticket;
@@ -42,17 +43,25 @@ public class TicketService {
         }
 
         List<Ticket> tickets = new ArrayList<>();
+        // Identité depuis le contexte (JWT) : un utilisateur ne peut acheter que pour lui-même
+        Long effectiveUserId = UserContext.isAdmin() && request.getUserId() != null
+                ? request.getUserId()
+                : UserContext.getCurrentUserId();
+        String effectiveUserEmail = UserContext.isAdmin() && request.getUserEmail() != null
+                ? request.getUserEmail()
+                : UserContext.getCurrentUserEmail();
+
         for (int i = 0; i < qty; i++) {
             String ticketNumber = "WAC-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
-            String qrData = "WAC-TICKET:" + ticketNumber + ":EVENT:" + event.getId() + ":USER:" + request.getUserId();
+            String qrData = "WAC-TICKET:" + ticketNumber + ":EVENT:" + event.getId() + ":USER:" + effectiveUserId;
 
             byte[] qrImage = qrCodeService.generateQrCode(qrData);
 
             Ticket ticket = Ticket.builder()
                     .ticketNumber(ticketNumber)
-                    .userId(request.getUserId())
+                    .userId(effectiveUserId)
                     .userFullName(request.getUserFullName())
-                    .userEmail(request.getUserEmail())
+                    .userEmail(effectiveUserEmail)
                     .event(event)
                     .section(section)
                     .category(request.getCategory())
@@ -115,6 +124,10 @@ public class TicketService {
         if (ticket.getStatus() == TicketStatus.USED) {
             throw new IllegalStateException("Impossible d'annuler un billet déjà utilisé");
         }
+        // Empêche l'inflation du stock par annulations répétées
+        if (ticket.getStatus() == TicketStatus.CANCELLED) {
+            throw new IllegalStateException("Ce billet a déjà été annulé");
+        }
 
         ticket.setStatus(TicketStatus.CANCELLED);
         ticket.setCancelledAt(java.time.LocalDateTime.now());
@@ -138,6 +151,11 @@ public class TicketService {
         Ticket ticket = ticketRepository.findById(ticketId)
                 .orElseThrow(() -> new EntityNotFoundException("Billet non trouvé"));
         return ticket.getQrCodeImage();
+    }
+
+    /** Version publique du mapper pour les contrôleurs. */
+    public TicketResponse mapToResponsePublic(Ticket ticket) {
+        return mapToResponse(ticket);
     }
 
     private TicketResponse mapToResponse(Ticket ticket) {

@@ -7,12 +7,14 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 @RestController
@@ -23,8 +25,19 @@ public class MediaController {
 
     private final MediaRepository mediaRepository;
 
+    /** Types de fichiers autorisés à l'upload (images et PDF uniquement). */
+    private static final Set<String> ALLOWED_CONTENT_TYPES = Set.of(
+            "image/jpeg", "image/png", "image/gif", "image/webp", "application/pdf"
+    );
+
     @PostMapping("/upload")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Map<String, String>> uploadFile(@RequestParam("file") MultipartFile file) {
+        // Whitelist MIME : empêche l'upload de fichiers exécutables/HTML via le CMS
+        if (file.isEmpty() || file.getContentType() == null
+                || !ALLOWED_CONTENT_TYPES.contains(file.getContentType())) {
+            return ResponseEntity.badRequest().build();
+        }
         try {
             String fileName = UUID.randomUUID().toString() + "_" + file.getOriginalFilename();
 
@@ -57,12 +70,14 @@ public class MediaController {
                     headers.setContentType(MediaType.parseMediaType(media.getContentType()));
                     headers.setContentLength(media.getSize());
                     headers.setCacheControl("public, max-age=31536000");
+                    headers.set(HttpHeaders.CONTENT_DISPOSITION, "inline");
                     return new ResponseEntity<>(media.getData(), headers, HttpStatus.OK);
                 })
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deleteFile(@PathVariable Long id) {
         mediaRepository.deleteById(id);
         return ResponseEntity.noContent().build();

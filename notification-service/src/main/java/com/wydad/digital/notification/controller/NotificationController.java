@@ -1,12 +1,14 @@
 package com.wydad.digital.notification.controller;
 
 import com.wydad.digital.notification.dto.NotificationRequest;
+import com.wydad.digital.notification.filter.UserContext;
 import com.wydad.digital.notification.model.Notification;
 import com.wydad.digital.notification.service.NotificationOrchestrator;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
@@ -36,21 +38,26 @@ public class NotificationController {
 
     @GetMapping("/user/{userId}")
     public ResponseEntity<List<Notification>> getUserNotifications(@PathVariable Long userId) {
+        assertSelfOrAdmin(userId);
         return ResponseEntity.ok(orchestrator.getUserNotifications(userId));
     }
-    
+
     @GetMapping("/user/{userId}/unread")
     public ResponseEntity<List<Notification>> getUnreadUserNotifications(@PathVariable Long userId) {
+        assertSelfOrAdmin(userId);
         return ResponseEntity.ok(orchestrator.getUnreadUserNotifications(userId));
     }
-    
+
     @GetMapping("/user/{userId}/unread/count")
     public ResponseEntity<Long> getUnreadCount(@PathVariable Long userId) {
+        assertSelfOrAdmin(userId);
         return ResponseEntity.ok(orchestrator.countUnread(userId));
     }
 
     @PatchMapping("/{notificationId}/read")
     public ResponseEntity<Notification> markAsRead(@PathVariable Long notificationId) {
+        Notification notification = orchestrator.getById(notificationId);
+        assertSelfOrAdmin(notification.getUserId());
         return ResponseEntity.ok(orchestrator.markAsRead(notificationId));
     }
 
@@ -58,5 +65,12 @@ public class NotificationController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<Notification>> getAllNotifications() {
         return ResponseEntity.ok(orchestrator.getAllNotifications());
+    }
+
+    /** Un utilisateur ne peut lire que ses notifications ; ADMIN autorisé. */
+    private void assertSelfOrAdmin(Long targetUserId) {
+        if (!UserContext.isAdmin() && !targetUserId.equals(UserContext.getCurrentUserId())) {
+            throw new AccessDeniedException("Accès aux notifications d'un autre utilisateur interdit");
+        }
     }
 }

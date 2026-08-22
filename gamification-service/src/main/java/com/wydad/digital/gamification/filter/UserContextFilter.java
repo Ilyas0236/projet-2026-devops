@@ -1,4 +1,4 @@
-package com.wydad.digital.payment.filter;
+package com.wydad.digital.gamification.filter;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;

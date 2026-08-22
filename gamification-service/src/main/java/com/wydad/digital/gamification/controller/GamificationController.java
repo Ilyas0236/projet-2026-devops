@@ -2,12 +2,14 @@ package com.wydad.digital.gamification.controller;
 
 import com.wydad.digital.gamification.dto.PredictionRequest;
 import com.wydad.digital.gamification.dto.UserPointsDto;
+import com.wydad.digital.gamification.filter.UserContext;
 import com.wydad.digital.gamification.model.Prediction;
 import com.wydad.digital.gamification.model.UserPoints;
 import com.wydad.digital.gamification.service.GamificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -21,6 +23,7 @@ public class GamificationController {
 
     @GetMapping("/points/{userId}")
     public ResponseEntity<UserPointsDto> getUserPoints(@PathVariable Long userId) {
+        assertSelfOrAdmin(userId);
         return ResponseEntity.ok(gamificationService.getUserPoints(userId));
     }
 
@@ -36,6 +39,7 @@ public class GamificationController {
 
     @GetMapping("/predictions/user/{userId}")
     public ResponseEntity<List<Prediction>> getUserPredictions(@PathVariable Long userId) {
+        assertSelfOrAdmin(userId);
         return ResponseEntity.ok(gamificationService.getUserPredictions(userId));
     }
     
@@ -51,5 +55,12 @@ public class GamificationController {
         }
         gamificationService.addPoints(userId, amount);
         return ResponseEntity.ok("Points added successfully");
+    }
+
+    /** Un utilisateur ne peut consulter que ses points/prédictions ; ADMIN autorisé. */
+    private void assertSelfOrAdmin(Long targetUserId) {
+        if (!UserContext.isAdmin() && !targetUserId.equals(UserContext.getCurrentUserId())) {
+            throw new AccessDeniedException("Accès aux données d'un autre utilisateur interdit");
+        }
     }
 }

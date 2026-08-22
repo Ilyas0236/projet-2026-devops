@@ -22,18 +22,29 @@ public class UserContextFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws ServletException, IOException {
+        try {
+            String email = request.getHeader("X-User-Email");
+            String role = request.getHeader("X-User-Role");
+            String userIdHeader = request.getHeader("X-User-Id");
 
-        String email = request.getHeader("X-User-Email");
-        String role = request.getHeader("X-User-Role");
+            if (email != null && role != null) {
+                List<GrantedAuthority> authorities = Collections.singletonList(
+                        new SimpleGrantedAuthority("ROLE_" + role)
+                );
+                Authentication auth = new UsernamePasswordAuthenticationToken(email, null, authorities);
+                SecurityContextHolder.getContext().setAuthentication(auth);
+            }
 
-        if (email != null && role != null) {
-            List<GrantedAuthority> authorities = Collections.singletonList(
-                    new SimpleGrantedAuthority("ROLE_" + role)
-            );
-            Authentication auth = new UsernamePasswordAuthenticationToken(email, null, authorities);
-            SecurityContextHolder.getContext().setAuthentication(auth);
+            // Expose l'ID/email/rôle pour les contrôleurs (ownership checks)
+            if (userIdHeader != null) {
+                SportsUserContext.setCurrentUserId(Long.parseLong(userIdHeader));
+            }
+            SportsUserContext.setCurrentUserEmail(email);
+            SportsUserContext.setCurrentUserRole(role);
+
+            chain.doFilter(request, response);
+        } finally {
+            SportsUserContext.clear();
         }
-
-        chain.doFilter(request, response);
     }
 }
