@@ -6,6 +6,7 @@ import com.wydad.digital.gamification.model.Prediction;
 import com.wydad.digital.gamification.model.UserPoints;
 import com.wydad.digital.gamification.service.GamificationService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -39,7 +40,15 @@ public class GamificationController {
     }
     
     @PostMapping("/points/add")
-    public ResponseEntity<String> addPoints(@RequestParam Long userId, @RequestParam int amount) {
+    public ResponseEntity<String> addPoints(
+            @RequestParam Long userId,
+            @RequestParam int amount,
+            @RequestHeader(value = "X-User-Role", required = false) String role) {
+
+        // Réservé aux appels administrateur (ou futurs appels service-à-service authentifiés)
+        if (!"ADMIN".equals(role)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Accès refusé");
+        }
         gamificationService.addPoints(userId, amount);
         return ResponseEntity.ok("Points added successfully");
     }

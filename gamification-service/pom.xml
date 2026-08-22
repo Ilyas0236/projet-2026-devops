@@ -41,12 +41,6 @@
             <optional>true</optional>
         </dependency>
 
-        <!-- Spring Cloud -->
-        <dependency>
-            <groupId>org.springframework.cloud</groupId>
-            <artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
-        </dependency>
-
         <!-- Security context parser (JWT util) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

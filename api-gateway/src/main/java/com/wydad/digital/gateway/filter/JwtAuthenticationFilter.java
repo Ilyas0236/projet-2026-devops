@@ -35,9 +35,14 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
             return chain.filter(exchange);
         }
 
-        // Auth-service : public endpoints
-        if (path.equals("/api/auth/login") || path.equals("/api/auth/register") || path.equals("/api/auth/refresh") || path.equals("/api/auth/otp/send") || path.equals("/api/auth/otp/verify") || path.startsWith("/api/auth/member-card") || path.startsWith("/api/auth/attestation")) {
+        // Auth-service : public endpoints (member-card et attestation exigent désormais un JWT)
+        if (path.equals("/api/auth/login") || path.equals("/api/auth/register") || path.equals("/api/auth/refresh") || path.equals("/api/auth/otp/send") || path.equals("/api/auth/otp/verify")) {
             return chain.filter(exchange);
+        }
+
+        // member-card / attestation : JWT requis, et un utilisateur ne peut consulter que SA carte
+        if (path.startsWith("/api/auth/member-card") || path.startsWith("/api/auth/attestation")) {
+            return validateAndForward(exchange, chain);
         }
 
         // Content-service GET : public (pas besoin de JWT)

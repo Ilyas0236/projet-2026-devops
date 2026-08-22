@@ -1,13 +1,13 @@
 server:
-  port: 8088
+  port: ${SERVER_PORT:8088}
 
 spring:
   application:
     name: gamification-service
   datasource:
-    url: jdbc:postgresql://localhost:5432/wydad_gamification
-    username: wydad_user
-    password: wydad_password
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5433/wydad_gamification}
+    username: ${SPRING_DATASOURCE_USERNAME:wydad}
+    password: ${SPRING_DATASOURCE_PASSWORD:wydad2024}
   jpa:
     hibernate:
       ddl-auto: update
@@ -16,7 +16,11 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
 
-eureka:
-  client:
-    serviceUrl:
-      defaultZone: http://localhost:8761/eureka/
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always

@@ -207,6 +207,7 @@ services:
       - TICKET_SERVICE_URI=http://ticket-service:8085
       - NOTIFICATION_SERVICE_URI=http://notification-service:8086
       - SPORTS_SERVICE_URI=http://sports-service:8087
+      - GAMIFICATION_SERVICE_URI=http://gamification-service:8088
     depends_on:
       auth-service:
         condition: service_healthy
@@ -221,6 +222,8 @@ services:
       notification-service:
         condition: service_started
       sports-service:
+        condition: service_started
+      gamification-service:
         condition: service_started
     healthcheck:
       test: ["CMD-SHELL", "wget -q -S -O /dev/null http://localhost:8080/actuator/health 2>&1 | grep -q 'HTTP/' || exit 1"]

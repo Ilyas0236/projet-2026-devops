@@ -39,12 +39,31 @@ public class AuthController {
     }
 
     @GetMapping("/member-card")
-    public ResponseEntity<MemberCardResponse> getMemberCard(@RequestParam("email") String email) {
+    public ResponseEntity<MemberCardResponse> getMemberCard(
+            @RequestParam("email") String email,
+            @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authHeader,
+            @RequestHeader(value = "X-User-Email", required = false) String gatewayEmail,
+            @RequestHeader(value = "X-User-Role", required = false) String gatewayRole) {
+
+        // Un utilisateur ne peut consulter que sa propre carte, sauf l'admin
+        boolean isAdmin = "ADMIN".equals(gatewayRole);
+        if (!isAdmin && gatewayEmail != null && !gatewayEmail.equalsIgnoreCase(email)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
         return ResponseEntity.ok(authService.getMemberCard(email));
     }
 
     @GetMapping("/attestation")
-    public ResponseEntity<byte[]> generateAttestation(@RequestParam("email") String email) {
+    public ResponseEntity<byte[]> generateAttestation(
+            @RequestParam("email") String email,
+            @RequestHeader(value = "X-User-Email", required = false) String gatewayEmail,
+            @RequestHeader(value = "X-User-Role", required = false) String gatewayRole) {
+
+        // Un utilisateur ne peut générer que sa propre attestation, sauf l'admin
+        boolean isAdmin = "ADMIN".equals(gatewayRole);
+        if (!isAdmin && gatewayEmail != null && !gatewayEmail.equalsIgnoreCase(email)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
         byte[] pdf = authService.generateAttestation(email);
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=attestation-wac.pdf")
