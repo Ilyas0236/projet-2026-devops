@@ -69,7 +69,7 @@
       <div class="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
         <div class="col-span-1 md:col-span-1">
           <img src="assets/images/logos/wydad-logo.png" alt="Wydad AC" class="wac-logo-3d object-contain mb-6">
-          <p class="text-text-tertiary text-sm leading-relaxed">Le club de la nation. Fierté, passion et gloire depuis 1937.</p>
+          <p *ngIf="clubInfo?.description" class="text-text-tertiary text-sm leading-relaxed">{{ clubInfo.description }}</p>
           <div class="flex gap-4 mt-6">
             <a href="#" class="w-8 h-8 rounded-full bg-surface-2 flex items-center justify-center hover:bg-wydad-red text-white transition-colors"><span class="sr-only">Facebook</span>f</a>
             <a href="#" class="w-8 h-8 rounded-full bg-surface-2 flex items-center justify-center hover:bg-wydad-red text-white transition-colors"><span class="sr-only">Twitter</span>t</a>
@@ -96,22 +96,22 @@
         </div>
         <div>
           <h4 class="font-display font-bold text-lg uppercase tracking-wider mb-6 text-text-primary">Contact</h4>
-          <ul class="space-y-3 text-sm">
-            <li class="flex items-center gap-2">
-              <span class="text-wydad-red font-display uppercase text-xs tracking-widest">Email:</span> contact&#64;wac.ma
+          <ul class="space-y-3 text-sm" *ngIf="clubInfo">
+            <li class="flex items-center gap-2" *ngIf="clubInfo.email">
+              <span class="text-wydad-red font-display uppercase text-xs tracking-widest">Email:</span> {{ clubInfo.email }}
             </li>
-            <li class="flex items-center gap-2">
-              <span class="text-wydad-red font-display uppercase text-xs tracking-widest">Tél:</span> +212 5 22 00 00 00
+            <li class="flex items-center gap-2" *ngIf="clubInfo.telephone">
+              <span class="text-wydad-red font-display uppercase text-xs tracking-widest">Tél:</span> {{ clubInfo.telephone }}
             </li>
-            <li class="flex items-center gap-2">
-              <span class="text-wydad-red font-display uppercase text-xs tracking-widest">Adresse:</span> Complexe Mohamed Benjelloun
+            <li class="flex items-center gap-2" *ngIf="clubInfo.adresse">
+              <span class="text-wydad-red font-display uppercase text-xs tracking-widest">Adresse:</span> {{ clubInfo.adresse }}
             </li>
           </ul>
         </div>
       </div>
       <div class="border-t border-white/[0.04] pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-text-tertiary">
         <p>&copy; 2026 Wydad Athletic Club. Tous droits réservés.</p>
-        <p class="font-display font-bold text-wydad-red tracking-widest uppercase text-sm">Dima Wydad</p>
+        <p class="font-display font-bold text-wydad-red tracking-widest uppercase text-sm">{{ clubInfo?.slogan || 'Dima Wydad' }}</p>
       </div>
     </div>
   </footer>

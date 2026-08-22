@@ -224,10 +224,10 @@
       </div>
 
       <!-- Membership Cards Grid -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6" *ngIf="membershipTiers.length > 0">
         <div *ngFor="let tier of membershipTiers; let i = index"
              class="relative rounded-2xl overflow-hidden border transition-all duration-500 animate-fade-in-up"
-             [class]="tier.borderColor + ' ' + tier.glowClass + ' bg-gradient-to-b ' + tier.gradient"
+             [class]="tierStyle(tier.level).borderColor + ' ' + tierStyle(tier.level).glowClass + ' bg-gradient-to-b ' + tierStyle(tier.level).gradient"
              [style.animation-delay]="(i * 0.15) + 's'"
              style="opacity: 0;">
 
@@ -238,7 +238,7 @@
 
           <div class="p-6 md:p-8 flex flex-col h-full">
             <!-- Tier Name -->
-            <h3 class="font-display font-bold text-2xl uppercase tracking-wider mb-1" [class]="'text-' + tier.color">{{ tier.name }}</h3>
+            <h3 class="font-display font-bold text-2xl uppercase tracking-wider mb-1" [class]="tierStyle(tier.level).color">{{ tier.name }}</h3>
 
             <!-- Price -->
             <div class="flex items-baseline gap-1 mb-6">
@@ -249,7 +249,7 @@
             <!-- Features -->
             <ul class="flex-1 space-y-3 mb-8">
               <li *ngFor="let feature of tier.features" class="flex items-start gap-3 text-sm text-text-secondary">
-                <svg class="w-4 h-4 mt-0.5 flex-shrink-0" [class]="'text-' + tier.color" fill="currentColor" viewBox="0 0 20 20">
+                <svg class="w-4 h-4 mt-0.5 flex-shrink-0" [class]="tierStyle(tier.level).color" fill="currentColor" viewBox="0 0 20 20">
                   <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
                 </svg>
                 {{ feature }}
@@ -263,6 +263,12 @@
             </a>
           </div>
         </div>
+      </div>
+
+      <!-- Fallback si la config club est indisponible (backend down) -->
+      <div *ngIf="membershipTiers.length === 0" class="glass rounded-2xl text-center py-16 animate-fade-in">
+        <p class="text-text-tertiary font-display uppercase tracking-wider">Formules d'adhésion bientôt disponibles</p>
+        <a routerLink="/adhesion" class="inline-block mt-4 wydad-btn-secondary px-6 py-2 text-xs uppercase tracking-widest">Voir les formules</a>
       </div>
     </div>
   </section>

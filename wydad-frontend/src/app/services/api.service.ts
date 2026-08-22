@@ -92,6 +92,15 @@ export class ApiService {
     return this.http.get<any[]>(`${this.baseUrl}/content/joueurs/sport/${sport}`);
   }
 
+  // Parametres club (paliers adhesion, coordonnees) — source de verite ADMIN
+  getClubSettings(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/content/settings`);
+  }
+
+  getClubSetting(key: string): Observable<any> {
+    return this.http.get(`${this.baseUrl}/content/settings/${key}`);
+  }
+
   getBalance(email: string): Observable<any> {
     return this.http.get(`${this.baseUrl}/payment/balance?email=${email}`);
   }
