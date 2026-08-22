@@ -14,6 +14,7 @@ import { AdminActualitesComponent } from './pages/admin/admin-actualites/admin-a
 import { AdminMatchsComponent } from './pages/admin/admin-matchs/admin-matchs.component';
 import { AdminClassementsComponent } from './pages/admin/admin-classements/admin-classements.component';
 import { AdminNotificationsComponent } from './pages/admin/admin-notifications/admin-notifications.component';
+import { AdminSettingsComponent } from './pages/admin/admin-settings/admin-settings.component';
 import { AdhesionComponent } from './pages/adhesion/adhesion.component';
 import { LoginComponent } from './components/login/login.component';
 import { RegisterComponent } from './components/register/register.component';
@@ -84,7 +85,8 @@ export const routes: Routes = [
       { path: 'boutique', component: AdminBoutiqueComponent },
       { path: 'billetterie', component: AdminBilletterieComponent },
       { path: 'effectif', component: AdminEffectifComponent },
-      { path: 'notifications', component: AdminNotificationsComponent }
+      { path: 'notifications', component: AdminNotificationsComponent },
+      { path: 'parametres', component: AdminSettingsComponent }
     ]
   }
 ];

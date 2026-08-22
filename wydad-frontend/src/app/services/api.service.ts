@@ -101,6 +101,10 @@ export class ApiService {
     return this.http.get(`${this.baseUrl}/content/settings/${key}`);
   }
 
+  updateClubSetting(key: string, value: any): Observable<any> {
+    return this.http.put(`${this.baseUrl}/content/settings/${key}`, value);
+  }
+
   getBalance(email: string): Observable<any> {
     return this.http.get(`${this.baseUrl}/payment/balance?email=${email}`);
   }
