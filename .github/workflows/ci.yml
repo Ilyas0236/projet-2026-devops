@@ -422,3 +422,25 @@ jobs:
             ${{ env.IMAGE_PREFIX }}-gamification:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+
+  frontend-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: wydad-frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: wydad-frontend
+        run: npm ci
+
+      - name: Build frontend (production)
+        working-directory: wydad-frontend
+        run: npm run build -- --configuration production
