@@ -28,23 +28,31 @@ public class JwtUtils {
         return Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
     }
 
-    public String generateAccessToken(String email, String role) {
+    public String generateAccessToken(Long userId, String email, String role) {
         return Jwts.builder()
                 .subject(email)
+                .claim("id", userId)
                 .claim("role", role)
+                .claim("typ", "access")
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + jwtExpiration))
                 .signWith(getSigningKey())
                 .compact();
     }
 
-    public String generateRefreshToken(String email) {
+    public String generateRefreshToken(Long userId, String email) {
         return Jwts.builder()
                 .subject(email)
+                .claim("id", userId)
+                .claim("typ", "refresh")
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + refreshExpiration))
                 .signWith(getSigningKey())
                 .compact();
+    }
+
+    public Long getUserIdFromToken(String token) {
+        return parseToken(token).getPayload().get("id", Long.class);
     }
 
     public String getEmailFromToken(String token) {
@@ -56,16 +64,25 @@ public class JwtUtils {
     }
 
     public boolean validateToken(String token) {
-        try {
-            parseToken(token);
-            return true;
-        } catch (JwtException | IllegalArgumentException e) {
-            return false;
-        }
+        return validateToken(token, "access");
     }
 
     public boolean validateRefreshToken(String token) {
-        return validateToken(token);
+        // Un access token ne doit pas pouvoir servir de refresh token
+        return validateToken(token, "refresh");
+    }
+
+    public boolean validateToken(String token, String expectedType) {
+        try {
+            Claims claims = parseToken(token).getPayload();
+            String typ = claims.get("typ", String.class);
+            if (!expectedType.equals(typ)) {
+                return false;
+            }
+            return true;
+            } catch (JwtException | IllegalArgumentException e) {
+            return false;
+        }
     }
 
     private Jws<Claims> parseToken(String token) {
