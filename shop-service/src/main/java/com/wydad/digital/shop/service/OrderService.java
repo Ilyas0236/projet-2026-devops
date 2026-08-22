@@ -15,6 +15,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -35,10 +38,22 @@ public class OrderService {
             throw new RuntimeException("Panier vide");
         }
 
-        // Vérifier stock
-        for (CartItem item : cartItems) {
-            ProductVariant variant = productVariantRepository.findById(item.getProductVariantId())
+        // Verrouiller toutes les variantes du panier (tri par id pour éviter les deadlocks)
+        // puis vérifier ET décrémenter le stock en un seul passage atomique.
+        List<Long> variantIds = cartItems.stream()
+                .map(CartItem::getProductVariantId)
+                .distinct()
+                .sorted()
+                .toList();
+        Map<Long, ProductVariant> lockedVariants = new HashMap<>();
+        for (Long variantId : variantIds) {
+            ProductVariant variant = productVariantRepository.findByIdForUpdate(variantId)
                     .orElseThrow(() -> new RuntimeException("Variante non trouvée"));
+            lockedVariants.put(variantId, variant);
+        }
+
+        for (CartItem item : cartItems) {
+            ProductVariant variant = lockedVariants.get(item.getProductVariantId());
             if (variant.getStockQuantity() < item.getQuantity()) {
                 throw new RuntimeException("Stock insuffisant pour: " + item.getProductName());
             }
@@ -66,11 +81,10 @@ public class OrderService {
             order.setClickAndCollect(false);
         }
 
-        // Ajouter items + calcul sous-total
+        // Ajouter items + calcul sous-total (variantes déjà verrouillées ci-dessus)
         BigDecimal subtotal = BigDecimal.ZERO;
         for (CartItem cartItem : cartItems) {
-            ProductVariant variant = productVariantRepository.findById(cartItem.getProductVariantId())
-                    .orElseThrow();
+            ProductVariant variant = lockedVariants.get(cartItem.getProductVariantId());
 
             BigDecimal unitPrice = variant.getProduct().getBasePrice();
             if (cartItem.getCustomization() != null && cartItem.getCustomization().getExtraPrice() != null) {
@@ -103,7 +117,8 @@ public class OrderService {
         // Promo code
         BigDecimal discount = BigDecimal.ZERO;
         if (dto.getPromoCode() != null && !dto.getPromoCode().isBlank()) {
-            PromoCode promo = promoCodeRepository.findByCodeAndActiveTrue(dto.getPromoCode())
+            // Verrou pessimiste : l'incrément de currentUses ne peut pas dépasser maxUses
+            PromoCode promo = promoCodeRepository.findActiveByCodeForUpdate(dto.getPromoCode())
                     .orElseThrow(() -> new RuntimeException("Code promo invalide"));
 
             LocalDateTime now = LocalDateTime.now();
