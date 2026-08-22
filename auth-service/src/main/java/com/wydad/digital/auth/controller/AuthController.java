@@ -111,7 +111,20 @@ public class AuthController {
     public ResponseEntity<AuthResponse> updateProfile(
             @Valid @RequestBody UpdateProfileRequest request,
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authHeader) {
-        return ResponseEntity.ok(authService.updateProfile(request));
+        // IDOR : seul l'email dérivé du JWT fait foi ; un utilisateur ne peut
+        // modifier que son propre profil (l'admin peut cibler un autre compte
+        // en passant explicitement un email différent).
+        String tokenEmail = jwtUtils.getEmailFromToken(token(authHeader));
+        boolean isAdmin = "ADMIN".equals(jwtUtils.getRoleFromToken(token(authHeader)));
+        UpdateProfileRequest effective = (!isAdmin && !tokenEmail.equalsIgnoreCase(request.email()))
+                ? new UpdateProfileRequest(tokenEmail, request.firstName(), request.lastName(),
+                        request.phone(), request.ville(), request.langue(), request.timezone(), request.bio())
+                : request;
+        return ResponseEntity.ok(authService.updateProfile(effective));
+    }
+
+    private String token(String authHeader) {
+        return authHeader.replace("Bearer ", "");
     }
 
     @DeleteMapping("/me")
@@ -126,8 +139,17 @@ public class AuthController {
 
     @PostMapping("/upgrade")
     @PreAuthorize("hasRole('ADHERENT') or hasRole('ADMIN')")
-    public ResponseEntity<AuthResponse> upgradeLevel(@Valid @RequestBody UpgradeRequest request) {
-        return ResponseEntity.ok(authService.upgradeLevel(request));
+    public ResponseEntity<AuthResponse> upgradeLevel(
+            @Valid @RequestBody UpgradeRequest request,
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authHeader) {
+        // IDOR : l'upgrade s'applique au compte du JWT ; seul l'ADMIN peut
+        // upgrader un autre compte en le ciblant explicitement.
+        String tokenEmail = jwtUtils.getEmailFromToken(token(authHeader));
+        boolean isAdmin = "ADMIN".equals(jwtUtils.getRoleFromToken(token(authHeader)));
+        UpgradeRequest effective = (!isAdmin && !tokenEmail.equalsIgnoreCase(request.email()))
+                ? new UpgradeRequest(tokenEmail, request.newLevel())
+                : request;
+        return ResponseEntity.ok(authService.upgradeLevel(effective));
     }
 
     @GetMapping("/membership-status")
