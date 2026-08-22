@@ -18,6 +18,7 @@ import { AdhesionComponent } from './pages/adhesion/adhesion.component';
 import { LoginComponent } from './components/login/login.component';
 import { RegisterComponent } from './components/register/register.component';
 import { ActualitesComponent } from './components/actualites/actualites.component';
+import { ActualiteDetailComponent } from './components/actualites/actualite-detail.component';
 import { MatchesComponent } from './components/matches/matches.component';
 import { ClassementComponent } from './components/classement/classement.component';
 import { ProfilComponent } from './components/profil/profil.component';
@@ -47,6 +48,7 @@ export const routes: Routes = [
       { path: 'register', component: RegisterComponent },
       { path: 'adhesion', component: AdhesionComponent },
       { path: 'actualites', component: ActualitesComponent },
+      { path: 'actualites/:id', component: ActualiteDetailComponent },
       { path: 'matchs', component: MatchesComponent },
       { path: 'classements', component: ClassementComponent },
       { path: 'boutique', component: BoutiqueComponent },

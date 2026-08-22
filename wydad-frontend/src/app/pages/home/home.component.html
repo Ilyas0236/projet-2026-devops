@@ -158,29 +158,31 @@
 
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6" *ngIf="articles.length > 0">
         <!-- Main News Card -->
-        <div class="md:col-span-2 group relative overflow-hidden rounded-2xl h-[400px] md:h-[500px] cursor-pointer wydad-card-interactive" *ngIf="articles[0]">
+        <a [routerLink]="['/actualites', articles[0].id]"
+           class="md:col-span-2 group relative overflow-hidden rounded-2xl h-[400px] md:h-[500px] cursor-pointer wydad-card-interactive" *ngIf="articles[0]">
           <div class="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110"
-               [style.backgroundImage]="'url(' + (articles[0].coverImageUrl ? api.getMediaUrl(articles[0].coverImageUrl) : 'assets/images/defaults/default-news-1.jpg') + ')'"></div>
+               [style.backgroundImage]="'url(' + (articles[0].imageUrl ? api.getMediaUrl(articles[0].imageUrl) : 'assets/images/defaults/default-news-1.jpg') + ')'"></div>
           <div class="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent"></div>
           <div class="absolute bottom-0 left-0 w-full p-8 md:p-10">
-            <span class="wydad-badge mb-4">{{ articles[0].category || 'Actualité' }}</span>
-            <h3 class="font-display font-bold text-2xl md:text-4xl leading-tight mb-3 group-hover:text-wydad-red transition-colors duration-300">{{ articles[0].title }}</h3>
-            <p class="text-text-secondary text-sm line-clamp-2 max-w-lg">{{ articles[0].excerpt || '' }}</p>
+            <span class="wydad-badge mb-4">{{ articles[0].sport || 'Actualité' }}</span>
+            <h3 class="font-display font-bold text-2xl md:text-4xl leading-tight mb-3 group-hover:text-wydad-red transition-colors duration-300">{{ articles[0].titre }}</h3>
+            <p class="text-text-secondary text-sm line-clamp-2 max-w-lg">{{ articles[0].contenu || '' }}</p>
           </div>
-        </div>
+        </a>
 
         <!-- Secondary News Column -->
         <div class="flex flex-col gap-6 h-auto md:h-[500px]">
           <!-- Second article -->
-          <div class="flex-1 group relative overflow-hidden rounded-2xl cursor-pointer wydad-card-interactive min-h-[200px]" *ngIf="articles[1]">
+          <a [routerLink]="['/actualites', articles[1].id]"
+             class="flex-1 group relative overflow-hidden rounded-2xl cursor-pointer wydad-card-interactive min-h-[200px]" *ngIf="articles[1]">
             <div class="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110"
-                 [style.backgroundImage]="'url(' + (articles[1].coverImageUrl ? api.getMediaUrl(articles[1].coverImageUrl) : 'assets/images/defaults/default-news-2.jpg') + ')'"></div>
+                 [style.backgroundImage]="'url(' + (articles[1].imageUrl ? api.getMediaUrl(articles[1].imageUrl) : 'assets/images/defaults/default-news-2.jpg') + ')'"></div>
             <div class="absolute inset-0 bg-gradient-to-t from-black to-transparent"></div>
             <div class="absolute bottom-0 left-0 w-full p-6">
-              <span class="wydad-badge-gold mb-2">{{ articles[1].category || 'Sport' }}</span>
-              <h3 class="font-display font-bold text-lg leading-tight group-hover:text-wydad-gold transition-colors duration-300">{{ articles[1].title }}</h3>
+              <span class="wydad-badge-gold mb-2">{{ articles[1].sport || 'Sport' }}</span>
+              <h3 class="font-display font-bold text-lg leading-tight group-hover:text-wydad-gold transition-colors duration-300">{{ articles[1].titre }}</h3>
             </div>
-          </div>
+          </a>
 
           <!-- Boutique Promo Card -->
           <div class="flex-1 group relative overflow-hidden rounded-2xl cursor-pointer min-h-[200px]"

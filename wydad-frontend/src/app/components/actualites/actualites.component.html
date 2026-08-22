@@ -34,27 +34,27 @@
               }">
         ⚽ Football
       </button>
-      <button (click)="filter = 'BASKET'"
+      <button (click)="filter = 'BASKETBALL'"
               class="px-6 py-2.5 rounded-full font-display font-bold uppercase text-xs tracking-wider transition-all duration-300 border"
               [ngClass]="{
-                'bg-wydad-red text-white border-wydad-red shadow-glow-red': filter === 'BASKET',
-                'bg-surface-2 border-white/10 text-text-secondary hover:bg-surface-3': filter !== 'BASKET'
+                'bg-wydad-red text-white border-wydad-red shadow-glow-red': filter === 'BASKETBALL',
+                'bg-surface-2 border-white/10 text-text-secondary hover:bg-surface-3': filter !== 'BASKETBALL'
               }">
         🏀 Basket
       </button>
-      <button (click)="filter = 'HAND'"
+      <button (click)="filter = 'HANDBALL'"
               class="px-6 py-2.5 rounded-full font-display font-bold uppercase text-xs tracking-wider transition-all duration-300 border"
               [ngClass]="{
-                'bg-wydad-red text-white border-wydad-red shadow-glow-red': filter === 'HAND',
-                'bg-surface-2 border-white/10 text-text-secondary hover:bg-surface-3': filter !== 'HAND'
+                'bg-wydad-red text-white border-wydad-red shadow-glow-red': filter === 'HANDBALL',
+                'bg-surface-2 border-white/10 text-text-secondary hover:bg-surface-3': filter !== 'HANDBALL'
               }">
         🤾 Hand
       </button>
-      <button (click)="filter = 'VOLLEY'"
+      <button (click)="filter = 'VOLLEYBALL'"
               class="px-6 py-2.5 rounded-full font-display font-bold uppercase text-xs tracking-wider transition-all duration-300 border"
               [ngClass]="{
-                'bg-wydad-red text-white border-wydad-red shadow-glow-red': filter === 'VOLLEY',
-                'bg-surface-2 border-white/10 text-text-secondary hover:bg-surface-3': filter !== 'VOLLEY'
+                'bg-wydad-red text-white border-wydad-red shadow-glow-red': filter === 'VOLLEYBALL',
+                'bg-surface-2 border-white/10 text-text-secondary hover:bg-surface-3': filter !== 'VOLLEYBALL'
               }">
         🏐 Volley
       </button>
@@ -62,8 +62,9 @@
 
     <!-- News Grid -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-      <div *ngFor="let article of filteredArticles(); let i = index" 
-           class="wydad-card group rounded-[2rem] overflow-hidden flex flex-col h-full animate-fade-in-up"
+      <div *ngFor="let article of filteredArticles(); let i = index"
+           class="wydad-card group rounded-[2rem] overflow-hidden flex flex-col h-full animate-fade-in-up cursor-pointer"
+           [routerLink]="['/actualites', article.id]"
            [style.animation-delay]="(0.5 + (i * 0.1)) + 's'" style="opacity: 0;">
         
         <!-- Image Container -->
