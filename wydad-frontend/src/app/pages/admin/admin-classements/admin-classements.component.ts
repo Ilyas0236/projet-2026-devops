@@ -47,15 +47,15 @@ import { ApiService } from '../../../services/api.service';
             </tr>
           </thead>
           <tbody class="divide-y divide-white/5">
-            <tr *ngFor="let item of classements" class="hover:bg-white/5 transition-colors" [ngClass]="{'bg-wydad-red/10': item.teamName.includes('Wydad')}">
+            <tr *ngFor="let item of classements" class="hover:bg-white/5 transition-colors" [ngClass]="{'bg-wydad-red/10': item.equipe.includes('Wydad')}">
               <td class="py-3 px-4 text-sm text-white font-bold">{{ item.position }}</td>
-              <td class="py-3 px-4 text-sm text-white font-medium">{{ item.teamName }}</td>
+              <td class="py-3 px-4 text-sm text-white font-medium">{{ item.equipe }}</td>
               <td class="py-3 px-4 text-sm text-white font-bold text-center">{{ item.points }}</td>
-              <td class="py-3 px-4 text-sm text-gray-400 text-center">{{ item.played }}</td>
-              <td class="py-3 px-4 text-sm text-gray-400 text-center">{{ item.won }}</td>
-              <td class="py-3 px-4 text-sm text-gray-400 text-center">{{ item.drawn }}</td>
-              <td class="py-3 px-4 text-sm text-gray-400 text-center">{{ item.lost }}</td>
-              <td class="py-3 px-4 text-sm text-gray-400 text-center">{{ item.goalsFor - item.goalsAgainst }}</td>
+              <td class="py-3 px-4 text-sm text-gray-400 text-center">{{ item.joues }}</td>
+              <td class="py-3 px-4 text-sm text-gray-400 text-center">{{ item.gagnes }}</td>
+              <td class="py-3 px-4 text-sm text-gray-400 text-center">{{ item.nuls }}</td>
+              <td class="py-3 px-4 text-sm text-gray-400 text-center">{{ item.perdus }}</td>
+              <td class="py-3 px-4 text-sm text-gray-400 text-center">{{ item.bp - item.bc }}</td>
               <td class="py-3 px-4 text-right">
                 <button (click)="openModal(item)" class="text-blue-400 hover:text-blue-300 mx-2 text-xs uppercase font-bold">Éditer</button>
                 <button (click)="deleteClassement(item.id)" class="text-red-400 hover:text-red-300 mx-2 text-xs uppercase font-bold">Supprimer</button>
@@ -75,7 +75,7 @@ import { ApiService } from '../../../services/api.service';
           <div class="grid grid-cols-2 gap-4 mb-4">
             <div class="col-span-2">
               <label class="block text-xs text-gray-400 uppercase mb-1">Équipe</label>
-              <input type="text" [(ngModel)]="currentClassement.teamName" class="w-full bg-black border border-white/10 rounded px-3 py-2 text-white">
+              <input type="text" [(ngModel)]="currentClassement.equipe" class="w-full bg-black border border-white/10 rounded px-3 py-2 text-white">
             </div>
             <div>
               <label class="block text-xs text-gray-400 uppercase mb-1">Position</label>
@@ -87,27 +87,27 @@ import { ApiService } from '../../../services/api.service';
             </div>
             <div>
               <label class="block text-xs text-gray-400 uppercase mb-1">Joués</label>
-              <input type="number" [(ngModel)]="currentClassement.played" class="w-full bg-black border border-white/10 rounded px-3 py-2 text-white">
+              <input type="number" [(ngModel)]="currentClassement.joues" class="w-full bg-black border border-white/10 rounded px-3 py-2 text-white">
             </div>
             <div>
               <label class="block text-xs text-gray-400 uppercase mb-1">Gagnés</label>
-              <input type="number" [(ngModel)]="currentClassement.won" class="w-full bg-black border border-white/10 rounded px-3 py-2 text-white">
+              <input type="number" [(ngModel)]="currentClassement.gagnes" class="w-full bg-black border border-white/10 rounded px-3 py-2 text-white">
             </div>
             <div>
               <label class="block text-xs text-gray-400 uppercase mb-1">Nuls</label>
-              <input type="number" [(ngModel)]="currentClassement.drawn" class="w-full bg-black border border-white/10 rounded px-3 py-2 text-white">
+              <input type="number" [(ngModel)]="currentClassement.nuls" class="w-full bg-black border border-white/10 rounded px-3 py-2 text-white">
             </div>
             <div>
               <label class="block text-xs text-gray-400 uppercase mb-1">Perdus</label>
-              <input type="number" [(ngModel)]="currentClassement.lost" class="w-full bg-black border border-white/10 rounded px-3 py-2 text-white">
+              <input type="number" [(ngModel)]="currentClassement.perdus" class="w-full bg-black border border-white/10 rounded px-3 py-2 text-white">
             </div>
             <div>
               <label class="block text-xs text-gray-400 uppercase mb-1">Buts +</label>
-              <input type="number" [(ngModel)]="currentClassement.goalsFor" class="w-full bg-black border border-white/10 rounded px-3 py-2 text-white">
+              <input type="number" [(ngModel)]="currentClassement.bp" class="w-full bg-black border border-white/10 rounded px-3 py-2 text-white">
             </div>
             <div>
               <label class="block text-xs text-gray-400 uppercase mb-1">Buts -</label>
-              <input type="number" [(ngModel)]="currentClassement.goalsAgainst" class="w-full bg-black border border-white/10 rounded px-3 py-2 text-white">
+              <input type="number" [(ngModel)]="currentClassement.bc" class="w-full bg-black border border-white/10 rounded px-3 py-2 text-white">
             </div>
           </div>
           
@@ -154,7 +154,7 @@ export class AdminClassementsComponent implements OnInit {
       this.currentClassement = { ...item };
     } else {
       this.isEdit = false;
-      this.currentClassement = { competition: this.selectedCompetition, teamName: '', position: 1, points: 0, played: 0, won: 0, drawn: 0, lost: 0, goalsFor: 0, goalsAgainst: 0 };
+      this.currentClassement = { competition: this.selectedCompetition, sport: 'FOOTBALL', equipe: '', position: 1, points: 0, joues: 0, gagnes: 0, nuls: 0, perdus: 0, bp: 0, bc: 0 };
     }
     this.showModal = true;
   }

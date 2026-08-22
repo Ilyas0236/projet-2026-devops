@@ -26,6 +26,19 @@ public class PlayerController {
         return ResponseEntity.status(HttpStatus.CREATED).body(playerService.createOrUpdatePlayer(dto));
     }
 
+    @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<PlayerDto> updatePlayer(@PathVariable Long id, @Valid @RequestBody PlayerDto dto) {
+        return ResponseEntity.ok(playerService.updatePlayer(id, dto));
+    }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> deletePlayer(@PathVariable Long id) {
+        playerService.deletePlayer(id);
+        return ResponseEntity.noContent().build();
+    }
+
     @GetMapping("/user/{userId}")
     public ResponseEntity<PlayerDto> getPlayerByUserId(@PathVariable Long userId) {
         return ResponseEntity.ok(playerService.getPlayerByUserId(userId));

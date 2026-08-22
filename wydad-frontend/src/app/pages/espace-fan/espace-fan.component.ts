@@ -57,11 +57,13 @@ export class EspaceFanComponent implements OnInit {
     // Charger les matchs pour les pronostics (les prochains matchs)
     this.api.getMatches().subscribe({
       next: (data: any) => {
+        // MatchResponse : date + heure séparés, adversaire = équipe extérieure
+        const toDateTime = (m: any) => new Date(`${m.date}T${m.heure || '00:00'}`);
         // Filtrer les matchs à venir
-        this.matches = data.filter((m: any) => new Date(m.dateHeure) > new Date())
-                           .sort((a: any, b: any) => new Date(a.dateHeure).getTime() - new Date(b.dateHeure).getTime())
+        this.matches = data.filter((m: any) => toDateTime(m) > new Date())
+                           .sort((a: any, b: any) => toDateTime(a).getTime() - toDateTime(b).getTime())
                            .slice(0, 5); // Garder les 5 prochains matchs
-        
+
         // Initialiser le formulaire
         this.matches.forEach(m => {
           this.predictionForm[m.id] = { homeScore: 0, awayScore: 0 };

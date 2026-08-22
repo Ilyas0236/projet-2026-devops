@@ -68,11 +68,11 @@
             <div *ngFor="let match of matches" class="border border-gray-100 rounded-xl p-4 flex flex-col md:flex-row items-center justify-between gap-4 hover:shadow-md transition-shadow">
               <!-- Info Match -->
               <div class="flex-1 text-center md:text-left">
-                <p class="text-xs text-gray-400 font-bold mb-2">{{ match.competition }} • {{ match.dateHeure | date:'dd/MM/yyyy HH:mm' }}</p>
+                <p class="text-xs text-gray-400 font-bold mb-2">{{ match.competition }} • {{ match.date | date:'dd/MM/yyyy' }} {{ match.heure }}</p>
                 <div class="flex items-center justify-center md:justify-start gap-4 font-display font-bold text-lg">
-                  <span class="w-24 text-right">{{ match.equipeDomicile }}</span>
+                  <span class="w-24 text-right">WAC</span>
                   <span class="text-gray-300">VS</span>
-                  <span class="w-24 text-left">{{ match.equipeExterieur }}</span>
+                  <span class="w-24 text-left">{{ match.adversaire }}</span>
                 </div>
               </div>
 

@@ -22,6 +22,7 @@ public class PlayerDto {
     private Double bmi;
     private LocalDate birthDate;
     private String nationality;
+    private String photoUrl;
     private Integer matchesPlayed;
     private Integer goals;
     private Integer assists;

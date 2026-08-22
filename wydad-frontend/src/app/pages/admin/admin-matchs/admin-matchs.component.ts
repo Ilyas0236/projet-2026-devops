@@ -37,17 +37,19 @@ import { ApiService } from '../../../services/api.service';
           <tbody class="divide-y divide-white/5">
             <tr *ngFor="let item of matchs" class="hover:bg-white/5 transition-colors">
               <td class="py-3 px-4 text-sm text-white font-bold flex items-center gap-2">
-                <img *ngIf="item.adversaireLogoUrl" [src]="apiService.getMediaUrl(item.adversaireLogoUrl)" class="w-8 h-8 object-contain rounded" alt="logo">
-                {{ item.homeTeam }} - {{ item.awayTeam }}
+                <img *ngIf="item.imageUrl" [src]="apiService.getMediaUrl(item.imageUrl)" class="w-8 h-8 object-contain rounded" alt="logo">
+                WAC - {{ item.adversaire }}
+                <span *ngIf="item.sport && item.sport !== 'FOOTBALL'" class="px-2 py-1 bg-white/10 rounded text-[10px] font-normal">{{ item.sport }}</span>
               </td>
-              <td class="py-3 px-4 text-xs text-gray-400">{{ item.matchDate | date:'medium' }}</td>
+              <td class="py-3 px-4 text-xs text-gray-400">{{ item.date | date:'dd/MM/yyyy' }} {{ item.heure }}</td>
               <td class="py-3 px-4 text-xs text-gray-400">{{ item.competition }}</td>
-              <td class="py-3 px-4 text-sm font-bold" [ngClass]="{'text-wydad-red': item.statut === 'TERMINE', 'text-yellow-400': item.statut === 'EN_COURS', 'text-gray-400': item.statut === 'A_VENIR'}">
-                <span *ngIf="item.statut !== 'A_VENIR'">{{ item.homeScore }} - {{ item.awayScore }}</span>
-                <span *ngIf="item.statut === 'A_VENIR'" class="text-xs uppercase font-medium">À venir</span>
+              <td class="py-3 px-4 text-sm font-bold" [ngClass]="{'text-wydad-red': item.statut === 'TERMINE', 'text-yellow-400': item.statut === 'EN_COURS', 'text-gray-400': item.statut !== 'TERMINE' && item.statut !== 'EN_COURS'}">
+                <span *ngIf="item.statut === 'PROGRAMME'" class="text-xs uppercase font-medium">À venir</span>
+                <span *ngIf="item.statut !== 'PROGRAMME'">{{ item.scoreWydad }} - {{ item.scoreAdversaire }}</span>
+                <span *ngIf="item.statut === 'REPORTE'" class="text-xs uppercase font-medium ml-2">(reporté)</span>
               </td>
               <td class="py-3 px-4 text-right">
-                <button (click)="openScoreModal(item)" class="text-green-400 hover:text-green-300 mx-2 text-xs uppercase font-bold" *ngIf="item.statut !== 'A_VENIR'">Score</button>
+                <button (click)="openScoreModal(item)" class="text-green-400 hover:text-green-300 mx-2 text-xs uppercase font-bold" *ngIf="item.statut !== 'PROGRAMME'">Score</button>
                 <button (click)="openModal(item)" class="text-blue-400 hover:text-blue-300 mx-2 text-xs uppercase font-bold">Éditer</button>
                 <button (click)="deleteMatch(item.id)" class="text-red-400 hover:text-red-300 mx-2 text-xs uppercase font-bold">Supprimer</button>
               </td>
@@ -62,23 +64,36 @@ import { ApiService } from '../../../services/api.service';
           <h3 class="text-xl font-display font-bold text-white uppercase tracking-wider mb-6">
             {{ isEdit ? 'Modifier le Match' : 'Nouveau Match' }}
           </h3>
-          
+
           <div class="grid grid-cols-2 gap-4 mb-4">
             <div>
-              <label class="block text-xs text-gray-400 uppercase mb-1">Équipe Domicile</label>
-              <input type="text" [(ngModel)]="currentMatch.homeTeam" class="w-full bg-black border border-white/10 rounded px-3 py-2 text-white">
+              <label class="block text-xs text-gray-400 uppercase mb-1">Adversaire *</label>
+              <input type="text" [(ngModel)]="currentMatch.adversaire" class="w-full bg-black border border-white/10 rounded px-3 py-2 text-white">
             </div>
             <div>
-              <label class="block text-xs text-gray-400 uppercase mb-1">Équipe Extérieur</label>
-              <input type="text" [(ngModel)]="currentMatch.awayTeam" class="w-full bg-black border border-white/10 rounded px-3 py-2 text-white">
+              <label class="block text-xs text-gray-400 uppercase mb-1">Sport *</label>
+              <select [(ngModel)]="currentMatch.sport" class="w-full bg-black border border-white/10 rounded px-3 py-2 text-white">
+                <option value="FOOTBALL">Football</option>
+                <option value="BASKETBALL">Basketball</option>
+                <option value="HANDBALL">Handball</option>
+                <option value="VOLLEYBALL">Volleyball</option>
+                <option value="NATATION">Natation</option>
+                <option value="JUDO">Judo</option>
+                <option value="ATHLETISME">Athlétisme</option>
+                <option value="GENERAL">Général</option>
+              </select>
             </div>
             <div>
-              <label class="block text-xs text-gray-400 uppercase mb-1">Date</label>
-              <input type="datetime-local" [(ngModel)]="currentMatch.matchDate" class="w-full bg-black border border-white/10 rounded px-3 py-2 text-white">
+              <label class="block text-xs text-gray-400 uppercase mb-1">Date *</label>
+              <input type="date" [(ngModel)]="currentMatch.date" class="w-full bg-black border border-white/10 rounded px-3 py-2 text-white">
+            </div>
+            <div>
+              <label class="block text-xs text-gray-400 uppercase mb-1">Heure *</label>
+              <input type="time" [(ngModel)]="currentMatch.heure" class="w-full bg-black border border-white/10 rounded px-3 py-2 text-white">
             </div>
             <div>
               <label class="block text-xs text-gray-400 uppercase mb-1">Lieu</label>
-              <input type="text" [(ngModel)]="currentMatch.venue" class="w-full bg-black border border-white/10 rounded px-3 py-2 text-white">
+              <input type="text" [(ngModel)]="currentMatch.lieu" class="w-full bg-black border border-white/10 rounded px-3 py-2 text-white">
             </div>
             <div>
               <label class="block text-xs text-gray-400 uppercase mb-1">Compétition</label>
@@ -87,7 +102,7 @@ import { ApiService } from '../../../services/api.service';
             <div>
               <label class="block text-xs text-gray-400 uppercase mb-1">Statut</label>
               <select [(ngModel)]="currentMatch.statut" class="w-full bg-black border border-white/10 rounded px-3 py-2 text-white">
-                <option value="A_VENIR">À venir</option>
+                <option value="PROGRAMME">À venir</option>
                 <option value="EN_COURS">En cours</option>
                 <option value="TERMINE">Terminé</option>
                 <option value="REPORTE">Reporté</option>
@@ -95,19 +110,19 @@ import { ApiService } from '../../../services/api.service';
             </div>
           </div>
 
-          <!-- Upload logo adversaire -->
+          <!-- Upload image du match -->
           <div class="mb-4">
-            <label class="block text-xs text-gray-400 uppercase mb-1">Logo Adversaire</label>
+            <label class="block text-xs text-gray-400 uppercase mb-1">Image du match</label>
             <div class="flex items-center gap-4">
               <label class="cursor-pointer bg-zinc-800 border border-white/10 hover:border-wydad-red text-white px-4 py-2 rounded text-sm transition-colors">
                 📷 Choisir une image
                 <input type="file" accept="image/*" (change)="uploadLogo($event)" class="hidden">
               </label>
-              <img *ngIf="currentMatch.adversaireLogoUrl" [src]="apiService.getMediaUrl(currentMatch.adversaireLogoUrl)" class="w-12 h-12 object-contain rounded border border-white/10" alt="preview">
+              <img *ngIf="currentMatch.imageUrl" [src]="apiService.getMediaUrl(currentMatch.imageUrl)" class="w-12 h-12 object-contain rounded border border-white/10" alt="preview">
               <span *ngIf="uploading" class="text-xs text-yellow-400 animate-pulse">Envoi en cours...</span>
             </div>
           </div>
-          
+
           <div class="mt-8 flex justify-end gap-3">
             <button (click)="closeModal()" class="px-4 py-2 text-gray-400 hover:text-white uppercase text-sm font-bold">Annuler</button>
             <button (click)="saveMatch()" class="px-4 py-2 bg-wydad-red text-white uppercase text-sm font-bold">Sauvegarder</button>
@@ -148,12 +163,10 @@ export class AdminMatchsComponent implements OnInit {
     if (match) {
       this.isEdit = true;
       this.currentMatch = { ...match };
-      if(this.currentMatch.matchDate) {
-         this.currentMatch.matchDate = new Date(this.currentMatch.matchDate).toISOString().slice(0, 16);
-      }
     } else {
       this.isEdit = false;
-      this.currentMatch = { homeTeam: 'Wydad AC', awayTeam: '', matchDate: '', venue: 'Stade Mohammed V', competition: 'Botola Pro', statut: 'A_VENIR', adversaireLogoUrl: '' };
+      // MatchRequest : date, heure, adversaire, competition, lieu, statut, sport
+      this.currentMatch = { adversaire: '', date: '', heure: '', lieu: 'Stade Mohammed V', competition: 'Botola Pro', statut: 'PROGRAMME', sport: 'FOOTBALL', imageUrl: '' };
     }
     this.showModal = true;
   }
@@ -166,7 +179,7 @@ export class AdminMatchsComponent implements OnInit {
     this.uploading = true;
     this.apiService.uploadMedia(file).subscribe({
       next: (res) => {
-        this.currentMatch.adversaireLogoUrl = res.url;
+        this.currentMatch.imageUrl = res.url;
         this.uploading = false;
       },
       error: () => {
@@ -177,11 +190,11 @@ export class AdminMatchsComponent implements OnInit {
   }
 
   openScoreModal(match: any) {
-    const homeScore = prompt(`Score pour ${match.homeTeam}`, match.homeScore || 0);
-    const awayScore = prompt(`Score pour ${match.awayTeam}`, match.awayScore || 0);
+    const homeScore = prompt(`Score Wydad`, match.scoreWydad ?? 0);
+    const awayScore = prompt(`Score ${match.adversaire}`, match.scoreAdversaire ?? 0);
     if(homeScore !== null && awayScore !== null) {
-      const resultData = { homeScore: parseInt(homeScore), awayScore: parseInt(awayScore), statut: match.statut };
-      this.apiService.updateMatchResult(match.id, resultData).subscribe(() => this.loadMatchs());
+      // Le backend attend des query params (@RequestParam scoreWydad / scoreAdversaire)
+      this.apiService.updateMatchResult(match.id, parseInt(homeScore), parseInt(awayScore)).subscribe(() => this.loadMatchs());
     }
   }
 
@@ -190,13 +203,14 @@ export class AdminMatchsComponent implements OnInit {
   }
 
   saveMatch() {
+    const payload = this.payloadForBackend();
     if (this.isEdit) {
-      this.apiService.updateMatch(this.currentMatch.id, this.currentMatch).subscribe(() => {
+      this.apiService.updateMatch(this.currentMatch.id, payload).subscribe(() => {
         this.loadMatchs();
         this.closeModal();
       });
     } else {
-      this.apiService.createMatch(this.currentMatch).subscribe(() => {
+      this.apiService.createMatch(payload).subscribe(() => {
         this.loadMatchs();
         this.closeModal();
       });
@@ -207,5 +221,22 @@ export class AdminMatchsComponent implements OnInit {
     if (confirm('Voulez-vous vraiment supprimer ce match ?')) {
       this.apiService.deleteMatch(id).subscribe(() => this.loadMatchs());
     }
+  }
+
+  private payloadForBackend() {
+    // MatchRequest : date, heure, adversaire, competition, lieu, scoreWydad, scoreAdversaire, statut, sport
+    const p: any = {
+      date: this.currentMatch.date,
+      // l'input time renvoie "HH:mm" ; LocalTime accepte aussi HH:mm:ss
+      heure: (this.currentMatch.heure || '').length === 5 ? this.currentMatch.heure + ':00' : this.currentMatch.heure,
+      adversaire: this.currentMatch.adversaire,
+      competition: this.currentMatch.competition,
+      lieu: this.currentMatch.lieu,
+      statut: this.currentMatch.statut,
+      sport: this.currentMatch.sport
+    };
+    if (this.currentMatch.scoreWydad != null) p.scoreWydad = this.currentMatch.scoreWydad;
+    if (this.currentMatch.scoreAdversaire != null) p.scoreAdversaire = this.currentMatch.scoreAdversaire;
+    return p;
   }
 }

@@ -35,11 +35,11 @@ import { ApiService } from '../../../services/api.service';
           </thead>
           <tbody class="divide-y divide-white/5">
             <tr *ngFor="let item of articles" class="hover:bg-white/5 transition-colors">
-              <td class="py-3 px-4 text-sm text-white font-medium">{{ item.title }}</td>
+              <td class="py-3 px-4 text-sm text-white font-medium">{{ item.titre }}</td>
               <td class="py-3 px-4 text-xs text-gray-400">
-                <span class="px-2 py-1 bg-white/10 rounded text-white">{{ item.category }}</span>
+                <span class="px-2 py-1 bg-white/10 rounded text-white">{{ item.sport }}</span>
               </td>
-              <td class="py-3 px-4 text-sm text-gray-400">{{ item.publishedAt | date }}</td>
+              <td class="py-3 px-4 text-sm text-gray-400">{{ item.createdAt | date }}</td>
               <td class="py-3 px-4 text-right">
                 <button (click)="openModal(item)" class="text-blue-400 hover:text-blue-300 mx-2 text-xs uppercase font-bold">Éditer</button>
                 <button (click)="deleteArticle(item.id)" class="text-red-400 hover:text-red-300 mx-2 text-xs uppercase font-bold">Supprimer</button>
@@ -59,22 +59,32 @@ import { ApiService } from '../../../services/api.service';
           <div class="space-y-4">
             <div>
               <label class="block text-xs text-gray-400 uppercase mb-1">Titre</label>
-              <input type="text" [(ngModel)]="currentArticle.title" class="w-full bg-black border border-white/10 rounded px-3 py-2 text-white">
-            </div>
-            <div>
-              <label class="block text-xs text-gray-400 uppercase mb-1">Résumé</label>
-              <textarea [(ngModel)]="currentArticle.summary" class="w-full bg-black border border-white/10 rounded px-3 py-2 text-white h-20"></textarea>
-            </div>
-            <div>
-              <label class="block text-xs text-gray-400 uppercase mb-1">Contenu (HTML/Markdown)</label>
-              <textarea [(ngModel)]="currentArticle.content" class="w-full bg-black border border-white/10 rounded px-3 py-2 text-white h-40"></textarea>
+              <input type="text" [(ngModel)]="currentArticle.titre" class="w-full bg-black border border-white/10 rounded px-3 py-2 text-white">
             </div>
             <div class="grid grid-cols-2 gap-4">
               <div>
-                <label class="block text-xs text-gray-400 uppercase mb-1">Catégorie</label>
-                <input type="text" [(ngModel)]="currentArticle.category" class="w-full bg-black border border-white/10 rounded px-3 py-2 text-white">
+                <label class="block text-xs text-gray-400 uppercase mb-1">Rubrique</label>
+                <select [(ngModel)]="currentArticle.sport" class="w-full bg-black border border-white/10 rounded px-3 py-2 text-white">
+                  <option value="GENERAL">Général</option>
+                  <option value="FOOTBALL">Football</option>
+                  <option value="BASKETBALL">Basketball</option>
+                  <option value="HANDBALL">Handball</option>
+                  <option value="VOLLEYBALL">Volleyball</option>
+                  <option value="NATATION">Natation</option>
+                  <option value="JUDO">Judo</option>
+                  <option value="ATHLETISME">Athlétisme</option>
+                </select>
               </div>
               <div>
+                <label class="block text-xs text-gray-400 uppercase mb-1">Auteur</label>
+                <input type="text" [(ngModel)]="currentArticle.auteur" class="w-full bg-black border border-white/10 rounded px-3 py-2 text-white">
+              </div>
+            </div>
+            <div>
+              <label class="block text-xs text-gray-400 uppercase mb-1">Contenu (HTML/Markdown)</label>
+              <textarea [(ngModel)]="currentArticle.contenu" class="w-full bg-black border border-white/10 rounded px-3 py-2 text-white h-40"></textarea>
+            </div>
+            <div>
               <label class="block text-xs text-gray-400 uppercase mb-1">Image de couverture</label>
               <div class="flex items-center gap-4">
                 <label class="cursor-pointer bg-zinc-800 border border-white/10 hover:border-wydad-red text-white px-4 py-2 rounded text-sm transition-colors">
@@ -84,7 +94,6 @@ import { ApiService } from '../../../services/api.service';
                 <img *ngIf="currentArticle.imageUrl" [src]="apiService.getMediaUrl(currentArticle.imageUrl)" class="h-10 object-cover rounded border border-white/10" alt="preview">
                 <span *ngIf="uploadingPhoto" class="text-xs text-yellow-400 animate-pulse">Envoi en cours...</span>
               </div>
-            </div>
             </div>
           </div>
           
@@ -130,7 +139,7 @@ export class AdminActualitesComponent implements OnInit {
       this.currentArticle = { ...article };
     } else {
       this.isEdit = false;
-      this.currentArticle = { title: '', summary: '', content: '', category: 'CLUB', imageUrl: '' };
+      this.currentArticle = { titre: '', contenu: '', sport: 'GENERAL', auteur: 'Rédaction WAC', imageUrl: '' };
     }
     this.showModal = true;
   }

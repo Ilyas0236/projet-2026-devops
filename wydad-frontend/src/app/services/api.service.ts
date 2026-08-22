@@ -66,8 +66,9 @@ export class ApiService {
     return this.http.delete<any>(`${this.baseUrl}/content/matches/${id}`);
   }
 
-  updateMatchResult(id: number, resultData: any): Observable<any> {
-    return this.http.post<any>(`${this.baseUrl}/content/matches/${id}/result`, resultData);
+  updateMatchResult(id: number, scoreWydad: number, scoreAdversaire: number): Observable<any> {
+    const params = `scoreWydad=${scoreWydad}&scoreAdversaire=${scoreAdversaire}`;
+    return this.http.post<any>(`${this.baseUrl}/content/matches/${id}/result?${params}`, {});
   }
 
   getClassements(competition: string): Observable<any[]> {

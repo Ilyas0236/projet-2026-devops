@@ -8,6 +8,7 @@ import com.wydad.digital.sports.repository.PlayerRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -31,6 +32,7 @@ public class PlayerService {
         player.setWeight(dto.getWeight());
         player.setBirthDate(dto.getBirthDate());
         player.setNationality(dto.getNationality());
+        player.setPhotoUrl(dto.getPhotoUrl());
         
         if (dto.getMatchesPlayed() != null) player.setMatchesPlayed(dto.getMatchesPlayed());
         if (dto.getGoals() != null) player.setGoals(dto.getGoals());
@@ -61,6 +63,44 @@ public class PlayerService {
         return playerRepository.findAll().stream().map(this::mapToDto).collect(Collectors.toList());
     }
 
+    @Transactional
+    public PlayerDto updatePlayer(Long id, PlayerDto dto) {
+        Player player = playerRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Joueur non trouvé: " + id));
+
+        player.setFullName(dto.getFullName());
+        player.setSportType(dto.getSportType());
+        player.setCategory(dto.getCategory());
+        player.setPosition(dto.getPosition());
+        player.setJerseyNumber(dto.getJerseyNumber());
+        player.setHeight(dto.getHeight());
+        player.setWeight(dto.getWeight());
+        player.setBirthDate(dto.getBirthDate());
+        player.setNationality(dto.getNationality());
+        player.setPhotoUrl(dto.getPhotoUrl());
+
+        if (dto.getMatchesPlayed() != null) player.setMatchesPlayed(dto.getMatchesPlayed());
+        if (dto.getGoals() != null) player.setGoals(dto.getGoals());
+        if (dto.getAssists() != null) player.setAssists(dto.getAssists());
+
+        // Calcul de l'IMC (Poids / Taille(m)^2)
+        if (dto.getWeight() != null && dto.getHeight() != null && dto.getHeight() > 0) {
+            double heightInMeters = dto.getHeight() / 100.0;
+            double bmi = dto.getWeight() / (heightInMeters * heightInMeters);
+            player.setBmi(Math.round(bmi * 100.0) / 100.0);
+        }
+
+        return mapToDto(playerRepository.save(player));
+    }
+
+    @Transactional
+    public void deletePlayer(Long id) {
+        if (!playerRepository.existsById(id)) {
+            throw new EntityNotFoundException("Joueur non trouvé: " + id);
+        }
+        playerRepository.deleteById(id);
+    }
+
     private PlayerDto mapToDto(Player p) {
         PlayerDto dto = new PlayerDto();
         dto.setId(p.getId());
@@ -75,6 +115,7 @@ public class PlayerService {
         dto.setBmi(p.getBmi());
         dto.setBirthDate(p.getBirthDate());
         dto.setNationality(p.getNationality());
+        dto.setPhotoUrl(p.getPhotoUrl());
         dto.setMatchesPlayed(p.getMatchesPlayed());
         dto.setGoals(p.getGoals());
         dto.setAssists(p.getAssists());

@@ -25,7 +25,7 @@ export class AdminEffectifComponent implements OnInit {
     // Profil sportif (sports-service)
     fullName: '',
     sportType: 'FOOTBALL',
-    category: 'SENIOR',
+    category: 'PRO',
     position: 'Milieu',
     jerseyNumber: 99,
     nationality: 'Maroc',
@@ -46,7 +46,7 @@ export class AdminEffectifComponent implements OnInit {
 
   loadPlayers() {
     this.loading = true;
-    this.api.getPlayersByCategory(this.selectedSportFilter, 'SENIOR').subscribe({
+    this.api.getPlayersByCategory(this.selectedSportFilter, 'PRO').subscribe({
       next: (data) => {
         this.players = data.sort((a: any, b: any) => (a.jerseyNumber || 99) - (b.jerseyNumber || 99));
         this.loading = false;

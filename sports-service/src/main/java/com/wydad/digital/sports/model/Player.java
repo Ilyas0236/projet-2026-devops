@@ -40,6 +40,7 @@ public class Player {
 
     private LocalDate birthDate;
     private String nationality;
+    private String photoUrl;
 
     // Stats de base
     @Builder.Default private Integer matchesPlayed = 0;
