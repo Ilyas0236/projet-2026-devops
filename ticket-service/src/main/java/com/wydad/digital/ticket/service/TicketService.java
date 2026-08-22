@@ -30,7 +30,8 @@ public class TicketService {
 
     @Transactional
     public List<TicketResponse> purchaseTickets(PurchaseTicketRequest request) {
-        Event event = eventRepository.findById(request.getEventId())
+        // Verrous pessimistes : sérialise les achats concurrents sur le même événement/section
+        Event event = eventRepository.findByIdForUpdate(request.getEventId())
                 .orElseThrow(() -> new EntityNotFoundException("Événement non trouvé"));
 
         Section section = sectionRepository.findByEventIdAndCategory(event.getId(), request.getCategory())
@@ -118,6 +119,10 @@ public class TicketService {
 
     @Transactional
     public TicketResponse cancelTicket(Long ticketId) {
+        // Verrou pessimiste sur la section/événement pour éviter les courses avec les achats
+        Section lockedSection = null;
+        Event lockedEvent = null;
+
         Ticket ticket = ticketRepository.findById(ticketId)
                 .orElseThrow(() -> new EntityNotFoundException("Billet non trouvé"));
 
@@ -132,17 +137,21 @@ public class TicketService {
         ticket.setStatus(TicketStatus.CANCELLED);
         ticket.setCancelledAt(java.time.LocalDateTime.now());
 
-        // Restore seats
-        Section section = ticket.getSection();
-        if (section != null) {
-            section.setAvailableSeats(section.getAvailableSeats() + 1);
-            sectionRepository.save(section);
+        // Restore seats (avec verrou pour cohérence avec les achats concurrents)
+        if (ticket.getSection() != null) {
+            lockedSection = sectionRepository.findByIdForUpdate(ticket.getSection().getId())
+                    .orElse(null);
+            if (lockedSection != null) {
+                lockedSection.setAvailableSeats(lockedSection.getAvailableSeats() + 1);
+                sectionRepository.save(lockedSection);
+            }
         }
 
-        Event event = ticket.getEvent();
-        event.setAvailableSeats(event.getAvailableSeats() + 1);
-        event.setSoldTickets(event.getSoldTickets() - 1);
-        eventRepository.save(event);
+        lockedEvent = eventRepository.findByIdForUpdate(ticket.getEvent().getId())
+                .orElseThrow(() -> new EntityNotFoundException("Événement du billet non trouvé"));
+        lockedEvent.setAvailableSeats(lockedEvent.getAvailableSeats() + 1);
+        lockedEvent.setSoldTickets(Math.max(lockedEvent.getSoldTickets() - 1, 0));
+        eventRepository.save(lockedEvent);
 
         return mapToResponse(ticketRepository.save(ticket));
     }
