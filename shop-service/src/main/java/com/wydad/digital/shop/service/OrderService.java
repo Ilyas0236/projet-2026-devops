@@ -26,6 +26,7 @@ import java.util.UUID;
 public class OrderService {
 
     private final ShopOrderRepository shopOrderRepository;
+    private final com.wydad.digital.shop.client.NotificationClient notificationClient;
     private final CartItemRepository cartItemRepository;
     private final ProductVariantRepository productVariantRepository;
     private final PromoCodeRepository promoCodeRepository;
@@ -158,6 +159,15 @@ public class OrderService {
 
         ShopOrder saved = shopOrderRepository.save(order);
         cartItemRepository.deleteAllByUserEmail(userEmail);
+
+        // Best-effort : une panne de notification ne doit pas annuler la commande
+        notificationClient.notifyUser(
+                null,
+                userEmail,
+                "Commande confirmée",
+                "Votre commande " + saved.getOrderNumber() + " d'un montant de "
+                        + saved.getTotalAmount() + " DH a été enregistrée.",
+                "/profil/commandes");
 
         return mapToDto(saved);
     }

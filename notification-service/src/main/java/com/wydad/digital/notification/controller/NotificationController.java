@@ -4,6 +4,7 @@ import com.wydad.digital.notification.dto.NotificationRequest;
 import com.wydad.digital.notification.filter.UserContext;
 import com.wydad.digital.notification.model.Notification;
 import com.wydad.digital.notification.service.NotificationOrchestrator;
+import com.wydad.digital.notification.config.InternalSecretValidator;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -20,6 +21,7 @@ import java.util.List;
 public class NotificationController {
 
     private final NotificationOrchestrator orchestrator;
+    private final InternalSecretValidator internalSecretValidator;
 
     @PostMapping("/send")
     @PreAuthorize("hasRole('ADMIN')")
@@ -65,6 +67,22 @@ public class NotificationController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<Notification>> getAllNotifications() {
         return ResponseEntity.ok(orchestrator.getAllNotifications());
+    }
+
+    /**
+     * Endpoint interne service-a-service (shop/ticket -> notification).
+     * Protege par un secret partage (X-Internal-Secret) : jamais expose
+     * via la gateway, uniquement sur le reseau Docker interne.
+     */
+    @PostMapping("/internal/send")
+    public ResponseEntity<Notification> internalSend(
+            @RequestHeader(value = "X-Internal-Secret", required = false) String secret,
+            @Valid @RequestBody NotificationRequest request) {
+        if (!internalSecretValidator.isInternalCallAuthorized(secret)) {
+            throw new AccessDeniedException("Secret interne invalide");
+        }
+        Notification notification = orchestrator.processNotification(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(notification);
     }
 
     /** Un utilisateur ne peut lire que ses notifications ; ADMIN autorisé. */

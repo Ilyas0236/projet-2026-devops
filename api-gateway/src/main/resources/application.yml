@@ -27,10 +27,15 @@ spring:
           uri: ${TICKET_SERVICE_URI:http://localhost:8085}
           predicates:
             - Path=/api/ticket/**
-        - id: notification-service
-          uri: ${NOTIFICATION_SERVICE_URI:http://localhost:8086}
+        # Endpoint interne service-a-service : jamais joignable depuis l'exterieur
+        - id: block-notification-internal
+          uri: no://op
           predicates:
-            - Path=/api/notification/**
+            - Path=/api/notification/internal/**
+          filters:
+            - name: SetStatus
+              args:
+                status: FORBIDDEN
         - id: sports-service
           uri: ${SPORTS_SERVICE_URI:http://localhost:8087}
           predicates:

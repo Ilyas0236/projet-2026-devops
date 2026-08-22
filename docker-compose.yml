@@ -121,6 +121,7 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/shop_db
       - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER:-wydad}
       - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD:-wydad2024}
+      - WYDAD_INTERNAL_SECRET=${INTERNAL_SECRET:?INTERNAL_SECRET manquant dans .env}
     depends_on:
       postgres:
         condition: service_healthy
@@ -142,6 +143,7 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/ticket_db
       - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER:-wydad}
       - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD:-wydad2024}
+      - WYDAD_INTERNAL_SECRET=${INTERNAL_SECRET:?INTERNAL_SECRET manquant dans .env}
     depends_on:
       postgres:
         condition: service_healthy
@@ -163,6 +165,7 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/notification_db
       - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER:-wydad}
       - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD:-wydad2024}
+      - WYDAD_INTERNAL_SECRET=${INTERNAL_SECRET:?INTERNAL_SECRET manquant dans .env}
     depends_on:
       postgres:
         condition: service_healthy

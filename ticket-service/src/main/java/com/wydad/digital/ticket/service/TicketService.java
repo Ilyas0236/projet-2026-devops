@@ -2,6 +2,7 @@ package com.wydad.digital.ticket.service;
 
 import com.wydad.digital.ticket.dto.*;
 import com.wydad.digital.ticket.enums.TicketStatus;
+import com.wydad.digital.ticket.client.NotificationClient;
 import com.wydad.digital.ticket.filter.UserContext;
 import com.wydad.digital.ticket.model.Event;
 import com.wydad.digital.ticket.model.Section;
@@ -27,6 +28,7 @@ public class TicketService {
     private final EventRepository eventRepository;
     private final SectionRepository sectionRepository;
     private final QrCodeService qrCodeService;
+    private final NotificationClient notificationClient;
 
     @Transactional
     public List<TicketResponse> purchaseTickets(PurchaseTicketRequest request) {
@@ -82,6 +84,14 @@ public class TicketService {
         event.setAvailableSeats(event.getAvailableSeats() - qty);
         event.setSoldTickets(event.getSoldTickets() + qty);
         eventRepository.save(event);
+
+        // Best-effort : une panne de notification ne doit pas annuler l'achat
+        notificationClient.notifyUser(
+                effectiveUserId,
+                effectiveUserEmail,
+                "Achat confirmé",
+                qty + " billet(s) pour « " + event.getTitle() + " » — merci de votre soutien !",
+                "/profil/billets");
 
         return tickets.stream().map(this::mapToResponse).collect(Collectors.toList());
     }
