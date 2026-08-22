@@ -69,6 +69,34 @@ export class AuthService {
     return localStorage.getItem('wydad_role');
   }
 
+  /**
+   * Decode le payload du JWT (sans verification de signature - cote client,
+   * la signature est verifiee par la gateway). Retourne null si illisible.
+   */
+  decodeToken(): any | null {
+    const token = localStorage.getItem('wydad_token');
+    if (!token) return null;
+    try {
+      const payload = token.split('.')[1];
+      const json = atob(payload.replace(/-/g, '+').replace(/_/g, '/'));
+      return JSON.parse(json);
+    } catch {
+      return null;
+    }
+  }
+
+  /** Vrai si un token existe ET n'est pas expire. */
+  isTokenValid(): boolean {
+    const payload = this.decodeToken();
+    if (!payload?.exp) return false;
+    return payload.exp * 1000 > Date.now();
+  }
+
+  /** Role depuis le token JWT (source de verite), fallback localStorage. */
+  getTokenRole(): string | null {
+    return this.decodeToken()?.role ?? localStorage.getItem('wydad_role');
+  }
+
   getProfile(): Observable<any> {
     return this.http.get(`${this.baseUrl}/me`);
   }

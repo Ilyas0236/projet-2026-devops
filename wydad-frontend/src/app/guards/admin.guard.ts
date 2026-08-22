@@ -6,13 +6,14 @@ export const adminGuard: CanActivateFn = (route, state) => {
   const authService = inject(AuthService);
   const router = inject(Router);
 
-  if (authService.currentUserValue) {
-    const role = localStorage.getItem('wydad_role');
-    if (role === 'ADMIN') {
-      return true;
-    }
+  if (authService.isTokenValid() && authService.getTokenRole() === 'ADMIN') {
+    return true;
   }
 
+  // Non-admin ou token expire : nettoyage et retour a l'accueil
+  if (!authService.isTokenValid()) {
+    authService.logout();
+  }
   router.navigate(['/']);
   return false;
 };
