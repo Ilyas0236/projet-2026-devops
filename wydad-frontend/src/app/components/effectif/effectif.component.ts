@@ -11,6 +11,8 @@ import { ApiService } from '../../services/api.service';
 export class EffectifComponent implements OnInit {
   players: any[] = [];
   selectedSport = 'FOOTBALL';
+  loadError = false;
+  loading = true;
 
   api = inject(ApiService);
 
@@ -19,50 +21,18 @@ export class EffectifComponent implements OnInit {
   }
 
   loadPlayers() {
+    this.loading = true;
+    this.loadError = false;
     this.api.getJoueursBySport(this.selectedSport).subscribe({
       next: (data) => {
-        this.players = data.sort((a, b) => (a.numero || 99) - (b.numero || 99));
+        this.players = (data || []).sort((a, b) => (a.numero || a.jerseyNumber || 99) - (b.numero || b.jerseyNumber || 99));
+        this.loading = false;
       },
       error: () => {
-        // Mock data for display purposes if backend is not fully reachable
-        this.players = [
-          {
-            fullName: 'Yahya Jabrane',
-            jerseyNumber: 5,
-            position: 'Milieu',
-            birthDate: '1991-06-18',
-            matchesPlayed: 150,
-            goals: 12,
-            assists: 8,
-          },
-          {
-            fullName: 'Ayoub El Amloud',
-            jerseyNumber: 22,
-            position: 'Défenseur',
-            birthDate: '1994-04-08',
-            matchesPlayed: 120,
-            goals: 5,
-            assists: 15,
-          },
-          {
-            fullName: 'Youssef El Motie',
-            jerseyNumber: 32,
-            position: 'Gardien',
-            birthDate: '1994-12-16',
-            matchesPlayed: 60,
-            goals: 0,
-            assists: 1,
-          },
-          {
-            fullName: 'Hamdou El Houni',
-            jerseyNumber: 10,
-            position: 'Attaquant',
-            birthDate: '1994-02-12',
-            matchesPlayed: 30,
-            goals: 8,
-            assists: 5,
-          },
-        ];
+        // Pas de fausses données : on affiche un état d'erreur explicite
+        this.players = [];
+        this.loadError = true;
+        this.loading = false;
       },
     });
   }

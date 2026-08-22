@@ -160,6 +160,12 @@ public class OrderService {
                 .map(this::mapToDto);
     }
 
+    @Transactional(readOnly = true)
+    public Page<OrderResponseDto> getAllOrders(Pageable pageable) {
+        return shopOrderRepository.findAllByOrderByCreatedAtDesc(pageable)
+                .map(this::mapToDto);
+    }
+
     private String generateOrderNumber() {
         return "WYD-" + java.time.Year.now().getValue() + "-" +
                 UUID.randomUUID().toString().substring(0, 6).toUpperCase();

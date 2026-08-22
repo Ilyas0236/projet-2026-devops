@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
+import { ApiService } from '../../../services/api.service';
 
 @Component({
   selector: 'app-dashboard',
@@ -9,30 +10,83 @@ import { RouterModule } from '@angular/router';
   templateUrl: './dashboard.component.html'
 })
 export class DashboardComponent implements OnInit {
-  kpis = [
-    { label: 'Adhérents', value: '14,230', change: '+12.5%', isPositive: true, icon: 'users' },
-    { label: 'Revenus MAD', value: '845,000', change: '+8.2%', isPositive: true, icon: 'dollar-sign' },
-    { label: 'Billets Vendus', value: '28,450', change: '-2.4%', isPositive: false, icon: 'ticket' },
-    { label: 'Produits Vendus', value: '1,204', change: '+15.3%', isPositive: true, icon: 'shopping-bag' }
-  ];
+  loading = true;
+  loadError = false;
 
-  months = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'];
+  kpis: { label: string; value: string; change?: string; isPositive?: boolean; icon: string }[] = [];
 
-  upcomingMatches = [
-    { opponent: 'RCA', date: '12 Oct, 20:00', competition: 'Botola Pro' },
-    { opponent: 'MCO', date: '19 Oct, 18:00', competition: 'Botola Pro' },
-    { opponent: 'FAR', date: '26 Oct, 21:00', competition: 'Coupe du Trône' }
-  ];
+  upcomingMatches: any[] = [];
+  recentOrders: any[] = [];
+  totalUsers = 0;
+  activeUsers = 0;
 
-  recentOrders = [
-    { id: '#ORD-001', customer: 'Karim B.', product: 'Maillot Domicile (L)', amount: '350 MAD', status: 'Complété' },
-    { id: '#ORD-002', customer: 'Youssef A.', product: 'Écharpe Wydad', amount: '120 MAD', status: 'En cours' },
-    { id: '#ORD-003', customer: 'Amine M.', product: 'Abonnement Virage', amount: '800 MAD', status: 'Complété' },
-    { id: '#ORD-004', customer: 'Hassan T.', product: 'Maillot Extérieur (M)', amount: '350 MAD', status: 'En attente' }
-  ];
-
-  constructor() {}
+  constructor(private api: ApiService) {}
 
   ngOnInit() {
+    this.loadData();
+  }
+
+  loadData() {
+    this.loading = true;
+    this.loadError = false;
+
+    // Les 3 sources de données sont indépendantes : on charge tout en parallèle
+    this.api.getAllUsers().subscribe({
+      next: (users: any[]) => {
+        this.totalUsers = users?.length || 0;
+        this.activeUsers = users?.filter(u => u.active).length || 0;
+        this.buildKpis();
+      },
+      error: () => {
+        this.loadError = true;
+        this.loading = false;
+      }
+    });
+
+    this.api.getMatchesByStatut('PROGRAMME').subscribe({
+      next: (matches: any[]) => {
+        this.upcomingMatches = (matches || []).slice(0, 5);
+        this.buildKpis();
+      },
+      error: () => {
+        this.upcomingMatches = [];
+        this.buildKpis();
+      }
+    });
+
+    this.api.getAllOrders().subscribe({
+      next: (res: any) => {
+        // Réponse paginée Spring : { content: [...], totalElements: ... }
+        const list = res?.content || res || [];
+        this.recentOrders = Array.isArray(list) ? list.slice(0, 5) : [];
+        this.buildKpis();
+      },
+      error: () => {
+        this.recentOrders = [];
+        this.buildKpis();
+      }
+    });
+  }
+
+  private buildKpis() {
+    if (!this.loading) return;
+
+    // KPIs dérivés des données réelles uniquement
+    this.kpis = [
+      { label: 'Utilisateurs', value: String(this.totalUsers), icon: 'users' },
+      { label: 'Comptes actifs', value: String(this.activeUsers), icon: 'user-check' },
+      { label: 'Matchs à venir', value: String(this.upcomingMatches.length), icon: 'calendar' },
+      { label: 'Commandes récentes', value: String(this.recentOrders.length), icon: 'shopping-bag' }
+    ];
+  }
+
+  formatOrderAmount(order: any): string {
+    return order?.totalAmount != null ? `${order.totalAmount} MAD` : '—';
+  }
+
+  formatMatchDate(match: any): string {
+    if (!match?.matchDate) return '';
+    const d = new Date(match.matchDate);
+    return isNaN(d.getTime()) ? '' : `${d.toLocaleDateString('fr-FR')} ${d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`;
   }
 }

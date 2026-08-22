@@ -13,4 +13,5 @@ public interface ShopOrderRepository extends JpaRepository<ShopOrder, Long> {
     Optional<ShopOrder> findByOrderNumber(String orderNumber);
     Optional<ShopOrder> findByOrderNumberAndUserEmail(String orderNumber, String userEmail);
     Page<ShopOrder> findByUserEmailOrderByCreatedAtDesc(String userEmail, Pageable pageable);
+    Page<ShopOrder> findAllByOrderByCreatedAtDesc(Pageable pageable);
 }

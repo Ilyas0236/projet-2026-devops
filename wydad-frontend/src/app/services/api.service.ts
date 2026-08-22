@@ -164,6 +164,11 @@ export class ApiService {
   getOrderByNumber(orderNumber: string): Observable<any> {
     return this.http.get<any>(`${this.baseUrl}/shop/orders/${orderNumber}`);
   }
+
+  /** Toutes les commandes (réservé ADMIN) */
+  getAllOrders(): Observable<any> {
+    return this.http.get<any>(`${this.baseUrl}/shop/orders/all`);
+  }
   // TICKET SERVICE (Billetterie)
   // ==========================================
   getEvents(): Observable<any[]> {

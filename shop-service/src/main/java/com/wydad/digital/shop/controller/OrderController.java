@@ -41,4 +41,10 @@ public class OrderController {
             @PathVariable String orderNumber) {
         return ResponseEntity.ok(orderService.getOrder(userEmail, orderNumber));
     }
+
+    @GetMapping("/all")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Page<OrderResponseDto>> getAllOrders(Pageable pageable) {
+        return ResponseEntity.ok(orderService.getAllOrders(pageable));
+    }
 }
