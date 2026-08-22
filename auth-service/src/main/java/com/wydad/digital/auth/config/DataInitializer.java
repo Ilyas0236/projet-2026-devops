@@ -25,10 +25,19 @@ public class DataInitializer implements CommandLineRunner {
         if (userRepository.count() == 0) {
             log.info("Aucun utilisateur trouvé. Création de l'administrateur par défaut...");
 
+            // Le mot de passe admin doit venir d'une variable d'environnement :
+            // jamais de mot de passe par défaut codé en dur ni journalisé.
+            String adminPassword = System.getenv("ADMIN_SEED_PASSWORD");
+            if (adminPassword == null || adminPassword.isBlank()) {
+                log.error("ADMIN_SEED_PASSWORD non défini : création de l'administrateur annulée. " +
+                        "Définissez ADMIN_SEED_PASSWORD pour initialiser le compte admin.");
+                return;
+            }
+
             User admin = User.builder()
                     .email("admin@wac.ma")
                     .phone("+212600000000")
-                    .password(passwordEncoder.encode("DimaWydad2026"))
+                    .password(passwordEncoder.encode(adminPassword))
                     .firstName("Super")
                     .lastName("Admin")
                     .membershipLevel(MembershipLevel.ROUGE)
@@ -40,7 +49,7 @@ public class DataInitializer implements CommandLineRunner {
                     .build();
 
             userRepository.save(admin);
-            log.info("Administrateur par défaut créé avec succès : admin@wac.ma / DimaWydad2026");
+            log.info("Administrateur par défaut créé (admin@wac.ma). Mot de passe défini via ADMIN_SEED_PASSWORD.");
         } else {
             log.info("La base de données contient déjà des utilisateurs. Initialisation ignorée.");
         }

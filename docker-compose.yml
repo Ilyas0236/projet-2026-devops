@@ -55,6 +55,7 @@ services:
       - SPRING_REDIS_HOST=redis
       - SPRING_REDIS_PORT=6379
       - JWT_SECRET=${JWT_SECRET:?JWT_SECRET doit être défini dans le fichier .env}
+      - ADMIN_SEED_PASSWORD=${ADMIN_SEED_PASSWORD:?ADMIN_SEED_PASSWORD doit être défini dans le fichier .env}
     depends_on:
       postgres:
         condition: service_healthy

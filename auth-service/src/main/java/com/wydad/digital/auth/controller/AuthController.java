@@ -132,8 +132,23 @@ public class AuthController {
 
     @GetMapping("/membership-status")
     public ResponseEntity<MembershipStatusResponse> checkMembershipStatus(
-            @RequestParam("email") String email) {
-        return ResponseEntity.ok(authService.checkMembershipStatus(email));
+            @RequestParam(value = "email", required = false) String email,
+            @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authHeader) {
+        // Un utilisateur ne peut consulter que son propre statut ; seul l'ADMIN
+        // peut interroger le statut d'un autre membre.
+        String token = (authHeader != null && authHeader.startsWith("Bearer ")) ? authHeader.substring(7) : null;
+        String currentEmail = token != null ? jwtUtils.getEmailFromToken(token) : null;
+        boolean isAdmin = token != null && "ADMIN".equals(jwtUtils.getRoleFromToken(token));
+
+        if (!isAdmin && email != null && !email.isBlank() && !email.equals(currentEmail)) {
+            throw new org.springframework.security.access.AccessDeniedException(
+                    "Consultation du statut d'un autre membre interdite");
+        }
+        String targetEmail = (isAdmin && email != null && !email.isBlank()) ? email : currentEmail;
+        if (targetEmail == null || targetEmail.isBlank()) {
+            throw new org.springframework.security.access.AccessDeniedException("Email cible requis");
+        }
+        return ResponseEntity.ok(authService.checkMembershipStatus(targetEmail));
     }
 
     @PostMapping("/otp/send")
@@ -157,6 +172,7 @@ public class AuthController {
     }
 
     @PostMapping("/kyc/verify")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<KycResponse> verifyKyc(@RequestParam("email") String email) {
         return ResponseEntity.ok(authService.verifyKyc(email));
     }
