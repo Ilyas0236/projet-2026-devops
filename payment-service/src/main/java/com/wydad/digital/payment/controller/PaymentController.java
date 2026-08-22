@@ -56,7 +56,17 @@ public class PaymentController {
 
     @PostMapping("/don")
     public ResponseEntity<?> don(@Valid @RequestBody DonRequest request) {
-        byte[] recu = paymentService.don(request);
+        // IDOR : l'email du wallet débité est TOUJOURS dérivé du JWT.
+        // Un utilisateur ne peut faire un don que depuis son propre wallet ;
+        // seul l'ADMIN peut cibler un autre compte.
+        String effectiveEmail = requireSelfOrAdminEmail(request.email());
+        DonRequest effectiveRequest = new DonRequest(
+                effectiveEmail,
+                request.amount(),
+                request.type(),
+                request.message(),
+                request.recuFiscal());
+        byte[] recu = paymentService.don(effectiveRequest);
         if (recu != null) {
             return ResponseEntity.ok()
                     .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=recu-fiscal-" + System.currentTimeMillis() + ".pdf")
