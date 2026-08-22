@@ -145,7 +145,19 @@ public class EventService {
 
     @Transactional
     public void deleteEvent(Long id) {
-        eventRepository.deleteById(id);
+        Event event = eventRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Événement non trouvé: " + id));
+
+        // Protège l'historique des ventes : un événement avec des billets vendus
+        // ne peut pas être supprimé (le passer en ANNULE suffit côté client).
+        int sold = event.getSoldTickets() != null ? event.getSoldTickets() : 0;
+        if (sold > 0) {
+            throw new IllegalStateException(
+                    "Impossible de supprimer cet événement : " + sold
+                    + " billet(s) vendu(s). Passez son statut à ANNULE pour informer les acheteurs.");
+        }
+
+        eventRepository.delete(event);
     }
 
     public List<EventResponse> searchEvents(String query) {
