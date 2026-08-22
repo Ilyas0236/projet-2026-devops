@@ -92,6 +92,58 @@ public class EventService {
     }
 
     @Transactional
+    public EventResponse updateEvent(Long id, CreateEventRequest request) {
+        Event event = eventRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Événement non trouvé"));
+
+        event.setTitle(request.getTitle());
+        event.setDescription(request.getDescription());
+        event.setEventType(request.getEventType());
+        event.setHomeTeam(request.getHomeTeam());
+        event.setAwayTeam(request.getAwayTeam());
+        event.setVenue(request.getVenue());
+        event.setCompetition(request.getCompetition());
+        event.setEventDate(request.getEventDate());
+        event.setGateOpenTime(request.getGateOpenTime());
+        event.setBasePrice(request.getBasePrice());
+        event.setPosterUrl(request.getPosterUrl());
+
+        // totalCapacity : ne jamais descendre sous le nombre de places déjà vendues
+        if (request.getTotalCapacity() != null) {
+            int sold = event.getSoldTickets() != null ? event.getSoldTickets() : 0;
+            int availableDelta = event.getAvailableSeats() - (event.getTotalCapacity() - request.getTotalCapacity());
+            event.setTotalCapacity(request.getTotalCapacity());
+            event.setAvailableSeats(Math.max(availableDelta, 0));
+            if (request.getTotalCapacity() < sold) {
+                throw new IllegalArgumentException("Capacité inférieure au nombre de billets déjà vendus (" + sold + ")");
+            }
+        }
+
+        // Sections : remplacer si fournies, en conservant les ventes existantes impossible ici
+        if (request.getSections() != null) {
+            for (Section existing : event.getSections()) {
+                sectionRepository.delete(existing);
+            }
+            event.getSections().clear();
+            for (SectionRequest sr : request.getSections()) {
+                Section section = Section.builder()
+                        .name(sr.getName())
+                        .category(sr.getCategory())
+                        .seatType(sr.getSeatType() != null ? sr.getSeatType() : SeatType.STANDARD)
+                        .capacity(sr.getCapacity())
+                        .availableSeats(sr.getCapacity())
+                        .price(sr.getPrice())
+                        .event(event)
+                        .build();
+                sectionRepository.save(section);
+                event.getSections().add(section);
+            }
+        }
+
+        return mapToResponse(eventRepository.save(event));
+    }
+
+    @Transactional
     public void deleteEvent(Long id) {
         eventRepository.deleteById(id);
     }

@@ -11,15 +11,19 @@ import { ApiService } from '../../../services/api.service';
 })
 export class AdminBoutiqueComponent implements OnInit {
   products: any[] = [];
+  totalPages = 1;
   loading = true;
   showModal = false;
-  
+  isEdit = false;
+  editingId: number | null = null;
+
   newProduct = {
     name: '',
-    price: 0,
-    stock: 0,
-    category: 'MAILLOT',
-    description: 'Produit officiel',
+    basePrice: 0,
+    stockQuantity: 0,
+    sportSection: 'FOOTBALL',
+    categoryName: '',
+    description: '',
     mainImageUrl: ''
   };
 
@@ -32,8 +36,11 @@ export class AdminBoutiqueComponent implements OnInit {
   loadProducts() {
     this.loading = true;
     this.api.getProducts().subscribe({
-      next: (data) => {
-        this.products = data;
+      next: (res) => {
+        // Le backend renvoie une Page Spring : { content: [...], totalPages: n }
+        const page: any = res;
+        this.products = page?.content || [];
+        this.totalPages = page?.totalPages || 1;
         this.loading = false;
       },
       error: (err) => {
@@ -44,7 +51,25 @@ export class AdminBoutiqueComponent implements OnInit {
   }
 
   openAddModal() {
-    this.newProduct = { name: '', price: 0, stock: 0, category: 'MAILLOT', description: 'Produit officiel', mainImageUrl: '' };
+    this.isEdit = false;
+    this.editingId = null;
+    this.newProduct = { name: '', basePrice: 0, stockQuantity: 0, sportSection: 'FOOTBALL', categoryName: '', description: '', mainImageUrl: '' };
+    this.showModal = true;
+  }
+
+  openEditModal(product: any) {
+    this.isEdit = true;
+    this.editingId = product.id;
+    const stock = product.variants?.[0]?.stockQuantity ?? 0;
+    this.newProduct = {
+      name: product.name,
+      basePrice: product.basePrice,
+      stockQuantity: stock,
+      sportSection: product.sportSection || 'FOOTBALL',
+      categoryName: product.categoryName || '',
+      description: product.description || '',
+      mainImageUrl: product.images?.[0] || ''
+    };
     this.showModal = true;
   }
 
@@ -53,14 +78,21 @@ export class AdminBoutiqueComponent implements OnInit {
   }
 
   saveProduct() {
-    this.api.createProduct(this.newProduct).subscribe({
-      next: (res) => {
+    const payload: any = { ...this.newProduct };
+    if (!payload.categoryName) delete payload.categoryName;
+
+    const call$ = this.isEdit && this.editingId
+      ? this.api.updateProduct(this.editingId, payload)
+      : this.api.createProduct(payload);
+
+    call$.subscribe({
+      next: () => {
         this.loadProducts();
         this.closeAddModal();
       },
       error: (err) => {
-        console.error('Erreur création produit', err);
-        alert('Erreur lors de la création du produit');
+        console.error('Erreur sauvegarde produit', err);
+        alert('Erreur lors de la sauvegarde du produit');
       }
     });
   }
@@ -79,7 +111,7 @@ export class AdminBoutiqueComponent implements OnInit {
   uploadPhoto(event: any) {
     const file = event.target.files[0];
     if (!file) return;
-    
+
     this.uploadingPhoto = true;
     this.api.uploadMedia(file).subscribe({
       next: (res) => {
@@ -89,7 +121,7 @@ export class AdminBoutiqueComponent implements OnInit {
       error: (err) => {
         console.error('Erreur upload', err);
         this.uploadingPhoto = false;
-        alert('Erreur lors du chargement de la photo.');
+        alert('Erreur lors de la chargement de la photo.');
       }
     });
   }

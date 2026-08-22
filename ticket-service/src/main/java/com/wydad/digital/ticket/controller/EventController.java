@@ -32,6 +32,12 @@ public class EventController {
         return ResponseEntity.ok(eventService.getAllEvents());
     }
 
+    @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<EventResponse> updateEvent(@PathVariable Long id, @Valid @RequestBody CreateEventRequest request) {
+        return ResponseEntity.ok(eventService.updateEvent(id, request));
+    }
+
     @GetMapping("/upcoming")
     public ResponseEntity<List<EventResponse>> getUpcomingEvents() {
         return ResponseEntity.ok(eventService.getUpcomingEvents());
