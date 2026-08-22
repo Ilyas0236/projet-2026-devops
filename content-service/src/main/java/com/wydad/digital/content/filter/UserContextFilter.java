@@ -15,6 +15,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 @Component
 public class UserContextFilter extends OncePerRequestFilter {
@@ -35,5 +36,10 @@ public class UserContextFilter extends OncePerRequestFilter {
         }
 
         chain.doFilter(request, response);
+    }
+
+    /** Authentication courante posee par ce filtre (vide sinon). */
+    public static java.util.Optional<Authentication> currentAuthentication() {
+        return Optional.ofNullable(SecurityContextHolder.getContext().getAuthentication());
     }
 }

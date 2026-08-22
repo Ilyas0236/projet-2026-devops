@@ -46,7 +46,20 @@ public class ContentService {
     public ArticleResponse getArticleById(Long id) {
         Article article = articleRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Article non trouvé"));
+        // Un brouillon non publie n'est visible que d'un ADMIN (jamais en acces direct).
+        if (!article.isPublished() && !isAdmin()) {
+            throw new RuntimeException("Article non trouvé");
+        }
         return mapToArticleResponse(article);
+    }
+
+    /** Rôle dérivé du JWT par la gateway et propagé via X-User-Role. */
+    private boolean isAdmin() {
+        return com.wydad.digital.content.filter.UserContextFilter
+                .currentAuthentication()
+                .map(auth -> auth.getAuthorities().stream().anyMatch(a ->
+                        "ROLE_ADMIN".equals(a.getAuthority())))
+                .orElse(false);
     }
 
     public ArticleResponse updateArticle(Long id, ArticleRequest request) {

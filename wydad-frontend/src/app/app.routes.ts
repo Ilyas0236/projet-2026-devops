@@ -56,7 +56,7 @@ export const routes: Routes = [
       { path: 'billetterie', component: BilletterieComponent },
       { path: 'billetterie/:id', component: BilletterieDetailComponent },
       { path: 'effectif', component: EffectifComponent },
-      { path: 'espace-fan', component: EspaceFanComponent },
+      { path: 'espace-fan', component: EspaceFanComponent, canActivate: [authGuard] },
       { path: 'panier', component: CartComponent, canActivate: [authGuard] },
       { path: 'profil', component: ProfilComponent, canActivate: [authGuard] },
       { path: 'profil/carte', component: CarteMembreComponent, canActivate: [authGuard] },
