@@ -22,6 +22,9 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.GET, "/api/content/**").permitAll()
+                        // Endpoints internes service-à-service : authentifiés par le
+                        // secret partagé X-Internal-Secret au niveau contrôleur
+                        .requestMatchers("/api/content/internal/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(userContextFilter, UsernamePasswordAuthenticationFilter.class);

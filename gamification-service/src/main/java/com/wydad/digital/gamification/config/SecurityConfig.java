@@ -21,6 +21,10 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 // Défense de titre : public (classement visible de tous)
                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/gamification/leaderboard").permitAll()
+                // Endpoints internes service-à-service : authentifiés par le secret
+                // partagé X-Internal-Secret au niveau contrôleur (jamais exposés
+                // via la gateway)
+                .requestMatchers("/api/gamification/internal/**").permitAll()
                 // Tout le reste exige un utilisateur authentifié (la gateway a validé le JWT)
                 .anyRequest().authenticated()
             );

@@ -6,4 +6,5 @@ import java.util.List;
 public interface PredictionRepository extends JpaRepository<Prediction, Long> {
     List<Prediction> findByUserIdOrderByPredictedAtDesc(Long userId);
     boolean existsByUserIdAndMatchId(Long userId, Long matchId);
+    List<Prediction> findByMatchIdAndStatus(Long matchId, String status);
 }

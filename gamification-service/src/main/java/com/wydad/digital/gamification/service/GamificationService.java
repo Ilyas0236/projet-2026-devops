@@ -17,6 +17,8 @@ import java.util.List;
 public class GamificationService {
     private final UserPointsRepository userPointsRepository;
     private final PredictionRepository predictionRepository;
+    private final com.wydad.digital.gamification.client.ContentClient contentClient;
+    private final com.wydad.digital.gamification.client.NotificationClient notificationClient;
 
     public UserPointsDto getUserPoints(Long userId) {
         UserPoints points = userPointsRepository.findById(userId)
@@ -43,6 +45,10 @@ public class GamificationService {
             throw new RuntimeException("Pronostic déjà soumis pour ce match");
         }
 
+        // Validation service-à-service : le match doit exister, être PROGRAMME
+        // et ne pas avoir commencé (sinon pronostics a posteriori = farm de points)
+        contentClient.getPredictableMatch(request.getMatchId());
+
         Prediction prediction = Prediction.builder()
                 .userId(request.getUserId())
                 .matchId(request.getMatchId())
@@ -54,6 +60,47 @@ public class GamificationService {
         addPoints(request.getUserId(), 10);
 
         return predictionRepository.save(prediction);
+    }
+
+    /**
+     * Résout tous les pronostics PENDING d'un match à partir du score final.
+     * Appelé par content-service quand l'ADMIN saisit un résultat.
+     * Barème : score exact = 25 pts, bon signe (1X2) = 10 pts, sinon 0.
+     */
+    @Transactional
+    public int resolvePredictionsForMatch(Long matchId, int scoreWydad, int scoreAdversaire) {
+        List<Prediction> pending = predictionRepository.findByMatchIdAndStatus(matchId, "PENDING");
+        for (Prediction p : pending) {
+            boolean exactScore = p.getPredictedHomeScore().equals(scoreWydad)
+                    && p.getPredictedAwayScore().equals(scoreAdversaire);
+            boolean outcome = Integer.signum(p.getPredictedHomeScore() - p.getPredictedAwayScore())
+                    == Integer.signum(scoreWydad - scoreAdversaire);
+            String status;
+            int pts;
+            if (exactScore) {
+                status = "WON";
+                pts = 25;
+            } else if (outcome) {
+                status = "WON";
+                pts = 10;
+            } else {
+                status = "LOST";
+                pts = 0;
+            }
+            p.setStatus(status);
+            p.setPointsEarned(pts);
+            if (pts > 0) {
+                addPoints(p.getUserId(), pts);
+                notificationClient.notifyUser(
+                        p.getUserId(),
+                        null,
+                        "Pronostic gagnant !",
+                        "Votre pronostic sur le match #" + matchId + " vous rapporte " + pts + " points !",
+                        "/espace-fan");
+            }
+            predictionRepository.save(p);
+        }
+        return pending.size();
     }
 
     public List<Prediction> getUserPredictions(Long userId) {

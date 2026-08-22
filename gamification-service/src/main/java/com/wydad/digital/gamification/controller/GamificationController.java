@@ -34,6 +34,12 @@ public class GamificationController {
 
     @PostMapping("/predictions")
     public ResponseEntity<Prediction> submitPrediction(@RequestBody PredictionRequest request) {
+        // L'utilisateur est TOUJOURS dérivé du JWT : pas de pronostic au nom
+        // d'un autre utilisateur, même par erreur d'API.
+        request.setUserId(UserContext.getCurrentUserId());
+        if (request.getUserId() == null) {
+            throw new AccessDeniedException("Utilisateur non authentifié");
+        }
         return ResponseEntity.ok(gamificationService.submitPrediction(request));
     }
 

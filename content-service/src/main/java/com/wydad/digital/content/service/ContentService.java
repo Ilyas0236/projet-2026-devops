@@ -17,6 +17,7 @@ public class ContentService {
     private final MatchRepository matchRepository;
     private final ClassementRepository classementRepository;
     private final JoueurRepository joueurRepository;
+    private final com.wydad.digital.content.client.GamificationClient gamificationClient;
 
     // ==================== ARTICLES ====================
     public ArticleResponse createArticle(ArticleRequest request) {
@@ -104,6 +105,10 @@ public class ContentService {
                 .stream().map(this::mapToMatchResponse).collect(Collectors.toList());
     }
 
+    public java.util.Optional<MatchResponse> getMatchById(Long id) {
+        return matchRepository.findById(id).map(this::mapToMatchResponse);
+    }
+
     public MatchResponse updateMatchResult(Long id, Integer scoreWydad, Integer scoreAdversaire) {
         Match match = matchRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Match non trouvé"));
@@ -111,6 +116,11 @@ public class ContentService {
         match.setScoreAdversaire(scoreAdversaire);
         match.setStatut(MatchStatut.TERMINE);
         Match saved = matchRepository.save(match);
+
+        // Best-effort : déclenche la résolution des pronostics côté gamification
+        // (points attribués aux gagnants). Une panne ne doit pas invalider le résultat.
+        gamificationClient.notifyMatchResult(id, scoreWydad, scoreAdversaire);
+
         return mapToMatchResponse(saved);
     }
 

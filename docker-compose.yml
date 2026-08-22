@@ -79,6 +79,8 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/content_db
       - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER:-wydad}
       - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD:-wydad2024}
+      - WYDAD_INTERNAL_SECRET=${INTERNAL_SECRET:?INTERNAL_SECRET manquant dans .env}
+      - GAMIFICATION_SERVICE_URI=http://gamification-service:8088
     depends_on:
       postgres:
         condition: service_healthy
@@ -211,6 +213,9 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/wydad_gamification
       - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER:-wydad}
       - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD:-wydad2024}
+      - WYDAD_INTERNAL_SECRET=${INTERNAL_SECRET:?INTERNAL_SECRET manquant dans .env}
+      - CONTENT_SERVICE_URI=http://content-service:8082
+      - NOTIFICATION_SERVICE_URI=http://notification-service:8086
     depends_on:
       postgres:
         condition: service_healthy
