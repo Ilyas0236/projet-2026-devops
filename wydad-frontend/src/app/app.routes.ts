@@ -30,6 +30,7 @@ import { BoutiqueDetailComponent } from './pages/boutique-detail/boutique-detail
 import { CartComponent } from './components/cart/cart.component';
 import { MesCommandesComponent } from './pages/mes-commandes/mes-commandes.component';
 import { authGuard } from './guards/auth.guard';
+import { NotFoundComponent } from './pages/not-found/not-found.component';
 import { adminGuard } from './guards/admin.guard';
 import { InscriptionAcademieComponent } from './pages/academie/inscription/inscription.component';
 import { DashboardParentComponent } from './pages/academie/dashboard-parent/dashboard-parent.component';
@@ -64,7 +65,8 @@ export const routes: Routes = [
       { path: 'academie/inscription', component: InscriptionAcademieComponent, canActivate: [authGuard] },
       { path: 'academie/mes-enfants', component: DashboardParentComponent, canActivate: [authGuard] },
       { path: 'joueur/dashboard', component: DashboardJoueurComponent, canActivate: [authGuard] },
-      { path: 'staff/dashboard', component: DashboardStaffComponent, canActivate: [authGuard] }
+      { path: 'staff/dashboard', component: DashboardStaffComponent, canActivate: [authGuard] },
+      { path: '**', component: NotFoundComponent }
     ]
   },
   {
