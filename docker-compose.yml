@@ -4,15 +4,15 @@ services:
     container_name: wydad-postgres
     environment:
       POSTGRES_DB: auth_db
-      POSTGRES_USER: wydad
-      POSTGRES_PASSWORD: wydad2024
+      POSTGRES_USER: ${POSTGRES_USER:-wydad}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-wydad2024}
     ports:
-      - "5433:5432"
+      - "${POSTGRES_HOST_PORT:-5433}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./init-scripts:/docker-entrypoint-initdb.d
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U wydad -d auth_db"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-wydad} -d auth_db"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -21,7 +21,7 @@ services:
     image: redis:7-alpine
     container_name: wydad-redis
     ports:
-      - "6379:6379"
+      - "${REDIS_HOST_PORT:-6379}:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -32,10 +32,10 @@ services:
     image: dpage/pgadmin4:latest
     container_name: wydad-pgadmin
     environment:
-      PGADMIN_DEFAULT_EMAIL: admin@wydad.ma
-      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@wydad.ma}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin}
     ports:
-      - "5050:80"
+      - "${PGADMIN_HOST_PORT:-5050}:80"
     depends_on:
       postgres:
         condition: service_healthy
@@ -45,15 +45,16 @@ services:
       context: ./auth-service
       dockerfile: Dockerfile
     container_name: wydad-auth-service
-    ports:
-      - "8081:8081"
+    # Pas de port hôte : accessible uniquement via l'api-gateway
+    expose:
+      - "8081"
     environment:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/auth_db
-      - SPRING_DATASOURCE_USERNAME=wydad
-      - SPRING_DATASOURCE_PASSWORD=wydad2024
+      - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER:-wydad}
+      - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD:-wydad2024}
       - SPRING_REDIS_HOST=redis
       - SPRING_REDIS_PORT=6379
-      - JWT_SECRET=wydad-secret-key-2024-ne-pas-utiliser-en-production-tres-long-min-256-bits
+      - JWT_SECRET=${JWT_SECRET:?JWT_SECRET doit être défini dans le fichier .env}
     depends_on:
       postgres:
         condition: service_healthy
@@ -71,12 +72,12 @@ services:
       context: ./content-service
       dockerfile: Dockerfile
     container_name: wydad-content-service
-    ports:
-      - "8082:8082"
+    expose:
+      - "8082"
     environment:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/content_db
-      - SPRING_DATASOURCE_USERNAME=wydad
-      - SPRING_DATASOURCE_PASSWORD=wydad2024
+      - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER:-wydad}
+      - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD:-wydad2024}
     depends_on:
       postgres:
         condition: service_healthy
@@ -92,12 +93,12 @@ services:
       context: ./payment-service
       dockerfile: Dockerfile
     container_name: wydad-payment-service
-    ports:
-      - "8083:8083"
+    expose:
+      - "8083"
     environment:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/payment_db
-      - SPRING_DATASOURCE_USERNAME=wydad
-      - SPRING_DATASOURCE_PASSWORD=wydad2024
+      - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER:-wydad}
+      - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD:-wydad2024}
     depends_on:
       postgres:
         condition: service_healthy
@@ -113,12 +114,12 @@ services:
       context: ./shop-service
       dockerfile: Dockerfile
     container_name: wydad-shop-service
-    ports:
-      - "8084:8084"
+    expose:
+      - "8084"
     environment:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/shop_db
-      - SPRING_DATASOURCE_USERNAME=wydad
-      - SPRING_DATASOURCE_PASSWORD=wydad2024
+      - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER:-wydad}
+      - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD:-wydad2024}
     depends_on:
       postgres:
         condition: service_healthy
@@ -134,12 +135,12 @@ services:
       context: ./ticket-service
       dockerfile: Dockerfile
     container_name: wydad-ticket-service
-    ports:
-      - "8085:8085"
+    expose:
+      - "8085"
     environment:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/ticket_db
-      - SPRING_DATASOURCE_USERNAME=wydad
-      - SPRING_DATASOURCE_PASSWORD=wydad2024
+      - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER:-wydad}
+      - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD:-wydad2024}
     depends_on:
       postgres:
         condition: service_healthy
@@ -155,12 +156,12 @@ services:
       context: ./notification-service
       dockerfile: Dockerfile
     container_name: wydad-notification-service
-    ports:
-      - "8086:8086"
+    expose:
+      - "8086"
     environment:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/notification_db
-      - SPRING_DATASOURCE_USERNAME=wydad
-      - SPRING_DATASOURCE_PASSWORD=wydad2024
+      - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER:-wydad}
+      - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD:-wydad2024}
     depends_on:
       postgres:
         condition: service_healthy
@@ -176,12 +177,12 @@ services:
       context: ./sports-service
       dockerfile: Dockerfile
     container_name: wydad-sports-service
-    ports:
-      - "8087:8087"
+    expose:
+      - "8087"
     environment:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/sports_db
-      - SPRING_DATASOURCE_USERNAME=wydad
-      - SPRING_DATASOURCE_PASSWORD=wydad2024
+      - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER:-wydad}
+      - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD:-wydad2024}
     depends_on:
       postgres:
         condition: service_healthy
@@ -192,56 +193,17 @@ services:
       retries: 10
       start_period: 60s
 
-  api-gateway:
-    build:
-      context: ./api-gateway
-      dockerfile: Dockerfile
-    container_name: wydad-api-gateway
-    ports:
-      - "8080:8080"
-    environment:
-      - AUTH_SERVICE_URI=http://auth-service:8081
-      - CONTENT_SERVICE_URI=http://content-service:8082
-      - PAYMENT_SERVICE_URI=http://payment-service:8083
-      - SHOP_SERVICE_URI=http://shop-service:8084
-      - TICKET_SERVICE_URI=http://ticket-service:8085
-      - NOTIFICATION_SERVICE_URI=http://notification-service:8086
-      - SPORTS_SERVICE_URI=http://sports-service:8087
-      - GAMIFICATION_SERVICE_URI=http://gamification-service:8088
-    depends_on:
-      auth-service:
-        condition: service_healthy
-      content-service:
-        condition: service_healthy
-      payment-service:
-        condition: service_healthy
-      shop-service:
-        condition: service_started
-      ticket-service:
-        condition: service_started
-      notification-service:
-        condition: service_started
-      sports-service:
-        condition: service_started
-      gamification-service:
-        condition: service_started
-    healthcheck:
-      test: ["CMD-SHELL", "wget -q -S -O /dev/null http://localhost:8080/actuator/health 2>&1 | grep -q 'HTTP/' || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
   gamification-service:
     build:
       context: ./gamification-service
       dockerfile: Dockerfile
     container_name: wydad-gamification-service
-    ports:
-      - "8088:8088"
+    expose:
+      - "8088"
     environment:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/wydad_gamification
-      - SPRING_DATASOURCE_USERNAME=wydad
-      - SPRING_DATASOURCE_PASSWORD=wydad2024
+      - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER:-wydad}
+      - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD:-wydad2024}
     depends_on:
       postgres:
         condition: service_healthy
@@ -252,5 +214,51 @@ services:
       retries: 10
       start_period: 60s
 
+  api-gateway:
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    container_name: wydad-api-gateway
+    # Seule porte d'entrée exposée publiquement
+    ports:
+      - "${GATEWAY_HOST_PORT:-8080}:8080"
+    environment:
+      - AUTH_SERVICE_URI=http://auth-service:8081
+      - CONTENT_SERVICE_URI=http://content-service:8082
+      - PAYMENT_SERVICE_URI=http://payment-service:8083
+      - SHOP_SERVICE_URI=http://shop-service:8084
+      - TICKET_SERVICE_URI=http://ticket-service:8085
+      - NOTIFICATION_SERVICE_URI=http://notification-service:8086
+      - SPORTS_SERVICE_URI=http://sports-service:8087
+      - GAMIFICATION_SERVICE_URI=http://gamification-service:8088
+      - JWT_SECRET=${JWT_SECRET:?JWT_SECRET doit être défini dans le fichier .env}
+      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-http://localhost:4200}
+    depends_on:
+      auth-service:
+        condition: service_healthy
+      content-service:
+        condition: service_healthy
+      payment-service:
+        condition: service_healthy
+      shop-service:
+        condition: service_healthy
+      ticket-service:
+        condition: service_healthy
+      notification-service:
+        condition: service_healthy
+      sports-service:
+        condition: service_healthy
+      gamification-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -S -O /dev/null http://localhost:8080/actuator/health 2>&1 | grep -q 'HTTP/' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
 volumes:
   postgres_data:
+
+networks:
+  default:
+    name: wydad-network

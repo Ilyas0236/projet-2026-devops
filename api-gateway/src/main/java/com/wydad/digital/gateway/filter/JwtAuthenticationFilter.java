@@ -21,7 +21,7 @@ import java.nio.charset.StandardCharsets;
 @Component
 public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
-    @Value("${jwt.secret:wydad-secret-key-2024-ne-pas-utiliser-en-production-tres-long-min-256-bits}")
+    @Value("${jwt.secret:${JWT_SECRET:wydad-secret-key-2024-ne-pas-utiliser-en-production-tres-long-min-256-bits}}")
     private String jwtSecret;
 
     @Override

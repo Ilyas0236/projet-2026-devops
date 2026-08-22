@@ -19,7 +19,7 @@ spring:
         format_sql: true
 
 jwt:
-  secret: wydad-secret-key-2024-ne-pas-utiliser-en-production-tres-long-min-256-bits
+  secret: ${JWT_SECRET:wydad-secret-key-2024-ne-pas-utiliser-en-production-tres-long-min-256-bits}
   expiration: 86400000
   refresh-expiration: 604800000
 
