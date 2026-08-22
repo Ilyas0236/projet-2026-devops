@@ -226,6 +226,17 @@ services:
       retries: 10
       start_period: 60s
 
+  frontend:
+    build:
+      context: ./wydad-frontend
+      dockerfile: Dockerfile
+    container_name: wydad-frontend
+    ports:
+      - "${FRONTEND_HOST_PORT:-4200}:80"
+    depends_on:
+      api-gateway:
+        condition: service_healthy
+
   api-gateway:
     build:
       context: ./api-gateway
