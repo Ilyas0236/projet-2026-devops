@@ -22,6 +22,17 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
     }
 
+    /** Verrou non acquis (timeout 3s) ou conflit de version : conflit, pas une erreur serveur. */
+    @ExceptionHandler({org.springframework.dao.CannotAcquireLockException.class,
+                       org.springframework.orm.ObjectOptimisticLockingFailureException.class})
+    public ResponseEntity<Map<String, Object>> handleLockConflict(Exception ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of(
+                "error", "CONFLICT",
+                "message", "Trop de demandes simultanees, merci de reessayer",
+                "timestamp", LocalDateTime.now()
+        ));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> handleGeneric(Exception ex) {
         Map<String, Object> body = new HashMap<>();
