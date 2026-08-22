@@ -19,7 +19,13 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http, UserContextFilter userContextFilter) throws Exception {
         http.csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(auth -> auth.anyRequest().authenticated())
+                // Endpoints internes service-à-service : authentifiés par le secret
+                // partagé X-Internal-Secret au niveau contrôleur (jamais exposés via
+                // la gateway). Le reste exige le contexte utilisateur injecté par
+                // la gateway.
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/api/payment/internal/**").permitAll()
+                        .anyRequest().authenticated())
                 .addFilterBefore(userContextFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }

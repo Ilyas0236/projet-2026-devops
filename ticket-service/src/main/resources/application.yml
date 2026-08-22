@@ -17,6 +17,10 @@ spring:
         format_sql: true
         dialect: org.hibernate.dialect.PostgreSQLDialect
 
+wydad:
+  internal-secret: ${WYDAD_INTERNAL_SECRET:}
+  payment-service-uri: ${PAYMENT_SERVICE_URI:http://localhost:8083}
+
 logging:
   level:
     com.wydad.digital.ticket: DEBUG

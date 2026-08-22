@@ -18,6 +18,9 @@ spring:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
 
+wydad:
+  internal-secret: ${WYDAD_INTERNAL_SECRET:}
+
 logging:
   level:
     com.wydad.digital.payment: DEBUG

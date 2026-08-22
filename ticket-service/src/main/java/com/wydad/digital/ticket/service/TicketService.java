@@ -3,6 +3,7 @@ package com.wydad.digital.ticket.service;
 import com.wydad.digital.ticket.dto.*;
 import com.wydad.digital.ticket.enums.TicketStatus;
 import com.wydad.digital.ticket.client.NotificationClient;
+import com.wydad.digital.ticket.client.PaymentClient;
 import com.wydad.digital.ticket.filter.UserContext;
 import com.wydad.digital.ticket.model.Event;
 import com.wydad.digital.ticket.model.Section;
@@ -15,6 +16,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -29,6 +31,7 @@ public class TicketService {
     private final SectionRepository sectionRepository;
     private final QrCodeService qrCodeService;
     private final NotificationClient notificationClient;
+    private final PaymentClient paymentClient;
 
     @Transactional
     public List<TicketResponse> purchaseTickets(PurchaseTicketRequest request) {
@@ -84,6 +87,16 @@ public class TicketService {
         event.setAvailableSeats(event.getAvailableSeats() - qty);
         event.setSoldTickets(event.getSoldTickets() + qty);
         eventRepository.save(event);
+
+        // Paiement E-cash OBLIGATOIRE avant emission des billets : si le debit
+        // echoue (solde insuffisant, payment-service indisponible), l'exception
+        // propage et la transaction locale est annulee -> jamais de billet gratuit.
+        // (Le prix est toujours le prix serveur de la section, jamais une valeur client.)
+        BigDecimal total = section.getPrice().multiply(BigDecimal.valueOf(qty));
+        paymentClient.debitEcash(
+                effectiveUserEmail,
+                total,
+                "WAC-TICKET-" + event.getId());
 
         // Best-effort : une panne de notification ne doit pas annuler l'achat
         notificationClient.notifyUser(

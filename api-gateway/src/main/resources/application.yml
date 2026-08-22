@@ -26,6 +26,14 @@ spring:
             - name: SetStatus
               args:
                 status: FORBIDDEN
+        - id: block-payment-internal
+          uri: no://op
+          predicates:
+            - Path=/api/payment/internal/**
+          filters:
+            - name: SetStatus
+              args:
+                status: FORBIDDEN
         - id: auth-service
           uri: ${AUTH_SERVICE_URI:http://localhost:8081}
           predicates:

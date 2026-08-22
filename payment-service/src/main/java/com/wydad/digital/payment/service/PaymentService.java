@@ -61,7 +61,6 @@ public class PaymentService {
         if (account.getBalance().compareTo(amount) < 0) {
             throw new RuntimeException("Solde insuffisant");
         }
-
         account.setBalance(account.getBalance().subtract(amount));
         accountRepository.save(account);
 
@@ -72,6 +71,44 @@ public class PaymentService {
                 .balanceAfter(account.getBalance())
                 .description(description != null ? description : "Débit E-cash")
                 .reference("WAC-DEBIT-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase())
+                .build();
+
+        transactionRepository.save(tx);
+        return mapToResponse(tx);
+    }
+
+    /**
+     * Débit interne service-à-service (billetterie, boutique) sous verrou
+     * pessimiste : sérialise les débits concurrents sur un même compte et
+     * garantit qu'aucun solde négatif n'est possible.
+     */
+    @Transactional
+    public TransactionResponse internalDebit(String email, BigDecimal amount, String reference) {
+        ECashAccount account = accountRepository.findByEmailForUpdate(email)
+                .orElseGet(() -> {
+                    ECashAccount created = ECashAccount.builder()
+                            .email(email)
+                            .balance(BigDecimal.ZERO)
+                            .active(true)
+                            .build();
+                    return accountRepository.save(created);
+                });
+
+        if (account.getBalance().compareTo(amount) < 0) {
+            throw new com.wydad.digital.payment.exception.InsufficientFundsException(
+                    "Solde E-cash insuffisant (disponible : " + account.getBalance() + " DH)");
+        }
+
+        account.setBalance(account.getBalance().subtract(amount));
+        accountRepository.save(account);
+
+        Transaction tx = Transaction.builder()
+                .email(email)
+                .type(TransactionType.DEBIT)
+                .amount(amount)
+                .balanceAfter(account.getBalance())
+                .description(reference)
+                .reference(reference)
                 .build();
 
         transactionRepository.save(tx);
