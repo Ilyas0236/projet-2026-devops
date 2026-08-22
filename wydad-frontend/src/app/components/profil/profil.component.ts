@@ -42,7 +42,6 @@ export class ProfilComponent implements OnInit {
   otpSent = false;
   otpVerifying = false;
   otpCode = '';
-  mockOtpCode = '';
   otpMsg = '';
   otpErr = '';
 
@@ -59,60 +58,87 @@ export class ProfilComponent implements OnInit {
   }
 
   loadProfile() {
-    const email = localStorage.getItem('wydad_email');
-    if (!email) {
+    const token = localStorage.getItem('wydad_token');
+    if (!token) {
       this.router.navigate(['/login']);
       return;
     }
-    
-    // Simulate fetching full profile
-    this.profile = {
-      firstName: localStorage.getItem('wydad_first_name'),
-      lastName: localStorage.getItem('wydad_last_name'),
-      email: email,
-      role: localStorage.getItem('wydad_role'),
-      phone: '+212 600-000000',
-      membershipExpiresAt: new Date(new Date().setFullYear(new Date().getFullYear() + 1)),
-      createdAt: new Date(),
-      kycVerified: false,
-      referralCode: 'WAC-' + Math.random().toString(36).substring(2, 8).toUpperCase()
-    };
 
-    this.editFirstName = this.profile.firstName || '';
-    this.editLastName = this.profile.lastName || '';
-    this.editPhone = this.profile.phone || '';
-  }
-
-  loadSessions() {
-    this.sessions = [
-      { id: 1, device: 'Chrome sur Windows', ipAddress: '192.168.1.10', lastActiveAt: new Date(), isCurrent: true },
-      { id: 2, device: 'Safari sur iPhone 13', ipAddress: '10.0.0.5', lastActiveAt: new Date(new Date().getTime() - 86400000), isCurrent: false }
-    ];
+    this.authService.getProfile().subscribe({
+      next: (res: any) => {
+        this.profile = res;
+        this.editFirstName = res.firstName || '';
+        this.editLastName = res.lastName || '';
+        this.editPhone = res.phone || '';
+        this.editVille = res.ville || '';
+        this.editLangue = res.langue || '';
+        this.editBio = res.bio || '';
+      },
+      error: (err) => {
+        console.error('Erreur chargement profil', err);
+        // Fallback sur localStorage si l'API échoue (session expirée etc.)
+        const email = localStorage.getItem('wydad_email');
+        if (!email) {
+          this.router.navigate(['/login']);
+          return;
+        }
+        this.profile = {
+          firstName: localStorage.getItem('wydad_first_name'),
+          lastName: localStorage.getItem('wydad_last_name'),
+          email: email,
+          role: localStorage.getItem('wydad_role')
+        };
+        this.editFirstName = this.profile.firstName || '';
+        this.editLastName = this.profile.lastName || '';
+      }
+    });
   }
 
   updateProfile() {
     this.saving = true;
     this.infoMsg = '';
     this.infoErr = '';
-    
-    setTimeout(() => {
-      this.saving = false;
-      this.profile.firstName = this.editFirstName;
-      this.profile.lastName = this.editLastName;
-      this.profile.phone = this.editPhone;
-      
-      const email = localStorage.getItem('wydad_email');
-      if(email) {
+
+    this.authService.updateProfile({
+      email: this.profile?.email,
+      firstName: this.editFirstName,
+      lastName: this.editLastName,
+      phone: this.editPhone,
+      ville: this.editVille,
+      langue: this.editLangue,
+      bio: this.editBio
+    }).subscribe({
+      next: () => {
+        this.saving = false;
+        if (this.profile) {
+          this.profile.firstName = this.editFirstName;
+          this.profile.lastName = this.editLastName;
+          this.profile.phone = this.editPhone;
+        }
         localStorage.setItem('wydad_first_name', this.editFirstName);
         localStorage.setItem('wydad_last_name', this.editLastName);
+        this.infoMsg = 'Profil mis à jour avec succès.';
+        this.loadProfile();
+      },
+      error: (err) => {
+        this.saving = false;
+        this.infoErr = err.error?.message || 'Erreur lors de la mise à jour.';
       }
-      this.infoMsg = 'Profil mis à jour avec succès.';
-    }, 1000);
+    });
   }
 
   deleteAccount() {
     if(confirm('Êtes-vous sûr de vouloir supprimer votre compte définitivement ?')) {
-      this.authService.logout();
+      this.authService.deleteAccount().subscribe({
+        next: () => {
+          alert('Compte supprimé avec succès.');
+          this.authService.logout();
+          this.router.navigate(['/login']);
+        },
+        error: (err) => {
+          alert(err.error?.message || 'Erreur lors de la suppression du compte.');
+        }
+      });
     }
   }
 
@@ -121,20 +147,38 @@ export class ProfilComponent implements OnInit {
     this.kycUploading = true;
     this.kycErr = '';
     this.kycMsg = '';
-    setTimeout(() => {
-      this.kycUploading = false;
-      this.kycUploaded = true;
-      this.kycMsg = 'Document uploadé. En attente de validation administrateur.';
-    }, 1500);
+    const email = localStorage.getItem('wydad_email');
+    if (!email) { this.kycErr = 'Non connecté.'; this.kycUploading = false; return; }
+
+    this.authService.uploadKyc(this.kycDocType, this.kycDocNumber, this.kycFilePath).subscribe({
+      next: () => {
+        this.kycUploading = false;
+        this.kycUploaded = true;
+        this.kycMsg = 'Document uploadé. En attente de validation administrateur.';
+      },
+      error: (err) => {
+        this.kycUploading = false;
+        this.kycErr = err.error?.message || 'Erreur lors de l\'upload du document.';
+      }
+    });
   }
 
   verifyKyc() {
     this.kycVerifying = true;
-    setTimeout(() => {
-      this.kycVerifying = false;
-      this.profile.kycVerified = true;
-      this.kycMsg = 'KYC validé ! Votre identité est confirmée.';
-    }, 2000);
+    const email = localStorage.getItem('wydad_email');
+    if (!email) { this.kycVerifying = false; return; }
+
+    this.authService.verifyKycMock(email).subscribe({
+      next: () => {
+        this.kycVerifying = false;
+        if (this.profile) this.profile.kycVerified = true;
+        this.kycMsg = 'KYC validé ! Votre identité est confirmée.';
+      },
+      error: (err) => {
+        this.kycVerifying = false;
+        this.kycErr = err.error?.message || 'Erreur lors de la validation KYC.';
+      }
+    });
   }
 
   // --- OTP Logic ---
@@ -142,40 +186,78 @@ export class ProfilComponent implements OnInit {
     this.otpSending = true;
     this.otpMsg = '';
     this.otpErr = '';
-    setTimeout(() => {
-      this.otpSending = false;
-      this.otpSent = true;
-      this.mockOtpCode = Math.floor(100000 + Math.random() * 900000).toString();
-    }, 1000);
+
+    this.authService.sendOtp(this.otpPhone).subscribe({
+      next: (res: any) => {
+        this.otpSending = false;
+        this.otpSent = true;
+        this.otpMsg = typeof res === 'string' ? res : 'Code envoyé par SMS.';
+      },
+      error: (err) => {
+        this.otpSending = false;
+        this.otpErr = err.error?.message || 'Erreur lors de l\'envoi du code.';
+      }
+    });
   }
 
   verifyOtp() {
     this.otpVerifying = true;
     this.otpMsg = '';
     this.otpErr = '';
-    setTimeout(() => {
-      this.otpVerifying = false;
-      if (this.otpCode === this.mockOtpCode) {
+
+    this.authService.verifyOtp(this.otpCode).subscribe({
+      next: () => {
+        this.otpVerifying = false;
         this.otpMsg = 'Numéro de téléphone vérifié avec succès.';
         this.otpSent = false;
         this.otpCode = '';
-        this.mockOtpCode = '';
-      } else {
-        this.otpErr = 'Code OTP incorrect.';
+      },
+      error: (err) => {
+        this.otpVerifying = false;
+        this.otpErr = err.error?.message || 'Code OTP incorrect.';
       }
-    }, 1000);
+    });
   }
 
   // --- Sessions Logic ---
+  loadSessions() {
+    this.authService.getSessions().subscribe({
+      next: (res: any[]) => {
+        this.sessions = (res || []).map((s: any) => ({
+          id: s.id,
+          device: s.userAgent || 'Appareil inconnu',
+          ipAddress: s.ipAddress,
+          lastActiveAt: s.createdAt,
+          isCurrent: s.currentSession
+        }));
+      },
+      error: (err) => console.error('Erreur chargement sessions', err)
+    });
+  }
+
   revokeSession(id: number) {
-    this.sessions = this.sessions.filter(s => s.id !== id);
-    this.sessionMsg = 'Session révoquée avec succès.';
+    this.authService.revokeSession(String(id)).subscribe({
+      next: () => {
+        this.sessions = this.sessions.filter(s => s.id !== id);
+        this.sessionMsg = 'Session révoquée avec succès.';
+      },
+      error: (err) => {
+        this.sessionMsg = err.error?.message || 'Erreur lors de la révocation.';
+      }
+    });
   }
 
   revokeAllSessions() {
     if(confirm('Déconnecter tous les autres appareils ?')) {
-      this.sessions = this.sessions.filter(s => s.isCurrent);
-      this.sessionMsg = 'Toutes les autres sessions ont été révoquées.';
+      this.authService.revokeAllSessions().subscribe({
+        next: () => {
+          this.sessions = this.sessions.filter(s => s.isCurrent);
+          this.sessionMsg = 'Toutes les autres sessions ont été révoquées.';
+        },
+        error: (err) => {
+          this.sessionMsg = err.error?.message || 'Erreur lors de la révocation.';
+        }
+      });
     }
   }
 }

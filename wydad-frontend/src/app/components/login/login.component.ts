@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ApiService } from '../../services/api.service';
+import { AuthService } from '../../services/auth.service';
 import { Router } from '@angular/router';
 
 @Component({
@@ -17,18 +17,20 @@ export class LoginComponent {
   error = '';
   token = '';
 
-  constructor(private api: ApiService, private router: Router) {}
+  constructor(private authService: AuthService, private router: Router) {}
 
   login() {
     this.loading = true;
     this.error = '';
-    this.api.login(this.email, this.password).subscribe({
-      next: (res) => {
-        this.token = res.accessToken;
-        localStorage.setItem('wydad_token', res.accessToken);
-        localStorage.setItem('wydad_email', res.email);
+    this.authService.login(this.email, this.password).subscribe({
+      next: () => {
         this.loading = false;
-        setTimeout(() => this.router.navigate(['/carte']), 1000);
+        // Redirection selon le rôle : admin vers le back-office, sinon vers la carte membre
+        if (this.authService.getRole() === 'ADMIN') {
+          this.router.navigate(['/admin']);
+        } else {
+          this.router.navigate(['/profil/carte']);
+        }
       },
       error: (err) => {
         this.error = err.error?.message || 'Erreur de connexion';

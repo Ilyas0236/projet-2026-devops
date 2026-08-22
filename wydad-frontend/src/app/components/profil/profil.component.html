@@ -306,10 +306,6 @@
                   <p class="text-text-secondary text-sm">Nous avons envoyé un code de vérification au <br><strong class="text-white">{{ otpPhone || profile?.phone }}</strong></p>
                 </div>
                 
-                <div *ngIf="mockOtpCode" class="p-4 bg-wydad-gold/10 border border-wydad-gold/20 text-wydad-gold rounded-lg text-sm text-center font-mono">
-                  Code de démo : <strong class="text-lg">{{ mockOtpCode }}</strong>
-                </div>
-
                 <div>
                   <input type="text" [(ngModel)]="otpCode" placeholder="000000" class="wydad-input text-center text-3xl font-mono tracking-[0.5em] font-bold py-4">
                 </div>
