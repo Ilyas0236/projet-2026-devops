@@ -24,6 +24,14 @@ public class PaymentService {
     private final RecuFiscalService recuFiscalService;
     private final ChariBaasService chariBaasService;
 
+    /** Mock ChariBaaS desactivable (MOCK_CARD_PAYMENT=false) avant vraie prod. */
+    @org.springframework.beans.factory.annotation.Value("${wydad.mock-card-payment.enabled:true}")
+    private boolean mockCardPaymentEnabled;
+
+    /** Plafond par transaction du mock (DH) — limite l'exposition en demo. */
+    @org.springframework.beans.factory.annotation.Value("${wydad.mock-card-payment.max-amount:5000}")
+    private java.math.BigDecimal mockCardMaxAmount;
+
     @Transactional
     public ECashAccount getOrCreateAccount(String email) {
         return accountRepository.findByEmail(email)
@@ -202,6 +210,15 @@ public class PaymentService {
     }
     @Transactional
     public TransactionResponse payByCard(String email, CardPaymentRequest request) {
+        if (!mockCardPaymentEnabled) {
+            throw new IllegalStateException(
+                    "Le paiement par carte (mock ChariBaaS) est desactive sur cet environnement");
+        }
+        if (request.amount().compareTo(mockCardMaxAmount) > 0) {
+            throw new IllegalArgumentException(
+                    "Montant maximum par transaction : " + mockCardMaxAmount + " DH");
+        }
+
         CardPaymentResponse payment = chariBaasService.processPayment(request, request.amount());
 
         if (!payment.isSuccess()) {

@@ -20,6 +20,12 @@ spring:
 
 wydad:
   internal-secret: ${WYDAD_INTERNAL_SECRET:}
+  # Mock ChariBaaS (carte test 4242...). Assume pour la demo du projet ;
+  # mettre MOCK_CARD_PAYMENT=false pour desactiver /card avant une vraie prod.
+  mock-card-payment:
+    enabled: ${MOCK_CARD_PAYMENT:true}
+    # Plafond par transaction (DH) du mock — limite l'exposition en demo.
+    max-amount: ${MOCK_CARD_MAX_AMOUNT:5000}
 
 logging:
   level:
