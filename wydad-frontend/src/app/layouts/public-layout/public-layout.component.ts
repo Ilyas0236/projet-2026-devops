@@ -19,12 +19,20 @@ export class PublicLayoutComponent implements OnInit {
   // Coordonnees du club — source de verite : configuration club (ADMIN)
   clubInfo: any = null;
 
+  // Sponsors actifs (B.7) — source de verite : ADMIN via content-service
+  sponsors: any[] = [];
+
   constructor(private api: ApiService) {}
 
   ngOnInit() {
     this.api.getClubSetting('club_info').subscribe({
       next: (info) => (this.clubInfo = info),
       error: () => (this.clubInfo = null)
+    });
+
+    this.api.getSponsorsPublic().subscribe({
+      next: (list) => (this.sponsors = list || []),
+      error: () => (this.sponsors = [])
     });
   }
 

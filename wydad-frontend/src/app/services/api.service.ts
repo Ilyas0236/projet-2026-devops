@@ -114,6 +114,27 @@ export class ApiService {
     return this.http.put(`${this.baseUrl}/content/settings/${key}`, value);
   }
 
+  // SPONSORS (B.7) — lecture publique, ecriture ADMIN
+  getSponsorsPublic(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/content/sponsors/public`);
+  }
+
+  getAllSponsors(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/content/sponsors`);
+  }
+
+  createSponsor(sponsor: any): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/content/sponsors`, sponsor);
+  }
+
+  updateSponsor(id: number, sponsor: any): Observable<any> {
+    return this.http.put<any>(`${this.baseUrl}/content/sponsors/${id}`, sponsor);
+  }
+
+  deleteSponsor(id: number): Observable<any> {
+    return this.http.delete<any>(`${this.baseUrl}/content/sponsors/${id}`);
+  }
+
   getBalance(email: string): Observable<any> {
     return this.http.get(`${this.baseUrl}/payment/balance?email=${email}`);
   }

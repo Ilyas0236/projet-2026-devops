@@ -52,6 +52,52 @@ import { ToastService } from '../../../services/toast.service';
             </button>
           </div>
         </div>
+
+        <!-- B.7 : Sponsors & partenaires (ecriture ADMIN, lecture publique) -->
+        <div class="bg-white/5 border border-white/10 rounded-lg p-5">
+          <h3 class="font-display font-bold uppercase tracking-wider text-wydad-gold text-sm mb-1">Sponsors &amp; partenaires</h3>
+          <p class="text-xs text-gray-600 mb-4">Affichés dans le footer public. Désactiver un sponsor le retire de l'affichage sans le supprimer.</p>
+
+          <div *ngIf="sponsors.length === 0" class="text-sm text-gray-500 py-2">Aucun sponsor enregistré.</div>
+
+          <div *ngFor="let s of sponsors" class="flex flex-col md:flex-row md:items-center gap-3 py-3 border-t border-white/[0.06]">
+            <img [src]="s.logoUrl" [alt]="s.name" class="h-8 w-auto max-w-[100px] object-contain rounded bg-white/5 p-1"
+                 onerror="this.style.visibility='hidden'">
+            <div class="flex-1 min-w-0">
+              <div class="text-white text-sm font-bold truncate">{{ s.name }}
+                <span class="ml-2 text-[10px] uppercase tracking-widest px-2 py-0.5 rounded-full bg-white/10 text-gray-300">{{ s.tier }}</span>
+                <span *ngIf="!s.active" class="ml-1 text-[10px] uppercase tracking-widest px-2 py-0.5 rounded-full bg-red-900/40 text-red-300">Inactif</span>
+              </div>
+              <div class="text-xs text-gray-500 truncate">Ordre {{ s.displayOrder }}<span *ngIf="s.websiteUrl"> · {{ s.websiteUrl }}</span></div>
+            </div>
+            <div class="flex gap-2 shrink-0">
+              <button (click)="toggleSponsor(s)"
+                      class="px-3 py-1.5 text-xs uppercase font-bold tracking-wider rounded"
+                      [class.bg-green-700]="!s.active" [class.hover:bg-green-600]="!s.active"
+                      [class.bg-gray-700]="s.active" [class.hover:bg-gray-600]="s.active"
+                      class:text-white="true">
+                {{ s.active ? 'Désactiver' : 'Activer' }}
+              </button>
+              <button (click)="deleteSponsor(s)"
+                      class="px-3 py-1.5 text-xs uppercase font-bold tracking-wider rounded bg-red-800 hover:bg-red-700 text-white">
+                Supprimer
+              </button>
+            </div>
+          </div>
+
+          <!-- Formulaire d'ajout -->
+          <form (ngSubmit)="createSponsor()" class="mt-5 pt-4 border-t border-white/[0.06] grid grid-cols-1 md:grid-cols-2 gap-3">
+            <input [(ngModel)]="sponsorDraft.name" name="sp-name" required placeholder="Nom du sponsor *" class="admin-input !text-sm">
+            <input [(ngModel)]="sponsorDraft.logoUrl" name="sp-logo" required placeholder="URL du logo * (https://…)" class="admin-input !text-sm">
+            <input [(ngModel)]="sponsorDraft.websiteUrl" name="sp-site" placeholder="Site web (optionnel)" class="admin-input !text-sm">
+            <input [(ngModel)]="sponsorDraft.tier" name="sp-tier" required placeholder="Niveau de partenariat * (ex MAIN_SPONSOR)" class="admin-input !text-sm">
+            <input [(ngModel)]="sponsorDraft.displayOrder" name="sp-order" type="number" placeholder="Ordre d'affichage" class="admin-input !text-sm">
+            <button type="submit" [disabled]="!canCreateSponsor() || submittingSponsor"
+                    class="px-4 py-2 bg-wydad-gold disabled:opacity-40 disabled:cursor-not-allowed hover:bg-yellow-600 text-black uppercase text-xs font-bold tracking-wider">
+              Ajouter le sponsor
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   `
@@ -63,10 +109,67 @@ export class AdminSettingsComponent implements OnInit {
   loading = true;
   error = '';
 
+  // B.7 : gestion des sponsors
+  sponsors: any[] = [];
+  sponsorDraft: any = { name: '', logoUrl: '', websiteUrl: '', tier: '', displayOrder: 0 };
+  submittingSponsor = false;
+
   constructor(private apiService: ApiService, private toast: ToastService) {}
 
   ngOnInit() {
     this.loadSettings();
+    this.loadSponsors();
+  }
+
+  loadSponsors() {
+    this.apiService.getAllSponsors().subscribe({
+      next: (list) => (this.sponsors = list || []),
+      error: () => (this.sponsors = [])
+    });
+  }
+
+  canCreateSponsor(): boolean {
+    return !!(this.sponsorDraft.name?.trim() && this.sponsorDraft.logoUrl?.trim() && this.sponsorDraft.tier?.trim());
+  }
+
+  createSponsor() {
+    if (!this.canCreateSponsor()) return;
+    this.submittingSponsor = true;
+    const body = {
+      name: this.sponsorDraft.name,
+      logoUrl: this.sponsorDraft.logoUrl,
+      websiteUrl: this.sponsorDraft.websiteUrl || null,
+      tier: this.sponsorDraft.tier,
+      displayOrder: Number(this.sponsorDraft.displayOrder) || 0
+    };
+    this.apiService.createSponsor(body).subscribe({
+      next: () => {
+        this.toast.success('Sponsor ajouté.');
+        this.sponsorDraft = { name: '', logoUrl: '', websiteUrl: '', tier: '', displayOrder: 0 };
+        this.loadSponsors();
+      },
+      error: () => this.toast.error("Échec de l'ajout du sponsor."),
+      complete: () => (this.submittingSponsor = false)
+    });
+  }
+
+  /** Active/desactive sans supprimer : un sponsor inactif n'est plus affiche publiquement. */
+  toggleSponsor(s: any) {
+    this.apiService.updateSponsor(s.id, { active: !s.active }).subscribe({
+      next: () => this.loadSponsors(),
+      error: () => this.toast.error('Échec de la modification.')
+    });
+  }
+
+  deleteSponsor(s: any) {
+    if (!confirm(`Supprimer définitivement le sponsor "${s.name}" ?`)) return;
+    this.apiService.deleteSponsor(s.id).subscribe({
+      next: () => {
+        this.toast.success('Sponsor supprimé.');
+        this.loadSponsors();
+      },
+      error: () => this.toast.error('Échec de la suppression.')
+    });
   }
 
   loadSettings() {

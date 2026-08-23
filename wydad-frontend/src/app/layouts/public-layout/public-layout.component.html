@@ -67,6 +67,22 @@
   <!-- Premium Footer -->
   <footer class="bg-surface-1 text-text-secondary pt-20 pb-10 border-t border-white/[0.04]">
     <div class="max-w-7xl mx-auto px-6">
+
+      <!-- B.7 : Sponsors actifs du club (gere par l'ADMIN) -->
+      <div *ngIf="sponsors.length > 0" class="mb-16">
+        <p class="text-center font-display uppercase tracking-[0.3em] text-xs text-text-tertiary mb-8">Nos partenaires officiels</p>
+        <div class="flex flex-wrap items-center justify-center gap-x-10 gap-y-6">
+          <a *ngFor="let s of sponsors" [href]="s.websiteUrl || null" target="_blank" rel="noopener noreferrer"
+             [attr.title]="s.name + ' — ' + s.tier"
+             class="flex items-center gap-3 opacity-70 hover:opacity-100 transition-opacity duration-300"
+             [class.pointer-events-none]="!s.websiteUrl">
+            <img [src]="s.logoUrl" [alt]="'Logo ' + s.name" class="h-10 w-auto max-w-[140px] object-contain rounded"
+                 onerror="this.style.display='none'">
+            <span class="hidden md:inline text-sm text-text-secondary">{{ s.name }}</span>
+          </a>
+        </div>
+      </div>
+
       <div class="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
         <div class="col-span-1 md:col-span-1">
           <img src="assets/images/logos/wydad-logo.png" alt="Wydad AC" class="wac-logo-3d object-contain mb-6">
