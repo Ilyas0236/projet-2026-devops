@@ -62,54 +62,62 @@ import { ConfirmService } from '../../../services/confirm.service';
       </div>
 
       <!-- Modal create/update -->
-      <div *ngIf="showModal" class="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-        <div class="bg-zinc-900 border border-white/10 p-6 w-full max-w-lg rounded-lg">
-          <h3 class="text-xl font-display font-bold text-white uppercase tracking-wider mb-6">
-            {{ isEdit ? 'Modifier le profil' : 'Nouveau profil staff' }}
-          </h3>
-          <div class="grid grid-cols-2 gap-4 mb-4">
-            <div class="col-span-2">
-              <label class="block text-xs text-gray-400 uppercase mb-1">Nom complet *</label>
-              <input type="text" [(ngModel)]="current.fullName" class="w-full bg-black border border-white/10 rounded px-3 py-2 text-white">
-            </div>
-            <div>
-              <label class="block text-xs text-gray-400 uppercase mb-1">ID utilisateur (compte) *</label>
-              <input type="number" [(ngModel)]="current.userId" class="w-full bg-black border border-white/10 rounded px-3 py-2 text-white">
-            </div>
-            <div>
-              <label class="block text-xs text-gray-400 uppercase mb-1">Rôle</label>
-              <input type="text" [(ngModel)]="current.role" placeholder="Entraineur principal..." class="w-full bg-black border border-white/10 rounded px-3 py-2 text-white">
-            </div>
-            <div>
-              <label class="block text-xs text-gray-400 uppercase mb-1">Sport</label>
-              <select [(ngModel)]="current.sportType" class="w-full bg-black border border-white/10 rounded px-3 py-2 text-white">
-                <option value="FOOTBALL">Football</option>
-                <option value="BASKETBALL">Basketball</option>
-                <option value="HANDBALL">Handball</option>
-                <option value="VOLLEYBALL">Volleyball</option>
-                <option value="NATATION">Natation</option>
-                <option value="JUDO">Judo</option>
-                <option value="ATHLETISME">Athlétisme</option>
-                <option value="GENERAL">Général</option>
-              </select>
-            </div>
-            <div>
-              <!-- Valeurs de l'enum Category du sports-service -->
-              <label class="block text-xs text-gray-400 uppercase mb-1">Catégorie</label>
-              <select [(ngModel)]="current.assignedCategory" class="w-full bg-black border border-white/10 rounded px-3 py-2 text-white">
-                <option value="PRO">Pro</option>
-                <option value="ESPOIR">Espoir</option>
-                <option value="U19">U19</option>
-                <option value="U17">U17</option>
-                <option value="U15">U15</option>
-                <option value="ACADEMY">Académie</option>
-              </select>
-            </div>
+      <div *ngIf="showModal" class="admin-overlay">
+        <div class="admin-modal max-w-lg">
+          <div class="admin-modal-header">
+            <h3>{{ isEdit ? 'Modifier le profil' : 'Nouveau profil staff' }}</h3>
+            <button (click)="closeModal()" class="admin-modal-close" aria-label="Fermer">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
           </div>
-          <p *ngIf="formError" class="text-xs text-red-400 mb-3">{{ formError }}</p>
-          <div class="mt-8 flex justify-end gap-3">
-            <button (click)="closeModal()" class="px-4 py-2 text-gray-400 hover:text-white uppercase text-sm font-bold">Annuler</button>
-            <button (click)="saveStaff()" class="px-4 py-2 bg-wydad-red text-white uppercase text-sm font-bold">Sauvegarder</button>
+
+          <div class="admin-modal-body space-y-5">
+            <div class="grid grid-cols-2 gap-4">
+              <div class="admin-field col-span-2">
+                <label class="admin-label">Nom complet<span class="req">*</span></label>
+                <input type="text" [(ngModel)]="current.fullName" class="admin-input">
+              </div>
+              <div class="admin-field">
+                <label class="admin-label">ID utilisateur (compte)<span class="req">*</span></label>
+                <input type="number" [(ngModel)]="current.userId" class="admin-input">
+              </div>
+              <div class="admin-field">
+                <label class="admin-label">Rôle</label>
+                <input type="text" [(ngModel)]="current.role" placeholder="Entraineur principal..." class="admin-input">
+              </div>
+              <div class="admin-field">
+                <label class="admin-label">Sport</label>
+                <select [(ngModel)]="current.sportType" class="admin-input">
+                  <option value="FOOTBALL">Football</option>
+                  <option value="BASKETBALL">Basketball</option>
+                  <option value="HANDBALL">Handball</option>
+                  <option value="VOLLEYBALL">Volleyball</option>
+                  <option value="NATATION">Natation</option>
+                  <option value="JUDO">Judo</option>
+                  <option value="ATHLETISME">Athlétisme</option>
+                  <option value="GENERAL">Général</option>
+                </select>
+              </div>
+              <div class="admin-field">
+                <!-- Valeurs de l'enum Category du sports-service -->
+                <label class="admin-label">Catégorie</label>
+                <select [(ngModel)]="current.assignedCategory" class="admin-input">
+                  <option value="PRO">Pro</option>
+                  <option value="ESPOIR">Espoir</option>
+                  <option value="U19">U19</option>
+                  <option value="U17">U17</option>
+                  <option value="U15">U15</option>
+                  <option value="ACADEMY">Académie</option>
+                </select>
+              </div>
+            </div>
+
+            <p *ngIf="formError" class="admin-form-error">{{ formError }}</p>
+          </div>
+
+          <div class="admin-modal-footer">
+            <button (click)="closeModal()" class="admin-btn-ghost">Annuler</button>
+            <button (click)="saveStaff()" class="admin-btn-primary">Sauvegarder</button>
           </div>
         </div>
       </div>

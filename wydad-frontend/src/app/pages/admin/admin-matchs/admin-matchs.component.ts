@@ -61,96 +61,106 @@ import { ConfirmService } from '../../../services/confirm.service';
       </div>
 
       <!-- Modal -->
-      <div *ngIf="showModal" class="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-        <div class="bg-zinc-900 border border-white/10 p-6 w-full max-w-2xl rounded-lg">
-          <h3 class="text-xl font-display font-bold text-white uppercase tracking-wider mb-6">
-            {{ isEdit ? 'Modifier le Match' : 'Nouveau Match' }}
-          </h3>
+      <div *ngIf="showModal" class="admin-overlay">
+        <div class="admin-modal max-w-2xl">
+          <div class="admin-modal-header">
+            <h3>{{ isEdit ? 'Modifier le Match' : 'Nouveau Match' }}</h3>
+            <button (click)="closeModal()" class="admin-modal-close" aria-label="Fermer">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+          </div>
 
-          <div class="grid grid-cols-2 gap-4 mb-4">
-            <div>
-              <label class="block text-xs text-gray-400 uppercase mb-1">Adversaire *</label>
-              <input type="text" [(ngModel)]="currentMatch.adversaire" class="w-full bg-black border border-white/10 rounded px-3 py-2 text-white">
+          <div class="admin-modal-body space-y-5">
+            <div class="grid grid-cols-2 gap-4">
+              <div class="admin-field">
+                <label class="admin-label">Adversaire<span class="req">*</span></label>
+                <input type="text" [(ngModel)]="currentMatch.adversaire" class="admin-input">
+              </div>
+              <div class="admin-field">
+                <label class="admin-label">Sport<span class="req">*</span></label>
+                <select [(ngModel)]="currentMatch.sport" class="admin-input">
+                  <option value="FOOTBALL">Football</option>
+                  <option value="BASKETBALL">Basketball</option>
+                  <option value="HANDBALL">Handball</option>
+                  <option value="VOLLEYBALL">Volleyball</option>
+                  <option value="NATATION">Natation</option>
+                  <option value="JUDO">Judo</option>
+                  <option value="ATHLETISME">Athlétisme</option>
+                  <option value="GENERAL">Général</option>
+                </select>
+              </div>
+              <div class="admin-field">
+                <label class="admin-label">Date<span class="req">*</span></label>
+                <input type="date" [(ngModel)]="currentMatch.date" class="admin-input">
+              </div>
+              <div class="admin-field">
+                <label class="admin-label">Heure<span class="req">*</span></label>
+                <input type="time" [(ngModel)]="currentMatch.heure" class="admin-input">
+              </div>
+              <div class="admin-field">
+                <label class="admin-label">Lieu</label>
+                <input type="text" [(ngModel)]="currentMatch.lieu" class="admin-input">
+              </div>
+              <div class="admin-field">
+                <label class="admin-label">Compétition</label>
+                <select [(ngModel)]="currentMatch.competition" class="admin-input">
+                  <option *ngFor="let c of competitions" [value]="c.name">{{ c.name }}</option>
+                </select>
+              </div>
+              <div class="admin-field">
+                <label class="admin-label">Statut</label>
+                <select [(ngModel)]="currentMatch.statut" class="admin-input">
+                  <option value="PROGRAMME">À venir</option>
+                  <option value="EN_COURS">En cours</option>
+                  <option value="TERMINE">Terminé</option>
+                  <option value="REPORTE">Reporté</option>
+                </select>
+              </div>
             </div>
-            <div>
-              <label class="block text-xs text-gray-400 uppercase mb-1">Sport *</label>
-              <select [(ngModel)]="currentMatch.sport" class="w-full bg-black border border-white/10 rounded px-3 py-2 text-white">
-                <option value="FOOTBALL">Football</option>
-                <option value="BASKETBALL">Basketball</option>
-                <option value="HANDBALL">Handball</option>
-                <option value="VOLLEYBALL">Volleyball</option>
-                <option value="NATATION">Natation</option>
-                <option value="JUDO">Judo</option>
-                <option value="ATHLETISME">Athlétisme</option>
-                <option value="GENERAL">Général</option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-xs text-gray-400 uppercase mb-1">Date *</label>
-              <input type="date" [(ngModel)]="currentMatch.date" class="w-full bg-black border border-white/10 rounded px-3 py-2 text-white">
-            </div>
-            <div>
-              <label class="block text-xs text-gray-400 uppercase mb-1">Heure *</label>
-              <input type="time" [(ngModel)]="currentMatch.heure" class="w-full bg-black border border-white/10 rounded px-3 py-2 text-white">
-            </div>
-            <div>
-              <label class="block text-xs text-gray-400 uppercase mb-1">Lieu</label>
-              <input type="text" [(ngModel)]="currentMatch.lieu" class="w-full bg-black border border-white/10 rounded px-3 py-2 text-white">
-            </div>
-            <div>
-              <label class="block text-xs text-gray-400 uppercase mb-1">Compétition</label>
-              <select [(ngModel)]="currentMatch.competition" class="w-full bg-black border border-white/10 rounded px-3 py-2 text-white">
-                <option *ngFor="let c of competitions" [value]="c.name">{{ c.name }}</option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-xs text-gray-400 uppercase mb-1">Statut</label>
-              <select [(ngModel)]="currentMatch.statut" class="w-full bg-black border border-white/10 rounded px-3 py-2 text-white">
-                <option value="PROGRAMME">À venir</option>
-                <option value="EN_COURS">En cours</option>
-                <option value="TERMINE">Terminé</option>
-                <option value="REPORTE">Reporté</option>
-              </select>
+
+            <!-- Upload image du match -->
+            <div class="admin-field">
+              <label class="admin-label">Image du match</label>
+              <div class="admin-upload-zone">
+                <label class="admin-upload-btn">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                  Choisir une image
+                  <input type="file" accept="image/*" (change)="uploadLogo($event)">
+                </label>
+                <img *ngIf="currentMatch.imageUrl" [src]="apiService.getMediaUrl(currentMatch.imageUrl)" class="admin-upload-preview w-12 h-12 object-contain" alt="preview">
+                <span *ngIf="uploading" class="admin-upload-status">Envoi en cours...</span>
+              </div>
             </div>
           </div>
 
-          <!-- Upload image du match -->
-          <div class="mb-4">
-            <label class="block text-xs text-gray-400 uppercase mb-1">Image du match</label>
-            <div class="flex items-center gap-4">
-              <label class="cursor-pointer bg-zinc-800 border border-white/10 hover:border-wydad-red text-white px-4 py-2 rounded text-sm transition-colors">
-                📷 Choisir une image
-                <input type="file" accept="image/*" (change)="uploadLogo($event)" class="hidden">
-              </label>
-              <img *ngIf="currentMatch.imageUrl" [src]="apiService.getMediaUrl(currentMatch.imageUrl)" class="w-12 h-12 object-contain rounded border border-white/10" alt="preview">
-              <span *ngIf="uploading" class="text-xs text-yellow-400 animate-pulse">Envoi en cours...</span>
-            </div>
-          </div>
-
-          <div class="mt-8 flex justify-end gap-3">
-            <button (click)="closeModal()" class="px-4 py-2 text-gray-400 hover:text-white uppercase text-sm font-bold">Annuler</button>
-            <button (click)="saveMatch()" class="px-4 py-2 bg-wydad-red text-white uppercase text-sm font-bold">Sauvegarder</button>
+          <div class="admin-modal-footer">
+            <button (click)="closeModal()" class="admin-btn-ghost">Annuler</button>
+            <button (click)="saveMatch()" class="admin-btn-primary">Sauvegarder</button>
           </div>
         </div>
       </div>
 
       <!-- Modal de saisie du résultat (remplace prompt()) -->
-      <div *ngIf="showScoreModal" class="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-        <div class="bg-zinc-900 border border-white/10 p-6 w-full max-w-md rounded-lg">
-          <h3 class="text-lg font-display font-bold text-white uppercase tracking-wider mb-6">Résultat — WAC vs {{ scoreMatch?.adversaire }}</h3>
-          <div class="grid grid-cols-2 gap-4 mb-6">
-            <div>
-              <label class="block text-xs text-gray-400 uppercase mb-1">Score Wydad</label>
-              <input type="number" min="0" [(ngModel)]="scoreHome" class="w-full bg-black border border-white/10 rounded px-3 py-2 text-white">
-            </div>
-            <div>
-              <label class="block text-xs text-gray-400 uppercase mb-1">Score {{ scoreMatch?.adversaire }}</label>
-              <input type="number" min="0" [(ngModel)]="scoreAway" class="w-full bg-black border border-white/10 rounded px-3 py-2 text-white">
+      <div *ngIf="showScoreModal" class="admin-overlay">
+        <div class="admin-modal max-w-md">
+          <div class="admin-modal-header">
+            <h3>Résultat — WAC vs {{ scoreMatch?.adversaire }}</h3>
+          </div>
+          <div class="admin-modal-body">
+            <div class="grid grid-cols-2 gap-4">
+              <div class="admin-field">
+                <label class="admin-label">Score Wydad</label>
+                <input type="number" min="0" [(ngModel)]="scoreHome" class="admin-input">
+              </div>
+              <div class="admin-field">
+                <label class="admin-label">Score {{ scoreMatch?.adversaire }}</label>
+                <input type="number" min="0" [(ngModel)]="scoreAway" class="admin-input">
+              </div>
             </div>
           </div>
-          <div class="flex justify-end gap-3">
-            <button (click)="showScoreModal = false" class="px-4 py-2 text-gray-400 hover:text-white uppercase text-sm font-bold">Annuler</button>
-            <button (click)="saveScore()" class="px-4 py-2 bg-wydad-red text-white uppercase text-sm font-bold">Enregistrer</button>
+          <div class="admin-modal-footer">
+            <button (click)="showScoreModal = false" class="admin-btn-ghost">Annuler</button>
+            <button (click)="saveScore()" class="admin-btn-primary">Enregistrer</button>
           </div>
         </div>
       </div>

@@ -10,14 +10,14 @@
   <!-- Filters -->
   <div class="bg-white/5 border border-white/10 rounded-lg p-4 grid grid-cols-1 md:grid-cols-4 gap-4">
     <div>
-      <label class="block text-xs text-gray-400 uppercase tracking-wider mb-2">Rechercher</label>
+      <label class="admin-label">Rechercher</label>
       <input type="text" [(ngModel)]="searchTerm" (ngModelChange)="applyFilters()" placeholder="Nom, email..."
-             class="w-full bg-black border border-white/10 rounded-md px-3 py-2 text-sm text-white focus:border-wydad-red focus:outline-none transition-colors">
+             class="admin-input !text-sm">
     </div>
     <div>
-      <label class="block text-xs text-gray-400 uppercase tracking-wider mb-2">Rôle</label>
+      <label class="admin-label">Rôle</label>
       <select [(ngModel)]="roleFilter" (ngModelChange)="applyFilters()"
-              class="w-full bg-black border border-white/10 rounded-md px-3 py-2 text-sm text-white focus:border-wydad-red focus:outline-none">
+              class="admin-input !text-sm">
         <option value="ALL">Tous les rôles</option>
         <option value="VISITEUR">Visiteur</option>
         <option value="ADHERENT">Adhérent</option>
@@ -28,9 +28,9 @@
       </select>
     </div>
     <div>
-      <label class="block text-xs text-gray-400 uppercase tracking-wider mb-2">Statut KYC</label>
+      <label class="admin-label">Statut KYC</label>
       <select [(ngModel)]="kycFilter" (ngModelChange)="applyFilters()"
-              class="w-full bg-black border border-white/10 rounded-md px-3 py-2 text-sm text-white focus:border-wydad-red focus:outline-none">
+              class="admin-input !text-sm">
         <option value="ALL">Tous les statuts</option>
         <option value="VERIFIED">Vérifié (Approuvé)</option>
         <option value="PENDING">En attente (Non vérifié)</option>

@@ -67,54 +67,59 @@ import { ConfirmService } from '../../../services/confirm.service';
       </div>
 
       <!-- Modal -->
-      <div *ngIf="showModal" class="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-        <div class="bg-zinc-900 border border-white/10 p-6 w-full max-w-lg rounded-lg">
-          <h3 class="text-xl font-display font-bold text-white uppercase tracking-wider mb-6">
-            {{ isEdit ? 'Modifier Ligne' : 'Nouvelle Ligne' }}
-          </h3>
-          
-          <div class="grid grid-cols-2 gap-4 mb-4">
-            <div class="col-span-2">
-              <label class="block text-xs text-gray-400 uppercase mb-1">Équipe</label>
-              <input type="text" [(ngModel)]="currentClassement.equipe" class="w-full bg-black border border-white/10 rounded px-3 py-2 text-white">
-            </div>
-            <div>
-              <label class="block text-xs text-gray-400 uppercase mb-1">Position</label>
-              <input type="number" [(ngModel)]="currentClassement.position" class="w-full bg-black border border-white/10 rounded px-3 py-2 text-white">
-            </div>
-            <div>
-              <label class="block text-xs text-gray-400 uppercase mb-1">Points</label>
-              <input type="number" [(ngModel)]="currentClassement.points" class="w-full bg-black border border-white/10 rounded px-3 py-2 text-white">
-            </div>
-            <div>
-              <label class="block text-xs text-gray-400 uppercase mb-1">Joués</label>
-              <input type="number" [(ngModel)]="currentClassement.joues" class="w-full bg-black border border-white/10 rounded px-3 py-2 text-white">
-            </div>
-            <div>
-              <label class="block text-xs text-gray-400 uppercase mb-1">Gagnés</label>
-              <input type="number" [(ngModel)]="currentClassement.gagnes" class="w-full bg-black border border-white/10 rounded px-3 py-2 text-white">
-            </div>
-            <div>
-              <label class="block text-xs text-gray-400 uppercase mb-1">Nuls</label>
-              <input type="number" [(ngModel)]="currentClassement.nuls" class="w-full bg-black border border-white/10 rounded px-3 py-2 text-white">
-            </div>
-            <div>
-              <label class="block text-xs text-gray-400 uppercase mb-1">Perdus</label>
-              <input type="number" [(ngModel)]="currentClassement.perdus" class="w-full bg-black border border-white/10 rounded px-3 py-2 text-white">
-            </div>
-            <div>
-              <label class="block text-xs text-gray-400 uppercase mb-1">Buts +</label>
-              <input type="number" [(ngModel)]="currentClassement.bp" class="w-full bg-black border border-white/10 rounded px-3 py-2 text-white">
-            </div>
-            <div>
-              <label class="block text-xs text-gray-400 uppercase mb-1">Buts -</label>
-              <input type="number" [(ngModel)]="currentClassement.bc" class="w-full bg-black border border-white/10 rounded px-3 py-2 text-white">
+      <div *ngIf="showModal" class="admin-overlay">
+        <div class="admin-modal max-w-lg">
+          <div class="admin-modal-header">
+            <h3>{{ isEdit ? 'Modifier Ligne' : 'Nouvelle Ligne' }}</h3>
+            <button (click)="closeModal()" class="admin-modal-close" aria-label="Fermer">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+          </div>
+
+          <div class="admin-modal-body">
+            <div class="grid grid-cols-2 gap-4">
+              <div class="admin-field col-span-2">
+                <label class="admin-label">Équipe<span class="req">*</span></label>
+                <input type="text" [(ngModel)]="currentClassement.equipe" class="admin-input">
+              </div>
+              <div class="admin-field">
+                <label class="admin-label">Position</label>
+                <input type="number" min="1" [(ngModel)]="currentClassement.position" class="admin-input">
+              </div>
+              <div class="admin-field">
+                <label class="admin-label">Points</label>
+                <input type="number" min="0" [(ngModel)]="currentClassement.points" class="admin-input">
+              </div>
+              <div class="admin-field">
+                <label class="admin-label">Joués</label>
+                <input type="number" min="0" [(ngModel)]="currentClassement.joues" class="admin-input">
+              </div>
+              <div class="admin-field">
+                <label class="admin-label">Gagnés</label>
+                <input type="number" min="0" [(ngModel)]="currentClassement.gagnes" class="admin-input">
+              </div>
+              <div class="admin-field">
+                <label class="admin-label">Nuls</label>
+                <input type="number" min="0" [(ngModel)]="currentClassement.nuls" class="admin-input">
+              </div>
+              <div class="admin-field">
+                <label class="admin-label">Perdus</label>
+                <input type="number" min="0" [(ngModel)]="currentClassement.perdus" class="admin-input">
+              </div>
+              <div class="admin-field">
+                <label class="admin-label">Buts +</label>
+                <input type="number" min="0" [(ngModel)]="currentClassement.bp" class="admin-input">
+              </div>
+              <div class="admin-field">
+                <label class="admin-label">Buts -</label>
+                <input type="number" min="0" [(ngModel)]="currentClassement.bc" class="admin-input">
+              </div>
             </div>
           </div>
-          
-          <div class="mt-8 flex justify-end gap-3">
-            <button (click)="closeModal()" class="px-4 py-2 text-gray-400 hover:text-white uppercase text-sm font-bold">Annuler</button>
-            <button (click)="saveClassement()" class="px-4 py-2 bg-wydad-red text-white uppercase text-sm font-bold">Sauvegarder</button>
+
+          <div class="admin-modal-footer">
+            <button (click)="closeModal()" class="admin-btn-ghost">Annuler</button>
+            <button (click)="saveClassement()" class="admin-btn-primary">Sauvegarder</button>
           </div>
         </div>
       </div>

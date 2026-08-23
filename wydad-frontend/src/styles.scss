@@ -483,6 +483,353 @@ body {
   --mdc-snackbar-container-color: var(--color-surface-3) !important;
 }
 
+// ═══════════════════════════════════════════════════════════
+// ADMIN BACK-OFFICE — Système de formulaires & modales
+// Identité Wydad : surfaces sombres, accent rouge, titres Oswald.
+// Partagé par toutes les pages /admin (styles.scss = global).
+// ═══════════════════════════════════════════════════════════
+
+// ─── Overlay + conteneur de modale ──────────────────────────
+.admin-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+  padding: 1rem;
+}
+
+.admin-modal {
+  width: 100%;
+  background: var(--color-surface-2);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow:
+    0 25px 80px rgba(0, 0, 0, 0.7),
+    0 0 0 1px rgba(var(--color-wydad-red-rgb), 0.06);
+}
+
+.admin-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.125rem 1.5rem;
+  // Bandeau d'entête : liseré rouge signature sur fond légèrement plus profond
+  background:
+    linear-gradient(90deg, rgba(var(--color-wydad-red-rgb), 0.14), transparent 45%),
+    var(--color-surface-3);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  border-left: 3px solid var(--color-wydad-red);
+
+  h3 {
+    font-family: 'Oswald', sans-serif;
+    font-weight: 700;
+    font-size: 1.05rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #fff;
+    margin: 0;
+  }
+
+  .admin-modal-subtitle {
+    margin: 0.25rem 0 0;
+    font-size: 0.75rem;
+    color: #999;
+  }
+}
+
+.admin-modal-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  flex-shrink: 0;
+  border-radius: var(--radius-sm);
+  color: #888;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+
+  &:hover {
+    color: #fff;
+    background: rgba(var(--color-wydad-red-rgb), 0.18);
+    border-color: rgba(var(--color-wydad-red-rgb), 0.35);
+  }
+}
+
+.admin-modal-body {
+  padding: 1.5rem;
+  max-height: 70vh;
+  overflow-y: auto;
+
+  &::-webkit-scrollbar-thumb {
+    background: var(--color-surface-5);
+  }
+}
+
+.admin-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1.125rem 1.5rem;
+  background: var(--color-surface-3);
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.admin-footer-note {
+  margin-right: auto;
+  font-size: 0.7rem;
+  color: #666;
+  letter-spacing: 0.04em;
+}
+
+// ─── Champs de formulaire ───────────────────────────────────
+.admin-field {
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-label {
+  display: block;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #8a8a8a;
+  margin-bottom: 0.4rem;
+
+  .req {
+    color: var(--color-wydad-red);
+    margin-left: 2px;
+  }
+}
+
+.admin-input,
+select.admin-input,
+textarea.admin-input {
+  width: 100%;
+  padding: 0.7rem 0.9rem;
+  background: var(--color-surface-0);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: var(--radius-sm);
+  color: #FAFAFA;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  outline: none;
+  transition: all var(--transition-fast);
+  // Date/time/color pickers natifs rendus dans le thème sombre
+  color-scheme: dark;
+
+  &::placeholder {
+    color: #555;
+  }
+
+  &:hover:not(:focus):not(:disabled) {
+    border-color: rgba(255, 255, 255, 0.16);
+  }
+
+  &:focus {
+    border-color: var(--color-wydad-red);
+    background: var(--color-surface-1);
+    box-shadow: 0 0 0 3px rgba(var(--color-wydad-red-rgb), 0.14);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+textarea.admin-input {
+  resize: vertical;
+  min-height: 6rem;
+}
+
+select.admin-input {
+  cursor: pointer;
+
+  option {
+    background: var(--color-surface-2);
+    color: #FAFAFA;
+  }
+}
+
+// ─── Sections numérotées (formulaires longs) ────────────────
+.admin-section-title {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0.25rem 0 0.75rem;
+  font-family: 'Oswald', sans-serif;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #aaa;
+
+  &:not(:first-child) {
+    margin-top: 1.25rem;
+    padding-top: 1.25rem;
+    border-top: 1px dashed rgba(255, 255, 255, 0.07);
+  }
+
+  .admin-step-num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.4rem;
+    height: 1.4rem;
+    flex-shrink: 0;
+    border-radius: 9999px;
+    background: linear-gradient(135deg, var(--color-wydad-red), #a50d28);
+    color: #fff;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.6875rem;
+    font-weight: 800;
+  }
+}
+
+// ─── Zone de téléversement (upload image/PDF) ───────────────
+.admin-upload-zone {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.9rem 1rem;
+  background: var(--color-surface-0);
+  border: 1.5px dashed rgba(255, 255, 255, 0.14);
+  border-radius: var(--radius-md);
+  transition: all var(--transition-fast);
+
+  &:hover {
+    border-color: rgba(var(--color-wydad-red-rgb), 0.55);
+    background: rgba(var(--color-wydad-red-rgb), 0.04);
+
+    .admin-upload-btn {
+      border-color: var(--color-wydad-red);
+      color: var(--color-wydad-red);
+    }
+  }
+}
+
+.admin-upload-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 1rem;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-sm);
+  color: #ccc;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+
+  input[type='file'] {
+    display: none;
+  }
+}
+
+.admin-upload-preview {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-sm);
+  object-fit: cover;
+}
+
+.admin-upload-status {
+  font-size: 0.75rem;
+  color: var(--color-wydad-gold);
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+// ─── Boutons des modales ────────────────────────────────────
+.admin-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.65rem 1.35rem;
+  font-family: 'Oswald', sans-serif;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  border-radius: var(--radius-sm);
+  border: none;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.admin-btn-primary {
+  @extend .admin-btn;
+  background: var(--color-wydad-red);
+  color: #fff;
+
+  &:hover:not(:disabled) {
+    background: #E8163F;
+    box-shadow: 0 0 24px rgba(var(--color-wydad-red-rgb), 0.35);
+    transform: translateY(-1px);
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(0);
+  }
+
+  &:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+}
+
+.admin-btn-ghost {
+  @extend .admin-btn;
+  background: transparent;
+  color: #aaa;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+
+  &:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.25);
+  }
+}
+
+.admin-btn-danger {
+  @extend .admin-btn;
+  background: transparent;
+  color: #ff5a6e;
+  border: 1px solid rgba(var(--color-wydad-red-rgb), 0.4);
+
+  &:hover {
+    background: rgba(var(--color-wydad-red-rgb), 0.15);
+    color: #ff8091;
+  }
+}
+
+// ─── Message d'erreur de formulaire ─────────────────────────
+.admin-form-error {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: rgba(var(--color-wydad-red-rgb), 0.1);
+  border: 1px solid rgba(var(--color-wydad-red-rgb), 0.3);
+  border-radius: var(--radius-sm);
+  color: #ff8091;
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
 // ─── Logo 3D Effect ──────────────────────────────────────────
 .wac-logo-3d {
   width: 95px; /* Taille optimale pour la navbar */

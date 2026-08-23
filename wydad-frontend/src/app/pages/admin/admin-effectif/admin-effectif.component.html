@@ -1,15 +1,14 @@
 <!-- admin-effectif.component.html -->
-<div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-  
+<div class="space-y-6">
   <!-- Header -->
-  <div class="p-6 border-b border-gray-200 flex justify-between items-center bg-gray-50">
+  <div class="flex justify-between items-center flex-wrap gap-4">
     <div>
-      <h2 class="font-display font-bold text-xl text-gray-800">Gestion de l'Effectif</h2>
-      <p class="text-sm text-gray-500 mt-1">Créez les comptes joueurs et gérez leurs profils sportifs.</p>
+      <h2 class="text-2xl font-display font-bold uppercase tracking-wider text-white">Gestion de l'Effectif</h2>
+      <p class="text-sm text-gray-400 mt-1">Créez les comptes joueurs et gérez leurs profils sportifs.</p>
     </div>
     <div class="flex gap-3">
       <!-- Sport Filter -->
-      <select [(ngModel)]="selectedSportFilter" (change)="loadPlayers()" class="border border-gray-300 rounded-lg px-3 py-2 outline-none focus:border-wydad-red text-sm">
+      <select [(ngModel)]="selectedSportFilter" (change)="loadPlayers()" class="admin-input !w-auto">
         <option value="FOOTBALL">Football</option>
         <option value="BASKETBALL">Basketball</option>
         <option value="HANDBALL">Handball</option>
@@ -23,47 +22,47 @@
   </div>
 
   <!-- Table -->
-  <div class="overflow-x-auto">
+  <div class="bg-white/5 border border-white/10 rounded-lg overflow-hidden overflow-x-auto">
     <table class="w-full text-left border-collapse">
       <thead>
-        <tr class="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider border-b border-gray-200">
-          <th class="px-6 py-4 font-medium w-16">#</th>
-          <th class="px-6 py-4 font-medium">Joueur</th>
-          <th class="px-6 py-4 font-medium">Poste</th>
-          <th class="px-6 py-4 font-medium">Catégorie</th>
-          <th class="px-6 py-4 font-medium text-center">Matchs</th>
-          <th class="px-6 py-4 font-medium text-center">Buts</th>
-          <th class="px-6 py-4 font-medium text-center">Passes</th>
-          <th class="px-6 py-4 font-medium text-right">Actions</th>
+        <tr class="bg-black/50 border-b border-white/10 text-xs font-display font-bold text-gray-400 uppercase tracking-wider">
+          <th class="px-6 py-3 w-16">#</th>
+          <th class="px-6 py-3">Joueur</th>
+          <th class="px-6 py-3">Poste</th>
+          <th class="px-6 py-3">Catégorie</th>
+          <th class="px-6 py-3 text-center">Matchs</th>
+          <th class="px-6 py-3 text-center">Buts</th>
+          <th class="px-6 py-3 text-center">Passes</th>
+          <th class="px-6 py-3 text-right">Actions</th>
         </tr>
       </thead>
-      <tbody class="divide-y divide-gray-100">
-        <tr *ngFor="let player of players" class="hover:bg-gray-50 transition-colors">
+      <tbody class="divide-y divide-white/5">
+        <tr *ngFor="let player of players" class="hover:bg-white/5 transition-colors">
           <td class="px-6 py-4 font-display font-bold text-gray-400 text-lg">{{ player.jerseyNumber || '-' }}</td>
           <td class="px-6 py-4">
             <div class="flex items-center gap-3">
-              <div class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden border border-gray-200">
+              <div class="w-10 h-10 rounded-full bg-black/50 flex items-center justify-center overflow-hidden border border-white/10">
                 <img *ngIf="player.photoUrl" [src]="api.getMediaUrl(player.photoUrl)" class="w-full h-full object-cover" alt="photo">
                 <span *ngIf="!player.photoUrl" class="text-gray-400 font-bold font-display">{{ player.fullName?.charAt(0) }}</span>
               </div>
               <div class="flex flex-col">
-                <span class="font-bold text-gray-800">{{ player.fullName }}</span>
-                <span class="text-xs text-gray-500">{{ player.nationality || '-' }}</span>
+                <span class="font-bold text-white">{{ player.fullName }}</span>
+                <span class="text-xs text-gray-400">{{ player.nationality || '-' }}</span>
               </div>
             </div>
           </td>
-          <td class="px-6 py-4 text-gray-600 font-medium text-sm">
-            <span class="bg-gray-100 px-2 py-1 rounded text-xs border border-gray-200">{{ player.position || '-' }}</span>
+          <td class="px-6 py-4 text-gray-300 font-medium text-sm">
+            <span class="bg-white/10 px-2 py-1 rounded text-xs">{{ player.position || '-' }}</span>
           </td>
-          <td class="px-6 py-4 text-gray-600 text-sm">{{ player.category }}</td>
-          <td class="px-6 py-4 text-gray-800 text-center">{{ player.matchesPlayed || 0 }}</td>
+          <td class="px-6 py-4 text-gray-300 text-sm">{{ player.category }}</td>
+          <td class="px-6 py-4 text-white text-center">{{ player.matchesPlayed || 0 }}</td>
           <td class="px-6 py-4 text-center font-bold text-wydad-red">{{ player.goals || 0 }}</td>
-          <td class="px-6 py-4 text-center text-blue-600 font-medium">{{ player.assists || 0 }}</td>
+          <td class="px-6 py-4 text-center text-blue-400 font-medium">{{ player.assists || 0 }}</td>
           <td class="px-6 py-4 text-right">
-            <button (click)="deletePlayer(player.id)" class="text-red-600 hover:text-red-800 transition-colors text-sm font-medium">Retirer</button>
+            <button (click)="deletePlayer(player.id)" class="text-red-400 hover:text-red-300 transition-colors text-sm font-medium uppercase">Retirer</button>
           </td>
         </tr>
-        
+
         <tr *ngIf="players.length === 0 && !loading">
           <td colspan="8" class="px-6 py-8 text-center text-gray-500">
             Aucun joueur dans cet effectif.
@@ -85,92 +84,77 @@
 <!-- ============================================ -->
 <!-- MODAL : Création Joueur (Compte + Profil)    -->
 <!-- ============================================ -->
-<div *ngIf="showModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center backdrop-blur-sm">
-  <div class="bg-white rounded-xl shadow-2xl w-full max-w-3xl overflow-hidden">
-    <div class="p-6 border-b border-gray-100 flex justify-between items-center bg-wydad-dark">
-      <div>
-        <h3 class="font-bold text-lg text-white">Créer un Joueur</h3>
-        <p class="text-gray-300 text-xs mt-1">Un compte de connexion sera automatiquement créé pour ce joueur.</p>
-      </div>
-      <button (click)="closeAddModal()" class="text-gray-300 hover:text-white">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+<div *ngIf="showModal" class="admin-overlay">
+  <div class="admin-modal max-w-3xl">
+    <div class="admin-modal-header">
+      <h3>Créer un Joueur</h3>
+      <button (click)="closeAddModal()" class="admin-modal-close" aria-label="Fermer">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
       </button>
     </div>
-    
-    <div class="p-6 space-y-6 max-h-[70vh] overflow-y-auto">
-      
+
+    <div class="admin-modal-body space-y-7">
+
       <!-- Section 1: Compte de connexion -->
       <div>
-        <h4 class="text-sm font-bold uppercase tracking-wider text-gray-500 mb-3 flex items-center gap-2">
-          <span class="w-6 h-6 bg-wydad-red text-white rounded-full text-xs flex items-center justify-center font-bold">1</span>
-          Compte de connexion
-        </h4>
-        <div class="flex gap-4 bg-gray-50 p-4 rounded-lg border border-gray-100">
-          <div class="flex-1">
-            <label class="block text-sm font-medium text-gray-700 mb-1">Email *</label>
-            <input type="email" [(ngModel)]="newPlayer.email" placeholder="joueur@wydad.ma" class="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:border-wydad-red focus:ring-1 focus:ring-wydad-red">
+        <h4 class="admin-section-title"><span class="admin-step-num">1</span> Compte de connexion</h4>
+        <div class="grid grid-cols-2 gap-4">
+          <div class="admin-field">
+            <label class="admin-label">Email<span class="req">*</span></label>
+            <input type="email" [(ngModel)]="newPlayer.email" placeholder="joueur@wydad.ma" class="admin-input">
           </div>
-          <div class="flex-1">
-            <label class="block text-sm font-medium text-gray-700 mb-1">Mot de passe *</label>
-            <input type="password" [(ngModel)]="newPlayer.password" placeholder="Min. 6 caractères" class="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:border-wydad-red focus:ring-1 focus:ring-wydad-red">
+          <div class="admin-field">
+            <label class="admin-label">Mot de passe<span class="req">*</span></label>
+            <input type="password" [(ngModel)]="newPlayer.password" placeholder="Min. 6 caractères" class="admin-input">
           </div>
         </div>
       </div>
 
       <!-- Section 2: Identité -->
       <div>
-        <h4 class="text-sm font-bold uppercase tracking-wider text-gray-500 mb-3 flex items-center gap-2">
-          <span class="w-6 h-6 bg-wydad-red text-white rounded-full text-xs flex items-center justify-center font-bold">2</span>
-          Identité du joueur
-        </h4>
+        <h4 class="admin-section-title"><span class="admin-step-num">2</span> Identité du joueur</h4>
         <div class="grid grid-cols-3 gap-4">
-          <div class="col-span-2">
-            <label class="block text-sm font-medium text-gray-700 mb-1">Nom complet *</label>
-            <input type="text" [(ngModel)]="newPlayer.fullName" placeholder="Prénom Nom" class="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:border-wydad-red focus:ring-1 focus:ring-wydad-red">
+          <div class="admin-field col-span-2">
+            <label class="admin-label">Nom complet<span class="req">*</span></label>
+            <input type="text" [(ngModel)]="newPlayer.fullName" placeholder="Prénom Nom" class="admin-input">
           </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Nationalité</label>
-            <input type="text" [(ngModel)]="newPlayer.nationality" class="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:border-wydad-red focus:ring-1 focus:ring-wydad-red">
+          <div class="admin-field">
+            <label class="admin-label">Nationalité</label>
+            <input type="text" [(ngModel)]="newPlayer.nationality" class="admin-input">
           </div>
         </div>
       </div>
 
       <!-- Section 2b: Photo du joueur -->
       <div>
-        <h4 class="text-sm font-bold uppercase tracking-wider text-gray-500 mb-3 flex items-center gap-2">
-          <span class="w-6 h-6 bg-green-600 text-white rounded-full text-xs flex items-center justify-center font-bold">📷</span>
-          Photo du joueur
-        </h4>
-        <div class="flex items-center gap-4 bg-gray-50 p-4 rounded-lg border border-gray-100">
-          <label class="cursor-pointer bg-white border-2 border-dashed border-gray-300 hover:border-wydad-red text-gray-600 hover:text-wydad-red px-6 py-3 rounded-lg text-sm transition-colors flex items-center gap-2">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        <h4 class="admin-section-title"><span class="admin-step-num">📷</span> Photo du joueur</h4>
+        <div class="admin-upload-zone">
+          <label class="admin-upload-btn">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
             Choisir une photo
-            <input type="file" accept="image/*" (change)="uploadPhoto($event)" class="hidden">
+            <input type="file" accept="image/*" (change)="uploadPhoto($event)">
           </label>
-          <img *ngIf="newPlayer.photoUrl" [src]="api.getMediaUrl(newPlayer.photoUrl)" class="w-16 h-16 object-cover rounded-full border-2 border-wydad-red" alt="preview">
-          <span *ngIf="uploadingPhoto" class="text-xs text-wydad-red animate-pulse">Envoi en cours...</span>
+          <img *ngIf="newPlayer.photoUrl" [src]="api.getMediaUrl(newPlayer.photoUrl)" class="admin-upload-preview w-14 h-14 object-cover rounded-full" alt="preview">
+          <span *ngIf="uploadingPhoto" class="admin-upload-status">Envoi en cours...</span>
         </div>
       </div>
 
       <!-- Section 3: Profil Sportif -->
       <div>
-        <h4 class="text-sm font-bold uppercase tracking-wider text-gray-500 mb-3 flex items-center gap-2">
-          <span class="w-6 h-6 bg-wydad-red text-white rounded-full text-xs flex items-center justify-center font-bold">3</span>
-          Profil sportif
-        </h4>
+        <h4 class="admin-section-title"><span class="admin-step-num">3</span> Profil sportif</h4>
         <div class="grid grid-cols-4 gap-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Sport</label>
-            <select [(ngModel)]="newPlayer.sportType" class="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:border-wydad-red focus:ring-1 focus:ring-wydad-red">
+          <div class="admin-field">
+            <label class="admin-label">Sport</label>
+            <select [(ngModel)]="newPlayer.sportType" class="admin-input">
               <option value="FOOTBALL">Football</option>
               <option value="BASKETBALL">Basketball</option>
               <option value="HANDBALL">Handball</option>
               <option value="VOLLEYBALL">Volleyball</option>
             </select>
           </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Catégorie</label>
-            <select [(ngModel)]="newPlayer.category" class="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:border-wydad-red focus:ring-1 focus:ring-wydad-red">
+          <div class="admin-field">
+            <label class="admin-label">Catégorie</label>
+            <select [(ngModel)]="newPlayer.category" class="admin-input">
               <option value="PRO">Pro</option>
               <option value="ESPOIR">Espoir</option>
               <option value="U19">U19</option>
@@ -179,73 +163,66 @@
               <option value="ACADEMY">Academy</option>
             </select>
           </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Poste</label>
-            <select [(ngModel)]="newPlayer.position" class="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:border-wydad-red focus:ring-1 focus:ring-wydad-red">
+          <div class="admin-field">
+            <label class="admin-label">Poste</label>
+            <select [(ngModel)]="newPlayer.position" class="admin-input">
               <option value="Gardien">Gardien</option>
               <option value="Défenseur">Défenseur</option>
               <option value="Milieu">Milieu</option>
               <option value="Attaquant">Attaquant</option>
             </select>
           </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">N° Maillot</label>
-            <input type="number" [(ngModel)]="newPlayer.jerseyNumber" class="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:border-wydad-red focus:ring-1 focus:ring-wydad-red">
+          <div class="admin-field">
+            <label class="admin-label">N° Maillot</label>
+            <input type="number" min="0" max="99" [(ngModel)]="newPlayer.jerseyNumber" class="admin-input">
           </div>
         </div>
       </div>
 
       <!-- Section 4: Biométrie -->
       <div>
-        <h4 class="text-sm font-bold uppercase tracking-wider text-gray-500 mb-3 flex items-center gap-2">
-          <span class="w-6 h-6 bg-wydad-red text-white rounded-full text-xs flex items-center justify-center font-bold">4</span>
-          Biométrie & Statistiques
-        </h4>
+        <h4 class="admin-section-title"><span class="admin-step-num">4</span> Biométrie &amp; Statistiques</h4>
         <div class="grid grid-cols-3 gap-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Taille (cm)</label>
-            <input type="number" [(ngModel)]="newPlayer.height" placeholder="180" class="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:border-wydad-red focus:ring-1 focus:ring-wydad-red">
+          <div class="admin-field">
+            <label class="admin-label">Taille (cm)</label>
+            <input type="number" [(ngModel)]="newPlayer.height" placeholder="180" class="admin-input">
           </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Poids (kg)</label>
-            <input type="number" [(ngModel)]="newPlayer.weight" placeholder="75" class="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:border-wydad-red focus:ring-1 focus:ring-wydad-red">
+          <div class="admin-field">
+            <label class="admin-label">Poids (kg)</label>
+            <input type="number" [(ngModel)]="newPlayer.weight" placeholder="75" class="admin-input">
           </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Date de naissance</label>
-            <input type="date" [(ngModel)]="newPlayer.birthDate" class="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:border-wydad-red focus:ring-1 focus:ring-wydad-red">
+          <div class="admin-field">
+            <label class="admin-label">Date de naissance</label>
+            <input type="date" [(ngModel)]="newPlayer.birthDate" class="admin-input">
           </div>
         </div>
-        <div class="grid grid-cols-3 gap-4 mt-3">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Matchs Joués</label>
-            <input type="number" [(ngModel)]="newPlayer.matchesPlayed" class="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:border-wydad-red focus:ring-1 focus:ring-wydad-red">
+        <div class="grid grid-cols-3 gap-4 mt-4">
+          <div class="admin-field">
+            <label class="admin-label">Matchs Joués</label>
+            <input type="number" min="0" [(ngModel)]="newPlayer.matchesPlayed" class="admin-input">
           </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Buts</label>
-            <input type="number" [(ngModel)]="newPlayer.goals" class="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:border-wydad-red focus:ring-1 focus:ring-wydad-red">
+          <div class="admin-field">
+            <label class="admin-label">Buts</label>
+            <input type="number" min="0" [(ngModel)]="newPlayer.goals" class="admin-input">
           </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Passes Décisives</label>
-            <input type="number" [(ngModel)]="newPlayer.assists" class="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:border-wydad-red focus:ring-1 focus:ring-wydad-red">
+          <div class="admin-field">
+            <label class="admin-label">Passes Décisives</label>
+            <input type="number" min="0" [(ngModel)]="newPlayer.assists" class="admin-input">
           </div>
         </div>
       </div>
 
       <!-- Error Message -->
-      <div *ngIf="saveError" class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm font-medium">
-        ⚠️ {{ saveError }}
-      </div>
+      <p *ngIf="saveError" class="admin-form-error">{{ saveError }}</p>
     </div>
-    
-    <div class="p-6 bg-gray-50 border-t border-gray-100 flex justify-between items-center">
-      <span class="text-xs text-gray-400">* Champs obligatoires</span>
-      <div class="flex gap-3">
-        <button (click)="closeAddModal()" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 font-medium transition-colors">Annuler</button>
-        <button (click)="savePlayer()" [disabled]="isSaving" class="px-6 py-2 bg-wydad-red hover:bg-red-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 flex items-center gap-2">
-          <div *ngIf="isSaving" class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-          {{ isSaving ? 'Création en cours...' : 'Créer le compte & ajouter' }}
-        </button>
-      </div>
+
+    <div class="admin-modal-footer">
+      <span class="admin-footer-note">* Champs obligatoires</span>
+      <button (click)="closeAddModal()" class="admin-btn-ghost">Annuler</button>
+      <button (click)="savePlayer()" [disabled]="isSaving" class="admin-btn-primary !flex items-center gap-2">
+        <div *ngIf="isSaving" class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+        {{ isSaving ? 'Création en cours...' : 'Créer le compte & ajouter' }}
+      </button>
     </div>
   </div>
 </div>

@@ -52,21 +52,24 @@ import { ConfirmService } from '../../../services/confirm.service';
       </div>
 
       <!-- Modal -->
-      <div *ngIf="showModal" class="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-        <div class="bg-zinc-900 border border-white/10 p-6 w-full max-w-2xl rounded-lg">
-          <h3 class="text-xl font-display font-bold text-white uppercase tracking-wider mb-6">
-            {{ isEdit ? 'Modifier l\\'Article' : 'Ajouter un Article' }}
-          </h3>
-          
-          <div class="space-y-4">
-            <div>
-              <label class="block text-xs text-gray-400 uppercase mb-1">Titre</label>
-              <input type="text" [(ngModel)]="currentArticle.titre" class="w-full bg-black border border-white/10 rounded px-3 py-2 text-white">
+      <div *ngIf="showModal" class="admin-overlay">
+        <div class="admin-modal max-w-2xl">
+          <div class="admin-modal-header">
+            <h3>{{ isEdit ? 'Modifier l\'Article' : 'Ajouter un Article' }}</h3>
+            <button (click)="closeModal()" class="admin-modal-close" aria-label="Fermer">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+          </div>
+
+          <div class="admin-modal-body space-y-5">
+            <div class="admin-field">
+              <label class="admin-label">Titre<span class="req">*</span></label>
+              <input type="text" [(ngModel)]="currentArticle.titre" class="admin-input">
             </div>
             <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label class="block text-xs text-gray-400 uppercase mb-1">Rubrique</label>
-                <select [(ngModel)]="currentArticle.sport" class="w-full bg-black border border-white/10 rounded px-3 py-2 text-white">
+              <div class="admin-field">
+                <label class="admin-label">Rubrique</label>
+                <select [(ngModel)]="currentArticle.sport" class="admin-input">
                   <option value="GENERAL">Général</option>
                   <option value="FOOTBALL">Football</option>
                   <option value="BASKETBALL">Basketball</option>
@@ -77,31 +80,32 @@ import { ConfirmService } from '../../../services/confirm.service';
                   <option value="ATHLETISME">Athlétisme</option>
                 </select>
               </div>
-              <div>
-                <label class="block text-xs text-gray-400 uppercase mb-1">Auteur</label>
-                <input type="text" [(ngModel)]="currentArticle.auteur" class="w-full bg-black border border-white/10 rounded px-3 py-2 text-white">
+              <div class="admin-field">
+                <label class="admin-label">Auteur</label>
+                <input type="text" [(ngModel)]="currentArticle.auteur" class="admin-input">
               </div>
             </div>
-            <div>
-              <label class="block text-xs text-gray-400 uppercase mb-1">Contenu (HTML/Markdown)</label>
-              <textarea [(ngModel)]="currentArticle.contenu" class="w-full bg-black border border-white/10 rounded px-3 py-2 text-white h-40"></textarea>
+            <div class="admin-field">
+              <label class="admin-label">Contenu (HTML/Markdown)</label>
+              <textarea [(ngModel)]="currentArticle.contenu" class="admin-input font-mono !min-h-[10rem]"></textarea>
             </div>
-            <div>
-              <label class="block text-xs text-gray-400 uppercase mb-1">Image de couverture</label>
-              <div class="flex items-center gap-4">
-                <label class="cursor-pointer bg-zinc-800 border border-white/10 hover:border-wydad-red text-white px-4 py-2 rounded text-sm transition-colors">
-                  📷 Choisir
-                  <input type="file" accept="image/*" (change)="uploadPhoto($event)" class="hidden">
+            <div class="admin-field">
+              <label class="admin-label">Image de couverture</label>
+              <div class="admin-upload-zone">
+                <label class="admin-upload-btn">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                  Choisir
+                  <input type="file" accept="image/*" (change)="uploadPhoto($event)">
                 </label>
-                <img *ngIf="currentArticle.imageUrl" [src]="apiService.getMediaUrl(currentArticle.imageUrl)" class="h-10 object-cover rounded border border-white/10" alt="preview">
-                <span *ngIf="uploadingPhoto" class="text-xs text-yellow-400 animate-pulse">Envoi en cours...</span>
+                <img *ngIf="currentArticle.imageUrl" [src]="apiService.getMediaUrl(currentArticle.imageUrl)" class="admin-upload-preview h-10 object-contain" alt="preview">
+                <span *ngIf="uploadingPhoto" class="admin-upload-status">Envoi en cours...</span>
               </div>
             </div>
           </div>
-          
-          <div class="mt-8 flex justify-end gap-3">
-            <button (click)="closeModal()" class="px-4 py-2 text-gray-400 hover:text-white uppercase text-sm font-bold">Annuler</button>
-            <button (click)="saveArticle()" class="px-4 py-2 bg-wydad-red text-white uppercase text-sm font-bold">Sauvegarder</button>
+
+          <div class="admin-modal-footer">
+            <button (click)="closeModal()" class="admin-btn-ghost">Annuler</button>
+            <button (click)="saveArticle()" class="admin-btn-primary">Sauvegarder</button>
           </div>
         </div>
       </div>

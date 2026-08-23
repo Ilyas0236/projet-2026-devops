@@ -1,11 +1,11 @@
 <!-- admin-billetterie.component.html -->
-<div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-  
+<div class="space-y-6">
+
   <!-- Header -->
-  <div class="p-6 border-b border-gray-200 flex justify-between items-center bg-gray-50">
+  <div class="flex justify-between items-center flex-wrap gap-4">
     <div>
-      <h2 class="font-display font-bold text-xl text-gray-800">Gestion Billetterie</h2>
-      <p class="text-sm text-gray-500 mt-1">Créez et gérez les matchs et événements.</p>
+      <h2 class="text-2xl font-display font-bold uppercase tracking-wider text-white">Gestion Billetterie</h2>
+      <p class="text-sm text-gray-400 mt-1">Créez et gérez les matchs et événements.</p>
     </div>
     <button (click)="openAddModal()" class="bg-wydad-red hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-colors">
       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
@@ -14,40 +14,40 @@
   </div>
 
   <!-- Table -->
-  <div class="overflow-x-auto">
+  <div class="bg-white/5 border border-white/10 rounded-lg overflow-hidden overflow-x-auto">
     <table class="w-full text-left border-collapse">
       <thead>
-        <tr class="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider border-b border-gray-200">
-          <th class="px-6 py-4 font-medium">Affiche (Équipes)</th>
-          <th class="px-6 py-4 font-medium">Date</th>
-          <th class="px-6 py-4 font-medium">Compétition</th>
-          <th class="px-6 py-4 font-medium">Prix Base</th>
-          <th class="px-6 py-4 font-medium">Statut</th>
-          <th class="px-6 py-4 font-medium text-right">Actions</th>
+        <tr class="bg-black/50 border-b border-white/10 text-xs font-display font-bold text-gray-400 uppercase tracking-wider">
+          <th class="px-6 py-3">Affiche (Équipes)</th>
+          <th class="px-6 py-3">Date</th>
+          <th class="px-6 py-3">Compétition</th>
+          <th class="px-6 py-3">Prix Base</th>
+          <th class="px-6 py-3">Statut</th>
+          <th class="px-6 py-3 text-right">Actions</th>
         </tr>
       </thead>
-      <tbody class="divide-y divide-gray-100">
-        <tr *ngFor="let event of events" class="hover:bg-gray-50 transition-colors">
+      <tbody class="divide-y divide-white/5">
+        <tr *ngFor="let event of events" class="hover:bg-white/5 transition-colors">
           <td class="px-6 py-4">
-            <span class="font-bold text-gray-800">{{ event.homeTeam }}</span>
-            <span class="text-gray-400 mx-2">vs</span>
-            <span class="font-bold text-gray-800">{{ event.awayTeam }}</span>
+            <span class="font-bold text-white">{{ event.homeTeam }}</span>
+            <span class="text-gray-500 mx-2">vs</span>
+            <span class="font-bold text-white">{{ event.awayTeam }}</span>
           </td>
-          <td class="px-6 py-4 text-gray-600 text-sm">{{ event.eventDate | date:'dd/MM/yyyy HH:mm' }}</td>
-          <td class="px-6 py-4 text-gray-600 text-sm">{{ event.competition }}</td>
-          <td class="px-6 py-4 text-gray-800 font-bold">{{ event.basePrice }} DH</td>
+          <td class="px-6 py-4 text-gray-300 text-sm">{{ event.eventDate | date:'dd/MM/yyyy HH:mm' }}</td>
+          <td class="px-6 py-4 text-gray-300 text-sm">{{ event.competition }}</td>
+          <td class="px-6 py-4 text-white font-bold">{{ event.basePrice }} DH</td>
           <td class="px-6 py-4">
-            <span class="px-2 py-1 rounded text-xs font-medium" 
-                  [ngClass]="event.status === 'UPCOMING' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'">
+            <span class="px-2 py-1 rounded text-xs font-bold"
+                  [ngClass]="event.status === 'UPCOMING' ? 'bg-green-500/20 text-green-400' : 'bg-white/10 text-gray-400'">
               {{ event.status }}
             </span>
           </td>
           <td class="px-6 py-4 text-right">
-            <button (click)="openEditModal(event)" class="text-blue-600 hover:text-blue-800 mr-3 transition-colors">Éditer</button>
-            <button (click)="deleteEvent(event.id)" class="text-red-600 hover:text-red-800 transition-colors">Supprimer</button>
+            <button (click)="openEditModal(event)" class="text-blue-400 hover:text-blue-300 mr-3 transition-colors uppercase text-xs font-bold">Éditer</button>
+            <button (click)="deleteEvent(event.id)" class="text-red-400 hover:text-red-300 transition-colors uppercase text-xs font-bold">Supprimer</button>
           </td>
         </tr>
-        
+
         <tr *ngIf="events.length === 0 && !loading">
           <td colspan="6" class="px-6 py-8 text-center text-gray-500">
             Aucun match programmé. Cliquez sur "Nouveau Match".
@@ -64,60 +64,60 @@
 </div>
 
 <!-- Modal Overlay (Mockup for adding event) -->
-<div *ngIf="showModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center backdrop-blur-sm">
-  <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl overflow-hidden">
-    <div class="p-6 border-b border-gray-100 flex justify-between items-center">
-      <h3 class="font-bold text-lg">{{ isEdit ? 'Modifier le Match' : 'Programmer un Match' }}</h3>
-      <button (click)="closeAddModal()" class="text-gray-400 hover:text-gray-600">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+<div *ngIf="showModal" class="admin-overlay">
+  <div class="admin-modal max-w-2xl">
+    <div class="admin-modal-header">
+      <h3>{{ isEdit ? 'Modifier le Match' : 'Programmer un Match' }}</h3>
+      <button (click)="closeAddModal()" class="admin-modal-close" aria-label="Fermer">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
       </button>
     </div>
-    
-    <div class="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
-      <div class="flex gap-4">
-        <div class="flex-1">
-          <label class="block text-sm font-medium text-gray-700 mb-1">Équipe Domicile</label>
-          <input type="text" [(ngModel)]="newEvent.homeTeam" class="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:border-wydad-red focus:ring-1 focus:ring-wydad-red">
+
+    <div class="admin-modal-body space-y-5">
+      <div class="grid grid-cols-2 gap-4">
+        <div class="admin-field">
+          <label class="admin-label">Équipe domicile<span class="req">*</span></label>
+          <input type="text" [(ngModel)]="newEvent.homeTeam" class="admin-input">
         </div>
-        <div class="flex-1">
-          <label class="block text-sm font-medium text-gray-700 mb-1">Équipe Extérieure</label>
-          <input type="text" [(ngModel)]="newEvent.awayTeam" class="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:border-wydad-red focus:ring-1 focus:ring-wydad-red">
-        </div>
-      </div>
-      
-      <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Date et Heure du Match</label>
-        <input type="datetime-local" [(ngModel)]="newEvent.eventDate" class="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:border-wydad-red focus:ring-1 focus:ring-wydad-red">
-      </div>
-      
-      <div class="flex gap-4">
-        <div class="flex-1">
-          <label class="block text-sm font-medium text-gray-700 mb-1">Compétition</label>
-          <select [(ngModel)]="newEvent.competition" class="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:border-wydad-red focus:ring-1 focus:ring-wydad-red">
-            <option *ngFor="let c of competitions" [value]="c.name">{{ c.name }}</option>
-          </select>
-        </div>
-        <div class="flex-1">
-          <label class="block text-sm font-medium text-gray-700 mb-1">Stade (Venue)</label>
-          <input type="text" [(ngModel)]="newEvent.venue" class="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:border-wydad-red focus:ring-1 focus:ring-wydad-red">
+        <div class="admin-field">
+          <label class="admin-label">Équipe extérieure<span class="req">*</span></label>
+          <input type="text" [(ngModel)]="newEvent.awayTeam" class="admin-input">
         </div>
       </div>
 
-      <div class="flex gap-4">
-        <div class="flex-1">
-          <label class="block text-sm font-medium text-gray-700 mb-1">Prix de base (DH)</label>
-          <input type="number" [(ngModel)]="newEvent.basePrice" class="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:border-wydad-red focus:ring-1 focus:ring-wydad-red">
+      <div class="grid grid-cols-2 gap-4">
+        <div class="admin-field">
+          <label class="admin-label">Date et heure du match<span class="req">*</span></label>
+          <input type="datetime-local" [(ngModel)]="newEvent.eventDate" class="admin-input">
         </div>
-        <div class="flex-1">
-          <label class="block text-sm font-medium text-gray-700 mb-1">Capacité Totale</label>
-          <input type="number" [(ngModel)]="newEvent.totalCapacity" class="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:border-wydad-red focus:ring-1 focus:ring-wydad-red">
+        <div class="admin-field">
+          <label class="admin-label">Stade (venue)</label>
+          <input type="text" [(ngModel)]="newEvent.venue" class="admin-input">
+        </div>
+      </div>
+
+      <div class="grid grid-cols-3 gap-4">
+        <div class="admin-field">
+          <label class="admin-label">Compétition</label>
+          <select [(ngModel)]="newEvent.competition" class="admin-input">
+            <option *ngFor="let c of competitions" [value]="c.name">{{ c.name }}</option>
+          </select>
+        </div>
+        <div class="admin-field">
+          <label class="admin-label">Prix de base (DH)<span class="req">*</span></label>
+          <input type="number" min="0" step="0.01" [(ngModel)]="newEvent.basePrice" class="admin-input">
+        </div>
+        <div class="admin-field">
+          <label class="admin-label">Capacité totale</label>
+          <input type="number" min="0" [(ngModel)]="newEvent.totalCapacity" class="admin-input">
         </div>
       </div>
     </div>
-    
-    <div class="p-6 bg-gray-50 border-t border-gray-100 flex justify-end gap-3">
-      <button (click)="closeAddModal()" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 font-medium transition-colors">Annuler</button>
-      <button (click)="saveEvent()" class="px-4 py-2 bg-wydad-red hover:bg-red-700 text-white rounded-lg font-medium transition-colors">{{ isEdit ? 'Enregistrer' : 'Programmer' }}</button>
+
+    <div class="admin-modal-footer">
+      <span class="admin-footer-note">* Champs obligatoires</span>
+      <button (click)="closeAddModal()" class="admin-btn-ghost">Annuler</button>
+      <button (click)="saveEvent()" class="admin-btn-primary">{{ isEdit ? 'Enregistrer' : 'Programmer' }}</button>
     </div>
   </div>
 </div>

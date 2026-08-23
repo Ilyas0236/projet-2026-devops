@@ -39,7 +39,7 @@ import { ToastService } from '../../../services/toast.service';
           <textarea
             [(ngModel)]="drafts[s.key]"
             rows="{{ s.key === 'membership_tiers' ? 14 : 8 }}"
-            class="w-full bg-black border border-white/10 rounded px-3 py-2 text-sm text-white font-mono focus:border-wydad-red focus:outline-none"
+            class="admin-input font-mono !text-sm"
             spellcheck="false"></textarea>
 
           <div class="flex justify-between items-center mt-3">
