@@ -24,8 +24,7 @@ import { ConfirmService } from '../../../services/confirm.service';
       <div class="bg-white/5 border border-white/10 rounded-lg p-4">
         <label class="block text-xs text-gray-400 uppercase tracking-wider mb-2">Compétition</label>
         <select [(ngModel)]="selectedCompetition" (ngModelChange)="loadClassements()" class="w-64 bg-black border border-white/10 rounded px-3 py-2 text-sm text-white focus:border-wydad-red focus:outline-none">
-          <option value="Botola Pro">Botola Pro</option>
-          <option value="CAF Champions League">CAF Champions League</option>
+          <option *ngFor="let c of competitions" [value]="c.name">{{ c.name }}</option>
         </select>
       </div>
 
@@ -124,8 +123,9 @@ import { ConfirmService } from '../../../services/confirm.service';
 })
 export class AdminClassementsComponent implements OnInit {
   classements: any[] = [];
+  competitions: any[] = [];
   loading = true;
-  selectedCompetition = 'Botola Pro';
+  selectedCompetition = '';
   showModal = false;
   isEdit = false;
   currentClassement: any = {};
@@ -135,10 +135,25 @@ export class AdminClassementsComponent implements OnInit {
               private confirm: ConfirmService) {}
 
   ngOnInit() {
-    this.loadClassements();
+    // Competitions dynamiques : parametre club 'competitions' (source ADMIN)
+    this.apiService.getCompetitions().subscribe({
+      next: (data) => {
+        this.competitions = Array.isArray(data) ? data : [];
+        if (!this.selectedCompetition && this.competitions.length > 0) {
+          this.selectedCompetition = this.competitions[0].name;
+          this.loadClassements();
+        }
+      },
+      error: (err) => {
+        console.error(err);
+        this.toast.error('Impossible de charger les compétitions.');
+        this.loading = false;
+      }
+    });
   }
 
   loadClassements() {
+    if (!this.selectedCompetition) return;
     this.loading = true;
     this.apiService.getClassements(this.selectedCompetition).subscribe({
       next: (data) => {
@@ -158,7 +173,8 @@ export class AdminClassementsComponent implements OnInit {
       this.currentClassement = { ...item };
     } else {
       this.isEdit = false;
-      this.currentClassement = { competition: this.selectedCompetition, sport: 'FOOTBALL', equipe: '', position: 1, points: 0, joues: 0, gagnes: 0, nuls: 0, perdus: 0, bp: 0, bc: 0 };
+      const comp = this.competitions.find(c => c.name === this.selectedCompetition);
+      this.currentClassement = { competition: this.selectedCompetition, sport: comp?.sport || 'FOOTBALL', equipe: '', position: 1, points: 0, joues: 0, gagnes: 0, nuls: 0, perdus: 0, bp: 0, bc: 0 };
     }
     this.showModal = true;
   }

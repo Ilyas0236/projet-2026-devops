@@ -16,31 +16,16 @@
   </div>
 
   <div class="container-wydad max-w-5xl">
-    <!-- Competition Selectors -->
+    <!-- Competition Selectors (dynamiques — parametre club 'competitions') -->
     <div class="flex justify-center gap-3 flex-wrap mb-10 animate-fade-in-up" style="animation-delay: 0.4s; opacity: 0;">
-      <button (click)="changeCompetition('Botola Pro')"
+      <button *ngFor="let c of competitions"
+              (click)="changeCompetition(c.name)"
               class="px-6 py-2.5 rounded-xl font-display font-bold uppercase text-xs tracking-wider transition-all duration-300 border"
               [ngClass]="{
-                'bg-wydad-red text-white border-wydad-red shadow-glow-red': selectedComp === 'Botola Pro',
-                'bg-surface-2 border-white/10 text-text-secondary hover:bg-surface-3': selectedComp !== 'Botola Pro'
+                'bg-wydad-red text-white border-wydad-red shadow-glow-red': selectedComp === c.name,
+                'bg-surface-2 border-white/10 text-text-secondary hover:bg-surface-3': selectedComp !== c.name
               }">
-        ⚽ Botola Pro
-      </button>
-      <button (click)="changeCompetition('D1 Basketball')"
-              class="px-6 py-2.5 rounded-xl font-display font-bold uppercase text-xs tracking-wider transition-all duration-300 border"
-              [ngClass]="{
-                'bg-wydad-red text-white border-wydad-red shadow-glow-red': selectedComp === 'D1 Basketball',
-                'bg-surface-2 border-white/10 text-text-secondary hover:bg-surface-3': selectedComp !== 'D1 Basketball'
-              }">
-        🏀 D1 Basketball
-      </button>
-      <button (click)="changeCompetition('Division Excellence')"
-              class="px-6 py-2.5 rounded-xl font-display font-bold uppercase text-xs tracking-wider transition-all duration-300 border"
-              [ngClass]="{
-                'bg-wydad-red text-white border-wydad-red shadow-glow-red': selectedComp === 'Division Excellence',
-                'bg-surface-2 border-white/10 text-text-secondary hover:bg-surface-3': selectedComp !== 'Division Excellence'
-              }">
-        🤾 Elite Handball
+        {{ sportEmoji(c.name) }} {{ c.name }}
       </button>
     </div>
 
@@ -53,7 +38,7 @@
       <div class="p-6 md:p-8 flex items-center justify-between border-b border-white/[0.06] bg-surface-2/30">
         <h3 class="font-display font-bold text-2xl uppercase tracking-wider">{{ selectedComp }}</h3>
         <span class="text-[10px] font-bold uppercase tracking-[0.1em] text-wydad-gold bg-wydad-gold/10 px-3 py-1.5 rounded-lg border border-wydad-gold/20">
-          {{ getSportBadge() }}
+          {{ sportEmoji(selectedComp) }}
         </span>
       </div>
 

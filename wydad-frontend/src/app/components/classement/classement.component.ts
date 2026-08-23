@@ -11,12 +11,37 @@ import { ApiService } from '../../services/api.service';
 })
 export class ClassementComponent implements OnInit {
   standings: any[] = [];
-  selectedComp = 'Botola Pro';
+  competitions: any[] = [];
+  selectedComp = '';
 
   api = inject(ApiService);
 
   ngOnInit() {
-    this.loadStandings();
+    // Competitions dynamiques : parametre club 'competitions' (source ADMIN)
+    this.api.getCompetitions().subscribe({
+      next: (data) => {
+        this.competitions = Array.isArray(data) ? data : [];
+        if (this.competitions.length > 0) {
+          this.selectedComp = this.competitions[0].name;
+          this.loadStandings();
+        }
+      },
+      error: () => this.competitions = []
+    });
+  }
+
+  /** Emoji du sport depuis le parametre club (plus de matching par nom). */
+  sportEmoji(name: string): string {
+    const comp = this.competitions.find(c => c.name === name);
+    switch (comp?.sport) {
+      case 'BASKETBALL': return '🏀';
+      case 'HANDBALL': return '🤾';
+      case 'VOLLEYBALL': return '🏐';
+      case 'NATATION': return '🏊';
+      case 'JUDO': return '🥋';
+      case 'ATHLETISME': return '🏃';
+      default: return '⚽';
+    }
   }
 
   loadStandings() {
@@ -38,11 +63,5 @@ export class ClassementComponent implements OnInit {
     if (!name) return false;
     const clean = name.toLowerCase();
     return clean.includes('wydad') || clean.includes('wac');
-  }
-
-  getSportBadge(): string {
-    if (this.selectedComp.includes('Basketball')) return '🏀 Basketball';
-    if (this.selectedComp.includes('Handball') || this.selectedComp.includes('Excellence')) return '🤾 Handball';
-    return '⚽ Football';
   }
 }

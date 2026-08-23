@@ -76,6 +76,15 @@ export class ApiService {
     return this.http.get<any[]>(`${this.baseUrl}/content/classements/${competition}`);
   }
 
+  getAllClassements(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/content/classements`);
+  }
+
+  /** Parametre club 'competitions' — source de verite ADMIN. */
+  getCompetitions(): Observable<any> {
+    return this.getClubSetting('competitions');
+  }
+
   createClassement(classement: any): Observable<any> {
     return this.http.post<any>(`${this.baseUrl}/content/classements`, classement);
   }
@@ -284,6 +293,29 @@ export class ApiService {
 
   getStaffByUserId(userId: number): Observable<any> {
     return this.http.get<any>(`${this.baseUrl}/sports/staff/user/${userId}`);
+  }
+
+  getAllStaff(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/sports/staff`);
+  }
+
+  updateStaff(id: number, staff: any): Observable<any> {
+    return this.http.put<any>(`${this.baseUrl}/sports/staff/${id}`, staff);
+  }
+
+  deleteStaff(id: number): Observable<any> {
+    return this.http.delete(`${this.baseUrl}/sports/staff/${id}`);
+  }
+
+  // ==========================================
+  // CONTENT SERVICE : Mediatheque (ADMIN)
+  // ==========================================
+  getMediaLibrary(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/content/media`);
+  }
+
+  deleteMedia(id: number): Observable<any> {
+    return this.http.delete(`${this.baseUrl}/content/media/${id}`);
   }
 
   // ==========================================

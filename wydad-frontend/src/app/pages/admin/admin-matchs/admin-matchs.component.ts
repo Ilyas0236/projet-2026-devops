@@ -99,7 +99,9 @@ import { ConfirmService } from '../../../services/confirm.service';
             </div>
             <div>
               <label class="block text-xs text-gray-400 uppercase mb-1">Compétition</label>
-              <input type="text" [(ngModel)]="currentMatch.competition" class="w-full bg-black border border-white/10 rounded px-3 py-2 text-white">
+              <select [(ngModel)]="currentMatch.competition" class="w-full bg-black border border-white/10 rounded px-3 py-2 text-white">
+                <option *ngFor="let c of competitions" [value]="c.name">{{ c.name }}</option>
+              </select>
             </div>
             <div>
               <label class="block text-xs text-gray-400 uppercase mb-1">Statut</label>
@@ -162,11 +164,18 @@ export class AdminMatchsComponent implements OnInit {
   isEdit = false;
   currentMatch: any = {};
 
+  competitions: any[] = [];
+
   constructor(public apiService: ApiService,
               private toast: ToastService,
               private confirm: ConfirmService) {}
 
   ngOnInit() {
+    // Competitions dynamiques : parametre club 'competitions' (source ADMIN)
+    this.apiService.getCompetitions().subscribe({
+      next: (data) => this.competitions = Array.isArray(data) ? data : [],
+      error: () => this.competitions = []
+    });
     this.loadMatchs();
   }
 
@@ -191,7 +200,8 @@ export class AdminMatchsComponent implements OnInit {
     } else {
       this.isEdit = false;
       // MatchRequest : date, heure, adversaire, competition, lieu, statut, sport
-      this.currentMatch = { adversaire: '', date: '', heure: '', lieu: 'Stade Mohammed V', competition: 'Botola Pro', statut: 'PROGRAMME', sport: 'FOOTBALL', imageUrl: '' };
+      const comp = this.competitions.find(c => c.sport === 'FOOTBALL');
+      this.currentMatch = { adversaire: '', date: '', heure: '', lieu: 'Stade Mohammed V', competition: comp?.name || '', statut: 'PROGRAMME', sport: 'FOOTBALL', imageUrl: '' };
     }
     this.showModal = true;
   }
