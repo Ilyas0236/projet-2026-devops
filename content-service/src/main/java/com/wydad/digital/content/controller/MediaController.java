@@ -1,5 +1,6 @@
 package com.wydad.digital.content.controller;
 
+import com.wydad.digital.content.dto.MediaResponse;
 import com.wydad.digital.content.model.Media;
 import com.wydad.digital.content.repository.MediaRepository;
 import lombok.RequiredArgsConstructor;
@@ -13,9 +14,11 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/content/media")
@@ -60,6 +63,19 @@ public class MediaController {
         } catch (IOException e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
+    }
+
+    /** Listing metadonnees (ADMIN) pour la mediatheque du back-office : sans les blobs. */
+    @GetMapping
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<MediaResponse>> listFiles() {
+        List<MediaResponse> files = mediaRepository.findAll().stream()
+                .map(m -> new MediaResponse(
+                        m.getId(), m.getFileName(), m.getOriginalName(),
+                        m.getContentType(), m.getSize(), m.getUploadedAt(),
+                        "/api/content/media/" + m.getFileName()))
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(files);
     }
 
     @GetMapping("/{fileName}")
