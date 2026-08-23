@@ -28,12 +28,30 @@ export class DashboardStaffComponent implements OnInit {
   isSubmitting = false;
   showForm = false;
 
+  // B.4 — saisie de statistique de match pour un joueur de l'effectif
+  statPlayer: any = null;          // joueur sélectionné
+  showStatForm = false;
+  isSubmittingStat = false;
+  statForm!: FormGroup;
+
+  // B.3.a — convocation d'un joueur pour une séance
+  convoPlayer: any = null;
+  isSubmittingConvo = false;
+
   ngOnInit() {
     this.sessionForm = this.fb.group({
       title: ['', Validators.required],
       description: [''],
       location: ['', Validators.required],
       sessionDate: ['', Validators.required]
+    });
+    this.statForm = this.fb.group({
+      opponent: ['', Validators.required],
+      matchDate: ['', Validators.required],
+      goals: [0, [Validators.required, Validators.min(0)]],
+      assists: [0, [Validators.required, Validators.min(0)]],
+      minutesPlayed: [null],
+      competition: ['']
     });
 
     // Charger le profil staff depuis le backend via l'ID utilisateur connecté
@@ -104,7 +122,56 @@ export class DashboardStaffComponent implements OnInit {
       error: (err) => {
         console.error(err);
         this.isSubmitting = false;
-        this.toast.error('Erreur lors de la création de la séance');
+        this.toast.error(err?.error?.message || 'Erreur lors de la création de la séance');
+      }
+    });
+  }
+
+  // ───────────────── B.4 — Statistiques de match réelles ─────────────────
+
+  openStatForm(player: any) {
+    this.statPlayer = player;
+    this.statForm.reset({ goals: 0, assists: 0 });
+    this.showStatForm = true;
+  }
+
+  closeStatForm() {
+    this.showStatForm = false;
+    this.statPlayer = null;
+  }
+
+  submitStat() {
+    if (this.statForm.invalid || !this.statPlayer) return;
+    this.isSubmittingStat = true;
+    this.api.addPlayerStat(this.statPlayer.userId, this.statForm.value).subscribe({
+      next: () => {
+        this.toast.success(`Stat enregistrée pour ${this.statPlayer.fullName}`);
+        this.isSubmittingStat = false;
+        this.closeStatForm();
+        // Recharge l'effectif : les totaux sont agrégés côté serveur
+        this.loadDashboardData();
+      },
+      error: (err) => {
+        console.error(err);
+        this.isSubmittingStat = false;
+        this.toast.error(err?.error?.message || 'Erreur lors de la saisie de la stat');
+      }
+    });
+  }
+
+  // ───────────────── B.3.a — Convocation d'un joueur ─────────────────
+
+  convoquer(player: any, sessionId: number) {
+    this.isSubmittingConvo = true;
+    this.api.createConvocation(player.userId, sessionId).subscribe({
+      next: () => {
+        this.toast.success(`${player.fullName} convoqué — notification envoyée`);
+        this.isSubmittingConvo = false;
+      },
+      error: (err) => {
+        console.error(err);
+        this.isSubmittingConvo = false;
+        this.toast.error(err?.error?.message || 'Convocation impossible');
       }
     });
   }

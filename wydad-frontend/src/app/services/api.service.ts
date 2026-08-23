@@ -368,6 +368,24 @@ export class ApiService {
   }
 
   // ==========================================
+  // STATISTIQUES JOUEUR (B.4)
+  // ==========================================
+  getMyStats(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/sports/my-space/stats`);
+  }
+
+  /** Saisie d'une stat de match par le staff de la catégorie (ou l'admin). */
+  addPlayerStat(joueurUserId: number, body: any): Observable<any> {
+    return this.http.post<any>(
+      `${this.baseUrl}/sports/my-space/staff/stats?joueurUserId=${joueurUserId}`, body);
+  }
+
+  /** Consultation des stats détaillées d'un joueur (staff/admin). */
+  getPlayerStats(joueurUserId: number): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/sports/my-space/staff/stats?joueurUserId=${joueurUserId}`);
+  }
+
+  // ==========================================
   // ESPACES METIERS (Joueur & Staff)
   // ==========================================
   getPlayerByUserId(userId: number): Observable<any> {

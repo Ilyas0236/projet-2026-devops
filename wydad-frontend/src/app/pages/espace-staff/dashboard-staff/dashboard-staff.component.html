@@ -129,9 +129,18 @@
                       {{ player.goals || 0 }}
                     </td>
                     <td class="p-5 text-center">
-                      <button class="w-10 h-10 rounded-full bg-surface-2 border border-white/5 flex items-center justify-center text-text-tertiary mx-auto hover:bg-wydad-red hover:text-white hover:border-transparent transition-all shadow-lg" title="Voir fiche détaillée">
-                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
-                      </button>
+                      <div class="flex items-center justify-center gap-2">
+                        <button (click)="openStatForm(player)"
+                                class="w-10 h-10 rounded-full bg-surface-2 border border-white/5 flex items-center justify-center text-text-tertiary mx-auto hover:bg-wydad-red hover:text-white hover:border-transparent transition-all shadow-lg"
+                                title="Saisir une stat de match">
+                          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+                        </button>
+                        <button (click)="convoquer(player, sessions[0]?.id)" *ngIf="sessions.length > 0" [disabled]="isSubmittingConvo"
+                                class="w-10 h-10 rounded-full bg-surface-2 border border-white/5 flex items-center justify-center text-text-tertiary mx-auto hover:bg-blue-600 hover:text-white hover:border-transparent transition-all shadow-lg disabled:opacity-40"
+                                title="Convoquer pour la prochaine séance">
+                          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 </tbody>
@@ -183,6 +192,53 @@
           </div>
         </div>
 
+      </div>
+    </div>
+
+    <!-- B.4 — MODAL SAISIE STAT DE MATCH -->
+    <div *ngIf="showStatForm && statPlayer" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm" (click)="closeStatForm()">
+      <div class="glass-strong rounded-3xl border border-wydad-red/30 p-8 w-full max-w-lg animate-fade-in relative z-10 shadow-[0_0_50px_rgba(220,20,60,0.15)]" (click)="$event.stopPropagation()">
+        <h2 class="font-display text-2xl font-bold uppercase tracking-wider mb-1">
+          Stat de match — <span class="text-wydad-red">{{ statPlayer.fullName }}</span>
+        </h2>
+        <p class="text-text-tertiary text-xs uppercase tracking-widest mb-6">Une ligne par rencontre — totaux recalculés automatiquement</p>
+
+        <form [formGroup]="statForm" (ngSubmit)="submitStat()">
+          <div class="grid grid-cols-2 gap-4 mb-6">
+            <div class="col-span-2">
+              <label class="wydad-label text-xs" for="stat-opponent">Adversaire *</label>
+              <input id="stat-opponent" type="text" formControlName="opponent" placeholder="Ex : Raja U19" class="wydad-input py-3">
+            </div>
+            <div>
+              <label class="wydad-label text-xs" for="stat-date">Date du match *</label>
+              <input id="stat-date" type="date" formControlName="matchDate" class="wydad-input py-3 [color-scheme:dark]">
+            </div>
+            <div>
+              <label class="wydad-label text-xs" for="stat-competition">Compétition</label>
+              <input id="stat-competition" type="text" formControlName="competition" placeholder="Championnat U19…" class="wydad-input py-3">
+            </div>
+            <div>
+              <label class="wydad-label text-xs" for="stat-goals">Buts</label>
+              <input id="stat-goals" type="number" min="0" formControlName="goals" class="wydad-input py-3">
+            </div>
+            <div>
+              <label class="wydad-label text-xs" for="stat-assists">Passes décisives</label>
+              <input id="stat-assists" type="number" min="0" formControlName="assists" class="wydad-input py-3">
+            </div>
+            <div class="col-span-2">
+              <label class="wydad-label text-xs" for="stat-minutes">Minutes jouées</label>
+              <input id="stat-minutes" type="number" min="0" max="120" formControlName="minutesPlayed" class="wydad-input py-3">
+            </div>
+          </div>
+          <div class="flex justify-end gap-3">
+            <button type="button" (click)="closeStatForm()"
+                    class="bg-surface-2 hover:bg-surface-3 border border-white/10 rounded-xl px-6 py-3 text-xs font-bold uppercase tracking-widest transition-colors">Annuler</button>
+            <button type="submit" [disabled]="statForm.invalid || isSubmittingStat"
+                    class="wydad-btn-primary px-8 py-3 disabled:opacity-50">
+              {{ isSubmittingStat ? 'Enregistrement…' : 'Enregistrer la stat' }}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   </div>

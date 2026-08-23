@@ -29,10 +29,11 @@ export class DashboardJoueurComponent implements OnInit {
   loading = true;
   loadError = false;
 
-  // Convocations / présence / documents
+  // Convocations / présence / documents / stats détaillées
   convocations: any[] = [];
   presence: any[] = [];
   documents: any[] = [];
+  matchStats: any[] = [];
 
   // Réponse en cours à une convocation (ABSENT/RETARD → justification)
   respondingId: number | null = null;
@@ -86,6 +87,7 @@ export class DashboardJoueurComponent implements OnInit {
     this.api.getMyConvocations().subscribe({ next: d => this.convocations = d, error: () => {} });
     this.api.getMyPresence().subscribe({ next: d => this.presence = d, error: () => {} });
     this.api.getMyDocuments().subscribe({ next: d => this.documents = d, error: () => {} });
+    this.api.getMyStats().subscribe({ next: d => this.matchStats = d, error: () => {} });
   }
 
   retryLoad() {

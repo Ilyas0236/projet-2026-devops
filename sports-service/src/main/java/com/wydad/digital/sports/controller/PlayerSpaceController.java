@@ -1,5 +1,7 @@
 package com.wydad.digital.sports.controller;
 
+import com.wydad.digital.sports.dto.MatchStatDtos.MatchStatRequest;
+import com.wydad.digital.sports.dto.MatchStatDtos.MatchStatResponse;
 import com.wydad.digital.sports.dto.PlayerDto;
 import com.wydad.digital.sports.dto.PlayerSpaceDtos.ConvocationResponse;
 import com.wydad.digital.sports.dto.PlayerSpaceDtos.PlayerDocumentResponse;
@@ -8,6 +10,7 @@ import com.wydad.digital.sports.dto.PlayerSpaceDtos.UpdateMyProfileRequest;
 import com.wydad.digital.sports.filter.SportsUserContext;
 import com.wydad.digital.sports.model.Staff;
 import com.wydad.digital.sports.repository.StaffRepository;
+import com.wydad.digital.sports.service.MatchStatService;
 import com.wydad.digital.sports.service.PlayerSpaceService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +32,7 @@ import java.util.List;
 public class PlayerSpaceController {
 
     private final PlayerSpaceService playerSpaceService;
+    private final MatchStatService matchStatService;
     private final StaffRepository staffRepository;
 
     // ────────────────────── JOUEUR (routes self) ──────────────────────
@@ -65,6 +69,13 @@ public class PlayerSpaceController {
         return ResponseEntity.ok(playerSpaceService.updateMyProfile(request));
     }
 
+    /** Statistiques de match détaillées du joueur connecté (B.4). */
+    @GetMapping("/stats")
+    @PreAuthorize("hasRole('JOUEUR')")
+    public ResponseEntity<List<MatchStatResponse>> getMyStats() {
+        return ResponseEntity.ok(matchStatService.getMyStats());
+    }
+
     // ─────────────────── STAFF / ADMIN (gestion) ───────────────────
 
     /**
@@ -90,6 +101,30 @@ public class PlayerSpaceController {
         ensureStaffCanManage(joueurUserId);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(playerSpaceService.shareDocument(joueurUserId, body.title(), body.url()));
+    }
+
+    /**
+     * B.4 — Saisie d'une statistique de match. Même scoping que les
+     * convocations : STAFF de la catégorie du joueur uniquement,
+     * ADMIN passe partout. Les totaux de la fiche sont recalculés.
+     */
+    @PostMapping("/staff/stats")
+    @PreAuthorize("hasRole('STAFF') or hasRole('ADMIN')")
+    public ResponseEntity<MatchStatResponse> addPlayerStat(
+            @RequestParam Long joueurUserId,
+            @RequestBody MatchStatRequest body) {
+        Long staffId = ensureStaffCanManage(joueurUserId);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(matchStatService.addStat(joueurUserId, body, staffId));
+    }
+
+    /** Consultation des stats détaillées d'un joueur (staff/admin). */
+    @GetMapping("/staff/stats")
+    @PreAuthorize("hasRole('STAFF') or hasRole('ADMIN')")
+    public ResponseEntity<List<MatchStatResponse>> getPlayerStats(
+            @RequestParam Long joueurUserId) {
+        ensureStaffCanManage(joueurUserId);
+        return ResponseEntity.ok(matchStatService.getStatsOf(joueurUserId));
     }
 
     // ─────────────────────────── HELPERS ───────────────────────────
