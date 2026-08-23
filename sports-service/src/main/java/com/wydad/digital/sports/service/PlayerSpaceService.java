@@ -62,6 +62,12 @@ public class PlayerSpaceService {
             throw new IllegalStateException("Ce joueur est déjà convoqué pour cette séance");
         }
 
+        // B.6 — Statut médical strict : un joueur INAPTE ne peut pas être convoqué.
+        if (player.getMedicalStatus() == com.wydad.digital.sports.enums.MedicalStatus.INAPTE) {
+            throw new IllegalStateException(
+                    "Convocation impossible : le joueur est INAPTE (statut médical)");
+        }
+
         Convocation saved = convocationRepository.save(Convocation.builder()
                 .joueurUserId(joueurUserId)
                 .session(session)

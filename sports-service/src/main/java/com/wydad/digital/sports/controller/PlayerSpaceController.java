@@ -10,8 +10,10 @@ import com.wydad.digital.sports.dto.PlayerSpaceDtos.UpdateMyProfileRequest;
 import com.wydad.digital.sports.filter.SportsUserContext;
 import com.wydad.digital.sports.model.Staff;
 import com.wydad.digital.sports.repository.StaffRepository;
+import com.wydad.digital.sports.service.MedicalService;
 import com.wydad.digital.sports.service.MatchStatService;
 import com.wydad.digital.sports.service.PlayerSpaceService;
+import com.wydad.digital.sports.dto.PlayerSpaceDtos.MedicalResponse;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -33,6 +35,7 @@ public class PlayerSpaceController {
 
     private final PlayerSpaceService playerSpaceService;
     private final MatchStatService matchStatService;
+    private final MedicalService medicalService;
     private final StaffRepository staffRepository;
 
     // ────────────────────── JOUEUR (routes self) ──────────────────────
@@ -127,9 +130,27 @@ public class PlayerSpaceController {
         return ResponseEntity.ok(matchStatService.getStatsOf(joueurUserId));
     }
 
+    /**
+     * B.6 — Pose du statut médical APT/INAPTE. Réservé au staff MÉDICAL
+     * de la catégorie du joueur (ou ADMIN) — vérifié dans MedicalService.
+     */
+    @PutMapping("/staff/medical-status")
+    @PreAuthorize("hasRole('STAFF') or hasRole('ADMIN')")
+    public ResponseEntity<MedicalResponse> setMedicalStatus(
+            @RequestParam Long joueurUserId,
+            @RequestBody MedicalStatusRequest body) {
+        return ResponseEntity.ok(medicalService.setMedicalStatusAndRespond(
+                joueurUserId, body.status(), body.note()));
+    }
+
     // ─────────────────────────── HELPERS ───────────────────────────
 
     public record ShareDocumentRequest(String title, String url) {
+    }
+
+    public record MedicalStatusRequest(
+            com.wydad.digital.sports.enums.MedicalStatus status,
+            String note) {
     }
 
     /**

@@ -48,6 +48,13 @@ export class DashboardStaffComponent implements OnInit {
   isSubmittingAnnouncement = false;
   announcementForm!: FormGroup;
 
+  // B.6 — statut médical : réservé au staff médical (contrôle serveur)
+  isMedicalStaff = false;
+  medicalPlayer: any = null;
+  showMedicalForm = false;
+  isSubmittingMedical = false;
+  medicalNoteDraft = '';
+
   ngOnInit() {
     this.sessionForm = this.fb.group({
       title: ['', Validators.required],
@@ -75,6 +82,10 @@ export class DashboardStaffComponent implements OnInit {
       this.api.getStaffByUserId(userId).subscribe({
         next: (data) => {
           this.staff = data;
+          // B.6 — le bouton médical n'apparaît que pour DOCTOR/PHYSIOTHERAPIST ;
+          // le serveur revalide de toute façon (403 sinon).
+          this.isMedicalStaff =
+            data.role === 'DOCTOR' || data.role === 'PHYSIOTHERAPIST';
           this.loadDashboardData();
         },
         error: (err) => {
@@ -189,6 +200,43 @@ export class DashboardStaffComponent implements OnInit {
         console.error(err);
         this.isSubmittingConvo = false;
         this.toast.error(err?.error?.message || 'Convocation impossible');
+      }
+    });
+  }
+
+  // ───────────────── B.6 — Statut médical ─────────────────
+
+  openMedicalForm(player: any) {
+    this.medicalPlayer = player;
+    this.medicalNoteDraft = player.medicalNote || '';
+    this.showMedicalForm = true;
+  }
+
+  closeMedicalForm() {
+    this.showMedicalForm = false;
+    this.medicalPlayer = null;
+    this.medicalNoteDraft = '';
+  }
+
+  setPlayerMedicalStatus(status: 'APT' | 'INAPTE') {
+    if (!this.medicalPlayer) { return; }
+    const note = this.medicalNoteDraft.trim();
+    if (status === 'INAPTE' && !note) {
+      this.toast.error('Un motif est requis pour déclarer un joueur inapte');
+      return;
+    }
+    this.isSubmittingMedical = true;
+    this.api.setMedicalStatus(this.medicalPlayer.userId, status, note || undefined).subscribe({
+      next: (res) => {
+        this.toast.success(`Statut médical de ${this.medicalPlayer.fullName} : ${res.status}`);
+        this.isSubmittingMedical = false;
+        this.closeMedicalForm();
+        this.loadDashboardData();
+      },
+      error: (err) => {
+        console.error(err);
+        this.isSubmittingMedical = false;
+        this.toast.error(err?.error?.message || 'Modification du statut médical impossible');
       }
     });
   }

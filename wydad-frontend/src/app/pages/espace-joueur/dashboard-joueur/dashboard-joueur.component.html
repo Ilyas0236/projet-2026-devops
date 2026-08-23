@@ -57,6 +57,11 @@
             <div class="flex flex-wrap justify-center md:justify-start gap-3 mb-4">
               <span class="px-4 py-1.5 bg-wydad-red text-[10px] font-bold uppercase tracking-[0.2em] rounded-full shadow-glow-red">{{ player.sportType }}</span>
               <span class="px-4 py-1.5 bg-surface-3 border border-white/10 text-[10px] font-bold uppercase tracking-[0.2em] rounded-full">{{ player.category }}</span>
+              <!-- B.6 — statut médical en lecture seule, posé par le staff médical -->
+              <span *ngIf="player.medicalStatus === 'INAPTE'"
+                    class="px-4 py-1.5 bg-red-700/30 border border-red-500/40 text-red-300 text-[10px] font-bold uppercase tracking-[0.2em] rounded-full">
+                ⚕ INAPTE — {{ player.medicalNote || 'voir staff médical' }}
+              </span>
             </div>
             <h1 class="text-4xl md:text-6xl font-display font-black uppercase tracking-tighter mb-2">{{ player.fullName }}</h1>
             <p class="text-text-secondary text-lg flex items-center justify-center md:justify-start gap-2 uppercase tracking-wider font-semibold">

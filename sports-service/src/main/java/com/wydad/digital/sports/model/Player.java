@@ -1,6 +1,7 @@
 package com.wydad.digital.sports.model;
 
 import com.wydad.digital.sports.enums.Category;
+import com.wydad.digital.sports.enums.MedicalStatus;
 import com.wydad.digital.sports.enums.SportType;
 import jakarta.persistence.*;
 import lombok.*;
@@ -46,6 +47,22 @@ public class Player {
     @Builder.Default private Integer matchesPlayed = 0;
     @Builder.Default private Integer goals = 0;
     @Builder.Default private Integer assists = 0;
+
+    /**
+     * B.6 — Statut médical strict : APT par défaut, INAPTE posé uniquement
+     * par le staff médical de la catégorie. Un joueur INAPTE ne peut pas
+     * être convoqué.
+     */
+    @Builder.Default
+    @Enumerated(EnumType.STRING)
+    private MedicalStatus medicalStatus = MedicalStatus.APT;
+
+    /** Note médicale libre (motif d'inaptitude, restriction…). */
+    @Column(length = 500)
+    private String medicalNote;
+
+    private LocalDateTime medicalUpdatedAt;
+    private Long medicalUpdatedByStaffId;
 
     @CreationTimestamp private LocalDateTime createdAt;
     @UpdateTimestamp private LocalDateTime updatedAt;

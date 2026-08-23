@@ -1,6 +1,7 @@
 package com.wydad.digital.sports.dto;
 
 import com.wydad.digital.sports.enums.Category;
+import com.wydad.digital.sports.enums.MedicalStatus;
 import com.wydad.digital.sports.enums.SportType;
 import com.wydad.digital.sports.model.Convocation;
 import lombok.Builder;
@@ -42,8 +43,8 @@ public final class PlayerSpaceDtos {
     }
 
     /**
-     * Champs que le joueur peut modifier lui-même. Le numéro, le poste,
-     * la catégorie et le sport restent réservés au staff/admin.
+     * Champs que le joueur ne peut PAS modifier : statut médical (B.6),
+     * numéro, poste, catégorie et sport restent réservés au staff/admin.
      */
     public record UpdateMyProfileRequest(
             Double height,
@@ -51,5 +52,14 @@ public final class PlayerSpaceDtos {
             LocalDate birthDate,
             String nationality,
             String photoUrl) {
+    }
+
+    /** Réponse de pose de statut médical (B.6). */
+    @Builder
+    public record MedicalResponse(
+            Long joueurUserId,
+            MedicalStatus status,
+            String note,
+            LocalDateTime updatedAt) {
     }
 }

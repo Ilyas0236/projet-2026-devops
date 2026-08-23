@@ -155,7 +155,12 @@
                       {{ player.jerseyNumber || '-' }}
                     </td>
                     <td class="p-5">
-                      <div class="font-bold text-white uppercase tracking-wider">{{ player.fullName }}</div>
+                      <div class="font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                        {{ player.fullName }}
+                        <span *ngIf="player.medicalStatus === 'INAPTE'"
+                              class="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-widest bg-red-700/30 text-red-300 border border-red-500/40"
+                              title="{{ player.medicalNote || 'Joueur inapte' }}">INAPTE</span>
+                      </div>
                     </td>
                     <td class="p-5 text-text-secondary text-sm font-medium uppercase tracking-widest">
                       {{ player.position || '-' }}
@@ -168,6 +173,11 @@
                     </td>
                     <td class="p-5 text-center">
                       <div class="flex items-center justify-center gap-2">
+                        <button *ngIf="isMedicalStaff" (click)="openMedicalForm(player)"
+                                class="w-10 h-10 rounded-full bg-surface-2 border border-white/5 flex items-center justify-center text-text-tertiary mx-auto hover:bg-purple-600 hover:text-white hover:border-transparent transition-all shadow-lg"
+                                title="Statut médical">
+                          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>
+                        </button>
                         <button (click)="openStatForm(player)"
                                 class="w-10 h-10 rounded-full bg-surface-2 border border-white/5 flex items-center justify-center text-text-tertiary mx-auto hover:bg-wydad-red hover:text-white hover:border-transparent transition-all shadow-lg"
                                 title="Saisir une stat de match">
@@ -290,8 +300,37 @@
             </ng-container>
           </div>
 
-    <!-- B.4 — MODAL SAISIE STAT DE MATCH -->
-    <div *ngIf="showStatForm && statPlayer" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm" (click)="closeStatForm()">
+    <!-- B.6 — MODAL STATUT MEDICAL (staff médical uniquement, contrôle serveur) -->
+    <div *ngIf="showMedicalForm && medicalPlayer" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm" (click)="closeMedicalForm()">
+      <div class="glass-strong rounded-3xl border border-purple-500/30 p-8 w-full max-w-md animate-fade-in relative z-10" (click)="$event.stopPropagation()">
+        <h2 class="font-display text-xl font-bold uppercase tracking-wider mb-1">
+          Statut médical — <span class="text-purple-400">{{ medicalPlayer.fullName }}</span>
+        </h2>
+        <p class="text-text-tertiary text-xs uppercase tracking-widest mb-6">
+          Réservé au staff médical · le serveur revalide (403 sinon)
+        </p>
+
+        <label class="wydad-label text-xs" for="medical-note-input">Motif / note médicale</label>
+        <textarea id="medical-note-input" rows="3" maxlength="500" [(ngModel)]="medicalNoteDraft"
+                  placeholder="Ex : entorse cheville droite, repos 3 semaines…"
+                  class="wydad-input py-3 resize-none mb-6"></textarea>
+
+        <div class="flex gap-3">
+          <button (click)="setPlayerMedicalStatus('APT')" [disabled]="isSubmittingMedical"
+                  class="flex-1 bg-green-600 hover:bg-green-700 disabled:opacity-50 rounded-xl py-3 text-xs font-bold uppercase tracking-widest transition-colors">
+            Déclarer APT
+          </button>
+          <button (click)="setPlayerMedicalStatus('INAPTE')" [disabled]="isSubmittingMedical || !medicalNoteDraft.trim()"
+                  class="flex-1 bg-red-700 hover:bg-red-800 disabled:opacity-50 rounded-xl py-3 text-xs font-bold uppercase tracking-widest transition-colors">
+            Déclarer INAPTE
+          </button>
+        </div>
+        <button type="button" (click)="closeMedicalForm()"
+                class="mt-3 w-full bg-surface-2 hover:bg-surface-3 border border-white/10 rounded-xl py-2.5 text-xs font-bold uppercase tracking-widest transition-colors">Annuler</button>
+      </div>
+    </div>
+
+    <!-- B.4 — MODAL SAISIE STAT DE MATCH -->    <div *ngIf="showStatForm && statPlayer" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm" (click)="closeStatForm()">
       <div class="glass-strong rounded-3xl border border-wydad-red/30 p-8 w-full max-w-lg animate-fade-in relative z-10 shadow-[0_0_50px_rgba(220,20,60,0.15)]" (click)="$event.stopPropagation()">
         <h2 class="font-display text-2xl font-bold uppercase tracking-wider mb-1">
           Stat de match — <span class="text-wydad-red">{{ statPlayer.fullName }}</span>

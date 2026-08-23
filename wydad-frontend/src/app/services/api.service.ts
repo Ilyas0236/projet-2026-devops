@@ -415,6 +415,16 @@ export class ApiService {
   }
 
   // ==========================================
+  // STATUT MEDICAL (B.6)
+  // ==========================================
+  /** Pose APT/INAPTE — réservé au staff médical de la catégorie (contrôle serveur). */
+  setMedicalStatus(joueurUserId: number, status: 'APT' | 'INAPTE', note?: string): Observable<any> {
+    const params = new HttpParams().set('joueurUserId', String(joueurUserId));
+    return this.http.put<any>(
+      `${this.baseUrl}/sports/my-space/staff/medical-status`, { status, note }, { params });
+  }
+
+  // ==========================================
   // ESPACES METIERS (Joueur & Staff)
   // ==========================================
   getPlayerByUserId(userId: number): Observable<any> {
