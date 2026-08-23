@@ -39,6 +39,13 @@ public class AcademyService {
                 .stream().map(this::mapToDto).collect(Collectors.toList());
     }
 
+    /** Liste globale pour le back-office staff/admin (validation des dossiers). */
+    public List<AcademyMemberDto> getAllFolders() {
+        return academyRepository.findAll().stream()
+                .sorted(java.util.Comparator.comparing(AcademyMember::getId).reversed())
+                .map(this::mapToDto).collect(Collectors.toList());
+    }
+
     public AcademyMemberDto updateChildStatus(Long id, Boolean active) {
         AcademyMember member = academyRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Enfant non trouvé"));

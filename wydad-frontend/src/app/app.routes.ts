@@ -17,6 +17,7 @@ import { AdminNotificationsComponent } from './pages/admin/admin-notifications/a
 import { AdminSettingsComponent } from './pages/admin/admin-settings/admin-settings.component';
 import { AdminMediathequeComponent } from './pages/admin/admin-mediatheque/admin-mediatheque.component';
 import { AdminStaffComponent } from './pages/admin/admin-staff/admin-staff.component';
+import { AdminAcademieComponent } from './pages/admin/admin-academie/admin-academie.component';
 import { AdhesionComponent } from './pages/adhesion/adhesion.component';
 import { LoginComponent } from './components/login/login.component';
 import { RegisterComponent } from './components/register/register.component';
@@ -60,6 +61,7 @@ export const routes: Routes = [
       { path: 'billetterie', component: AdminBilletterieComponent },
       { path: 'effectif', component: AdminEffectifComponent },
       { path: 'staff', component: AdminStaffComponent },
+      { path: 'academie', component: AdminAcademieComponent },
       { path: 'mediatheque', component: AdminMediathequeComponent },
       { path: 'notifications', component: AdminNotificationsComponent },
       { path: 'parametres', component: AdminSettingsComponent }
@@ -94,6 +96,8 @@ export const routes: Routes = [
       { path: 'academie/mes-enfants', component: DashboardParentComponent, canActivate: [parentGuard] },
       { path: 'joueur/dashboard', component: DashboardJoueurComponent, canActivate: [joueurGuard] },
       { path: 'staff/dashboard', component: DashboardStaffComponent, canActivate: [staffGuard] },
+      // Consultation des dossiers académie par le STAFF (l'ADMIN passe par /admin/academie)
+      { path: 'staff/academie', component: AdminAcademieComponent, canActivate: [staffGuard] },
       { path: '**', component: NotFoundComponent }
     ]
   }

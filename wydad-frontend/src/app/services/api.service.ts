@@ -286,6 +286,28 @@ export class ApiService {
     return this.http.get<any[]>(`${this.baseUrl}/sports/academy/parent/${parentId}`);
   }
 
+  /** Liste globale des dossiers d'inscription (STAFF/ADMIN). */
+  getAllAcademyFolders(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/sports/academy/all`);
+  }
+
+  /** Métadonnées des pièces justificatives d'un dossier (sans les blobs). */
+  getAcademyDocuments(academyMemberId: number): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/sports/academy/${academyMemberId}/documents`);
+  }
+
+  /** Téléchargement (blob authentifié) d'une pièce par type. */
+  getAcademyDocumentBlob(academyMemberId: number, docType: string): Observable<Blob> {
+    return this.http.get(
+      `${this.baseUrl}/sports/academy/${academyMemberId}/documents/${docType}`,
+      { responseType: 'blob' });
+  }
+
+  /** Validation / rejet d'un dossier par le staff ou l'admin. */
+  updateAcademyStatus(id: number, active: boolean): Observable<any> {
+    return this.http.patch<any>(`${this.baseUrl}/sports/academy/${id}/status?active=${active}`, {});
+  }
+
   // ==========================================
   // ESPACES METIERS (Joueur & Staff)
   // ==========================================

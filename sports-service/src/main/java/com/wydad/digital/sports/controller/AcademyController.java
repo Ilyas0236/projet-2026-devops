@@ -66,6 +66,13 @@ public class AcademyController {
         return ResponseEntity.ok(academyService.getChildrenByParent(parentUserId));
     }
 
+    /** Liste globale des dossiers d'inscription : STAFF/ADMIN uniquement. */
+    @GetMapping("/all")
+    @PreAuthorize("hasRole('STAFF') or hasRole('ADMIN')")
+    public ResponseEntity<List<AcademyMemberDto>> getAllFolders() {
+        return ResponseEntity.ok(academyService.getAllFolders());
+    }
+
     @PatchMapping("/{id}/status")
     @PreAuthorize("hasRole('STAFF') or hasRole('ADMIN')")
     public ResponseEntity<AcademyMemberDto> updateStatus(@PathVariable Long id, @RequestParam Boolean active) {
