@@ -32,7 +32,7 @@ export class DashboardStaffComponent implements OnInit {
     this.sessionForm = this.fb.group({
       title: ['', Validators.required],
       description: [''],
-      location: ['Complexe Benjelloun', Validators.required],
+      location: ['', Validators.required],
       sessionDate: ['', Validators.required]
     });
 
@@ -99,7 +99,7 @@ export class DashboardStaffComponent implements OnInit {
         this.sessions.sort((a, b) => new Date(a.sessionDate).getTime() - new Date(b.sessionDate).getTime());
         this.isSubmitting = false;
         this.showForm = false;
-        this.sessionForm.reset({ location: 'Complexe Benjelloun' });
+        this.sessionForm.reset({ location: '' });
       },
       error: (err) => {
         console.error(err);

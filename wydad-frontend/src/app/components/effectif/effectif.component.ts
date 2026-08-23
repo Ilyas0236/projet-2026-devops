@@ -13,10 +13,20 @@ export class EffectifComponent implements OnInit {
   selectedSport = 'FOOTBALL';
   loadError = false;
   loading = true;
+  /** Saison en cours depuis la configuration club (source de verite ADMIN). */
+  saison = '';
 
   api = inject(ApiService);
 
   ngOnInit() {
+    this.api.getClubSetting('club_info').subscribe({
+      next: (info) => {
+        this.saison = info?.saison || '';
+      },
+      error: () => {
+        this.saison = '';
+      }
+    });
     this.loadPlayers();
   }
 

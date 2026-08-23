@@ -55,6 +55,7 @@ public class ClubSettingsInitializer implements ApplicationRunner {
                   "telephone":"+212 5 22 00 00 00",
                   "adresse":"Complexe Mohamed Benjelloun, Casablanca",
                   "slogan":"Dima Wydad",
+                  "saison":"2026/2027",
                   "description":"Le club de la nation. Fierté, passion et gloire depuis 1937."
                 }
                 """);

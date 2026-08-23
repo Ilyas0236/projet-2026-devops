@@ -58,9 +58,20 @@ export class HomeComponent implements OnInit {
   nextMatch: any = null;
   articles: any[] = [];
   membershipTiers: MembershipTier[] = [];
+  /** Saison en cours depuis la configuration club (source de verite ADMIN). */
+  saison = '';
   api = inject(ApiService);
 
   ngOnInit() {
+    this.api.getClubSetting('club_info').subscribe({
+      next: (info) => {
+        this.saison = info?.saison || '';
+      },
+      error: () => {
+        this.saison = '';
+      }
+    });
+
     // Fetch upcoming match
     this.api.getEvents().subscribe({
       next: (events) => {
