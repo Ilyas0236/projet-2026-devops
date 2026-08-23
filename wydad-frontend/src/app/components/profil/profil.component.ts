@@ -200,7 +200,17 @@ export class ProfilComponent implements OnInit {
       next: (res: any) => {
         this.otpSending = false;
         this.otpSent = true;
-        this.otpMsg = typeof res === 'string' ? res : 'Code envoyé par SMS.';
+        // La réponse ne contient plus jamais le code : en démo, on le
+        // récupère via le canal mock isolé (404 silencieux en production).
+        this.otpMsg = 'Code envoyé par SMS.';
+        this.authService.getMockOtpCode().subscribe({
+          next: (code: any) => {
+            if (typeof code === 'string' && /^\d{6}$/.test(code)) {
+              this.otpMsg = `Code envoyé. Mode démo — votre code : ${code}`;
+            }
+          },
+          error: () => { /* canal démo désactivé : on garde le message générique */ }
+        });
       },
       error: (err) => {
         this.otpSending = false;

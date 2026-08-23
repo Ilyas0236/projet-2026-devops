@@ -239,11 +239,15 @@ public class AuthService {
         );
     }
 
-    public String sendOtp(OtpRequest request) {
+    public void sendOtp(OtpRequest request) {
         User user = userRepository.findByEmail(request.email())
                 .orElseThrow(() -> new UserNotFoundException(request.email()));
-        String code = otpService.generateOtp(user.getEmail());
-        return code;
+        otpService.generateOtp(user.getEmail());
+    }
+
+    /** Canal de démonstration : null si app.otp.mock-delivery=false. */
+    public String getMockOtpCode(String email) {
+        return otpService.peekMockCode(email);
     }
 
     public boolean verifyOtp(OtpVerifyRequest request) {

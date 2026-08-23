@@ -176,8 +176,24 @@ public class AuthController {
 
     @PostMapping("/otp/send")
     public ResponseEntity<String> sendOtp(@Valid @RequestBody OtpRequest request) {
-        String code = authService.sendOtp(request);
-        return ResponseEntity.ok("Code OTP généré (mock): " + code);
+        // Le code n'est JAMAIS renvoyé dans la réponse HTTP : en production il
+        // transiterait par SMS/email ; en démonstration, il est consultable
+        // uniquement via GET /otp/mock-code si app.otp.mock-delivery=true.
+        authService.sendOtp(request);
+        return ResponseEntity.ok("Code OTP généré et envoyé");
+    }
+
+    /**
+     * Canal de démonstration clairement isolé (app.otp.mock-delivery=true).
+     * Désactivé par défaut — renvoie 404 sinon.
+     */
+    @GetMapping("/otp/mock-code")
+    public ResponseEntity<String> getMockOtpCode(@RequestParam("email") String email) {
+        String code = authService.getMockOtpCode(email);
+        if (code == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(code);
     }
 
     @PostMapping("/otp/verify")

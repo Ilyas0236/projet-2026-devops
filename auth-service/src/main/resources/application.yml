@@ -26,6 +26,12 @@ jwt:
 wydad:
   internal-secret: ${WYDAD_INTERNAL_SECRET:}
 
+app:
+  otp:
+    # Canal de démonstration : GET /api/auth/otp/mock-code renvoie le code OTP.
+    # DOIT rester false hors environnement de démonstration local.
+    mock-delivery: ${OTP_MOCK_DELIVERY:false}
+
 logging:
   level:
     com.wydad.digital.auth: DEBUG

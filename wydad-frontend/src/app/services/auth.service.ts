@@ -139,6 +139,11 @@ export class AuthService {
     return this.http.post(`${this.baseUrl}/otp/send`, { email: this.currentUserValue, phone }, { responseType: 'text' });
   }
 
+  /** Canal de démonstration : renvoie le code OTP si le backend expose app.otp.mock-delivery=true, sinon erreur 404. */
+  getMockOtpCode(): Observable<string> {
+    return this.http.get(`${this.baseUrl}/otp/mock-code?email=${this.currentUserValue}`, { responseType: 'text' });
+  }
+
   verifyOtp(code: string): Observable<any> {
     return this.http.post(`${this.baseUrl}/otp/verify`, { email: this.currentUserValue, code }, { responseType: 'text' });
   }
