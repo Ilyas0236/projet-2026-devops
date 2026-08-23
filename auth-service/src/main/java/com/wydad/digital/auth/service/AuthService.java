@@ -77,7 +77,9 @@ public class AuthService {
     }
 
     public AuthResponse login(LoginRequest request, String ipAddress, String userAgent) {
-        User user = userRepository.findByEmail(request.email())
+        // Tolérance de saisie : trim + casse insensible (les emails ne sont pas
+        // sensibles à la casse) ; le mot de passe, lui, reste strict.
+        User user = userRepository.findByEmailIgnoreCase(request.email().trim())
                 .orElseThrow(() -> new UserNotFoundException(request.email()));
 
         if (!passwordEncoder.matches(request.password(), user.getPassword())) {
