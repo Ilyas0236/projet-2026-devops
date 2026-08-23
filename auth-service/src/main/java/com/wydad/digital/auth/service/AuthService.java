@@ -2,6 +2,7 @@ package com.wydad.digital.auth.service;
 
 import com.wydad.digital.auth.dto.*;
 import com.wydad.digital.auth.exception.EmailAlreadyExistsException;
+import com.wydad.digital.auth.exception.InvalidCredentialsException;
 import com.wydad.digital.auth.exception.UserNotFoundException;
 import com.wydad.digital.auth.model.ActiveSession;
 import com.wydad.digital.auth.model.KycDocument;
@@ -80,10 +81,10 @@ public class AuthService {
         // Tolérance de saisie : trim + casse insensible (les emails ne sont pas
         // sensibles à la casse) ; le mot de passe, lui, reste strict.
         User user = userRepository.findByEmailIgnoreCase(request.email().trim())
-                .orElseThrow(() -> new UserNotFoundException(request.email()));
+                .orElseThrow(InvalidCredentialsException::new);
 
         if (!passwordEncoder.matches(request.password(), user.getPassword())) {
-            throw new UserNotFoundException(request.email());
+            throw new InvalidCredentialsException();
         }
 
         String accessToken = jwtUtils.generateAccessToken(user.getId(), user.getEmail(), user.getRole().name());
