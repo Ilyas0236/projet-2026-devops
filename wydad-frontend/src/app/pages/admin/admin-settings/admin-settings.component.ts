@@ -122,6 +122,7 @@ export class AdminSettingsComponent implements OnInit {
     switch (key) {
       case 'membership_tiers': return "Paliers d'adhésion";
       case 'club_info': return 'Coordonnées du club';
+      case 'competitions': return 'Compétitions (classements, matchs, billetterie)';
       default: return key;
     }
   }
