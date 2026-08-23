@@ -51,10 +51,7 @@
         <div class="form-group mb-4">
           <label class="wydad-label block mb-1 text-text-secondary text-xs uppercase tracking-wider font-semibold">Niveau d'Adhésion</label>
           <select class="wydad-input w-full bg-surface-2 border border-white/10 text-text-primary rounded-lg px-4 py-2.5 focus:border-wydad-red focus:ring-1 focus:ring-wydad-red transition-colors appearance-none" [(ngModel)]="membershipLevel">
-            <option value="ROUGE" class="bg-surface-2 text-text-primary">Rouge (500 DH/an)</option>
-            <option value="OR" class="bg-surface-2 text-wydad-gold">Or (1 200 DH/an)</option>
-            <option value="DIAMANT" class="bg-surface-2 text-blue-300">Diamant (3 000 DH/an)</option>
-            <option value="JUNIOR" class="bg-surface-2 text-text-primary">Junior (200 DH/an)</option>
+            <option *ngFor="let t of tiers" [value]="t.level" class="bg-surface-2 text-text-primary">{{ t.name }} ({{ t.price }} DH/an)</option>
           </select>
         </div>
 

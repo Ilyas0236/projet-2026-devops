@@ -100,11 +100,8 @@
           <p class="text-text-secondary text-sm mb-6 min-h-[40px]">Débloquez des avantages exclusifs et soutenez davantage votre club.</p>
           
           <div class="flex flex-col gap-3" *ngIf="canUpgrade()">
-            <button *ngIf="isLevel('ROUGE') || isLevel('JUNIOR')" (click)="upgrade('OR')" class="w-full py-3 rounded-xl font-display font-bold uppercase tracking-wider text-sm transition-all duration-300 bg-wydad-gold text-black hover:bg-wydad-gold-light border border-wydad-gold/50 shadow-[0_0_20px_rgba(212,175,55,0.2)]">
-              Mise à niveau OR (1500 DH)
-            </button>
-            <button *ngIf="isLevel('ROUGE') || isLevel('OR') || isLevel('JUNIOR')" (click)="upgrade('DIAMANT')" class="w-full py-3 rounded-xl font-display font-bold uppercase tracking-wider text-sm transition-all duration-300 bg-white text-black hover:bg-gray-200 border border-white/50 shadow-[0_0_20px_rgba(255,255,255,0.2)]">
-              Mise à niveau PLATINE (5000 DH)
+            <button *ngFor="let t of upgradableTiers()" (click)="upgrade(t.level)" [ngClass]="t.level === 'OR' ? 'bg-wydad-gold text-black hover:bg-wydad-gold-light border-wydad-gold/50' : 'bg-white text-black hover:bg-gray-200 border-white/50'" class="w-full py-3 rounded-xl font-display font-bold uppercase tracking-wider text-sm transition-all duration-300 border shadow-[0_0_20px_rgba(212,175,55,0.2)]">
+              Mise à niveau {{ t.name }} ({{ t.price }} DH/an)
             </button>
           </div>
           

@@ -1,8 +1,9 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { ApiService } from '../../services/api.service';
 
 @Component({
   selector: 'app-register',
@@ -10,7 +11,7 @@ import { AuthService } from '../../services/auth.service';
   imports: [CommonModule, FormsModule],
   templateUrl: './register.component.html'
 })
-export class RegisterComponent {
+export class RegisterComponent implements OnInit {
   email = '';
   phone = '';
   password = '';
@@ -21,14 +22,26 @@ export class RegisterComponent {
   loading = false;
   error = '';
   success = false;
+  tiers: any[] = [];
 
   authService = inject(AuthService);
+  api = inject(ApiService);
   router = inject(Router);
   route = inject(ActivatedRoute);
 
-  private static readonly ALLOWED_LEVELS = ['JUNIOR', 'ROUGE', 'OR', 'DIAMANT'];
+  private static readonly ALLOWED_LEVELS = ['JUNIOR', 'ROUGE', 'OR', 'DIAMANT', 'LEGENDE'];
 
-  constructor() {
+  ngOnInit() {
+    // Paliers depuis la configuration club (source de verite ADMIN)
+    this.api.getClubSetting('membership_tiers').subscribe({
+      next: (tiers) => {
+        this.tiers = Array.isArray(tiers) ? tiers.filter(t => t.price != null) : [];
+      },
+      error: () => {
+        this.tiers = [];
+      }
+    });
+
     // Pre-selection du niveau depuis la page adhesion (?level=OR)
     const level = this.route.snapshot.queryParamMap.get('level');
     if (level && RegisterComponent.ALLOWED_LEVELS.includes(level)) {

@@ -16,6 +16,8 @@ export class CarteMembreComponent implements OnInit {
   pdfLoading = false;
   upgradeMsg = '';
   upgradeErr = '';
+  /** Paliers payants depuis la configuration club (source de verite ADMIN). */
+  tiers: any[] = [];
 
   api = inject(ApiService);
   router = inject(Router);
@@ -23,6 +25,28 @@ export class CarteMembreComponent implements OnInit {
 
   ngOnInit() {
     this.loadCard();
+    this.api.getClubSetting('membership_tiers').subscribe({
+      next: (tiers) => {
+        this.tiers = Array.isArray(tiers) ? tiers.filter(t => t.price != null) : [];
+      },
+      error: () => {
+        this.tiers = [];
+      }
+    });
+  }
+
+  tierPrice(level: string): number | null {
+    const t = this.tiers.find(x => x.level === level);
+    return t ? t.price : null;
+  }
+
+  /** Paliers strictement superieurs au niveau actuel (hors LEGENDE sur invitation). */
+  upgradableTiers(): any[] {
+    if (!this.cardData) return [];
+    const currentIdx = this.tiers.findIndex(t => t.level === this.cardData.membershipLevel);
+    return currentIdx < 0
+      ? []
+      : this.tiers.slice(currentIdx + 1).filter(t => t.level !== 'LEGENDE');
   }
 
   loadCard() {
