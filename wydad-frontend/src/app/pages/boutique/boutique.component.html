@@ -15,19 +15,20 @@
     </p>
   </div>
 
-  <!-- Filters -->
-  <div class="container-wydad mb-12 flex justify-center gap-3 flex-wrap animate-fade-in-up" style="animation-delay: 0.4s; opacity: 0;">
-    <button class="wydad-btn-skew px-6 py-2.5 text-xs shadow-glow-red">
-      <span>Tout Voir</span>
+  <!-- Filters (dérivés du catalogue réel, aucune catégorie hardcodée) -->
+  <div *ngIf="!loading && filters.length > 0" class="container-wydad mb-12 flex justify-center gap-3 flex-wrap animate-fade-in-up" style="animation-delay: 0.4s; opacity: 0;">
+    <button (click)="setFilter('ALL')"
+            [class.wydad-btn-skew]="activeFilter === 'ALL'"
+            [class.wydad-btn-secondary]="activeFilter !== 'ALL'"
+            class="px-6 py-2.5 text-xs font-display tracking-wider uppercase transform skew-x-[-10deg] transition-colors">
+      <span class="skew-x-[10deg] block">Tout Voir</span>
     </button>
-    <button class="wydad-btn-secondary px-6 py-2.5 text-xs font-display tracking-wider uppercase transform skew-x-[-10deg]">
-      <span class="skew-x-[10deg] block">Maillots</span>
-    </button>
-    <button class="wydad-btn-secondary px-6 py-2.5 text-xs font-display tracking-wider uppercase transform skew-x-[-10deg]">
-      <span class="skew-x-[10deg] block">Entraînement</span>
-    </button>
-    <button class="wydad-btn-secondary px-6 py-2.5 text-xs font-display tracking-wider uppercase transform skew-x-[-10deg]">
-      <span class="skew-x-[10deg] block">Accessoires</span>
+    <button *ngFor="let filter of filters"
+            (click)="setFilter(filter)"
+            [class.wydad-btn-skew]="activeFilter === filter"
+            [class.wydad-btn-secondary]="activeFilter !== filter"
+            class="px-6 py-2.5 text-xs font-display tracking-wider uppercase transform skew-x-[-10deg] transition-colors">
+      <span class="skew-x-[10deg] block">{{ filter }}</span>
     </button>
   </div>
 
@@ -35,29 +36,21 @@
   <div class="container-wydad grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
 
     <!-- Product Card -->
-    <div *ngFor="let product of products; let i = index"
+    <div *ngFor="let product of filteredProducts; let i = index"
          [routerLink]="['/boutique', product.id]"
          class="group wydad-card-interactive rounded-2xl overflow-hidden relative animate-fade-in-up"
          [style.animation-delay]="(i * 0.08) + 's'"
          style="opacity: 0;">
 
-      <!-- Badges -->
-      <div *ngIf="product.isNew" class="absolute top-4 left-4 z-10">
-        <span class="wydad-badge text-[9px]">Nouveau</span>
-      </div>
-      <div *ngIf="product.isPromo" class="absolute top-4 left-4 z-10">
-        <span class="wydad-badge-gold text-[9px]">Promo</span>
-      </div>
-
       <!-- Image Container -->
       <div class="aspect-[4/5] bg-surface-2 overflow-hidden relative flex items-center justify-center">
         <!-- Product image with hover zoom -->
         <div class="w-full h-full flex items-center justify-center p-8 group-hover:scale-110 transition-transform duration-700">
-          <img *ngIf="product.mainImageUrl"
-               [src]="api.getMediaUrl(product.mainImageUrl)"
+          <img *ngIf="product.images?.length"
+               [src]="api.getMediaUrl(product.images[0])"
                class="max-w-full max-h-full object-contain drop-shadow-2xl"
                [alt]="product.name">
-          <span *ngIf="!product.mainImageUrl"
+          <span *ngIf="!product.images?.length"
                 class="text-text-tertiary font-display font-bold text-center text-sm uppercase tracking-wider">{{ product.name }}</span>
         </div>
 
@@ -72,8 +65,7 @@
         <div class="flex justify-between items-start mb-2">
           <h3 class="font-display font-bold text-base text-white uppercase tracking-wide leading-tight flex-1 pr-3">{{ product.name }}</h3>
           <div class="flex flex-col items-end flex-shrink-0">
-            <span class="font-display font-bold text-lg text-wydad-red">{{ product.price }} <span class="text-xs text-text-tertiary">DH</span></span>
-            <span *ngIf="product.oldPrice" class="text-xs text-text-tertiary line-through">{{ product.oldPrice }} DH</span>
+            <span class="font-display font-bold text-lg text-wydad-red">{{ product.basePrice }} <span class="text-xs text-text-tertiary">DH</span></span>
           </div>
         </div>
         <p class="text-sm text-text-tertiary line-clamp-1">{{ product.description || 'Produit officiel Wydad AC' }}</p>

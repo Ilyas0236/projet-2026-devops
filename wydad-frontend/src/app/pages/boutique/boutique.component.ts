@@ -17,6 +17,29 @@ export class BoutiqueComponent implements OnInit {
   loadError = false;
   api = inject(ApiService);
 
+  /** Filtre actif : 'ALL' ou une catégorie dérivée des produits chargés. */
+  activeFilter = 'ALL';
+
+  /** Catégories réellement présentes dans le catalogue (aucune donnée hardcodée). */
+  get filters(): string[] {
+    const names = new Set<string>();
+    for (const p of this.products) {
+      const name = p.categoryName || p.sportSection;
+      if (name) names.add(name);
+    }
+    return Array.from(names).sort();
+  }
+
+  get filteredProducts(): any[] {
+    if (this.activeFilter === 'ALL') return this.products;
+    return this.products.filter(p =>
+      (p.categoryName || p.sportSection) === this.activeFilter);
+  }
+
+  setFilter(filter: string) {
+    this.activeFilter = filter;
+  }
+
   retry() {
     this.loadError = false;
     this.ngOnInit();
