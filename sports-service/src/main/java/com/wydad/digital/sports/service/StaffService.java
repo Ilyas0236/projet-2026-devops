@@ -34,9 +34,33 @@ public class StaffService {
         return mapToDto(staffRepository.save(staff));
     }
 
+    /** Liste complete pour le back-office ADMIN. */
+    public List<StaffDto> getAllStaff() {
+        return staffRepository.findAll()
+                .stream().map(this::mapToDto).collect(Collectors.toList());
+    }
+
     public List<StaffDto> getStaffByTeam(SportType sportType, Category category) {
         return staffRepository.findBySportTypeAndAssignedCategory(sportType, category)
                 .stream().map(this::mapToDto).collect(Collectors.toList());
+    }
+
+    public StaffDto updateStaff(Long id, StaffDto dto) {
+        Staff staff = staffRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Staff non trouvé"));
+        staff.setUserId(dto.getUserId());
+        staff.setFullName(dto.getFullName());
+        staff.setRole(dto.getRole());
+        staff.setSportType(dto.getSportType());
+        staff.setAssignedCategory(dto.getAssignedCategory());
+        return mapToDto(staffRepository.save(staff));
+    }
+
+    public void deleteStaff(Long id) {
+        if (!staffRepository.existsById(id)) {
+            throw new EntityNotFoundException("Staff non trouvé");
+        }
+        staffRepository.deleteById(id);
     }
 
     public StaffDto getStaffByUserId(Long userId) {

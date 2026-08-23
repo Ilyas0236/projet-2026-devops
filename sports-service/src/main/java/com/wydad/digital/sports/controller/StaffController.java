@@ -21,10 +21,30 @@ public class StaffController {
 
     private final StaffService staffService;
 
+    /** Liste complete pour le back-office ADMIN. */
+    @GetMapping
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<StaffDto>> getAllStaff() {
+        return ResponseEntity.ok(staffService.getAllStaff());
+    }
+
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<StaffDto> createOrUpdateStaff(@Valid @RequestBody StaffDto dto) {
         return ResponseEntity.status(HttpStatus.CREATED).body(staffService.createOrUpdateStaff(dto));
+    }
+
+    @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<StaffDto> updateStaff(@PathVariable Long id, @Valid @RequestBody StaffDto dto) {
+        return ResponseEntity.ok(staffService.updateStaff(id, dto));
+    }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> deleteStaff(@PathVariable Long id) {
+        staffService.deleteStaff(id);
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/filter")
