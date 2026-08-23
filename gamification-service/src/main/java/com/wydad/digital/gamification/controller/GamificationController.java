@@ -48,6 +48,14 @@ public class GamificationController {
         assertSelfOrAdmin(userId);
         return ResponseEntity.ok(gamificationService.getUserPredictions(userId));
     }
+
+    /** B.8 : badges possédés par un utilisateur — consultation self ou ADMIN. */
+    @GetMapping("/badges/user/{userId}")
+    public ResponseEntity<List<com.wydad.digital.gamification.model.UserBadge>> getUserBadges(
+            @PathVariable Long userId) {
+        assertSelfOrAdmin(userId);
+        return ResponseEntity.ok(gamificationService.getUserBadges(userId));
+    }
     
     @PostMapping("/points/add")
     public ResponseEntity<String> addPoints(

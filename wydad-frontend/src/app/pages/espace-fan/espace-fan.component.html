@@ -50,6 +50,27 @@
           </div>
         </div>
 
+        <!-- B.8 : Badges de fidélité (attribution automatique par le serveur) -->
+        <div *ngIf="badgeCatalog.length > 0" class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+          <h3 class="font-bold text-xl text-gray-800 flex items-center gap-2 mb-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-wydad-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/></svg>
+            Badges de fidélité
+          </h3>
+          <p class="text-xs text-gray-500 mb-5">Les badges se débloquent automatiquement quand vos points atteignent le seuil.</p>
+
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div *ngFor="let badge of badgeCatalog"
+                 class="rounded-xl p-4 text-center border transition-all"
+                 [ngClass]="ownsBadge(badge.id)
+                   ? {'bg-wydad-red': true, 'text-white': true, 'border-wydad-red': true, 'shadow-lg': true}
+                   : {'bg-gray-50': true, 'border-gray-200': true, 'opacity-60': true}">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mx-auto mb-2" [ngClass]="{'text-wydad-gold': ownsBadge(badge.id), 'text-gray-400': !ownsBadge(badge.id)}" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+              <div class="font-bold text-sm">{{ badge.name }}</div>
+              <div class="text-[11px] mt-1" [ngClass]="{'text-white opacity-70': ownsBadge(badge.id), 'text-gray-500': !ownsBadge(badge.id)}">{{ badge.minPoints }} pts</div>
+            </div>
+          </div>
+        </div>
+
         <!-- Section Pronostics -->
         <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
           <div class="flex items-center justify-between mb-6">

@@ -533,6 +533,15 @@ export class ApiService {
     return this.http.get<any[]>(`${this.baseUrl}/gamification/predictions/user/${userId}`);
   }
 
+  // BADGES & FIDELITE (B.8)
+  getBadgesCatalog(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/gamification/badges`);
+  }
+
+  getUserBadges(userId: number): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/gamification/badges/user/${userId}`);
+  }
+
   // ==========================================
   // MEDIA UPLOAD
   // ==========================================

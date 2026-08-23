@@ -19,6 +19,7 @@ public class GamificationService {
     private final PredictionRepository predictionRepository;
     private final com.wydad.digital.gamification.client.ContentClient contentClient;
     private final com.wydad.digital.gamification.client.NotificationClient notificationClient;
+    private final BadgeService badgeService;
 
     public UserPointsDto getUserPoints(Long userId) {
         UserPoints points = userPointsRepository.findById(userId)
@@ -111,13 +112,28 @@ public class GamificationService {
     public void addPoints(Long userId, int amount) {
         UserPoints points = userPointsRepository.findById(userId)
                 .orElse(UserPoints.builder().userId(userId).totalPoints(0).level(1).build());
-        
+
         points.setTotalPoints(points.getTotalPoints() + amount);
-        
+
         // Level up logic (every 500 points = 1 level)
         int newLevel = (points.getTotalPoints() / 500) + 1;
         points.setLevel(newLevel);
-        
+
         userPointsRepository.save(points);
+
+        // B.8 : attribution automatique des badges franchis par ce gain
+        badgeService.awardEligibleBadges(userId);
+    }
+
+    /** Badges de l'utilisateur (B.8). */
+    @Transactional(readOnly = true)
+    public List<com.wydad.digital.gamification.model.BadgeDefinition> getActiveBadges() {
+        return badgeService.getActiveBadges();
+    }
+
+    /** Badges possédés par un utilisateur (B.8). */
+    @Transactional(readOnly = true)
+    public List<com.wydad.digital.gamification.model.UserBadge> getUserBadges(Long userId) {
+        return badgeService.getBadgesOfUser(userId);
     }
 }

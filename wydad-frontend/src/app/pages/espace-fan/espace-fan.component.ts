@@ -23,6 +23,9 @@ export class EspaceFanComponent implements OnInit {
   leaderboard: any[] = [];
   matches: any[] = [];
   predictions: any[] = [];
+  /** B.8 : catalogue des badges actifs + badges possédés par l'utilisateur */
+  badgeCatalog: any[] = [];
+  myBadges: any[] = [];
   
   // Pour le formulaire de pronostic
   predictionForm: { [matchId: number]: { homeScore: number, awayScore: number } } = {};
@@ -84,6 +87,21 @@ export class EspaceFanComponent implements OnInit {
       },
       error: (err: any) => console.error('Erreur pronostics', err)
     });
+
+    // B.8 : catalogue des badges + badges de l'utilisateur
+    this.api.getBadgesCatalog().subscribe({
+      next: (data: any) => (this.badgeCatalog = data || []),
+      error: (err: any) => console.error('Erreur badges', err)
+    });
+    this.api.getUserBadges(this.userId as number).subscribe({
+      next: (data: any) => (this.myBadges = data || []),
+      error: (err: any) => console.error('Erreur badges utilisateur', err)
+    });
+  }
+
+  /** B.8 : le badge est-il possédé par l'utilisateur ? */
+  ownsBadge(badgeId: number): boolean {
+    return this.myBadges.some((b: any) => b.badge?.id === badgeId);
   }
 
   checkLoading() {
