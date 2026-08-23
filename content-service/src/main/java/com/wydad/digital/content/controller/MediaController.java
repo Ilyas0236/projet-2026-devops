@@ -3,6 +3,7 @@ package com.wydad.digital.content.controller;
 import com.wydad.digital.content.dto.MediaResponse;
 import com.wydad.digital.content.model.Media;
 import com.wydad.digital.content.repository.MediaRepository;
+import com.wydad.digital.content.service.FileTypeValidator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -16,8 +17,6 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 @RestController
@@ -27,42 +26,41 @@ import java.util.stream.Collectors;
 public class MediaController {
 
     private final MediaRepository mediaRepository;
-
-    /** Types de fichiers autorisés à l'upload (images et PDF uniquement). */
-    private static final Set<String> ALLOWED_CONTENT_TYPES = Set.of(
-            "image/jpeg", "image/png", "image/gif", "image/webp", "application/pdf"
-    );
+    private final FileTypeValidator fileTypeValidator;
 
     @PostMapping("/upload")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Map<String, String>> uploadFile(@RequestParam("file") MultipartFile file) {
-        // Whitelist MIME : empêche l'upload de fichiers exécutables/HTML via le CMS
-        if (file.isEmpty() || file.getContentType() == null
-                || !ALLOWED_CONTENT_TYPES.contains(file.getContentType())) {
-            return ResponseEntity.badRequest().build();
-        }
+        // Validation du type REEL par magic bytes : le Content-Type declare par
+        // le client est forgeable, un executable renomme en .jpg est rejete ici.
+        byte[] data;
         try {
-            String fileName = UUID.randomUUID().toString() + "_" + file.getOriginalFilename();
-
-            Media media = Media.builder()
-                    .fileName(fileName)
-                    .originalName(file.getOriginalFilename())
-                    .contentType(file.getContentType())
-                    .size(file.getSize())
-                    .data(file.getBytes())
-                    .build();
-
-            mediaRepository.save(media);
-
-            Map<String, String> response = new HashMap<>();
-            response.put("url", "/api/content/media/" + fileName);
-            response.put("fileName", fileName);
-            response.put("originalName", file.getOriginalFilename());
-
-            return ResponseEntity.ok(response);
+            data = file.getBytes();
         } catch (IOException e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
+        if (file.isEmpty() || file.getContentType() == null
+                || !fileTypeValidator.isAllowed(file.getContentType(), data)) {
+            return ResponseEntity.badRequest().build();
+        }
+        String fileName = fileTypeValidator.sanitizeFileName(file.getOriginalFilename());
+
+        Media media = Media.builder()
+                .fileName(fileName)
+                .originalName(file.getOriginalFilename())
+                .contentType(file.getContentType())
+                .size(file.getSize())
+                .data(data)
+                .build();
+
+        mediaRepository.save(media);
+
+        Map<String, String> response = new HashMap<>();
+        response.put("url", "/api/content/media/" + fileName);
+        response.put("fileName", fileName);
+        response.put("originalName", file.getOriginalFilename());
+
+        return ResponseEntity.ok(response);
     }
 
     /** Listing metadonnees (ADMIN) pour la mediatheque du back-office : sans les blobs. */
