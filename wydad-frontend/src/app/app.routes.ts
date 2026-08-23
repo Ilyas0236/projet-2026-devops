@@ -43,6 +43,28 @@ import { DashboardStaffComponent } from './pages/espace-staff/dashboard-staff/da
 import { EspaceFanComponent } from './pages/espace-fan/espace-fan.component';
 export const routes: Routes = [
   {
+    // L'arbre admin DOIT être déclaré avant le layout public : celui-ci
+    // contient le catch-all '**' qui sinon absorberait toutes les URLs
+    // /admin/* (Angular matche les routes dans l'ordre de déclaration).
+    path: 'admin',
+    component: AdminLayoutComponent,
+    canActivate: [adminGuard],
+    children: [
+      { path: '', component: DashboardComponent, pathMatch: 'full' },
+      { path: 'utilisateurs', component: AdminUsersComponent },
+      { path: 'actualites', component: AdminActualitesComponent },
+      { path: 'matchs', component: AdminMatchsComponent },
+      { path: 'classements', component: AdminClassementsComponent },
+      { path: 'boutique', component: AdminBoutiqueComponent },
+      { path: 'billetterie', component: AdminBilletterieComponent },
+      { path: 'effectif', component: AdminEffectifComponent },
+      { path: 'staff', component: AdminStaffComponent },
+      { path: 'mediatheque', component: AdminMediathequeComponent },
+      { path: 'notifications', component: AdminNotificationsComponent },
+      { path: 'parametres', component: AdminSettingsComponent }
+    ]
+  },
+  {
     path: '',
     component: PublicLayoutComponent,
     children: [
@@ -72,25 +94,6 @@ export const routes: Routes = [
       { path: 'joueur/dashboard', component: DashboardJoueurComponent, canActivate: [authGuard] },
       { path: 'staff/dashboard', component: DashboardStaffComponent, canActivate: [authGuard] },
       { path: '**', component: NotFoundComponent }
-    ]
-  },
-  {
-    path: 'admin',
-    component: AdminLayoutComponent,
-    canActivate: [adminGuard],
-    children: [
-      { path: '', component: DashboardComponent, pathMatch: 'full' },
-      { path: 'utilisateurs', component: AdminUsersComponent },
-      { path: 'actualites', component: AdminActualitesComponent },
-      { path: 'matchs', component: AdminMatchsComponent },
-      { path: 'classements', component: AdminClassementsComponent },
-      { path: 'boutique', component: AdminBoutiqueComponent },
-      { path: 'billetterie', component: AdminBilletterieComponent },
-      { path: 'effectif', component: AdminEffectifComponent },
-      { path: 'staff', component: AdminStaffComponent },
-      { path: 'mediatheque', component: AdminMediathequeComponent },
-      { path: 'notifications', component: AdminNotificationsComponent },
-      { path: 'parametres', component: AdminSettingsComponent }
     ]
   }
 ];
