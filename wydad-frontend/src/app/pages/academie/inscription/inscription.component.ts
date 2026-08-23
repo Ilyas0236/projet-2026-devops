@@ -16,7 +16,9 @@ export class InscriptionAcademieComponent implements OnInit {
   currentStep = 1;
   totalSteps = 4;
   inscriptionForm!: FormGroup;
-  
+  /** Saison en cours depuis la configuration club (source de verite ADMIN). */
+  saison = '';
+
   api = inject(ApiService);
   auth = inject(AuthService);
   router = inject(Router);
@@ -27,6 +29,15 @@ export class InscriptionAcademieComponent implements OnInit {
   success = false;
 
   ngOnInit() {
+    this.api.getClubSetting('club_info').subscribe({
+      next: (info) => {
+        this.saison = info?.saison || '';
+      },
+      error: () => {
+        this.saison = '';
+      }
+    });
+
     this.inscriptionForm = this.fb.group({
       childInfo: this.fb.group({
         childFullName: ['', Validators.required],

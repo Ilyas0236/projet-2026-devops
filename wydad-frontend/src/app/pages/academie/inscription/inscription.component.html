@@ -2,7 +2,7 @@
   <div class="max-w-4xl mx-auto px-6">
     <div class="mb-10 text-center">
       <h1 class="font-display text-4xl font-bold uppercase tracking-wider text-wydad-dark mb-4">Académie Wydad</h1>
-      <p class="text-gray-600">Inscription en ligne pour la saison 2026/2027</p>
+      <p class="text-gray-600">Inscription en ligne<ng-container *ngIf="saison"> pour la saison {{ saison }}</ng-container></p>
     </div>
 
     <!-- Stepper -->
@@ -152,23 +152,12 @@
           <h2 class="font-display text-2xl font-bold text-wydad-dark mb-8 border-l-4 border-wydad-red pl-4">Récapitulatif & Paiement</h2>
           
           <div class="bg-gray-50 rounded-xl p-6 mb-8 border border-gray-200">
-            <h3 class="font-bold text-lg mb-4 pb-2 border-b">Frais d'inscription Annuelle</h3>
-            <div class="flex justify-between items-center mb-2">
-              <span class="text-gray-600">Frais de dossier et licence</span>
-              <span class="font-bold text-gray-800">300 MAD</span>
-            </div>
-            <div class="flex justify-between items-center mb-2">
-              <span class="text-gray-600">Assurance sportive annuelle</span>
-              <span class="font-bold text-gray-800">200 MAD</span>
-            </div>
-            <div class="flex justify-between items-center mb-4">
-              <span class="text-gray-600">Pack équipements de base</span>
-              <span class="font-bold text-gray-800">500 MAD</span>
-            </div>
-            <div class="flex justify-between items-center pt-4 border-t border-dashed border-gray-300">
-              <span class="font-bold text-lg text-gray-800">Total à payer</span>
-              <span class="font-display font-bold text-2xl text-wydad-red">1000 MAD</span>
-            </div>
+            <h3 class="font-bold text-lg mb-4 pb-2 border-b">Inscription Académie</h3>
+            <p class="text-sm text-gray-600 leading-relaxed">
+              Votre demande d'inscription sera transmise à l'administration de l'académie.
+              Elle restera <strong>en attente de validation</strong> jusqu'à confirmation par le club,
+              qui vous contactera pour finaliser les frais d'inscription et le paiement.
+            </p>
           </div>
 
           <div class="space-y-4">
@@ -204,7 +193,7 @@
           </button>
           
           <button type="submit" *ngIf="currentStep === totalSteps" [disabled]="isSubmitting || inscriptionForm.invalid" class="px-8 py-3 bg-wydad-red text-white rounded font-bold uppercase tracking-wider hover:bg-red-700 transition-colors skew-x-[-10deg] disabled:opacity-50 flex items-center gap-2">
-            <span class="skew-x-[10deg] block">{{ isSubmitting ? 'Traitement...' : 'Confirmer et Payer' }}</span>
+            <span class="skew-x-[10deg] block">{{ isSubmitting ? 'Traitement...' : 'Envoyer ma demande' }}</span>
             <svg *ngIf="!isSubmitting" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 skew-x-[10deg]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
           </button>
         </div>
