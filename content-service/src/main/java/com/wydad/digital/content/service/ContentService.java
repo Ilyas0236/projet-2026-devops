@@ -3,6 +3,7 @@ package com.wydad.digital.content.service;
 import com.wydad.digital.content.dto.*;
 import com.wydad.digital.content.model.*;
 import com.wydad.digital.content.repository.*;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -45,10 +46,10 @@ public class ContentService {
 
     public ArticleResponse getArticleById(Long id) {
         Article article = articleRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Article non trouvé"));
+                .orElseThrow(() -> new EntityNotFoundException("Article non trouvé"));
         // Un brouillon non publie n'est visible que d'un ADMIN (jamais en acces direct).
         if (!article.isPublished() && !isAdmin()) {
-            throw new RuntimeException("Article non trouvé");
+            throw new EntityNotFoundException("Article non trouvé");
         }
         return mapToArticleResponse(article);
     }
@@ -64,7 +65,7 @@ public class ContentService {
 
     public ArticleResponse updateArticle(Long id, ArticleRequest request) {
         Article article = articleRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Article non trouvé"));
+                .orElseThrow(() -> new EntityNotFoundException("Article non trouvé"));
         article.setTitre(request.titre());
         article.setContenu(request.contenu());
         article.setImageUrl(request.imageUrl());
@@ -124,7 +125,7 @@ public class ContentService {
 
     public MatchResponse updateMatchResult(Long id, Integer scoreWydad, Integer scoreAdversaire) {
         Match match = matchRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Match non trouvé"));
+                .orElseThrow(() -> new EntityNotFoundException("Match non trouvé"));
         match.setScoreWydad(scoreWydad);
         match.setScoreAdversaire(scoreAdversaire);
         match.setStatut(MatchStatut.TERMINE);
@@ -139,7 +140,7 @@ public class ContentService {
 
     public MatchResponse updateMatch(Long id, MatchRequest request) {
         Match match = matchRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Match non trouvé"));
+                .orElseThrow(() -> new EntityNotFoundException("Match non trouvé"));
         match.setDate(request.date());
         match.setHeure(request.heure());
         match.setAdversaire(request.adversaire());
@@ -204,7 +205,7 @@ public class ContentService {
 
     public ClassementResponse updateClassement(Long id, ClassementRequest request) {
         Classement c = classementRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Classement non trouvé"));
+                .orElseThrow(() -> new EntityNotFoundException("Classement non trouvé"));
         c.setPosition(request.position());
         c.setEquipe(request.equipe());
         c.setJoues(request.joues());
@@ -256,7 +257,7 @@ public class ContentService {
 
     public JoueurResponse updateJoueur(Long id, JoueurRequest request) {
         Joueur j = joueurRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Joueur non trouvé"));
+                .orElseThrow(() -> new EntityNotFoundException("Joueur non trouvé"));
         j.setNom(request.nom());
         j.setPhotoUrl(request.photoUrl());
         j.setPoste(request.poste());
