@@ -50,6 +50,33 @@ spring:
             - name: SetStatus
               args:
                 status: FORBIDDEN
+        # Defense en profondeur : shop/ticket/sports n'exposent aucun endpoint
+        # /internal aujourd'hui, mais tout futur endpoint de ce type doit etre
+        # bloque par defaut, pas expose par oubli.
+        - id: block-shop-internal
+          uri: no://op
+          predicates:
+            - Path=/api/shop/internal/**
+          filters:
+            - name: SetStatus
+              args:
+                status: FORBIDDEN
+        - id: block-ticket-internal
+          uri: no://op
+          predicates:
+            - Path=/api/ticket/internal/**
+          filters:
+            - name: SetStatus
+              args:
+                status: FORBIDDEN
+        - id: block-sports-internal
+          uri: no://op
+          predicates:
+            - Path=/api/sports/internal/**
+          filters:
+            - name: SetStatus
+              args:
+                status: FORBIDDEN
         - id: auth-service
           uri: ${AUTH_SERVICE_URI:http://localhost:8081}
           predicates:
