@@ -191,6 +191,12 @@ public class ContentService {
         return mapToClassementResponse(saved);
     }
 
+    /** Liste complete (back-office ADMIN) : toutes competitions confondues. */
+    public List<ClassementResponse> getAllClassements() {
+        return classementRepository.findAll()
+                .stream().map(this::mapToClassementResponse).collect(Collectors.toList());
+    }
+
     public List<ClassementResponse> getClassementsByCompetition(String competition) {
         return classementRepository.findByCompetition(competition)
                 .stream().map(this::mapToClassementResponse).collect(Collectors.toList());

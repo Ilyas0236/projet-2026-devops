@@ -10,9 +10,9 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Seed des parametres club (paliers d'adhesion, coordonnees) au premier
- * demarrage uniquement : jamais de surcharge si l'ADMIN les a modifies.
- * Les prix sont alignes sur l'enum MembershipLevel du auth-service.
+ * Seed des parametres club (paliers d'adhesion, coordonnees, competitions)
+ * au premier demarrage uniquement : jamais de surcharge si l'ADMIN les a
+ * modifies. Les prix sont alignes sur l'enum MembershipLevel du auth-service.
  */
 @Slf4j
 @Component
@@ -36,6 +36,16 @@ public class ClubSettingsInitializer implements ApplicationRunner {
                    "features":["Tout du niveau Or","15% de réduction boutique","Priorité absolue billetterie","Droit de vote à l'AG","Rencontres exclusives joueurs"]},
                   {"level":"LEGENDE","name":"Légende","subtitle":"Sur invitation","price":null,
                    "features":["Tous les avantages Diamant","Abonnement Annuel VIP inclus","Maillot officiel dédicacé offert","Statut honorifique à vie"]}
+                ]
+                """);
+
+        seedIfAbsent("competitions", """
+                [
+                  {"name":"Botola Pro","sport":"FOOTBALL"},
+                  {"name":"CAF Champions League","sport":"FOOTBALL"},
+                  {"name":"Coupe du Trone","sport":"FOOTBALL"},
+                  {"name":"D1 Basketball","sport":"BASKETBALL"},
+                  {"name":"Division Excellence","sport":"HANDBALL"}
                 ]
                 """);
 

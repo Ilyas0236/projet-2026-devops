@@ -94,6 +94,13 @@ public class ContentController {
     }
 
     // ==================== CLASSEMENTS (F4) ====================
+    /** Liste complete pour le back-office (ADMIN). */
+    @GetMapping("/classements")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<ClassementResponse>> getAllClassements() {
+        return ResponseEntity.ok(contentService.getAllClassements());
+    }
+
     @GetMapping("/classements/{competition}")
     public ResponseEntity<List<ClassementResponse>> getClassementsByCompetition(@PathVariable String competition) {
         return ResponseEntity.ok(contentService.getClassementsByCompetition(competition));
