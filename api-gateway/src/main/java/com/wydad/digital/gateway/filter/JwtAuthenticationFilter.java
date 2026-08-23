@@ -21,7 +21,10 @@ import java.nio.charset.StandardCharsets;
 @Component
 public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
-    @Value("${jwt.secret:${JWT_SECRET:wydad-secret-key-2024-ne-pas-utiliser-en-production-tres-long-min-256-bits}}")
+    // Pas de fallback committé : un secret par défaut serait une porte dérobée
+    // si la gateway démarre hors docker-compose. L'absence de JWT_SECRET doit
+    // faire echouer le demarrage, pas signer avec une cle publique.
+    @Value("${jwt.secret:${JWT_SECRET:}}")
     private String jwtSecret;
 
     @Override
@@ -71,6 +74,13 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
     private Mono<Void> validateAndForward(ServerWebExchange exchange, GatewayFilterChain chain) {
         ServerHttpRequest request = exchange.getRequest();
         String authHeader = request.getHeaders().getFirst("Authorization");
+
+        // Secret JWT absent (JWT_SECRET non defini) : refuser plutot que
+        // valider les tokens avec une cle vide.
+        if (jwtSecret == null || jwtSecret.isEmpty()) {
+            exchange.getResponse().setStatusCode(HttpStatus.INTERNAL_SERVER_ERROR);
+            return exchange.getResponse().setComplete();
+        }
 
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);

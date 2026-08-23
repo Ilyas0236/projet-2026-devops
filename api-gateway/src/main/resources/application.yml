@@ -85,13 +85,16 @@ spring:
 
 logging:
   level:
-    org.springframework.cloud.gateway: DEBUG
+    org.springframework.cloud.gateway: INFO
 
+# Actuator : health uniquement, sans detail. L'endpoint 'gateway'
+# (lecture/creation de routes a chaud) ne doit JAMAIS etre expose sur
+# le port public — il permettrait de contourner le blocage des routes internes.
 management:
   endpoints:
     web:
       exposure:
-        include: health,info,gateway
+        include: health
   endpoint:
     health:
-      show-details: always
+      show-details: never
