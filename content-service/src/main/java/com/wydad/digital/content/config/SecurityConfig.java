@@ -21,6 +21,11 @@ public class SecurityConfig {
         http.csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        // B.10 : les réclamations ne sont JAMAIS publiques —
+                        // règle placée AVANT le permitAll général des GET vitrine
+                        .requestMatchers(HttpMethod.GET,
+                                "/api/content/reclamations",
+                                "/api/content/reclamations/**").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/content/**").permitAll()
                         // Endpoints internes service-à-service : authentifiés par le
                         // secret partagé X-Internal-Secret au niveau contrôleur

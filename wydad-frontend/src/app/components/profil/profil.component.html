@@ -122,6 +122,14 @@
                   }">
             📱 Sécurité 2FA
           </button>
+          <button (click)="activeTab = 'support'"
+                  class="whitespace-nowrap px-6 py-3 rounded-xl font-display font-bold uppercase text-xs tracking-wider transition-all duration-300 border"
+                  [ngClass]="{
+                    'bg-wydad-red text-white border-wydad-red': activeTab === 'support',
+                    'bg-surface-2 border-white/10 text-text-secondary': activeTab !== 'support'
+                  }">
+            🎧 Support
+          </button>
         </div>
 
         <div class="glass-strong rounded-3xl p-6 md:p-10 shadow-card">
@@ -325,6 +333,67 @@
                 {{ otpErr }}
               </div>
             </div>
+          </div>
+
+          <!-- TAB: SUPPORT (B.10 — réclamations) -->
+          <div *ngIf="activeTab === 'support'" class="animate-fade-in">
+            <h3 class="font-display font-bold text-2xl uppercase tracking-wider mb-2">Support &amp; Réclamations</h3>
+            <p class="text-text-secondary text-sm mb-8">Une question sur une commande, un billet ou votre adhésion ? Écrivez-nous : la réponse du club apparaîtra ici même et dans vos notifications.</p>
+
+            <!-- Mes réclamations -->
+            <div class="space-y-4 mb-10">
+              <div *ngIf="reclamations.length === 0" class="text-text-secondary text-sm py-4">Aucune réclamation pour le moment.</div>
+              <div *ngFor="let r of reclamations" class="bg-surface-2 border border-white/[0.06] rounded-xl p-5">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-2 mb-2">
+                  <span class="font-bold text-white text-sm">{{ r.title }}</span>
+                  <span class="text-[10px] uppercase tracking-widest px-2 py-0.5 rounded-full w-fit font-bold"
+                        [ngClass]="{
+                          'bg-yellow-500/15 text-yellow-400': r.status === 'OPEN',
+                          'bg-blue-500/15 text-blue-300': r.status === 'IN_PROGRESS',
+                          'bg-green-500/15 text-green-400': r.status === 'RESOLVED',
+                          'bg-red-500/15 text-red-400': r.status === 'REJECTED'
+                        }">
+                    {{ reclamationStatusLabel(r.status) }}
+                  </span>
+                </div>
+                <p class="text-xs text-text-secondary mb-1">{{ r.description }}</p>
+                <p class="text-[11px] text-gray-500 mb-3">{{ r.subject }} · {{ r.createdAt | date:'dd/MM/yyyy HH:mm' }}</p>
+                <div *ngIf="r.adminResponse" class="border-l-4 border-wydad-red bg-surface-3 p-4 rounded-r-lg">
+                  <p class="text-[10px] uppercase tracking-widest text-wydad-gold font-bold mb-1">Réponse du club</p>
+                  <p class="text-sm text-text-primary whitespace-pre-line">{{ r.adminResponse }}</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Nouvelle réclamation -->
+            <form (ngSubmit)="submitReclamation()" class="max-w-xl space-y-4">
+              <h4 class="font-display font-bold uppercase tracking-wider text-sm text-wydad-gold">Nouvelle réclamation</h4>
+              <div>
+                <label for="rec-subject" class="wydad-label">Sujet</label>
+                <select id="rec-subject" [(ngModel)]="reclamationDraft.subject" name="recSubject" class="wydad-input">
+                  <option value="SHOP">Boutique (commande, livraison…)</option>
+                  <option value="TICKETING">Billetterie</option>
+                  <option value="MEMBERSHIP">Adhésion / abonnement</option>
+                  <option value="WEBSITE">Site web</option>
+                  <option value="OTHER">Autre</option>
+                </select>
+              </div>
+              <div>
+                <label for="rec-title" class="wydad-label">Titre</label>
+                <input id="rec-title" type="text" [(ngModel)]="reclamationDraft.title" name="recTitle"
+                       maxlength="150" placeholder="Résumé en quelques mots" class="wydad-input">
+              </div>
+              <div>
+                <label for="rec-desc" class="wydad-label">Description détaillée</label>
+                <textarea id="rec-desc" [(ngModel)]="reclamationDraft.description" name="recDesc"
+                          rows="5" placeholder="Décrivez précisément votre problème (numéro de commande, date…)"
+                          class="wydad-input"></textarea>
+              </div>
+              <button type="submit" [disabled]="!canSubmitReclamation()"
+                      class="wydad-btn-primary px-8 py-3 disabled:opacity-40 disabled:cursor-not-allowed">
+                Envoyer ma réclamation
+              </button>
+            </form>
           </div>
 
         </div>

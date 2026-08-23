@@ -14,6 +14,7 @@ import { AdminActualitesComponent } from './pages/admin/admin-actualites/admin-a
 import { AdminMatchsComponent } from './pages/admin/admin-matchs/admin-matchs.component';
 import { AdminClassementsComponent } from './pages/admin/admin-classements/admin-classements.component';
 import { AdminNotificationsComponent } from './pages/admin/admin-notifications/admin-notifications.component';
+import { AdminReclamationsComponent } from './pages/admin/admin-reclamations/admin-reclamations.component';
 import { AdminSettingsComponent } from './pages/admin/admin-settings/admin-settings.component';
 import { AdminMediathequeComponent } from './pages/admin/admin-mediatheque/admin-mediatheque.component';
 import { AdminStaffComponent } from './pages/admin/admin-staff/admin-staff.component';
@@ -66,6 +67,7 @@ export const routes: Routes = [
       { path: 'academie', component: AdminAcademieComponent },
       { path: 'mediatheque', component: AdminMediathequeComponent },
       { path: 'notifications', component: AdminNotificationsComponent },
+      { path: 'reclamations', component: AdminReclamationsComponent },
       { path: 'sondages', component: AdminSondagesComponent },
       { path: 'parametres', component: AdminSettingsComponent }
     ]

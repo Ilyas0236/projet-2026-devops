@@ -135,6 +135,23 @@ export class ApiService {
     return this.http.delete<any>(`${this.baseUrl}/content/sponsors/${id}`);
   }
 
+  // RECLAMATIONS & SUPPORT (B.10) — identite imposee par la gateway
+  createReclamation(data: { subject: string; title: string; description: string }): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/content/reclamations`, data);
+  }
+
+  getMyReclamations(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/content/reclamations/mine`);
+  }
+
+  getAllReclamations(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/content/reclamations`);
+  }
+
+  respondReclamation(id: number, response: string, status: string): Observable<any> {
+    return this.http.put<any>(`${this.baseUrl}/content/reclamations/${id}/response`, { response, status });
+  }
+
   getBalance(email: string): Observable<any> {
     return this.http.get(`${this.baseUrl}/payment/balance?email=${email}`);
   }

@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { ApiService } from '../../services/api.service';
 import { ToastService } from '../../services/toast.service';
 import { ConfirmService } from '../../services/confirm.service';
 
@@ -51,6 +52,12 @@ export class ProfilComponent implements OnInit {
   sessions: any[] = [];
   sessionMsg = '';
 
+  // B.10 — Réclamations & support
+  reclamations: any[] = [];
+  reclamationDraft = { subject: 'SHOP', title: '', description: '' };
+
+  private apiService = inject(ApiService);
+
   authService = inject(AuthService);
   router = inject(Router);
   private toast = inject(ToastService);
@@ -59,6 +66,47 @@ export class ProfilComponent implements OnInit {
   ngOnInit() {
     this.loadProfile();
     this.loadSessions();
+    this.loadReclamations();
+  }
+
+  // --- B.10 : Réclamations ---
+  loadReclamations() {
+    this.apiService.getMyReclamations().subscribe({
+      next: (list) => (this.reclamations = list || []),
+      error: () => (this.reclamations = [])
+    });
+  }
+
+  canSubmitReclamation(): boolean {
+    return !!(this.reclamationDraft.title.trim() && this.reclamationDraft.description.trim());
+  }
+
+  submitReclamation() {
+    if (!this.canSubmitReclamation()) return;
+    this.apiService.createReclamation({
+      subject: this.reclamationDraft.subject,
+      title: this.reclamationDraft.title.trim(),
+      description: this.reclamationDraft.description.trim()
+    }).subscribe({
+      next: () => {
+        this.toast.success('Réclamation envoyée. Le club vous répondra ici même.');
+        this.reclamationDraft.title = '';
+        this.reclamationDraft.description = '';
+        this.loadReclamations();
+      },
+      error: (err) => this.toast.error(err.error?.message || "Échec de l'envoi.")
+    });
+  }
+
+  /** Libellé affiché du statut serveur. */
+  reclamationStatusLabel(status: string): string {
+    switch (status) {
+      case 'OPEN': return 'Ouverte';
+      case 'IN_PROGRESS': return 'En cours';
+      case 'RESOLVED': return 'Résolue';
+      case 'REJECTED': return 'Rejetée';
+      default: return status;
+    }
   }
 
   loadProfile() {
