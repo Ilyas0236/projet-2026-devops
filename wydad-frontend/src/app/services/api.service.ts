@@ -309,6 +309,25 @@ export class ApiService {
   }
 
   // ==========================================
+  // SONDAGES (B.2)
+  // ==========================================
+  getActivePolls(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/sports/polls/active`);
+  }
+
+  votePoll(pollId: number, optionIndex: number): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/sports/polls/${pollId}/vote?optionIndex=${optionIndex}`, {});
+  }
+
+  createPoll(question: string, options: string[]): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/sports/polls`, { question, options });
+  }
+
+  closePoll(pollId: number): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/sports/polls/${pollId}/close`, {});
+  }
+
+  // ==========================================
   // ESPACES METIERS (Joueur & Staff)
   // ==========================================
   getPlayerByUserId(userId: number): Observable<any> {

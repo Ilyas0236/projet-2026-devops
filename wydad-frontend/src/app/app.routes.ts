@@ -43,6 +43,8 @@ import { DashboardParentComponent } from './pages/academie/dashboard-parent/dash
 import { DashboardJoueurComponent } from './pages/espace-joueur/dashboard-joueur/dashboard-joueur.component';
 import { DashboardStaffComponent } from './pages/espace-staff/dashboard-staff/dashboard-staff.component';
 import { EspaceFanComponent } from './pages/espace-fan/espace-fan.component';
+import { SondagesComponent } from './pages/sondages/sondages.component';
+import { AdminSondagesComponent } from './pages/admin/admin-sondages/admin-sondages.component';
 export const routes: Routes = [
   {
     // L'arbre admin DOIT être déclaré avant le layout public : celui-ci
@@ -64,6 +66,7 @@ export const routes: Routes = [
       { path: 'academie', component: AdminAcademieComponent },
       { path: 'mediatheque', component: AdminMediathequeComponent },
       { path: 'notifications', component: AdminNotificationsComponent },
+      { path: 'sondages', component: AdminSondagesComponent },
       { path: 'parametres', component: AdminSettingsComponent }
     ]
   },
@@ -85,6 +88,7 @@ export const routes: Routes = [
       { path: 'billetterie/:id', component: BilletterieDetailComponent },
       { path: 'effectif', component: EffectifComponent },
       { path: 'espace-fan', component: EspaceFanComponent, canActivate: [authGuard] },
+      { path: 'sondages', component: SondagesComponent },
       { path: 'panier', component: CartComponent, canActivate: [authGuard] },
       { path: 'profil', component: ProfilComponent, canActivate: [authGuard] },
       { path: 'profil/carte', component: CarteMembreComponent, canActivate: [authGuard] },
