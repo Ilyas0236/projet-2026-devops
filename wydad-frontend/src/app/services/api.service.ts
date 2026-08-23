@@ -231,6 +231,11 @@ export class ApiService {
     return this.http.get(`${this.baseUrl}/ticket/tickets/${ticketId}/pdf`, { responseType: 'blob' });
   }
 
+  /** QR code genere cote backend (zxing) — aucun service externe. */
+  getTicketQr(ticketId: number): Observable<Blob> {
+    return this.http.get(`${this.baseUrl}/ticket/tickets/${ticketId}/qr`, { responseType: 'blob' });
+  }
+
   // ==========================================
   // SPORTS SERVICE (Effectif)
   // ==========================================

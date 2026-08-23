@@ -82,8 +82,7 @@ import { ToastService } from '../../services/toast.service';
                 
                 <div class="flex items-center gap-3">
                   <div class="w-16 h-16 bg-gray-100 rounded-lg p-1 border border-gray-200 flex-shrink-0">
-                    <img *ngIf="ticket.qrCodeData" [src]="'https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=' + ticket.qrCodeData" alt="QR Code" class="w-full h-full object-cover">
-                    <!-- Note: In production, backend should return base64 QR, using external API for demo -->
+                    <img *ngIf="qrUrl(ticket.id)" [src]="qrUrl(ticket.id)" (error)="onQrError(ticket)" alt="QR Code" class="w-full h-full object-cover">
                   </div>
                   <div class="flex-1">
                     <span class="block text-xs text-gray-500 uppercase">N° Billet</span>
@@ -157,12 +156,37 @@ export class MesBilletsComponent implements OnInit {
         // Trier par date d'événement, les plus récents/à venir en premier
         this.tickets = data.sort((a, b) => new Date(b.eventDate).getTime() - new Date(a.eventDate).getTime());
         this.loading = false;
+        this.tickets.forEach(t => this.loadQr(t.id));
       },
       error: () => {
         this.loadError = true;
         this.loading = false;
       }
     });
+  }
+
+  /** QR codes générés par le backend (zxing) — blob authentifié -> objectURL. */
+  private qrObjectUrls: Record<number, string> = {};
+
+  private loadQr(ticketId: number) {
+    if (this.qrObjectUrls[ticketId]) return;
+    this.api.getTicketQr(ticketId).subscribe({
+      next: (blob) => {
+        this.qrObjectUrls[ticketId] = URL.createObjectURL(blob);
+      },
+      error: () => {
+        // QR indisponible : la carte reste utilisable (numéro de billet affiché)
+      }
+    });
+  }
+
+  qrUrl(ticketId: number): string {
+    return this.qrObjectUrls[ticketId] || '';
+  }
+
+  onQrError(ticket: any) {
+    // Nettoie une URL invalide pour retenter au prochain cycle de détection
+    delete this.qrObjectUrls[ticket.id];
   }
 
   retry() {
