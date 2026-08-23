@@ -181,6 +181,59 @@
         <!-- MAIN CONTENT -->
         <div class="lg:col-span-8 space-y-8 animate-fade-in-up" style="animation-delay: 0.3s; opacity: 0;">
 
+          <!-- MES NOTIFICATIONS (B.11) — espace UNIQUE : convocations, statut médical,
+               messages du staff, réponses du club… émis par le backend (IN_APP).
+               Ownership prouvé côté serveur (assertSelfOrAdmin, 403 testé). -->
+          <div class="glass-strong rounded-3xl p-8 border border-white/5 shadow-card">
+            <div class="flex justify-between items-end mb-6">
+              <div>
+                <h3 class="font-display font-bold text-lg uppercase tracking-wider flex items-center gap-3">
+                  <span class="w-8 h-8 rounded-full bg-wydad-red/20 text-wydad-red flex items-center justify-center text-sm">🔔</span>
+                  Mes notifications
+                </h3>
+                <p class="text-text-tertiary text-xs uppercase tracking-widest mt-1">Convocations · Médical · Messages · Club</p>
+              </div>
+              <span *ngIf="unreadNotifications > 0"
+                    class="bg-wydad-red text-white px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider shadow-glow-red">
+                {{ unreadNotifications }} non lue{{ unreadNotifications !== 1 ? 's' : '' }}
+              </span>
+              <span *ngIf="unreadNotifications === 0"
+                    class="bg-surface-3 text-white border border-white/10 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider">
+                À jour ✓
+              </span>
+            </div>
+
+            <p *ngIf="notifications.length === 0" class="text-text-secondary text-sm py-6 text-center">
+              Aucune notification pour le moment.
+            </p>
+
+            <div class="space-y-3">
+              <div *ngFor="let n of notifications"
+                   class="flex items-start justify-between gap-3 rounded-2xl p-4 border transition-all"
+                   [ngClass]="n.status === 'READ'
+                     ? {'bg-surface-2': true, 'border-white/5': true, 'opacity-70': true}
+                     : {'bg-surface-1': true, 'border-wydad-red/30': true}">
+                <div class="min-w-0">
+                  <div class="flex flex-wrap items-center gap-2 mb-1">
+                    <!-- Point non-lue -->
+                    <span *ngIf="n.status !== 'READ'" class="w-2 h-2 rounded-full bg-wydad-red shrink-0"></span>
+                    <h4 class="text-sm font-bold truncate">{{ n.title }}</h4>
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest bg-surface-3 text-text-secondary border border-white/10 shrink-0">
+                      {{ notificationTypeLabel(n.type) }}
+                    </span>
+                  </div>
+                  <p class="text-xs text-text-secondary whitespace-pre-line break-words">{{ n.message }}</p>
+                  <p class="text-[10px] uppercase tracking-widest text-text-tertiary mt-1.5">{{ n.createdAt | date:'dd/MM/yyyy HH:mm' }}</p>
+                </div>
+                <button *ngIf="n.status !== 'READ'" (click)="markNotificationRead(n)"
+                        [disabled]="markingNotificationId === n.id"
+                        class="shrink-0 bg-surface-3 hover:bg-surface-2 border border-white/10 disabled:opacity-40 px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-colors">
+                  {{ markingNotificationId === n.id ? '…' : 'Lu' }}
+                </button>
+              </div>
+            </div>
+          </div>
+
           <!-- MES CONVOCATIONS (B.3.a) -->
           <div class="glass-strong rounded-3xl p-8 border border-white/5 shadow-card">
             <div class="flex justify-between items-end mb-8">

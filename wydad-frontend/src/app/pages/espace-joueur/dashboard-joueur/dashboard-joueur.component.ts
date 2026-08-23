@@ -59,6 +59,12 @@ export class DashboardJoueurComponent implements OnInit {
   // Annonces visibles : club + ma catégorie (filtrage serveur)
   announcements: any[] = [];
 
+  // B.11 : espace de notifications UNIQUE (convocations, médical, messages,
+  // réponses du club…) — ownership prouvé côté serveur (assertSelfOrAdmin).
+  notifications: any[] = [];
+  unreadNotifications = 0;
+  markingNotificationId: number | null = null;
+
   ngOnInit() {
     const userId = this.auth.getCurrentUserId();
     if (!userId) {
@@ -100,6 +106,45 @@ export class DashboardJoueurComponent implements OnInit {
     this.api.getMyStats().subscribe({ next: d => this.matchStats = d, error: () => {} });
     this.api.getInbox().subscribe({ next: d => this.inbox = d, error: () => {} });
     this.api.getVisibleAnnouncements().subscribe({ next: d => this.announcements = d, error: () => {} });
+    this.loadNotifications();
+  }
+
+  /** B.11 : charge l'inbox de notifications du membre connecté. */
+  loadNotifications() {
+    const userId = this.auth.getCurrentUserId();
+    if (!userId) { return; }
+    this.api.getMyNotifications(userId).subscribe({
+      next: d => this.notifications = d || [],
+      error: () => {}
+    });
+    this.api.getMyUnreadCount(userId).subscribe({
+      next: n => this.unreadNotifications = n,
+      error: () => {}
+    });
+  }
+
+  /** Marque une notification comme lue (endpoint assertSelfOrAdmin). */
+  markNotificationRead(n: any) {
+    if (n.status === 'READ' || this.markingNotificationId) { return; }
+    this.markingNotificationId = n.id;
+    this.api.markNotificationRead(n.id).subscribe({
+      next: () => {
+        n.status = 'READ';
+        this.unreadNotifications = Math.max(0, this.unreadNotifications - 1);
+        this.markingNotificationId = null;
+      },
+      error: () => { this.markingNotificationId = null; }
+    });
+  }
+
+  /** Libellé court selon le type serveur (IN_APP, EMAIL…). */
+  notificationTypeLabel(type: string): string {
+    switch (type) {
+      case 'IN_APP': return 'Club';
+      case 'EMAIL': return 'E-mail';
+      case 'PUSH': return 'Push';
+      default: return type;
+    }
   }
 
   retryLoad() {

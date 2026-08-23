@@ -304,6 +304,19 @@ export class ApiService {
     return this.http.post<any>(`${this.baseUrl}/notification/broadcast`, notification, { responseType: 'text' as 'json' });
   }
 
+  // --- B.11 : espace de notifications personnel (ownership serveur prouvé) ---
+  getMyNotifications(userId: number): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/notification/user/${userId}`);
+  }
+
+  getMyUnreadCount(userId: number): Observable<number> {
+    return this.http.get<number>(`${this.baseUrl}/notification/user/${userId}/unread/count`);
+  }
+
+  markNotificationRead(notificationId: number): Observable<any> {
+    return this.http.patch<any>(`${this.baseUrl}/notification/${notificationId}/read`, {});
+  }
+
   // ==========================================
   // ACADEMY SERVICE
   // ==========================================
