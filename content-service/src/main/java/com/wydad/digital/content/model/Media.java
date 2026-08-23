@@ -24,7 +24,10 @@ public class Media {
 
     private Long size;
 
-    @Lob
+    // Pas de @Lob : sous Hibernate 6 + PostgreSQL, @Lob mappe byte[] vers le
+    // type OID (large object) alors que la colonne est BYTEA -> l'insertion
+    // echoue ("column data is of type bytea but expression is of type bigint").
+    // Un byte[] sans @Lob mappe nativement vers BYTEA.
     @Column(columnDefinition = "BYTEA", nullable = false)
     private byte[] data;
 

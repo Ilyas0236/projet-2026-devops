@@ -50,7 +50,9 @@ public class Ticket {
     @Column(unique = true)
     private String qrCodeData;
 
-    @Lob
+    // Pas de @Lob : sous Hibernate 6 + PostgreSQL, @Lob mappe byte[] vers le
+    // type OID (large object) alors que la colonne est BYTEA -> echec d'insertion.
+    // Un byte[] sans @Lob mappe nativement vers BYTEA.
     @Column(columnDefinition = "BYTEA")
     private byte[] qrCodeImage;
 
