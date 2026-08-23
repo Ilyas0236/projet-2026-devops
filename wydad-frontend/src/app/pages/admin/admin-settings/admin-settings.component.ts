@@ -98,6 +98,40 @@ import { ToastService } from '../../../services/toast.service';
             </button>
           </form>
         </div>
+
+        <!-- B.9 : Reseaux sociaux officiels (saisie ADMIN, lecture publique footer) -->
+        <div class="bg-white/5 border border-white/10 rounded-lg p-5">
+          <h3 class="font-display font-bold uppercase tracking-wider text-wydad-gold text-sm mb-1">Réseaux sociaux officiels</h3>
+          <p class="text-xs text-gray-600 mb-4">Affichés dans le footer public. Saisissez uniquement les URLs officielles du club.</p>
+
+          <div *ngIf="socialLinks.length === 0" class="text-sm text-gray-500 py-2">Aucun réseau social enregistré.</div>
+
+          <div *ngFor="let link of socialLinks; let i = index" class="flex flex-col md:flex-row md:items-center gap-3 py-2 border-t border-white/[0.06]">
+            <span class="text-[10px] uppercase tracking-widest px-2 py-0.5 rounded-full bg-white/10 text-gray-300 w-fit">{{ link.platform }}</span>
+            <span class="flex-1 text-xs text-gray-400 truncate font-mono">{{ link.url }}</span>
+            <button (click)="removeSocialLink(i)"
+                    class="px-3 py-1.5 text-xs uppercase font-bold tracking-wider rounded bg-red-800 hover:bg-red-700 text-white shrink-0">
+              Retirer
+            </button>
+          </div>
+
+          <form (ngSubmit)="addSocialLink()" class="mt-5 pt-4 border-t border-white/[0.06] grid grid-cols-1 md:grid-cols-3 gap-3">
+            <select [(ngModel)]="socialDraft.platform" name="soc-platform" required class="admin-input !text-sm">
+              <option value="" disabled>Plateforme *</option>
+              <option value="FACEBOOK">Facebook</option>
+              <option value="X">X (Twitter)</option>
+              <option value="INSTAGRAM">Instagram</option>
+              <option value="YOUTUBE">YouTube</option>
+              <option value="TIKTOK">TikTok</option>
+              <option value="LINKEDIN">LinkedIn</option>
+            </select>
+            <input [(ngModel)]="socialDraft.url" name="soc-url" required placeholder="URL officielle * (https://…)" class="admin-input !text-sm">
+            <button type="submit" [disabled]="!canAddSocialLink()"
+                    class="px-4 py-2 bg-wydad-gold disabled:opacity-40 disabled:cursor-not-allowed hover:bg-yellow-600 text-black uppercase text-xs font-bold tracking-wider">
+              Ajouter
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   `
@@ -114,11 +148,52 @@ export class AdminSettingsComponent implements OnInit {
   sponsorDraft: any = { name: '', logoUrl: '', websiteUrl: '', tier: '', displayOrder: 0 };
   submittingSponsor = false;
 
+  // B.9 : reseaux sociaux officiels (cle de configuration "social_links")
+  socialLinks: any[] = [];
+  socialDraft: any = { platform: '', url: '' };
+
   constructor(private apiService: ApiService, private toast: ToastService) {}
 
   ngOnInit() {
     this.loadSettings();
     this.loadSponsors();
+    this.loadSocialLinks();
+  }
+
+  loadSocialLinks() {
+    this.apiService.getClubSetting('social_links').subscribe({
+      next: (links) => (this.socialLinks = Array.isArray(links) ? links : []),
+      error: () => (this.socialLinks = [])
+    });
+  }
+
+  canAddSocialLink(): boolean {
+    return !!(this.socialDraft.platform && /^https:\/\/.+/.test(this.socialDraft.url || ''));
+  }
+
+  addSocialLink() {
+    if (!this.canAddSocialLink()) return;
+    const links = [...this.socialLinks.filter((l: any) => l.platform !== this.socialDraft.platform),
+                   { platform: this.socialDraft.platform, url: this.socialDraft.url.trim() }];
+    this.apiService.updateClubSetting('social_links', links).subscribe({
+      next: () => {
+        this.toast.success('Réseau social enregistré.');
+        this.socialDraft = { platform: '', url: '' };
+        this.loadSocialLinks();
+      },
+      error: () => this.toast.error("Échec de l'enregistrement.")
+    });
+  }
+
+  removeSocialLink(index: number) {
+    const links = this.socialLinks.filter((_, i) => i !== index);
+    this.apiService.updateClubSetting('social_links', links).subscribe({
+      next: () => {
+        this.toast.success('Réseau social retiré.');
+        this.loadSocialLinks();
+      },
+      error: () => this.toast.error('Échec de la suppression.')
+    });
   }
 
   loadSponsors() {

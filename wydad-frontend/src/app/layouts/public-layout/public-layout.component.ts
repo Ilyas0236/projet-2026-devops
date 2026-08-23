@@ -19,8 +19,10 @@ export class PublicLayoutComponent implements OnInit {
   // Coordonnees du club — source de verite : configuration club (ADMIN)
   clubInfo: any = null;
 
-  // Sponsors actifs (B.7) — source de verite : ADMIN via content-service
+  // Sponsors actifs (B.7) et reseaux sociaux officiels (B.9) —
+  // source de verite : ADMIN via content-service
   sponsors: any[] = [];
+  socialLinks: any[] = [];
 
   constructor(private api: ApiService) {}
 
@@ -34,6 +36,16 @@ export class PublicLayoutComponent implements OnInit {
       next: (list) => (this.sponsors = list || []),
       error: () => (this.sponsors = [])
     });
+
+    this.api.getClubSetting('social_links').subscribe({
+      next: (links) => (this.socialLinks = Array.isArray(links) ? links : []),
+      error: () => (this.socialLinks = [])
+    });
+  }
+
+  /** Initiale affichée sur l'icône sociale (ex "FACEBOOK" -> "F"). */
+  socialInitial(platform: string): string {
+    return (platform || '?').charAt(0).toUpperCase();
   }
 
   @HostListener('window:scroll', [])

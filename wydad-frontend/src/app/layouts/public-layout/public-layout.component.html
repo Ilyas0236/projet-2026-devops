@@ -87,10 +87,13 @@
         <div class="col-span-1 md:col-span-1">
           <img src="assets/images/logos/wydad-logo.png" alt="Wydad AC" class="wac-logo-3d object-contain mb-6">
           <p *ngIf="clubInfo?.description" class="text-text-tertiary text-sm leading-relaxed">{{ clubInfo.description }}</p>
-          <div class="flex gap-4 mt-6">
-            <a href="#" class="w-8 h-8 rounded-full bg-surface-2 flex items-center justify-center hover:bg-wydad-red text-white transition-colors"><span class="sr-only">Facebook</span>f</a>
-            <a href="#" class="w-8 h-8 rounded-full bg-surface-2 flex items-center justify-center hover:bg-wydad-red text-white transition-colors"><span class="sr-only">Twitter</span>t</a>
-            <a href="#" class="w-8 h-8 rounded-full bg-surface-2 flex items-center justify-center hover:bg-wydad-red text-white transition-colors"><span class="sr-only">Instagram</span>i</a>
+          <!-- B.9 : reseaux sociaux officiels — saisis par l'ADMIN, aucune URL hardcodee -->
+          <div *ngIf="socialLinks.length > 0" class="flex gap-4 mt-6">
+            <a *ngFor="let link of socialLinks" [href]="link.url" target="_blank" rel="noopener noreferrer"
+               [attr.aria-label]="link.platform"
+               class="w-8 h-8 rounded-full bg-surface-2 flex items-center justify-center hover:bg-wydad-red text-white transition-colors uppercase text-xs font-bold">
+              {{ socialInitial(link.platform) }}
+            </a>
           </div>
         </div>
         <div>
