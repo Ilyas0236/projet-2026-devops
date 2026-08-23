@@ -44,9 +44,36 @@ public class PaymentService {
                 ));
     }
 
+    /**
+     * Variante sous verrou pessimiste : TOUTE mutation du solde doit passer
+     * par ici pour sérialiser les écritures concurrentes sur un même compte.
+     * La course à la création initiale est arbitrée par la contrainte
+     * d'unicité sur email : en cas de collision, on relit sous verrou.
+     */
+    @Transactional
+    public ECashAccount getOrCreateAccountForUpdate(String email) {
+        return accountRepository.findByEmailForUpdate(email)
+                .orElseGet(() -> {
+                    try {
+                        return accountRepository.save(
+                                ECashAccount.builder()
+                                        .email(email)
+                                        .balance(BigDecimal.ZERO)
+                                        .active(true)
+                                        .build()
+                        );
+                    } catch (org.springframework.dao.DataIntegrityViolationException e) {
+                        // Un compte concurrent vient d'être créé : relecture sous verrou.
+                        return accountRepository.findByEmailForUpdate(email)
+                                .orElseThrow(() -> new IllegalStateException(
+                                        "Compte introuvable après collision de création : " + email));
+                    }
+                });
+    }
+
     @Transactional
     public TransactionResponse credit(CreditRequest request) {
-        ECashAccount account = getOrCreateAccount(request.email());
+        ECashAccount account = getOrCreateAccountForUpdate(request.email());
         account.setBalance(account.getBalance().add(request.amount()));
         accountRepository.save(account);
 
@@ -65,7 +92,7 @@ public class PaymentService {
 
     @Transactional
     public TransactionResponse debit(String email, BigDecimal amount, String description) {
-        ECashAccount account = getOrCreateAccount(email);
+        ECashAccount account = getOrCreateAccountForUpdate(email);
         if (account.getBalance().compareTo(amount) < 0) {
             throw new RuntimeException("Solde insuffisant");
         }
@@ -170,7 +197,7 @@ public class PaymentService {
 
     @Transactional
     public byte[] don(DonRequest request) {
-        ECashAccount account = getOrCreateAccount(request.email());
+        ECashAccount account = getOrCreateAccountForUpdate(request.email());
 
         if (account.getBalance().compareTo(request.amount()) < 0) {
             throw new RuntimeException("Solde E-cash insuffisant pour le don");
@@ -225,7 +252,7 @@ public class PaymentService {
             throw new RuntimeException(payment.getMessage());
         }
 
-        ECashAccount account = getOrCreateAccount(email);
+        ECashAccount account = getOrCreateAccountForUpdate(email);
         account.setBalance(account.getBalance().add(request.amount()));
         accountRepository.save(account);
 
