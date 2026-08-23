@@ -25,11 +25,22 @@ export class LoginComponent {
     this.authService.login(this.email, this.password).subscribe({
       next: () => {
         this.loading = false;
-        // Redirection selon le rôle : admin vers le back-office, sinon vers la carte membre
-        if (this.authService.getRole() === 'ADMIN') {
-          this.router.navigate(['/admin']);
-        } else {
-          this.router.navigate(['/profil/carte']);
+        // Redirection selon le rôle (valeurs de l'enum backend Role.java)
+        switch (this.authService.getRole()) {
+          case 'ADMIN':
+            this.router.navigate(['/admin']);
+            break;
+          case 'JOUEUR':
+            this.router.navigate(['/joueur/dashboard']);
+            break;
+          case 'STAFF':
+            this.router.navigate(['/staff/dashboard']);
+            break;
+          case 'PARENT':
+            this.router.navigate(['/academie/mes-enfants']);
+            break;
+          default:
+            this.router.navigate(['/profil/carte']);
         }
       },
       error: (err) => {

@@ -72,7 +72,7 @@
             
             <div class="h-px bg-white/[0.06] my-2"></div>
             
-            <a *ngIf="profile?.role === 'PLAYER'" routerLink="/joueur/dashboard" class="px-4 py-3 rounded-lg text-sm font-bold bg-wydad-gold text-black hover:bg-wydad-gold-light transition-colors text-center uppercase tracking-wider mt-2">🔥 Espace Joueur</a>
+            <a *ngIf="profile?.role === 'JOUEUR'" routerLink="/joueur/dashboard" class="px-4 py-3 rounded-lg text-sm font-bold bg-wydad-gold text-black hover:bg-wydad-gold-light transition-colors text-center uppercase tracking-wider mt-2">🔥 Espace Joueur</a>
             <a *ngIf="profile?.role === 'STAFF'" routerLink="/staff/dashboard" class="px-4 py-3 rounded-lg text-sm font-bold bg-wydad-gold text-black hover:bg-wydad-gold-light transition-colors text-center uppercase tracking-wider mt-2">📋 Espace Staff</a>
           </div>
 

@@ -3,7 +3,9 @@ package com.wydad.digital.sports.controller;
 import com.wydad.digital.sports.dto.PlayerDto;
 import com.wydad.digital.sports.enums.Category;
 import com.wydad.digital.sports.enums.SportType;
+import com.wydad.digital.sports.filter.SportsUserContext;
 import com.wydad.digital.sports.service.PlayerService;
+import org.springframework.security.access.AccessDeniedException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -40,7 +42,15 @@ public class PlayerController {
     }
 
     @GetMapping("/user/{userId}")
+    @PreAuthorize("hasRole('JOUEUR') or hasRole('STAFF') or hasRole('ADMIN')")
     public ResponseEntity<PlayerDto> getPlayerByUserId(@PathVariable Long userId) {
+        // Anti-IDOR : un joueur ne peut consulter que sa propre fiche sportive ;
+        // STAFF et ADMIN peuvent lire toutes les fiches.
+        if (!SportsUserContext.isAdmin()
+                && !"STAFF".equals(SportsUserContext.getCurrentUserRole())
+                && !userId.equals(SportsUserContext.getCurrentUserId())) {
+            throw new AccessDeniedException("Consultation de la fiche d'un autre joueur interdite");
+        }
         return ResponseEntity.ok(playerService.getPlayerByUserId(userId));
     }
 
