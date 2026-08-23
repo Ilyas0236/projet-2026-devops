@@ -328,6 +328,46 @@ export class ApiService {
   }
 
   // ==========================================
+  // ESPACE JOUEUR (B.3 / B.3.a)
+  // ==========================================
+  getMyConvocations(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/sports/my-space/convocations`);
+  }
+
+  respondToConvocation(convocationId: number, status: string, justification?: string): Observable<any> {
+    const body: any = { status };
+    if (justification) { body.justification = justification; }
+    return this.http.post<any>(
+      `${this.baseUrl}/sports/my-space/convocations/${convocationId}/respond`, body);
+  }
+
+  /** Historique de présence du joueur connecté (réponses déjà données). */
+  getMyPresence(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/sports/my-space/presence`);
+  }
+
+  getMyDocuments(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/sports/my-space/documents`);
+  }
+
+  updateMyProfile(body: any): Observable<any> {
+    return this.http.put<any>(`${this.baseUrl}/sports/my-space/profile`, body);
+  }
+
+  /** Convocation d'un joueur par le staff (B.3.a) — réservée au staff de la catégorie. */
+  createConvocation(joueurUserId: number, sessionId: number): Observable<any> {
+    return this.http.post<any>(
+      `${this.baseUrl}/sports/my-space/staff/convocations?joueurUserId=${joueurUserId}&sessionId=${sessionId}`, {});
+  }
+
+  /** Partage d'un document avec un joueur (staff/admin). */
+  shareDocument(joueurUserId: number, title: string, url: string): Observable<any> {
+    return this.http.post<any>(
+      `${this.baseUrl}/sports/my-space/staff/documents?joueurUserId=${joueurUserId}`,
+      { title, url });
+  }
+
+  // ==========================================
   // ESPACES METIERS (Joueur & Staff)
   // ==========================================
   getPlayerByUserId(userId: number): Observable<any> {
