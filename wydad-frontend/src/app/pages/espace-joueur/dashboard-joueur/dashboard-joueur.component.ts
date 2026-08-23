@@ -49,6 +49,16 @@ export class DashboardJoueurComponent implements OnInit {
   editBirthDate = '';
   editNationality = '';
 
+  // Messagerie (B.5) : écrire au staff de MA catégorie (contrôle serveur)
+  inbox: any[] = [];
+  conversation: any[] = [];
+  conversationWith: { id: number; name: string } | null = null;
+  messageDraft = '';
+  sendingMessage = false;
+
+  // Annonces visibles : club + ma catégorie (filtrage serveur)
+  announcements: any[] = [];
+
   ngOnInit() {
     const userId = this.auth.getCurrentUserId();
     if (!userId) {
@@ -88,6 +98,8 @@ export class DashboardJoueurComponent implements OnInit {
     this.api.getMyPresence().subscribe({ next: d => this.presence = d, error: () => {} });
     this.api.getMyDocuments().subscribe({ next: d => this.documents = d, error: () => {} });
     this.api.getMyStats().subscribe({ next: d => this.matchStats = d, error: () => {} });
+    this.api.getInbox().subscribe({ next: d => this.inbox = d, error: () => {} });
+    this.api.getVisibleAnnouncements().subscribe({ next: d => this.announcements = d, error: () => {} });
   }
 
   retryLoad() {
@@ -146,6 +158,45 @@ export class DashboardJoueurComponent implements OnInit {
   private reloadConvocations() {
     this.api.getMyConvocations().subscribe({ next: d => this.convocations = d });
     this.api.getMyPresence().subscribe({ next: d => this.presence = d });
+  }
+
+  // ───────────────────── Messagerie (B.5) ─────────────────────
+
+  openConversation(staffUserId: number, staffName: string) {
+    this.conversationWith = { id: staffUserId, name: staffName };
+    this.api.getConversation(staffUserId).subscribe({
+      next: d => this.conversation = d,
+      error: () => this.toast.error('Impossible de charger la conversation')
+    });
+  }
+
+  closeConversation() {
+    this.conversationWith = null;
+    this.conversation = [];
+    this.messageDraft = '';
+  }
+
+  sendMessageToStaff() {
+    if (!this.messageDraft.trim() || !this.conversationWith) { return; }
+    this.sendingMessage = true;
+    const myId = Number(this.auth.getCurrentUserId());
+    this.api.sendMessage(this.conversationWith.id, this.messageDraft.trim()).subscribe({
+      next: () => {
+        // Optimiste local : le serveur a validé l'appariement avant de persister
+        this.conversation = [...this.conversation, {
+          senderUserId: myId,
+          recipientUserId: this.conversationWith!.id,
+          content: this.messageDraft.trim(),
+          createdAt: new Date().toISOString()
+        }];
+        this.messageDraft = '';
+        this.sendingMessage = false;
+      },
+      error: (err) => {
+        this.toast.error(err?.error?.message || 'Envoi impossible');
+        this.sendingMessage = false;
+      }
+    });
   }
 
   // ───────────────────── Édition de profil restreinte ─────────────────────

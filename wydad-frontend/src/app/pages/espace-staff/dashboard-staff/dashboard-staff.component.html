@@ -38,6 +38,11 @@
           <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
           <span>Planifier Séance</span>
         </button>
+
+        <button (click)="showAnnouncementForm = !showAnnouncementForm"
+                class="bg-surface-2 hover:bg-surface-3 border border-white/10 rounded-xl py-3 px-6 text-xs font-bold uppercase tracking-widest transition-colors shrink-0 flex items-center gap-2">
+          📣 Annonce
+        </button>
       </div>
 
       <!-- Planning Form (Collapsible) -->
@@ -83,7 +88,40 @@
         </form>
       </div>
 
-      <!-- MAIN CONTENT -->
+      <!-- B.5 — FORMULAIRE ANNONCE (collapsible) -->
+      <div *ngIf="showAnnouncementForm" class="glass-strong rounded-[2rem] border border-white/10 p-8 mb-12 animate-fade-in">
+        <div class="flex justify-between items-center mb-6">
+          <h2 class="font-display text-xl font-bold uppercase tracking-wider">📣 Nouvelle annonce</h2>
+          <button (click)="showAnnouncementForm = false"
+                  class="w-10 h-10 rounded-full bg-surface-2 hover:bg-surface-3 border border-white/5 flex items-center justify-center text-text-tertiary hover:text-white transition-colors">✕</button>
+        </div>
+        <form [formGroup]="announcementForm" (ngSubmit)="submitAnnouncement()">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+            <div class="md:col-span-2">
+              <label class="wydad-label text-xs" for="ann-title">Titre *</label>
+              <input id="ann-title" type="text" formControlName="title" placeholder="Ex : Tenue obligatoire dimanche" class="wydad-input py-3">
+            </div>
+            <div>
+              <label class="wydad-label text-xs" for="ann-scope">Portée</label>
+              <select id="ann-scope" formControlName="scope" class="wydad-input py-3">
+                <option value="category">Ma catégorie uniquement ({{ staff.sportType }} {{ staff.assignedCategory || staff.category }})</option>
+                <option value="club">Tout le club</option>
+              </select>
+            </div>
+            <div class="md:col-span-3">
+              <label class="wydad-label text-xs" for="ann-body">Contenu *</label>
+              <textarea id="ann-body" formControlName="body" rows="3" maxlength="2000"
+                        placeholder="Message aux joueurs…" class="wydad-input py-3 resize-none"></textarea>
+            </div>
+          </div>
+          <div class="flex justify-end">
+            <button type="submit" [disabled]="announcementForm.invalid || isSubmittingAnnouncement"
+                    class="wydad-btn-primary px-8 py-3 disabled:opacity-50">
+              {{ isSubmittingAnnouncement ? 'Publication…' : 'Publier l\'annonce' }}
+            </button>
+          </div>
+        </form>
+      </div>
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
         
         <!-- ROSTER (Left Side) -->
@@ -140,6 +178,11 @@
                                 title="Convoquer pour la prochaine séance">
                           <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                         </button>
+                        <button (click)="openConversation(player.userId, player.fullName)"
+                                class="w-10 h-10 rounded-full bg-surface-2 border border-white/5 flex items-center justify-center text-text-tertiary mx-auto hover:bg-green-600 hover:text-white hover:border-transparent transition-all shadow-lg"
+                                title="Écrire au joueur">
+                          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -190,10 +233,62 @@
               </div>
             </div>
           </div>
-        </div>
 
-      </div>
-    </div>
+          <!-- B.5 — MESSAGERIE : messages reçus des joueurs -->
+          <div class="glass-strong rounded-3xl border border-white/5 shadow-card p-6 md:p-8 mt-8">
+            <h3 class="font-display font-bold text-xl uppercase tracking-wider border-b border-white/5 pb-6 mb-6 flex items-center gap-3">
+              ✉️ Messagerie
+              <span *ngIf="conversationWith" class="text-[10px] text-text-secondary bg-surface-2 px-3 py-1 rounded-full normal-case tracking-normal">avec {{ conversationWith.name }}</span>
+            </h3>
+
+            <ng-container *ngIf="!conversationWith">
+              <p *ngIf="inbox.length === 0" class="text-text-tertiary text-xs uppercase tracking-widest py-4">
+                Aucun message reçu.
+              </p>
+              <div class="space-y-3">
+                <button *ngFor="let m of inbox" (click)="openConversation(m.senderUserId, m.senderName)"
+                        class="w-full text-left flex items-start justify-between gap-3 bg-surface-1 hover:bg-surface-2 rounded-2xl p-4 border border-white/5 hover:border-wydad-red/40 transition-colors group">
+                  <div class="min-w-0">
+                    <p class="text-sm font-bold truncate">{{ m.senderName }} <span class="text-[10px] uppercase tracking-widest text-text-tertiary font-normal">{{ m.senderRole }}</span></p>
+                    <p class="text-xs text-text-secondary truncate mt-0.5">{{ m.content }}</p>
+                  </div>
+                  <p class="shrink-0 text-[10px] uppercase tracking-widest text-text-tertiary">{{ m.createdAt | date:'dd/MM HH:mm' }}</p>
+                </button>
+              </div>
+              <button (click)="closeConversation()" class="mt-3 text-[10px] uppercase tracking-widest text-text-tertiary hover:text-white transition-colors">
+                Actualiser la boîte de réception
+              </button>
+            </ng-container>
+
+            <ng-container *ngIf="conversationWith">
+              <div class="space-y-3 max-h-72 overflow-y-auto mb-4 pr-1">
+                <div class="flex" [ngClass]="auth.getCurrentUserId() == msg.senderUserId ? 'justify-end' : 'justify-start'"
+                     *ngFor="let msg of conversation">
+                  <div class="max-w-[85%] rounded-2xl px-4 py-3 border"
+                       [ngClass]="auth.getCurrentUserId() == msg.senderUserId
+                         ? 'bg-wydad-red/20 border-wydad-red/30'
+                         : 'bg-surface-1 border-white/10'">
+                    <p class="text-sm whitespace-pre-line break-words">{{ msg.content }}</p>
+                    <p class="text-[10px] uppercase tracking-widest text-text-tertiary mt-1">{{ msg.createdAt | date:'dd/MM HH:mm' }}</p>
+                  </div>
+                </div>
+              </div>
+              <div class="flex gap-2">
+                <label class="sr-only" for="staff-message-draft">Votre message</label>
+                <input id="staff-message-draft" type="text" [(ngModel)]="messageDraft" maxlength="500"
+                       (keyup.enter)="sendMessageToPlayer()"
+                       placeholder="Répondre à {{ conversationWith.name }}…"
+                       class="flex-1 bg-surface-2 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-wydad-red outline-none">
+                <button (click)="sendMessageToPlayer()" [disabled]="!messageDraft.trim() || sendingMessage"
+                        class="bg-wydad-red hover:bg-red-700 disabled:opacity-40 px-5 py-3 rounded-xl text-xs font-bold uppercase tracking-widest transition-colors">
+                  {{ sendingMessage ? '…' : 'Envoyer' }}
+                </button>
+              </div>
+              <button (click)="closeConversation()" class="mt-3 text-[10px] uppercase tracking-widest text-text-tertiary hover:text-white transition-colors">
+                ← Boîte de réception
+              </button>
+            </ng-container>
+          </div>
 
     <!-- B.4 — MODAL SAISIE STAT DE MATCH -->
     <div *ngIf="showStatForm && statPlayer" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm" (click)="closeStatForm()">

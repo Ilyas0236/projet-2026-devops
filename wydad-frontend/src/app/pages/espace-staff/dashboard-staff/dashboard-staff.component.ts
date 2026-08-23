@@ -1,6 +1,6 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, FormGroup, ReactiveFormsModule, Validators, FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { ApiService } from '../../../services/api.service';
 import { AuthService } from '../../../services/auth.service';
@@ -9,7 +9,7 @@ import { ToastService } from '../../../services/toast.service';
 @Component({
   selector: 'app-dashboard-staff',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterModule],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, RouterModule],
   templateUrl: './dashboard-staff.component.html'
 })
 export class DashboardStaffComponent implements OnInit {
@@ -38,6 +38,16 @@ export class DashboardStaffComponent implements OnInit {
   convoPlayer: any = null;
   isSubmittingConvo = false;
 
+  // B.5 — messagerie (écrire aux joueurs de SA catégorie) et annonces
+  inbox: any[] = [];
+  conversation: any[] = [];
+  conversationWith: { id: number; name: string } | null = null;
+  messageDraft = '';
+  sendingMessage = false;
+  showAnnouncementForm = false;
+  isSubmittingAnnouncement = false;
+  announcementForm!: FormGroup;
+
   ngOnInit() {
     this.sessionForm = this.fb.group({
       title: ['', Validators.required],
@@ -52,6 +62,11 @@ export class DashboardStaffComponent implements OnInit {
       assists: [0, [Validators.required, Validators.min(0)]],
       minutesPlayed: [null],
       competition: ['']
+    });
+    this.announcementForm = this.fb.group({
+      title: ['', Validators.required],
+      body: ['', Validators.required],
+      scope: ['category']   // 'club' (tout le club) ou 'category' (sa catégorie)
     });
 
     // Charger le profil staff depuis le backend via l'ID utilisateur connecté
@@ -95,6 +110,8 @@ export class DashboardStaffComponent implements OnInit {
       },
       error: (err) => console.error(err)
     });
+
+    this.api.getInbox().subscribe({ next: d => this.inbox = d, error: () => {} });
   }
 
   submitSession() {
@@ -172,6 +189,75 @@ export class DashboardStaffComponent implements OnInit {
         console.error(err);
         this.isSubmittingConvo = false;
         this.toast.error(err?.error?.message || 'Convocation impossible');
+      }
+    });
+  }
+
+  // ───────────────── B.5 — Messagerie et annonces ─────────────────
+
+  openConversation(playerUserId: number, playerName: string) {
+    this.conversationWith = { id: playerUserId, name: playerName };
+    this.api.getConversation(playerUserId).subscribe({
+      next: d => this.conversation = d,
+      error: () => this.toast.error('Impossible de charger la conversation')
+    });
+  }
+
+  closeConversation() {
+    this.conversationWith = null;
+    this.conversation = [];
+    this.messageDraft = '';
+  }
+
+  sendMessageToPlayer() {
+    if (!this.messageDraft.trim() || !this.conversationWith) { return; }
+    this.sendingMessage = true;
+    const myId = Number(this.auth.getCurrentUserId());
+    this.api.sendMessage(this.conversationWith.id, this.messageDraft.trim()).subscribe({
+      next: () => {
+        // Le serveur a validé l'appariement (même catégorie) avant de persister
+        this.conversation = [...this.conversation, {
+          senderUserId: myId,
+          recipientUserId: this.conversationWith!.id,
+          content: this.messageDraft.trim(),
+          createdAt: new Date().toISOString()
+        }];
+        this.messageDraft = '';
+        this.sendingMessage = false;
+      },
+      error: (err) => {
+        console.error(err);
+        this.sendingMessage = false;
+        this.toast.error(err?.error?.message || 'Envoi impossible');
+      }
+    });
+  }
+
+  submitAnnouncement() {
+    if (this.announcementForm.invalid) { return; }
+    this.isSubmittingAnnouncement = true;
+    const sport = this.staff?.sportType as string | undefined;
+    const category = (this.staff?.assignedCategory || this.staff?.category) as string | undefined;
+
+    // 'club' → sans ciblage ; 'category' → sport + catégorie du staff.
+    // Le serveur revalide le rôle ; le filtrage à la lecture est serveur.
+    const publish$ = this.announcementForm.value.scope === 'club' || !sport
+      ? this.api.publishAnnouncement({ title: this.announcementForm.value.title, body: this.announcementForm.value.body })
+      : this.api.publishAnnouncement(
+          { title: this.announcementForm.value.title, body: this.announcementForm.value.body },
+          sport, category);
+
+    publish$.subscribe({
+      next: () => {
+        this.toast.success('Annonce publiée');
+        this.isSubmittingAnnouncement = false;
+        this.showAnnouncementForm = false;
+        this.announcementForm.reset({ title: '', body: '', scope: 'category' });
+      },
+      error: (err) => {
+        console.error(err);
+        this.isSubmittingAnnouncement = false;
+        this.toast.error(err?.error?.message || 'Publication impossible');
       }
     });
   }

@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 
@@ -383,6 +383,35 @@ export class ApiService {
   /** Consultation des stats détaillées d'un joueur (staff/admin). */
   getPlayerStats(joueurUserId: number): Observable<any[]> {
     return this.http.get<any[]>(`${this.baseUrl}/sports/my-space/staff/stats?joueurUserId=${joueurUserId}`);
+  }
+
+  // ==========================================
+  // MESSAGERIE ET ANNONCES (B.5)
+  // ==========================================
+  sendMessage(toUserId: number, content: string): Observable<any> {
+    const params = new HttpParams().set('toUserId', String(toUserId));
+    return this.http.post<any>(`${this.baseUrl}/sports/messaging/send`, { content }, { params });
+  }
+
+  getConversation(otherUserId: number): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/sports/messaging/conversation/${otherUserId}`);
+  }
+
+  getInbox(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/sports/messaging/inbox`);
+  }
+
+  /** Publication d'une annonce (staff/admin) ; ciblage optionnel sport/catégorie. */
+  publishAnnouncement(body: { title: string; body: string }, sportType?: string, category?: string): Observable<any> {
+    let params = new HttpParams();
+    if (sportType) params = params.set('sportType', sportType);
+    if (category) params = params.set('category', category);
+    return this.http.post<any>(`${this.baseUrl}/sports/messaging/announcements`, body, { params });
+  }
+
+  /** Annonces visibles par le connecté (filtrage serveur : club + sa catégorie). */
+  getVisibleAnnouncements(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/sports/messaging/announcements`);
   }
 
   // ==========================================
