@@ -299,6 +299,10 @@ export class ApiService {
     return this.http.get<any[]>(`${this.baseUrl}/sports/staff`);
   }
 
+  createStaff(staff: any): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/sports/staff`, staff);
+  }
+
   updateStaff(id: number, staff: any): Observable<any> {
     return this.http.put<any>(`${this.baseUrl}/sports/staff/${id}`, staff);
   }

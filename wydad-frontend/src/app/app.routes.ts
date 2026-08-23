@@ -15,6 +15,8 @@ import { AdminMatchsComponent } from './pages/admin/admin-matchs/admin-matchs.co
 import { AdminClassementsComponent } from './pages/admin/admin-classements/admin-classements.component';
 import { AdminNotificationsComponent } from './pages/admin/admin-notifications/admin-notifications.component';
 import { AdminSettingsComponent } from './pages/admin/admin-settings/admin-settings.component';
+import { AdminMediathequeComponent } from './pages/admin/admin-mediatheque/admin-mediatheque.component';
+import { AdminStaffComponent } from './pages/admin/admin-staff/admin-staff.component';
 import { AdhesionComponent } from './pages/adhesion/adhesion.component';
 import { LoginComponent } from './components/login/login.component';
 import { RegisterComponent } from './components/register/register.component';
@@ -85,6 +87,8 @@ export const routes: Routes = [
       { path: 'boutique', component: AdminBoutiqueComponent },
       { path: 'billetterie', component: AdminBilletterieComponent },
       { path: 'effectif', component: AdminEffectifComponent },
+      { path: 'staff', component: AdminStaffComponent },
+      { path: 'mediatheque', component: AdminMediathequeComponent },
       { path: 'notifications', component: AdminNotificationsComponent },
       { path: 'parametres', component: AdminSettingsComponent }
     ]
