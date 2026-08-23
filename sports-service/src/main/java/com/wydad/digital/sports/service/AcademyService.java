@@ -24,6 +24,11 @@ public class AcademyService {
                 .sportType(dto.getSportType())
                 .level(dto.getLevel())
                 .medicalHistory(dto.getMedicalHistory())
+                .bloodType(dto.getBloodType())
+                .allergies(dto.getAllergies())
+                .emergencyContactName(dto.getEmergencyContactName())
+                .emergencyContactPhone(dto.getEmergencyContactPhone())
+                .active(false) // en attente de validation ADMIN
                 .build();
 
         return mapToDto(academyRepository.save(member));
@@ -50,6 +55,10 @@ public class AcademyService {
         dto.setSportType(a.getSportType());
         dto.setLevel(a.getLevel());
         dto.setMedicalHistory(a.getMedicalHistory());
+        dto.setBloodType(a.getBloodType());
+        dto.setAllergies(a.getAllergies());
+        dto.setEmergencyContactName(a.getEmergencyContactName());
+        dto.setEmergencyContactPhone(a.getEmergencyContactPhone());
         dto.setActive(a.getActive());
         return dto;
     }
