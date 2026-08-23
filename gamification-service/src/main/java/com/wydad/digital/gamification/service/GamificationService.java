@@ -42,7 +42,7 @@ public class GamificationService {
     @Transactional
     public Prediction submitPrediction(PredictionRequest request) {
         if (predictionRepository.existsByUserIdAndMatchId(request.getUserId(), request.getMatchId())) {
-            throw new RuntimeException("Pronostic déjà soumis pour ce match");
+            throw new IllegalArgumentException("Pronostic déjà soumis pour ce match");
         }
 
         // Validation service-à-service : le match doit exister, être PROGRAMME

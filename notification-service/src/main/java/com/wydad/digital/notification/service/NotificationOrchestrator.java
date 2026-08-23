@@ -81,7 +81,7 @@ public class NotificationOrchestrator {
 
     public Notification markAsRead(Long notificationId) {
         Notification notification = notificationRepository.findById(notificationId)
-                .orElseThrow(() -> new RuntimeException("Notification non trouvée"));
+                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException("Notification non trouvée"));
         
         notification.setStatus(NotificationStatus.READ);
         return notificationRepository.save(notification);
@@ -93,7 +93,7 @@ public class NotificationOrchestrator {
 
     public Notification getById(Long notificationId) {
         return notificationRepository.findById(notificationId)
-                .orElseThrow(() -> new RuntimeException("Notification non trouvée"));
+                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException("Notification non trouvée"));
     }
 
     public List<Notification> getAllNotifications() {
