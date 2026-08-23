@@ -273,6 +273,15 @@ export class ApiService {
     return this.http.post<any>(`${this.baseUrl}/sports/academy/register`, data);
   }
 
+  /** Upload d'une pièce justificative (certificat médical, etc.) sur un dossier. */
+  uploadAcademyDocument(academyMemberId: number, docType: string, file: File): Observable<any> {
+    const form = new FormData();
+    form.append('docType', docType);
+    form.append('file', file, file.name);
+    return this.http.post<any>(
+      `${this.baseUrl}/sports/academy/${academyMemberId}/documents`, form);
+  }
+
   getAcademyChildrenByParent(parentId: number): Observable<any[]> {
     return this.http.get<any[]>(`${this.baseUrl}/sports/academy/parent/${parentId}`);
   }

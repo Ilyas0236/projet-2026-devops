@@ -1,6 +1,7 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { forkJoin } from 'rxjs';
 import { Router, RouterModule } from '@angular/router';
 import { ApiService } from '../../../services/api.service';
 import { AuthService } from '../../../services/auth.service';
@@ -27,6 +28,38 @@ export class InscriptionAcademieComponent implements OnInit {
 
   isSubmitting = false;
   success = false;
+
+  /** Pièces justificatives sélectionnées à l'étape Documents (0-BIS.6). */
+  documents: { [key: string]: File | null } = {
+    BIRTH_CERTIFICATE: null,
+    MEDICAL_CERTIFICATE: null,
+    PHOTO: null
+  };
+
+  /** Erreur de validation de fichier affichée sous un bloc d'upload. */
+  documentError = '';
+
+  onDocumentSelected(docType: string, event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0] ?? null;
+    this.documentError = '';
+    if (file) {
+      const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
+      if (!allowedTypes.includes(file.type)) {
+        this.documentError = 'Format accepté : JPEG, PNG, WebP ou PDF.';
+        input.value = '';
+        this.documents[docType] = null;
+        return;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        this.documentError = 'Fichier trop volumineux (5 Mo maximum).';
+        input.value = '';
+        this.documents[docType] = null;
+        return;
+      }
+    }
+    this.documents[docType] = file;
+  }
 
   ngOnInit() {
     this.api.getClubSetting('club_info').subscribe({
@@ -106,11 +139,33 @@ export class InscriptionAcademieComponent implements OnInit {
     // If ECASH, we could call debit endpoint. For MVP, we just register the child.
     this.api.registerAcademyChild(payload).subscribe({
       next: (res) => {
-        this.isSubmitting = false;
-        this.success = true;
-        setTimeout(() => {
-          this.router.navigate(['/academie/mes-enfants']);
-        }, 3000);
+        // 0-BIS.6 : transmission réelle des pièces justificatives au backend
+        const uploads = Object.entries(this.documents)
+          .filter(([, file]) => !!file)
+          .map(([docType, file]) =>
+            this.api.uploadAcademyDocument(res.id, docType, file as File));
+        if (uploads.length > 0) {
+          forkJoin(uploads).subscribe({
+            next: () => {
+              this.isSubmitting = false;
+              this.success = true;
+              setTimeout(() => this.router.navigate(['/academie/mes-enfants']), 3000);
+            },
+            error: (uploadErr) => {
+              this.isSubmitting = false;
+              // Le dossier existe : on informe sans bloquer la navigation
+              this.toast.error(uploadErr.error?.message
+                || 'Dossier créé mais échec d\'envoi d\'une pièce justificative.');
+              setTimeout(() => this.router.navigate(['/academie/mes-enfants']), 3000);
+            }
+          });
+        } else {
+          this.isSubmitting = false;
+          this.success = true;
+          setTimeout(() => {
+            this.router.navigate(['/academie/mes-enfants']);
+          }, 3000);
+        }
       },
       error: (err) => {
         console.error(err);

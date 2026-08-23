@@ -119,7 +119,7 @@
               <div class="flex-1 text-center sm:text-left">
                 <h4 class="font-bold text-gray-800">Extrait de naissance</h4>
                 <p class="text-sm text-gray-500 mb-2">Format PDF ou Image (Max 5MB)</p>
-                <input type="file" class="text-sm">
+                <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" (change)="onDocumentSelected('BIRTH_CERTIFICATE', $event)" class="text-sm">
               </div>
             </div>
 
@@ -130,7 +130,7 @@
               <div class="flex-1 text-center sm:text-left">
                 <h4 class="font-bold text-gray-800">Certificat d'aptitude médicale</h4>
                 <p class="text-sm text-gray-500 mb-2">Valide pour l'année en cours</p>
-                <input type="file" class="text-sm">
+                <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" (change)="onDocumentSelected('MEDICAL_CERTIFICATE', $event)" class="text-sm">
               </div>
             </div>
 
@@ -141,7 +141,7 @@
               <div class="flex-1 text-center sm:text-left">
                 <h4 class="font-bold text-gray-800">Photo d'identité</h4>
                 <p class="text-sm text-gray-500 mb-2">Pour la licence (Fond blanc)</p>
-                <input type="file" class="text-sm">
+                <input type="file" accept=".jpg,.jpeg,.png,.webp" (change)="onDocumentSelected('PHOTO', $event)" class="text-sm">
               </div>
             </div>
           </div>
