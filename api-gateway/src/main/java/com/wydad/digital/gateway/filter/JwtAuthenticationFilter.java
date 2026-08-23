@@ -61,8 +61,16 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
             return validateAndForward(exchange, chain);
         }
 
-        // Content-service GET : public (pas besoin de JWT)
+        // Content-service GET : public (lecture sans compte). Mais si un token
+        // est fourni, il doit quand meme etre valide pour transmettre
+        // l'identite au service : certains GET (ex. listing mediatheque) sont
+        // reserves aux ADMIN via @PreAuthorize et dependent des headers
+        // d'identite poses ici.
         if (path.startsWith("/api/content/") && "GET".equals(method)) {
+            String contentAuthHeader = request.getHeaders().getFirst("Authorization");
+            if (contentAuthHeader != null && contentAuthHeader.startsWith("Bearer ")) {
+                return validateAndForward(exchange, chain);
+            }
             return chain.filter(exchange);
         }
 
