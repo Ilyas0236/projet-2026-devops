@@ -153,11 +153,23 @@ public class TicketService {
             throw new IllegalStateException("Impossible d'annuler un billet déjà utilisé");
         }
         // Empêche l'inflation du stock par annulations répétées
-        if (ticket.getStatus() == TicketStatus.CANCELLED) {
+        if (ticket.getStatus() == TicketStatus.CANCELLED
+                || ticket.getStatus() == TicketStatus.REFUNDED) {
             throw new IllegalStateException("Ce billet a déjà été annulé");
         }
 
-        ticket.setStatus(TicketStatus.CANCELLED);
+        // Remboursement E-cash du billet annulé (le débit a eu lieu à l'achat).
+        // Best-effort : si payment-service est indisponible, l'annulation reste
+        // valide (statut CANCELLED) mais l'échec est journalisé pour retraitement.
+        boolean refunded = false;
+        if (ticket.getStatus() == TicketStatus.PAID && ticket.getUserEmail() != null) {
+            refunded = paymentClient.refundEcash(
+                    ticket.getUserEmail(),
+                    ticket.getPrice(),
+                    "WAC-REFUND-" + ticket.getTicketNumber());
+        }
+
+        ticket.setStatus(refunded ? TicketStatus.REFUNDED : TicketStatus.CANCELLED);
         ticket.setCancelledAt(java.time.LocalDateTime.now());
 
         // Restore seats (avec verrou pour cohérence avec les achats concurrents)

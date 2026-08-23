@@ -36,6 +36,18 @@ public class InternalPaymentController {
                 request.email(), request.amount(), request.reference()));
     }
 
+    /** Remboursement E-cash (annulation de billet) — même DTO que le débit. */
+    @PostMapping("/refund")
+    public ResponseEntity<TransactionResponse> refund(
+            @RequestHeader(value = "X-Internal-Secret", required = false) String secret,
+            @Valid @RequestBody InternalDebitRequest request) {
+        if (!internalSecretValidator.isInternalCallAuthorized(secret)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        return ResponseEntity.ok(paymentService.internalRefund(
+                request.email(), request.amount(), request.reference()));
+    }
+
     /** Solde insuffisant : 402 Payment Required avec le message métier. */
     @ExceptionHandler(InsufficientFundsException.class)
     public ResponseEntity<String> handleInsufficientFunds(InsufficientFundsException e) {

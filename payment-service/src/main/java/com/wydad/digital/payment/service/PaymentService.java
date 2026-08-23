@@ -115,6 +115,39 @@ public class PaymentService {
         return mapToResponse(tx);
     }
 
+    /**
+     * Remboursement interne service-à-service (annulation de billet)
+     * sous verrou pessimiste : recrédite le compte et journalise une
+     * transaction typée REFUND, distincte d'un crédit manuel.
+     */
+    @Transactional
+    public TransactionResponse internalRefund(String email, BigDecimal amount, String reference) {
+        ECashAccount account = accountRepository.findByEmailForUpdate(email)
+                .orElseGet(() -> {
+                    ECashAccount created = ECashAccount.builder()
+                            .email(email)
+                            .balance(BigDecimal.ZERO)
+                            .active(true)
+                            .build();
+                    return accountRepository.save(created);
+                });
+
+        account.setBalance(account.getBalance().add(amount));
+        accountRepository.save(account);
+
+        Transaction tx = Transaction.builder()
+                .email(email)
+                .type(TransactionType.REFUND)
+                .amount(amount)
+                .balanceAfter(account.getBalance())
+                .description(reference)
+                .reference(reference)
+                .build();
+
+        transactionRepository.save(tx);
+        return mapToResponse(tx);
+    }
+
     public BalanceResponse getBalance(String email) {
         ECashAccount account = getOrCreateAccount(email);
         return new BalanceResponse(account.getEmail(), account.getBalance(), account.getUpdatedAt());

@@ -27,12 +27,14 @@ public class PaymentClient {
 
     private final RestTemplate restTemplate = new RestTemplate();
     private final String debitUrl;
+    private final String refundUrl;
     private final String internalSecret;
 
     public PaymentClient(
             @Value("${wydad.payment-service-uri:http://payment-service:8083}") String baseUrl,
             @Value("${wydad.internal-secret:}") String internalSecret) {
         this.debitUrl = baseUrl + "/api/payment/internal/debit";
+        this.refundUrl = baseUrl + "/api/payment/internal/refund";
         this.internalSecret = internalSecret;
     }
 
@@ -75,6 +77,37 @@ public class PaymentClient {
             // payment-service injoignable : on ne vend JAMAIS de billet gratuit
             log.error("payment-service injoignable lors du debit de {}", email, e);
             throw new RuntimeException("Paiement indisponible, achat annule. Reessayez plus tard.", e);
+        }
+    }
+
+    /**
+     * Rembourse le montant d'un billet annulé. Best-effort assumé et
+     * journalisé : si payment-service est momentanément indisponible,
+     * l'annulation reste valide (places restituées) mais le statut passe
+     * à CANCELLED — le remboursement devra être retraité par un ADMIN.
+     * On ne bloque jamais l'utilisateur pour une panne en aval.
+     */
+    public boolean refundEcash(String email, BigDecimal amount, String reference) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        if (internalSecret != null && !internalSecret.isEmpty()) {
+            headers.set("X-Internal-Secret", internalSecret);
+        }
+
+        var body = new java.util.HashMap<String, Object>();
+        body.put("email", email);
+        body.put("amount", amount);
+        body.put("reference", reference);
+
+        try {
+            restTemplate.exchange(refundUrl, HttpMethod.POST,
+                    new HttpEntity<>(body, headers), Void.class);
+            log.info("Remboursement E-cash OK : {} DH pour {} (ref {})", amount, email, reference);
+            return true;
+        } catch (Exception e) {
+            log.error("ECHEC remboursement E-cash pour {} (ref {}) - a retraiter manuellement",
+                    email, reference, e);
+            return false;
         }
     }
 }
