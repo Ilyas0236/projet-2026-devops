@@ -392,7 +392,7 @@ public class AuthService {
 
     /** Destinataires actifs pour le broadcast du notification-service (interne). */
     public List<UserProfileResponse> getAllActiveUsers() {
-        return userRepository.findByIsActiveTrue().stream()
+        return userRepository.findByActiveTrue().stream()
                 .map(this::mapToProfile)
                 .collect(Collectors.toList());
     }
