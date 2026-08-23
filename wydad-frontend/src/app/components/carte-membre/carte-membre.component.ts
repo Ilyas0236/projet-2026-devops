@@ -2,6 +2,7 @@ import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { ApiService } from '../../services/api.service';
+import { ToastService } from '../../services/toast.service';
 
 @Component({
   selector: 'app-carte-membre',
@@ -18,6 +19,7 @@ export class CarteMembreComponent implements OnInit {
 
   api = inject(ApiService);
   router = inject(Router);
+  toast = inject(ToastService);
 
   ngOnInit() {
     this.loadCard();
@@ -48,7 +50,7 @@ export class CarteMembreComponent implements OnInit {
         this.pdfLoading = false;
       },
       error: () => {
-        alert('Erreur lors du téléchargement de l\'attestation.');
+        this.toast.error('Erreur lors du téléchargement de l\'attestation.');
         this.pdfLoading = false;
       }
     });

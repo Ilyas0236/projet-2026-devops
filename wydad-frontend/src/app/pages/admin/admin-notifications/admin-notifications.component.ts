@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../services/api.service';
+import { ToastService } from '../../../services/toast.service';
 
 @Component({
   selector: 'app-admin-notifications',
@@ -16,7 +17,7 @@ export class AdminNotificationsComponent implements OnInit {
   isBroadcast = false;
   currentNotif: any = { type: 'IN_APP', title: '', message: '', targetUrl: '', imageUrl: '' };
 
-  constructor(private apiService: ApiService) {}
+  constructor(private apiService: ApiService, private toast: ToastService) {}
 
   ngOnInit() {
     this.loadNotifications();
@@ -52,7 +53,7 @@ export class AdminNotificationsComponent implements OnInit {
   sendNotification() {
     if (this.isBroadcast) {
       this.apiService.broadcastNotification(this.currentNotif).subscribe(() => {
-        alert('Broadcast planifié !');
+        this.toast.success('Broadcast planifié !');
         this.loadNotifications();
         this.closeModal();
       });

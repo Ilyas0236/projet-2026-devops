@@ -2,6 +2,8 @@ import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../services/api.service';
+import { ToastService } from '../../../services/toast.service';
+import { ConfirmService } from '../../../services/confirm.service';
 
 @Component({
   selector: 'app-admin-effectif',
@@ -39,6 +41,8 @@ export class AdminEffectifComponent implements OnInit {
   };
 
   api = inject(ApiService);
+  private toast = inject(ToastService);
+  private confirm = inject(ConfirmService);
 
   ngOnInit() {
     this.loadPlayers();
@@ -149,13 +153,18 @@ export class AdminEffectifComponent implements OnInit {
     });
   }
 
-  deletePlayer(id: number) {
-    if (confirm('Voulez-vous retirer ce joueur de l\'effectif ?')) {
-      this.api.deletePlayer(id).subscribe({
-        next: () => this.loadPlayers(),
-        error: (err) => console.error('Erreur suppression', err)
-      });
-    }
+  async deletePlayer(id: number) {
+    const ok = await this.confirm.confirm({
+      title: 'Retirer le joueur',
+      message: 'Voulez-vous retirer ce joueur de l\'effectif ?',
+      confirmLabel: 'Retirer',
+      danger: true
+    });
+    if (!ok) return;
+    this.api.deletePlayer(id).subscribe({
+      next: () => this.loadPlayers(),
+      error: (err) => console.error('Erreur suppression', err)
+    });
   }
 
   uploadingPhoto = false;
@@ -173,7 +182,7 @@ export class AdminEffectifComponent implements OnInit {
       error: (err) => {
         console.error('Erreur upload', err);
         this.uploadingPhoto = false;
-        alert('Erreur lors du chargement de la photo.');
+        this.toast.error('Erreur lors du chargement de la photo.');
       }
     });
   }

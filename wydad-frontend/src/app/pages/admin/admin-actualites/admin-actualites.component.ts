@@ -2,6 +2,8 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../services/api.service';
+import { ToastService } from '../../../services/toast.service';
+import { ConfirmService } from '../../../services/confirm.service';
 
 @Component({
   selector: 'app-admin-actualites',
@@ -113,7 +115,9 @@ export class AdminActualitesComponent implements OnInit {
   isEdit = false;
   currentArticle: any = {};
 
-  constructor(public apiService: ApiService) {}
+  constructor(public apiService: ApiService,
+              private toast: ToastService,
+              private confirm: ConfirmService) {}
 
   ngOnInit() {
     this.loadArticles();
@@ -162,10 +166,18 @@ export class AdminActualitesComponent implements OnInit {
     }
   }
 
-  deleteArticle(id: number) {
-    if (confirm('Voulez-vous vraiment supprimer cet article ?')) {
-      this.apiService.deleteArticle(id).subscribe(() => this.loadArticles());
-    }
+  async deleteArticle(id: number) {
+    const ok = await this.confirm.confirm({
+      title: 'Supprimer l\'article',
+      message: 'Voulez-vous vraiment supprimer cet article ? Cette action est irréversible.',
+      confirmLabel: 'Supprimer',
+      danger: true
+    });
+    if (!ok) return;
+    this.apiService.deleteArticle(id).subscribe({
+      next: () => this.loadArticles(),
+      error: () => this.toast.error('Erreur lors de la suppression de l\'article.')
+    });
   }
 
   uploadingPhoto = false;
@@ -183,7 +195,7 @@ export class AdminActualitesComponent implements OnInit {
       error: (err) => {
         console.error('Erreur upload', err);
         this.uploadingPhoto = false;
-        alert('Erreur lors du chargement de la photo.');
+        this.toast.error('Erreur lors du chargement de la photo.');
       }
     });
   }

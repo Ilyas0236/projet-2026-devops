@@ -2,6 +2,8 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../services/api.service';
+import { ToastService } from '../../../services/toast.service';
+import { ConfirmService } from '../../../services/confirm.service';
 
 @Component({
   selector: 'app-admin-matchs',
@@ -129,6 +131,27 @@ import { ApiService } from '../../../services/api.service';
           </div>
         </div>
       </div>
+
+      <!-- Modal de saisie du résultat (remplace prompt()) -->
+      <div *ngIf="showScoreModal" class="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+        <div class="bg-zinc-900 border border-white/10 p-6 w-full max-w-md rounded-lg">
+          <h3 class="text-lg font-display font-bold text-white uppercase tracking-wider mb-6">Résultat — WAC vs {{ scoreMatch?.adversaire }}</h3>
+          <div class="grid grid-cols-2 gap-4 mb-6">
+            <div>
+              <label class="block text-xs text-gray-400 uppercase mb-1">Score Wydad</label>
+              <input type="number" min="0" [(ngModel)]="scoreHome" class="w-full bg-black border border-white/10 rounded px-3 py-2 text-white">
+            </div>
+            <div>
+              <label class="block text-xs text-gray-400 uppercase mb-1">Score {{ scoreMatch?.adversaire }}</label>
+              <input type="number" min="0" [(ngModel)]="scoreAway" class="w-full bg-black border border-white/10 rounded px-3 py-2 text-white">
+            </div>
+          </div>
+          <div class="flex justify-end gap-3">
+            <button (click)="showScoreModal = false" class="px-4 py-2 text-gray-400 hover:text-white uppercase text-sm font-bold">Annuler</button>
+            <button (click)="saveScore()" class="px-4 py-2 bg-wydad-red text-white uppercase text-sm font-bold">Enregistrer</button>
+          </div>
+        </div>
+      </div>
     </div>
   `
 })
@@ -139,7 +162,9 @@ export class AdminMatchsComponent implements OnInit {
   isEdit = false;
   currentMatch: any = {};
 
-  constructor(public apiService: ApiService) {}
+  constructor(public apiService: ApiService,
+              private toast: ToastService,
+              private confirm: ConfirmService) {}
 
   ngOnInit() {
     this.loadMatchs();
@@ -184,18 +209,41 @@ export class AdminMatchsComponent implements OnInit {
       },
       error: () => {
         this.uploading = false;
-        alert('Erreur lors de l\'upload du logo.');
+        this.toast.error('Erreur lors de l\'upload du logo.');
       }
     });
   }
 
+  // Saisie du résultat via un vrai modal (remplace prompt())
+  showScoreModal = false;
+  scoreMatch: any = null;
+  scoreHome: number | null = null;
+  scoreAway: number | null = null;
+
   openScoreModal(match: any) {
-    const homeScore = prompt(`Score Wydad`, match.scoreWydad ?? 0);
-    const awayScore = prompt(`Score ${match.adversaire}`, match.scoreAdversaire ?? 0);
-    if(homeScore !== null && awayScore !== null) {
-      // Le backend attend des query params (@RequestParam scoreWydad / scoreAdversaire)
-      this.apiService.updateMatchResult(match.id, parseInt(homeScore), parseInt(awayScore)).subscribe(() => this.loadMatchs());
+    this.scoreMatch = match;
+    this.scoreHome = match.scoreWydad ?? 0;
+    this.scoreAway = match.scoreAdversaire ?? 0;
+    this.showScoreModal = true;
+  }
+
+  saveScore() {
+    if (this.scoreHome === null || this.scoreAway === null || !this.scoreMatch) return;
+    const home = Number(this.scoreHome);
+    const away = Number(this.scoreAway);
+    if (!Number.isFinite(home) || !Number.isFinite(away) || home < 0 || away < 0) {
+      this.toast.error('Veuillez saisir des scores valides (entiers positifs).');
+      return;
     }
+    // Le backend attend des query params (@RequestParam scoreWydad / scoreAdversaire)
+    this.apiService.updateMatchResult(this.scoreMatch.id, home, away).subscribe({
+      next: () => {
+        this.toast.success('Résultat enregistré.');
+        this.showScoreModal = false;
+        this.loadMatchs();
+      },
+      error: () => this.toast.error('Erreur lors de l\'enregistrement du résultat.')
+    });
   }
 
   closeModal() {
@@ -217,10 +265,21 @@ export class AdminMatchsComponent implements OnInit {
     }
   }
 
-  deleteMatch(id: number) {
-    if (confirm('Voulez-vous vraiment supprimer ce match ?')) {
-      this.apiService.deleteMatch(id).subscribe(() => this.loadMatchs());
-    }
+  async deleteMatch(id: number) {
+    const ok = await this.confirm.confirm({
+      title: 'Supprimer le match',
+      message: 'Voulez-vous vraiment supprimer ce match ? Cette action est irréversible.',
+      confirmLabel: 'Supprimer',
+      danger: true
+    });
+    if (!ok) return;
+    this.apiService.deleteMatch(id).subscribe({
+      next: () => {
+        this.toast.success('Match supprimé.');
+        this.loadMatchs();
+      },
+      error: () => this.toast.error('Erreur lors de la suppression du match.')
+    });
   }
 
   private payloadForBackend() {

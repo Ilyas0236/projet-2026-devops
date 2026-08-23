@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../services/api.service';
+import { ToastService } from '../../../services/toast.service';
 
 /**
  * Panneau d'administration des parametres club (source de verite metier).
@@ -62,7 +63,7 @@ export class AdminSettingsComponent implements OnInit {
   loading = true;
   error = '';
 
-  constructor(private apiService: ApiService) {}
+  constructor(private apiService: ApiService, private toast: ToastService) {}
 
   ngOnInit() {
     this.loadSettings();
@@ -112,7 +113,7 @@ export class AdminSettingsComponent implements OnInit {
         if (s) s.value = payload;
       },
       error: () => {
-        alert('Échec de l\'enregistrement.');
+        this.toast.error('Échec de l\'enregistrement.');
       }
     });
   }

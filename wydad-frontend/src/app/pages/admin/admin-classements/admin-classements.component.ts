@@ -2,6 +2,8 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../services/api.service';
+import { ToastService } from '../../../services/toast.service';
+import { ConfirmService } from '../../../services/confirm.service';
 
 @Component({
   selector: 'app-admin-classements',
@@ -128,7 +130,9 @@ export class AdminClassementsComponent implements OnInit {
   isEdit = false;
   currentClassement: any = {};
 
-  constructor(private apiService: ApiService) {}
+  constructor(private apiService: ApiService,
+              private toast: ToastService,
+              private confirm: ConfirmService) {}
 
   ngOnInit() {
     this.loadClassements();
@@ -178,9 +182,17 @@ export class AdminClassementsComponent implements OnInit {
     }
   }
 
-  deleteClassement(id: number) {
-    if (confirm('Voulez-vous vraiment supprimer cette équipe du classement ?')) {
-      this.apiService.deleteClassement(id).subscribe(() => this.loadClassements());
-    }
+  async deleteClassement(id: number) {
+    const ok = await this.confirm.confirm({
+      title: 'Supprimer l\'équipe',
+      message: 'Voulez-vous vraiment supprimer cette équipe du classement ?',
+      confirmLabel: 'Supprimer',
+      danger: true
+    });
+    if (!ok) return;
+    this.apiService.deleteClassement(id).subscribe({
+      next: () => this.loadClassements(),
+      error: () => this.toast.error('Erreur lors de la suppression.')
+    });
   }
 }

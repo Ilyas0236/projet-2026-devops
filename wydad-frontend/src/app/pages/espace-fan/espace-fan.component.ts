@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { ApiService } from '../../services/api.service';
 import { AuthService } from '../../services/auth.service';
+import { ToastService } from '../../services/toast.service';
 
 @Component({
   selector: 'app-espace-fan',
@@ -14,6 +15,7 @@ import { AuthService } from '../../services/auth.service';
 export class EspaceFanComponent implements OnInit {
   api = inject(ApiService);
   auth = inject(AuthService);
+  toast = inject(ToastService);
 
   loading = true;
   userId: number | null = null;
@@ -124,7 +126,7 @@ export class EspaceFanComponent implements OnInit {
       },
       error: (err: any) => {
         console.error('Erreur pronostic', err);
-        alert('Erreur lors de la soumission de votre pronostic.');
+        this.toast.error('Erreur lors de la soumission de votre pronostic.');
         this.submittingMatchId = null;
       }
     });

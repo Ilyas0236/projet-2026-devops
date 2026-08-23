@@ -2,6 +2,8 @@ import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../services/api.service';
+import { ToastService } from '../../../services/toast.service';
+import { ConfirmService } from '../../../services/confirm.service';
 
 @Component({
   selector: 'app-admin-billetterie',
@@ -28,6 +30,8 @@ export class AdminBilletterieComponent implements OnInit {
   };
 
   api = inject(ApiService);
+  private toast = inject(ToastService);
+  private confirm = inject(ConfirmService);
 
   ngOnInit() {
     this.loadEvents();
@@ -76,17 +80,22 @@ export class AdminBilletterieComponent implements OnInit {
       },
       error: (err) => {
         console.error('Erreur création event', err);
-        alert('Erreur lors de la création du match');
+        this.toast.error(err.error?.message || 'Erreur lors de la création du match.');
       }
     });
   }
 
-  deleteEvent(id: number) {
-    if (confirm('Êtes-vous sûr de vouloir annuler ce match ?')) {
-      this.api.deleteEvent(id).subscribe({
-        next: () => this.loadEvents(),
-        error: (err) => console.error('Erreur suppression', err)
-      });
-    }
+  async deleteEvent(id: number) {
+    const ok = await this.confirm.confirm({
+      title: 'Annuler le match',
+      message: 'Êtes-vous sûr de vouloir annuler ce match ? Les billets vendus seront impactés.',
+      confirmLabel: 'Annuler le match',
+      danger: true
+    });
+    if (!ok) return;
+    this.api.deleteEvent(id).subscribe({
+      next: () => this.loadEvents(),
+      error: (err) => console.error('Erreur suppression', err)
+    });
   }
 }

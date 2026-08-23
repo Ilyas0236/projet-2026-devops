@@ -2,6 +2,8 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../../services/auth.service';
+import { ToastService } from '../../../services/toast.service';
+import { ConfirmService } from '../../../services/confirm.service';
 
 @Component({
   selector: 'app-admin-users',
@@ -18,7 +20,9 @@ export class AdminUsersComponent implements OnInit {
   roleFilter = 'ALL';
   kycFilter = 'ALL';
 
-  constructor(private authService: AuthService) {}
+  constructor(private authService: AuthService,
+              private toast: ToastService,
+              private confirm: ConfirmService) {}
 
   ngOnInit() {
     this.loadUsers();
@@ -59,31 +63,51 @@ export class AdminUsersComponent implements OnInit {
     this.authService.toggleUserActiveStatus(user.id, newStatus).subscribe({
       next: () => {
         user.active = newStatus;
+        this.toast.success(newStatus ? 'Compte activé.' : 'Compte désactivé.');
       },
-      error: (err) => console.error('Error toggling status', err)
+      error: (err) => {
+        console.error('Error toggling status', err);
+        this.toast.error('Erreur lors du changement de statut.');
+      }
     });
   }
 
-  changeRole(user: any, newRole: string) {
-    if(confirm(`Voulez-vous vraiment changer le rôle de ${user.firstName} en ${newRole} ?`)) {
-      this.authService.changeUserRole(user.id, newRole).subscribe({
-        next: () => {
-          user.role = newRole;
-        },
-        error: (err) => console.error('Error changing role', err)
-      });
-    }
+  async changeRole(user: any, newRole: string) {
+    const ok = await this.confirm.confirm({
+      title: 'Changer le rôle',
+      message: `Voulez-vous vraiment changer le rôle de ${user.firstName} en ${newRole} ?`,
+      confirmLabel: 'Changer le rôle'
+    });
+    if (!ok) return;
+    this.authService.changeUserRole(user.id, newRole).subscribe({
+      next: () => {
+        user.role = newRole;
+        this.toast.success('Rôle mis à jour.');
+      },
+      error: (err) => {
+        console.error('Error changing role', err);
+        this.toast.error('Erreur lors du changement de rôle.');
+      }
+    });
   }
 
   // Mock approval for KYC from admin interface
-  approveKyc(user: any) {
-    if(confirm(`Approuver le KYC pour ${user.email} ?`)) {
-      this.authService.verifyKycMock(user.email).subscribe({
-        next: () => {
-          user.kycVerified = true;
-        },
-        error: (err) => console.error('Error approving KYC', err)
-      });
-    }
+  async approveKyc(user: any) {
+    const ok = await this.confirm.confirm({
+      title: 'Valider le KYC',
+      message: `Approuver le KYC pour ${user.email} ?`,
+      confirmLabel: 'Approuver'
+    });
+    if (!ok) return;
+    this.authService.verifyKycMock(user.email).subscribe({
+      next: () => {
+        user.kycVerified = true;
+        this.toast.success('KYC approuvé.');
+      },
+      error: (err) => {
+        console.error('Error approving KYC', err);
+        this.toast.error('Erreur lors de l\'approbation du KYC.');
+      }
+    });
   }
 }

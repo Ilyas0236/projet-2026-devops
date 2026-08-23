@@ -4,6 +4,7 @@ import { ApiService } from '../../services/api.service';
 import { AuthService } from '../../services/auth.service';
 import { Router, RouterModule } from '@angular/router';
 import { ErrorBannerComponent } from '../../components/error-banner/error-banner.component';
+import { ToastService } from '../../services/toast.service';
 
 @Component({
   selector: 'app-mes-billets',
@@ -137,6 +138,7 @@ export class MesBilletsComponent implements OnInit {
   
   api = inject(ApiService);
   auth = inject(AuthService);
+  toast = inject(ToastService);
 
   ngOnInit() {
     this.auth.currentUser$.subscribe(email => {
@@ -188,7 +190,7 @@ export class MesBilletsComponent implements OnInit {
         this.downloadingId = null;
       },
       error: () => {
-        alert("Erreur lors du téléchargement du billet.");
+        this.toast.error('Erreur lors du téléchargement du billet.');
         this.downloadingId = null;
       }
     });

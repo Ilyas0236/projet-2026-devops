@@ -2,6 +2,8 @@ import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../services/api.service';
+import { ToastService } from '../../../services/toast.service';
+import { ConfirmService } from '../../../services/confirm.service';
 
 @Component({
   selector: 'app-admin-boutique',
@@ -28,6 +30,8 @@ export class AdminBoutiqueComponent implements OnInit {
   };
 
   api = inject(ApiService);
+  private toast = inject(ToastService);
+  private confirm = inject(ConfirmService);
 
   ngOnInit() {
     this.loadProducts();
@@ -92,18 +96,23 @@ export class AdminBoutiqueComponent implements OnInit {
       },
       error: (err) => {
         console.error('Erreur sauvegarde produit', err);
-        alert('Erreur lors de la sauvegarde du produit');
+        this.toast.error(err.error?.message || 'Erreur lors de la sauvegarde du produit.');
       }
     });
   }
 
-  deleteProduct(id: number) {
-    if (confirm('Êtes-vous sûr de vouloir supprimer ce produit ?')) {
-      this.api.deleteProduct(id).subscribe({
-        next: () => this.loadProducts(),
-        error: (err) => console.error('Erreur suppression', err)
-      });
-    }
+  async deleteProduct(id: number) {
+    const ok = await this.confirm.confirm({
+      title: 'Supprimer le produit',
+      message: 'Êtes-vous sûr de vouloir supprimer ce produit ? Cette action est irréversible.',
+      confirmLabel: 'Supprimer',
+      danger: true
+    });
+    if (!ok) return;
+    this.api.deleteProduct(id).subscribe({
+      next: () => this.loadProducts(),
+      error: (err) => console.error('Erreur suppression', err)
+    });
   }
 
   uploadingPhoto = false;
@@ -121,7 +130,7 @@ export class AdminBoutiqueComponent implements OnInit {
       error: (err) => {
         console.error('Erreur upload', err);
         this.uploadingPhoto = false;
-        alert('Erreur lors de la chargement de la photo.');
+        this.toast.error('Erreur lors du chargement de la photo.');
       }
     });
   }

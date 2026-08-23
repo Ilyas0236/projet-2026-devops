@@ -4,6 +4,7 @@ import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angula
 import { Router, RouterModule } from '@angular/router';
 import { ApiService } from '../../../services/api.service';
 import { AuthService } from '../../../services/auth.service';
+import { ToastService } from '../../../services/toast.service';
 
 @Component({
   selector: 'app-inscription-academie',
@@ -20,6 +21,7 @@ export class InscriptionAcademieComponent implements OnInit {
   auth = inject(AuthService);
   router = inject(Router);
   fb = inject(FormBuilder);
+  toast = inject(ToastService);
 
   isSubmitting = false;
   success = false;
@@ -102,7 +104,7 @@ export class InscriptionAcademieComponent implements OnInit {
       error: (err) => {
         console.error(err);
         this.isSubmitting = false;
-        alert('Erreur lors de l\'inscription');
+        this.toast.error(err.error?.message || 'Erreur lors de l\'inscription.');
       }
     });
   }

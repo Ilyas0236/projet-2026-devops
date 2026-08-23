@@ -4,6 +4,7 @@ import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angula
 import { RouterModule } from '@angular/router';
 import { ApiService } from '../../../services/api.service';
 import { AuthService } from '../../../services/auth.service';
+import { ToastService } from '../../../services/toast.service';
 
 @Component({
   selector: 'app-dashboard-staff',
@@ -15,6 +16,7 @@ export class DashboardStaffComponent implements OnInit {
   api = inject(ApiService);
   auth = inject(AuthService);
   fb = inject(FormBuilder);
+  toast = inject(ToastService);
 
   staff: any = null;
   players: any[] = [];
@@ -102,7 +104,7 @@ export class DashboardStaffComponent implements OnInit {
       error: (err) => {
         console.error(err);
         this.isSubmitting = false;
-        alert('Erreur lors de la création de la séance');
+        this.toast.error('Erreur lors de la création de la séance');
       }
     });
   }

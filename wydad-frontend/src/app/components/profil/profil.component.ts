@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { ToastService } from '../../services/toast.service';
+import { ConfirmService } from '../../services/confirm.service';
 
 @Component({
   selector: 'app-profil',
@@ -51,6 +53,8 @@ export class ProfilComponent implements OnInit {
 
   authService = inject(AuthService);
   router = inject(Router);
+  private toast = inject(ToastService);
+  private confirm = inject(ConfirmService);
 
   ngOnInit() {
     this.loadProfile();
@@ -127,19 +131,24 @@ export class ProfilComponent implements OnInit {
     });
   }
 
-  deleteAccount() {
-    if(confirm('Êtes-vous sûr de vouloir supprimer votre compte définitivement ?')) {
-      this.authService.deleteAccount().subscribe({
-        next: () => {
-          alert('Compte supprimé avec succès.');
-          this.authService.logout();
-          this.router.navigate(['/login']);
-        },
-        error: (err) => {
-          alert(err.error?.message || 'Erreur lors de la suppression du compte.');
-        }
-      });
-    }
+  async deleteAccount() {
+    const ok = await this.confirm.confirm({
+      title: 'Supprimer le compte',
+      message: 'Êtes-vous sûr de vouloir supprimer votre compte définitivement ? Cette action est irréversible.',
+      confirmLabel: 'Supprimer définitivement',
+      danger: true
+    });
+    if (!ok) return;
+    this.authService.deleteAccount().subscribe({
+      next: () => {
+        this.toast.success('Compte supprimé avec succès.');
+        this.authService.logout();
+        this.router.navigate(['/login']);
+      },
+      error: (err) => {
+        this.toast.error(err.error?.message || 'Erreur lors de la suppression du compte.');
+      }
+    });
   }
 
   // --- KYC Logic ---
@@ -247,17 +256,21 @@ export class ProfilComponent implements OnInit {
     });
   }
 
-  revokeAllSessions() {
-    if(confirm('Déconnecter tous les autres appareils ?')) {
-      this.authService.revokeAllSessions().subscribe({
-        next: () => {
-          this.sessions = this.sessions.filter(s => s.isCurrent);
-          this.sessionMsg = 'Toutes les autres sessions ont été révoquées.';
-        },
-        error: (err) => {
-          this.sessionMsg = err.error?.message || 'Erreur lors de la révocation.';
-        }
-      });
-    }
+  async revokeAllSessions() {
+    const ok = await this.confirm.confirm({
+      title: 'Déconnecter les appareils',
+      message: 'Déconnecter tous les autres appareils ?',
+      confirmLabel: 'Déconnecter tout'
+    });
+    if (!ok) return;
+    this.authService.revokeAllSessions().subscribe({
+      next: () => {
+        this.sessions = this.sessions.filter(s => s.isCurrent);
+        this.sessionMsg = 'Toutes les autres sessions ont été révoquées.';
+      },
+      error: (err) => {
+        this.sessionMsg = err.error?.message || 'Erreur lors de la révocation.';
+      }
+    });
   }
 }

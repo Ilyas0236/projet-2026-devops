@@ -2,11 +2,13 @@ import { Component, HostListener, OnInit } from '@angular/core';
 import { RouterOutlet, RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { ApiService } from '../../services/api.service';
+import { ToastContainerComponent } from '../../components/toast-container/toast-container.component';
+import { ConfirmDialogComponent } from '../../components/confirm-dialog/confirm-dialog.component';
 
 @Component({
   selector: 'app-public-layout',
   standalone: true,
-  imports: [RouterOutlet, RouterModule, CommonModule],
+  imports: [RouterOutlet, RouterModule, CommonModule, ToastContainerComponent, ConfirmDialogComponent],
   templateUrl: './public-layout.component.html',
   styleUrls: ['./public-layout.component.scss']
 })
