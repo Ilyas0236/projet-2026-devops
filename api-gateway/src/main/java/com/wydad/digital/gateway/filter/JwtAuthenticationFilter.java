@@ -51,6 +51,15 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
             return chain.filter(exchange);
         }
 
+        // Phase 4 — handshake SockJS du chat de groupe : un upgrade WebSocket
+        // ne peut pas porter de header Authorization depuis un navigateur.
+        // Le JWT transite en en-tête natif STOMP du CONNECT et est validé par
+        // sports-service lui-même (TeamChatAuthInterceptor) — la gateway
+        // laisse donc passer le handshake sans en-tête d'identité.
+        if (path.startsWith("/ws/team-chat")) {
+            return gatewayBypass(exchange, chain);
+        }
+
         // Auth-service : public endpoints (member-card et attestation exigent désormais un JWT)
         if (path.equals("/api/auth/login") || path.equals("/api/auth/register") || path.equals("/api/auth/refresh") || path.equals("/api/auth/otp/send") || path.equals("/api/auth/otp/verify")
                 || path.equals("/api/auth/password/reset")) { // S6 : reset de mot de passe protégé par l'OTP, pas par le JWT
@@ -78,6 +87,11 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         // For all other routes, enforce JWT (this covers /api/auth/me, /api/auth/admin/**, and all other services)
         return validateAndForward(exchange, chain);
 
+    }
+
+    /** Bypass authentification : transmet la requête telle quelle (headers déjà nettoyés). */
+    private Mono<Void> gatewayBypass(ServerWebExchange exchange, GatewayFilterChain chain) {
+        return chain.filter(exchange);
     }
 
     private Mono<Void> validateAndForward(ServerWebExchange exchange, GatewayFilterChain chain) {

@@ -26,18 +26,16 @@ import java.util.concurrent.ConcurrentHashMap;
  * Serveur -> /topic/chat/{sport}/{categorie}     TeamMessage
  * </pre>
  *
- * L'identité vient du Principal posé au CONNECT (en-têtes X-User-* de la
- * gateway) ; l'adhésion est revérifiée dans {@link TeamChatService} à
- * chaque envoi. Les membres en ligne reçoivent la diffusion temps réel ;
- * les absents reçoivent une notification in-app (best-effort).
+ * L'identité vient du Principal posé au CONNECT (JWT validé par
+ * {@link com.wydad.digital.sports.config.TeamChatAuthInterceptor}) ;
+ * l'adhésion est revérifiée dans {@link TeamChatService} à chaque envoi.
+ * Les membres en ligne reçoivent la diffusion temps réel ; les absents
+ * reçoivent une notification in-app (best-effort).
  */
 @Controller
 @RequiredArgsConstructor
 @Slf4j
 public class TeamChatWsController {
-
-    public static final String HDR_USER_ID = "X-User-Id";
-    public static final String HDR_USER_ROLE = "X-User-Role";
 
     private final TeamChatService teamChatService;
     private final SimpMessagingTemplate messagingTemplate;
