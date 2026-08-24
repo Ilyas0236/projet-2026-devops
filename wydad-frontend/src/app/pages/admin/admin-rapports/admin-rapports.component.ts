@@ -64,9 +64,18 @@ export class AdminRapportsComponent implements OnInit {
         this.toast.success('PDF téléversé. Complétez puis publiez.');
         input.value = '';
       },
-      error: () => {
+      error: (err: any) => {
         this.uploading = false;
-        this.uploadErr = 'Échec du téléversement.';
+        const status = err?.status;
+        let raison = '';
+        if (status === 401 || status === 403) {
+          raison = ' (session expirée — reconnectez-vous)';
+        } else if (status === 413) {
+          raison = ' (fichier trop volumineux, max. 20 Mo)';
+        } else if (status === 415) {
+          raison = ' (fichier refusé : seul un vrai PDF est accepté)';
+        }
+        this.uploadErr = `Échec du téléversement${raison}.${status ? ` [erreur ${status}]` : ''}`;
         input.value = '';
       }
     });
