@@ -47,6 +47,12 @@ public class Convocation {
 
     private LocalDateTime respondedAt;
 
+    /**
+     * Phase 3 — accusé de lecture : date à laquelle le joueur a ouvert sa
+     * convocation dans son espace (null = pas encore vue par le joueur).
+     */
+    private LocalDateTime readAt;
+
     @Column(nullable = false)
     private Long createdByStaffId;
 

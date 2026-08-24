@@ -19,4 +19,10 @@ public interface ConvocationRepository extends JpaRepository<Convocation, Long> 
     /** Historique de présence : réponses déjà données, plus récentes d'abord. */
     List<Convocation> findByJoueurUserIdAndResponseStatusIsNotNullOrderByRespondedAtDesc(
             Long joueurUserId);
+
+    /** Phase 3 — toutes les convocations d'une séance (vue entraîneur). */
+    List<Convocation> findBySession_IdOrderByCreatedAtAsc(Long sessionId);
+
+    /** Phase 3 — compteur « pas encore lues » pour le suivi côté entraîneur. */
+    long countBySession_IdAndReadAtIsNull(Long sessionId);
 }

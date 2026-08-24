@@ -1,9 +1,14 @@
 package com.wydad.digital.sports.service;
 
 import com.wydad.digital.sports.client.NotificationClient;
+import com.wydad.digital.sports.dto.PlayerSpaceDtos.BatchConvocationRequest;
+import com.wydad.digital.sports.dto.PlayerSpaceDtos.BatchConvocationResponse;
+import com.wydad.digital.sports.dto.PlayerSpaceDtos.BatchRejection;
 import com.wydad.digital.sports.dto.PlayerSpaceDtos.ConvocationResponse;
 import com.wydad.digital.sports.dto.PlayerSpaceDtos.PlayerDocumentResponse;
 import com.wydad.digital.sports.dto.PlayerSpaceDtos.RespondRequest;
+import com.wydad.digital.sports.dto.PlayerSpaceDtos.SessionResponsesSummary;
+import com.wydad.digital.sports.dto.PlayerSpaceDtos.StaffConvocationView;
 import com.wydad.digital.sports.dto.PlayerSpaceDtos.UpdateMyProfileRequest;
 import com.wydad.digital.sports.enums.Category;
 import com.wydad.digital.sports.enums.SportType;
@@ -100,6 +105,101 @@ public class PlayerSpaceService {
         return convocationRepository
                 .findByJoueurUserIdOrderBySession_SessionDateAsc(me)
                 .stream().map(this::toResponse).toList();
+    }
+
+    /**
+     * Phase 3 — accusé de lecture : appelé quand le joueur consulte SA
+     * convocation. Ownership strict (sinon 403), idempotent (re-lecture
+     * ne change pas la date).
+     */
+    @Transactional
+    public ConvocationResponse markConvocationRead(Long convocationId) {
+        Long me = requireCurrentUserId();
+        Convocation c = convocationRepository.findById(convocationId)
+                .orElseThrow(() -> new EntityNotFoundException("Convocation non trouvée: " + convocationId));
+        if (!c.getJoueurUserId().equals(me)) {
+            throw new AccessDeniedException("Lecture de la convocation d'un autre joueur interdite");
+        }
+        if (c.getReadAt() == null) {
+            c.setReadAt(java.time.LocalDateTime.now());
+            c = convocationRepository.save(c);
+        }
+        return toResponse(c);
+    }
+
+    // ────────────────── Phase 3 — STAFF : groupage & suivi ──────────────────
+
+    /**
+     * Phase 3 — convocation GROUPÉE (« liste cochable » du formulaire
+     * entraîneur) : une séance, N joueurs, un seul appel HTTP. Chaque joueur
+     * est traité individuellement : un doublon ou un joueur INAPTE ne bloque
+     * pas les autres — il alimente la liste des rejets motivés.
+     * Une notification in-app part pour chaque convocation réellement créée.
+     */
+    @Transactional
+    public BatchConvocationResponse createBatchConvocation(BatchConvocationRequest request, Long staffId) {
+        if (request.joueurUserIds() == null || request.joueurUserIds().isEmpty()) {
+            throw new IllegalArgumentException("Sélectionnez au moins un joueur");
+        }
+        if (request.sessionId() == null) {
+            throw new IllegalArgumentException("La séance est obligatoire");
+        }
+
+        List<ConvocationResponse> created = new java.util.ArrayList<>();
+        List<BatchRejection> rejected = new java.util.ArrayList<>();
+
+        // Pas de déduplication silencieuse : un doublon de la liste est
+        // signalé comme rejet motivé (anti-doublon par séance).
+        for (Long joueurUserId : request.joueurUserIds()) {
+            try {
+                created.add(createConvocation(joueurUserId, request.sessionId(), staffId));
+            } catch (EntityNotFoundException | IllegalStateException e) {
+                rejected.add(BatchRejection.builder()
+                        .joueurUserId(joueurUserId)
+                        .reason(e.getMessage())
+                        .build());
+            }
+        }
+        return BatchConvocationResponse.builder()
+                .created(created.size())
+                .convocations(created)
+                .rejected(rejected)
+                .build();
+    }
+
+    /**
+     * Phase 3 — vue entraîneur : toutes les convocations d'une séance avec
+     * réponse présence ET accusé de lecture de chaque joueur.
+     */
+    public List<StaffConvocationView> getSessionResponses(Long sessionId) {
+        Session session = sessionRepository.findById(sessionId)
+                .orElseThrow(() -> new EntityNotFoundException("Séance non trouvée: " + sessionId));
+        return convocationRepository.findBySession_IdOrderByCreatedAtAsc(session.getId())
+                .stream().map(this::toStaffView).toList();
+    }
+
+    /** Compteurs de suivi d'une séance (lu/non lu, confirmés/absents/retards). */
+    public SessionResponsesSummary getSessionSummary(Long sessionId) {
+        sessionRepository.findById(sessionId)
+                .orElseThrow(() -> new EntityNotFoundException("Séance non trouvée: " + sessionId));
+        List<Convocation> all = convocationRepository.findBySession_IdOrderByCreatedAtAsc(sessionId);
+        long unread = all.stream().filter(c -> c.getReadAt() == null).count();
+        long confirmed = all.stream()
+                .filter(c -> c.getResponseStatus() == Convocation.ResponseStatus.CONFIRME).count();
+        long absent = all.stream()
+                .filter(c -> c.getResponseStatus() == Convocation.ResponseStatus.ABSENT).count();
+        long late = all.stream()
+                .filter(c -> c.getResponseStatus() == Convocation.ResponseStatus.RETARD).count();
+        long pending = all.stream().filter(c -> c.getResponseStatus() == null).count();
+        return SessionResponsesSummary.builder()
+                .sessionId(sessionId)
+                .total(all.size())
+                .unread(unread)
+                .confirmed(confirmed)
+                .absent(absent)
+                .late(late)
+                .pending(pending)
+                .build();
     }
 
     /** Historique de présence : réponses déjà données par le joueur. */
@@ -238,6 +338,23 @@ public class PlayerSpaceService {
                 .responseStatus(c.getResponseStatus())
                 .responseJustification(c.getResponseJustification())
                 .respondedAt(c.getRespondedAt())
+                .readAt(c.getReadAt())
+                .createdAt(c.getCreatedAt())
+                .build();
+    }
+
+    /** Phase 3 — vue entraîneur enrichie du nom du joueur. */
+    private StaffConvocationView toStaffView(Convocation c) {
+        String name = playerRepository.findByUserId(c.getJoueurUserId())
+                .map(Player::getFullName).orElse("Joueur #" + c.getJoueurUserId());
+        return StaffConvocationView.builder()
+                .id(c.getId())
+                .joueurUserId(c.getJoueurUserId())
+                .joueurName(name)
+                .responseStatus(c.getResponseStatus())
+                .responseJustification(c.getResponseJustification())
+                .respondedAt(c.getRespondedAt())
+                .readAt(c.getReadAt())
                 .createdAt(c.getCreatedAt())
                 .build();
     }

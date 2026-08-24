@@ -3,6 +3,7 @@ package com.wydad.digital.sports.controller;
 import com.wydad.digital.sports.dto.MatchStatDtos.MatchStatRequest;
 import com.wydad.digital.sports.dto.MatchStatDtos.MatchStatResponse;
 import com.wydad.digital.sports.dto.PlayerDto;
+import com.wydad.digital.sports.dto.PlayerSpaceDtos;
 import com.wydad.digital.sports.dto.PlayerSpaceDtos.ConvocationResponse;
 import com.wydad.digital.sports.dto.PlayerSpaceDtos.PlayerDocumentResponse;
 import com.wydad.digital.sports.dto.PlayerSpaceDtos.RespondRequest;
@@ -60,6 +61,16 @@ public class PlayerSpaceController {
         return ResponseEntity.ok(playerSpaceService.respondToConvocation(id, request));
     }
 
+    /**
+     * Phase 3 — accusé de lecture : posé quand le joueur ouvre SA
+     * convocation. Idempotent, ownership strict côté service.
+     */
+    @PostMapping("/convocations/{id}/read")
+    @PreAuthorize("hasRole('JOUEUR')")
+    public ResponseEntity<ConvocationResponse> markRead(@PathVariable Long id) {
+        return ResponseEntity.ok(playerSpaceService.markConvocationRead(id));
+    }
+
     @GetMapping("/documents")
     @PreAuthorize("hasRole('JOUEUR')")
     public ResponseEntity<List<PlayerDocumentResponse>> getMyDocuments() {
@@ -93,6 +104,40 @@ public class PlayerSpaceController {
         Long staffId = ensureStaffCanManage(joueurUserId);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(playerSpaceService.createConvocation(joueurUserId, sessionId, staffId));
+    }
+
+    /**
+     * Phase 3 — convocation GROUPÉE (« liste cochable ») : N joueurs pour
+     * une séance en un appel. L'ownership catégorie est vérifié pour CHAQUE
+     * joueur visé avant création ; les rejets sont motivés joueur par joueur.
+     */
+    @PostMapping("/staff/convocations/batch")
+    @PreAuthorize("hasRole('STAFF') or hasRole('ADMIN')")
+    public ResponseEntity<PlayerSpaceDtos.BatchConvocationResponse> createBatchConvocation(
+            @RequestBody PlayerSpaceDtos.BatchConvocationRequest request) {
+        // Ownership catégorie vérifié joueur par joueur : le staffId passé
+        // au service reste 0 si admin ; sinon on résout le profil staff une
+        // fois puis le service rejoue les règles individuelles.
+        Long staffId = resolveStaffIdentity();
+        request.joueurUserIds().forEach(this::ensureStaffCanManage);
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(playerSpaceService.createBatchConvocation(request, staffId));
+    }
+
+    /** Phase 3 — suivi des réponses d'une séance (vue entraîneur). */
+    @GetMapping("/staff/sessions/{sessionId}/responses")
+    @PreAuthorize("hasRole('STAFF') or hasRole('ADMIN')")
+    public ResponseEntity<List<PlayerSpaceDtos.StaffConvocationView>> getSessionResponses(
+            @PathVariable Long sessionId) {
+        return ResponseEntity.ok(playerSpaceService.getSessionResponses(sessionId));
+    }
+
+    /** Phase 3 — compteurs de suivi d'une séance (lu/non lu, présences). */
+    @GetMapping("/staff/sessions/{sessionId}/responses/summary")
+    @PreAuthorize("hasRole('STAFF') or hasRole('ADMIN')")
+    public ResponseEntity<PlayerSpaceDtos.SessionResponsesSummary> getSessionSummary(
+            @PathVariable Long sessionId) {
+        return ResponseEntity.ok(playerSpaceService.getSessionSummary(sessionId));
     }
 
     /** Partage d'un document médiathèque avec un joueur (staff/admin). */
@@ -151,6 +196,23 @@ public class PlayerSpaceController {
     public record MedicalStatusRequest(
             com.wydad.digital.sports.enums.MedicalStatus status,
             String note) {
+    }
+
+    /**
+     * Phase 3 — résout l'identité staff courante (0 pour une action
+     * administrative), sans cibler de joueur particulier.
+     */
+    private Long resolveStaffIdentity() {
+        if (SportsUserContext.isAdmin()) {
+            return 0L;
+        }
+        Long userId = SportsUserContext.getCurrentUserId();
+        if (userId == null) {
+            throw new AccessDeniedException("Identité introuvable dans le contexte de sécurité");
+        }
+        return staffRepository.findByUserId(userId)
+                .map(Staff::getId)
+                .orElseThrow(() -> new AccessDeniedException("Aucun profil staff lié à votre compte"));
     }
 
     /**

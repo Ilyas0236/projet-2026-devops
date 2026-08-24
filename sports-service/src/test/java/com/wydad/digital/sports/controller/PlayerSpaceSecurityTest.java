@@ -41,6 +41,14 @@ import static org.hamcrest.Matchers.nullValue;
  * 4. seul le staff de la catégorie du joueur peut convoquer (403 sinon),
  *    et la convocation déclenche une notification (mock vérifié) ;
  * 5. l'édition de profil par le joueur ignore numéro/poste/catégorie.
+ *
+ * Phase 3 :
+ * 6. convocation GROUPÉE (« liste cochable ») : N joueurs en un appel,
+ *    rejets motivés pour doublon/INAPTE, notifications par joueur créé ;
+ * 7. staff hors catégorie → 403 sur l'appel groupé, rien créé ;
+ * 8. accusé de lecture : le joueur marque SA convocation, ownership strict
+ *    (403 sinon), idempotent ;
+ * 9. vue entraîneur : réponses + lecture par séance, compteurs exacts.
  */
 @SpringBootTest(properties = {
         "spring.datasource.url=jdbc:h2:mem:playerspace;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1",
@@ -217,5 +225,138 @@ class PlayerSpaceSecurityTest {
         assertThat(p.getJerseyNumber()).isEqualTo(8);         // champ interdit inchangé
         assertThat(p.getPosition()).isEqualTo("Milieu");      // champ interdit inchangé
         assertThat(p.getCategory()).isEqualTo(Category.U19); // champ interdit inchangé
+    }
+
+    // ─────────────────────── Phase 3 — groupage & suivi ───────────────────────
+
+    @Test
+    void convocationGroupee_creePourChaqueJoueur_etRejetteDoublon() throws Exception {
+        joueur(311L, "Joueur G");
+        joueur(312L, "Joueur H");
+        Session s = seance(LocalDateTime.now().plusDays(6));
+
+        staffRepository.save(Staff.builder()
+                .userId(402L).fullName("Coach Foot U19 bis")
+                .role(com.wydad.digital.sports.enums.StaffRole.HEAD_COACH)
+                .sportType(SportType.FOOTBALL).assignedCategory(Category.U19)
+                .build());
+
+        // 311 + 312 créés ; 311 une 2e fois → rejet motivé (doublon).
+        mvc.perform(post("/api/sports/my-space/staff/convocations/batch")
+                        .header("X-User-Email", EMAIL)
+                        .header("X-User-Role", "STAFF")
+                        .header("X-User-Id", "402")
+                        .contentType("application/json")
+                        .content("{\"sessionId\":" + s.getId() + ",\"joueurUserIds\":[311,312,311]}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.created").value(2))
+                .andExpect(jsonPath("$.convocations", hasSize(2)))
+                .andExpect(jsonPath("$.rejected", hasSize(1)))
+                .andExpect(jsonPath("$.rejected[0].joueurUserId").value(311));
+
+        assertThat(convocationRepository.findBySession_IdOrderByCreatedAtAsc(s.getId())).hasSize(2);
+        // Une notification par convocation réellement créée (pas pour le doublon).
+        verify(notificationClient, org.mockito.Mockito.times(2)).notifyUser(
+                org.mockito.ArgumentMatchers.anyLong(), org.mockito.ArgumentMatchers.isNull(),
+                org.mockito.ArgumentMatchers.eq("Nouvelle convocation"),
+                org.mockito.ArgumentMatchers.contains("convoqué"),
+                org.mockito.ArgumentMatchers.eq("/joueur/dashboard"));
+    }
+
+    @Test
+    void convocationGroupee_horsCategorie_403_etRienCree() throws Exception {
+        joueur(313L, "Joueur I");
+        Session s = seance(LocalDateTime.now().plusDays(7));
+
+        staffRepository.save(Staff.builder()
+                .userId(403L).fullName("Coach Hand hors catégorie")
+                .role(com.wydad.digital.sports.enums.StaffRole.HEAD_COACH)
+                .sportType(SportType.BASKETBALL).assignedCategory(Category.U17)
+                .build());
+
+        mvc.perform(post("/api/sports/my-space/staff/convocations/batch")
+                        .header("X-User-Email", EMAIL)
+                        .header("X-User-Role", "STAFF")
+                        .header("X-User-Id", "403")
+                        .contentType("application/json")
+                        .content("{\"sessionId\":" + s.getId() + ",\"joueurUserIds\":[313]}"))
+                .andExpect(status().isForbidden());
+
+        assertThat(convocationRepository.findBySession_IdOrderByCreatedAtAsc(s.getId())).isEmpty();
+    }
+
+    @Test
+    void accuseDeLecture_ownerSeul_etIdempotent() throws Exception {
+        Player moi = joueur(314L, "Joueur J");
+        Session s = seance(LocalDateTime.now().plusDays(8));
+        Convocation c = convoque(moi.getUserId(), s);
+
+        // Un AUTRE joueur tente de marquer la convocation de 314 → 403.
+        mvc.perform(post("/api/sports/my-space/convocations/" + c.getId() + "/read")
+                        .header("X-User-Email", EMAIL)
+                        .header("X-User-Role", "JOUEUR")
+                        .header("X-User-Id", "999"))
+                .andExpect(status().isForbidden());
+        assertThat(convocationRepository.findById(c.getId()).orElseThrow().getReadAt()).isNull();
+
+        // Le propriétaire marque : readAt posé.
+        mvc.perform(post("/api/sports/my-space/convocations/" + c.getId() + "/read")
+                        .header("X-User-Email", EMAIL)
+                        .header("X-User-Role", "JOUEUR")
+                        .header("X-User-Id", moi.getUserId().toString()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.readAt").isNotEmpty());
+
+        // Re-lecture idempotente : readAt inchangé.
+        java.time.LocalDateTime first =
+                convocationRepository.findById(c.getId()).orElseThrow().getReadAt();
+        mvc.perform(post("/api/sports/my-space/convocations/" + c.getId() + "/read")
+                        .header("X-User-Email", EMAIL)
+                        .header("X-User-Role", "JOUEUR")
+                        .header("X-User-Id", moi.getUserId().toString()))
+                .andExpect(status().isOk());
+        assertThat(convocationRepository.findById(c.getId()).orElseThrow().getReadAt())
+                .isEqualTo(first);
+    }
+
+    @Test
+    void vueEntraineur_reponsesEtLecture_parSeance() throws Exception {
+        Player a = joueur(315L, "Joueur K");
+        Player b = joueur(316L, "Joueur L");
+        Session s = seance(LocalDateTime.now().plusDays(9));
+        Convocation ca = convoque(a.getUserId(), s);
+        Convocation cb = convoque(b.getUserId(), s);
+
+        // A lit et confirme ; B ne fait rien.
+        ca.setReadAt(LocalDateTime.now().minusHours(1));
+        ca.setResponseStatus(Convocation.ResponseStatus.CONFIRME);
+        ca.setRespondedAt(LocalDateTime.now());
+        convocationRepository.save(ca);
+
+        staffRepository.save(Staff.builder()
+                .userId(404L).fullName("Coach Foot U19 ter")
+                .role(com.wydad.digital.sports.enums.StaffRole.HEAD_COACH)
+                .sportType(SportType.FOOTBALL).assignedCategory(Category.U19)
+                .build());
+
+        mvc.perform(get("/api/sports/my-space/staff/sessions/" + s.getId() + "/responses")
+                        .header("X-User-Email", EMAIL)
+                        .header("X-User-Role", "STAFF")
+                        .header("X-User-Id", "404"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(2)))
+                .andExpect(jsonPath("$[0].joueurName").value("Joueur K"));
+
+        mvc.perform(get("/api/sports/my-space/staff/sessions/" + s.getId() + "/responses/summary")
+                        .header("X-User-Email", EMAIL)
+                        .header("X-User-Role", "STAFF")
+                        .header("X-User-Id", "404"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.total").value(2))
+                .andExpect(jsonPath("$.unread").value(1))
+                .andExpect(jsonPath("$.confirmed").value(1))
+                .andExpect(jsonPath("$.pending").value(1));
+
+        assertThat(cb.getReadAt()).isNull();
     }
 }
