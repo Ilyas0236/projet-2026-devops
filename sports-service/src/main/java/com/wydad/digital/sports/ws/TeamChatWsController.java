@@ -1,6 +1,7 @@
 package com.wydad.digital.sports.ws;
 
 import com.wydad.digital.sports.config.TeamChatAuthInterceptor.TeamChatPrincipal;
+import com.wydad.digital.sports.filter.SportsUserContext;
 import com.wydad.digital.sports.enums.Category;
 import com.wydad.digital.sports.enums.SportType;
 import com.wydad.digital.sports.model.TeamMessage;
@@ -56,16 +57,25 @@ public class TeamChatWsController {
             throw new IllegalArgumentException("Session non authentifiée");
         }
 
-        TeamMessage saved = teamChatService.sendToGroup(
-                SportType.valueOf(sport.toUpperCase()),
-                Category.valueOf(category.toUpperCase()),
-                payload.content());
+        // Sur le canal WS il n'y a pas de filtre HTTP : le contexte vient du
+        // JWT validé au CONNECT (principal). On le projette dans le ThreadLocal
+        // que lit TeamChatService (adhésion + nom + rôle), puis on nettoie.
+        SportsUserContext.setCurrentUserId(me.userId());
+        SportsUserContext.setCurrentUserRole(me.role());
+        try {
+            TeamMessage saved = teamChatService.sendToGroup(
+                    SportType.valueOf(sport.toUpperCase()),
+                    Category.valueOf(category.toUpperCase()),
+                    payload.content());
 
-        String topic = "/topic/chat/" + sport.toLowerCase() + "/" + category.toLowerCase();
-        messagingTemplate.convertAndSend(topic, saved);
+            String topic = "/topic/chat/" + sport.toLowerCase() + "/" + category.toLowerCase();
+            messagingTemplate.convertAndSend(topic, saved);
 
-        teamChatService.notifyOfflineMembers(saved,
-                onlineByGroup.getOrDefault(groupKey(sport, category), Set.of()));
+            teamChatService.notifyOfflineMembers(saved,
+                    onlineByGroup.getOrDefault(groupKey(sport, category), Set.of()));
+        } finally {
+            SportsUserContext.clear();
+        }
     }
 
     /** Le client signale son arrivée/départ pour le suivi « en ligne ». */
