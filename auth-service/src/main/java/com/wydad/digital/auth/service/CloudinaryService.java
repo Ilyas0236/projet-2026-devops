@@ -114,6 +114,9 @@ public class CloudinaryService {
             @SuppressWarnings("unchecked")
             String url = cloudinary.url()
                     .resourceType(resourceType)
+                    // Les justificatifs sont uploadés en type "authenticated" :
+                    // l'URL signée doit porter ce delivery type, sinon 404.
+                    .type("authenticated")
                     .signed(true)
                     .secure(true)
                     .generate(publicId);
