@@ -4,6 +4,7 @@ import com.wydad.digital.sports.enums.Category;
 import com.wydad.digital.sports.enums.MedicalStatus;
 import com.wydad.digital.sports.enums.SportType;
 import com.wydad.digital.sports.model.Convocation;
+import com.wydad.digital.sports.model.PlayerDocument;
 import lombok.Builder;
 
 import java.time.LocalDate;
@@ -42,7 +43,28 @@ public final class PlayerSpaceDtos {
 
     @Builder
     public record PlayerDocumentResponse(
-            Long id, String title, String url, LocalDateTime dateAjout) {
+            Long id,
+            String title,
+            String url,
+            LocalDateTime dateAjout,
+            /** Phase 3 — enrichissement média. */
+            PlayerDocument.MediaType mediaType,
+            String message,
+            Long senderUserId,
+            String senderName,
+            String publicId) {
+    }
+
+    /**
+     * Phase 3 — envoi d'un média tactique : UN joueur ({@code joueurUserId})
+     * OU toute la catégorie de l'entraîneur ({@code wholeTeam=true}).
+     */
+    public record ShareMediaRequest(
+            Long joueurUserId,
+            boolean wholeTeam,
+            String title,
+            String message,
+            PlayerDocument.MediaType mediaType) {
     }
 
     /**

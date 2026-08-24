@@ -10,6 +10,7 @@ import java.time.LocalDateTime;
 import java.util.Map;
 
 @RestControllerAdvice
+@lombok.extern.slf4j.Slf4j
 public class GlobalExceptionHandler {
 
     /**
@@ -30,6 +31,34 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
                 "error", "NOT_FOUND",
                 "message", ex.getMessage(),
+                "timestamp", LocalDateTime.now().toString()
+        ));
+    }
+
+    /**
+     * Phase 3 — panne du stockage des médias (Cloudinary) : 503 avec message
+     * actionnable, distinct d'une faute de saisie. Détail technique
+     * journalisé côté serveur uniquement.
+     */
+    @ExceptionHandler(com.wydad.digital.sports.exception.MediaIndisponibleException.class)
+    public ResponseEntity<Map<String, Object>> handleMediaIndisponible(
+            com.wydad.digital.sports.exception.MediaIndisponibleException ex,
+            jakarta.servlet.http.HttpServletRequest request) {
+        log.warn("Stockage médias indisponible sur {}: {}", request.getRequestURI(), ex.getDetail());
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(Map.of(
+                "error", "SERVICE_UNAVAILABLE",
+                "message", ex.getMessage(),
+                "timestamp", LocalDateTime.now().toString()
+        ));
+    }
+
+    /** Fichier média trop volumineux : 413 (pas une faute de saisie 400). */
+    @ExceptionHandler(org.springframework.web.multipart.MaxUploadSizeExceededException.class)
+    public ResponseEntity<Map<String, Object>> handleMaxUpload(
+            org.springframework.web.multipart.MaxUploadSizeExceededException ex) {
+        return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE).body(Map.of(
+                "error", "PAYLOAD_TOO_LARGE",
+                "message", "Fichier trop volumineux (maximum 25 Mo).",
                 "timestamp", LocalDateTime.now().toString()
         ));
     }

@@ -1,0 +1,329 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Billets VIP joueurs — Phase 2</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+:root{
+  --paper:#ffffff;
+  --paper-alt:#f7f7f8;
+  --paper-deep:#efeff1;
+  --ink:#17171a;
+  --ink-2:#4a4447;
+  --ink-3:#83767a;
+  --line:#e5dfe1;
+  --red:#c8102e;
+  --red-dark:#9b0c23;
+  --red-wash:#fdf2f4;
+  --gold:#b08d2f;
+  --gold-wash:#faf5e8;
+  --green:#1e7d43;
+  --green-wash:#eef7f0;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --paper:#141215;
+  --paper-alt:#1b181c;
+  --paper-deep:#242025;
+  --ink:#f2eef0;
+  --ink-2:#c3babe;
+  --ink-3:#8f8388;
+  --line:#332d31;
+  --red:#ff4d63;
+  --red-dark:#e03049;
+  --red-wash:#2b1118;
+  --gold:#d4af52;
+  --gold-wash:#28200f;
+  --green:#4fc07d;
+  --green-wash:#10241a;
+}}
+:root[data-theme="dark"]{
+  --paper:#141215;
+  --paper-alt:#1b181c;
+  --paper-deep:#242025;
+  --ink:#f2eef0;
+  --ink-2:#c3babe;
+  --ink-3:#8f8388;
+  --line:#332d31;
+  --red:#ff4d63;
+  --red-dark:#e03049;
+  --red-wash:#2b1118;
+  --gold:#d4af52;
+  --gold-wash:#28200f;
+  --green:#4fc07d;
+  --green-wash:#10241a;
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{
+  background:var(--paper);
+  color:var(--ink);
+  font-family:'Inter',system-ui,-apple-system,sans-serif;
+  font-size:16px;line-height:1.65;
+}
+.wrap{max-width:56rem;margin:0 auto;padding:0 1.25rem 5rem}
+
+/* ---------- En-tête ---------- */
+header{
+  border-bottom:4px solid var(--red);
+  padding:3rem 0 2rem;margin-bottom:2.5rem;
+}
+.eyebrow{
+  font-family:'Oswald',sans-serif;font-weight:600;font-size:.8rem;
+  letter-spacing:.18em;text-transform:uppercase;color:var(--red);
+  margin-bottom:.6rem;
+}
+h1{
+  font-family:'Oswald',sans-serif;font-weight:700;
+  font-size:clamp(2rem,5vw,3rem);line-height:1.08;
+  text-wrap:balance;text-transform:uppercase;letter-spacing:.01em;
+}
+.lede{margin-top:1rem;max-width:42rem;color:var(--ink-2);font-size:1.05rem}
+.meta-row{display:flex;flex-wrap:wrap;gap:.5rem 1.75rem;margin-top:1.5rem;font-family:'JetBrains Mono',monospace;font-size:.78rem;color:var(--ink-3)}
+
+/* ---------- Bandeau métriques ---------- */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(9.5rem,1fr));gap:1px;background:var(--line);border:1px solid var(--line);margin-bottom:3rem}
+.stat{background:var(--paper);padding:1.1rem 1.15rem}
+.stat b{font-family:'Oswald',sans-serif;font-weight:600;font-size:1.7rem;line-height:1;display:block;color:var(--ink)}
+.stat span{display:block;margin-top:.35rem;font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
+
+/* ---------- Sections ---------- */
+section{margin-bottom:3.25rem}
+.step-head{display:flex;align-items:baseline;gap:.9rem;margin-bottom:1.1rem}
+.step-num{
+  font-family:'JetBrains Mono',monospace;font-weight:600;font-size:.85rem;
+  color:var(--paper);background:var(--red);padding:.15rem .55rem;flex:none;
+}
+h2{
+  font-family:'Oswald',sans-serif;font-weight:600;
+  font-size:clamp(1.3rem,3vw,1.65rem);text-transform:uppercase;
+  letter-spacing:.02em;text-wrap:balance;
+}
+p{max-width:44rem}
+p+p{margin-top:.75rem}
+.muted{color:var(--ink-2)}
+small,.fine{font-size:.82rem;color:var(--ink-3)}
+
+/* ---------- Encadrés ---------- */
+.callout{
+  border-left:4px solid var(--green);background:var(--green-wash);
+  padding:1rem 1.25rem;margin:1.25rem 0;max-width:46rem;font-size:.95rem;
+}
+.callout.warn{border-left-color:var(--gold);background:var(--gold-wash)}
+.callout.red{border-left-color:var(--red);background:var(--red-wash)}
+.callout b:first-child{display:block;margin-bottom:.25rem;font-size:.75rem;letter-spacing:.1em;text-transform:uppercase}
+.callout.warn b:first-child{color:var(--gold)}
+.callout.red b:first-child{color:var(--red)}
+.callout:not(.warn):not(.red) b:first-child{color:var(--green)}
+
+/* ---------- Code & données ---------- */
+code{
+  font-family:'JetBrains Mono',monospace;font-size:.84em;
+  background:var(--paper-deep);padding:.12em .4em;border-radius:2px;
+}
+pre{
+  font-family:'JetBrains Mono',monospace;font-size:.8rem;line-height:1.55;
+  background:var(--paper-alt);border:1px solid var(--line);
+  padding:1rem 1.15rem;overflow-x:auto;margin:1.25rem 0;
+}
+pre code{background:none;padding:0}
+
+/* ---------- Tableaux ---------- */
+.tbl-wrap{overflow-x:auto;margin:1.25rem 0;border:1px solid var(--line)}
+table{border-collapse:collapse;width:100%;min-width:34rem;font-size:.88rem}
+th{
+  font-family:'Oswald',sans-serif;font-weight:500;font-size:.74rem;
+  letter-spacing:.09em;text-transform:uppercase;text-align:left;
+  color:var(--ink-2);background:var(--paper-alt);
+  padding:.6rem .9rem;border-bottom:2px solid var(--red);
+}
+td{padding:.55rem .9rem;border-bottom:1px solid var(--line);vertical-align:top}
+tr:last-child td{border-bottom:none}
+td code{white-space:nowrap}
+.num{font-variant-numeric:tabular-nums}
+
+/* ---------- Pastilles ---------- */
+.pill{
+  display:inline-block;font-family:'JetBrains Mono',monospace;font-size:.72rem;
+  font-weight:600;padding:.14rem .55rem;white-space:nowrap;
+}
+.pill.ok{color:var(--green);background:var(--green-wash);border:1px solid var(--green)}
+.pill.fix{color:var(--red);background:var(--red-wash);border:1px solid var(--red)}
+.pill.todo{color:var(--gold);background:var(--gold-wash);border:1px solid var(--gold)}
+.http{font-weight:600;color:var(--green)}
+
+footer{border-top:1px solid var(--line);margin-top:4rem;padding-top:1.25rem;font-size:.8rem;color:var(--ink-3)}
+:focus-visible{outline:2px solid var(--red);outline-offset:2px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="eyebrow">Wydad Digital · Rapport de phase</div>
+  <h1>Phase 2 — Billets&nbsp;VIP des joueurs</h1>
+  <p class="lede">Génération automatique de 4&nbsp;billets VIP gratuits par joueur actif à chaque match à domicile, avec QR&nbsp;code et PDF téléchargeable depuis l'espace joueur. Développée pas à pas, testée au fil de l'eau (backend et frontend), déployée et prouvée bout en bout sur Azure.</p>
+  <div class="meta-row">
+    <span>DATE&nbsp;: 24 août 2026</span>
+    <span>ENV&nbsp;: Azure B2s_v2 · 158.158.74.169</span>
+    <span>SERVICE&nbsp;: ticket-service :8085</span>
+  </div>
+</header>
+
+<div class="stats">
+  <div class="stat"><b class="num">19/19</b><span>Tests backend ticket-service</span></div>
+  <div class="stat"><b class="num">28/28</b><span>Tests frontend Karma</span></div>
+  <div class="stat"><b class="num">+10</b><span>Nouveaux tests VIP</span></div>
+  <div class="stat"><b class="num">2</b><span>Bugs prod corrigés</span></div>
+  <div class="stat"><b class="num">4×N</b><span>Billets générés par match domicile</span></div>
+</div>
+
+<!-- ═══════════ 1 ═══════════ -->
+<section>
+  <div class="step-head"><span class="step-num">1</span><h2>Vérification de l'existant</h2></div>
+  <p>Avant toute écriture de code, relecture du socle déjà codé lors des phases précédentes&nbsp;:</p>
+  <div class="tbl-wrap"><table>
+    <tr><th>Élément vérifié</th><th>Constat</th><th>Décision</th></tr>
+    <tr><td>Règle métier « 4 billets VIP par joueur actif, matchs à domicile uniquement » (roadmap B.4.bis)</td><td>Aucune trace dans le code — seule la vente classique existait</td><td><span class="pill fix">à construire</span></td></tr>
+    <tr><td>Route interne auth-service <code>/api/auth/internal/recipients</code></td><td>Déjà présente, protégée par <code>X-Internal-Secret</code></td><td><span class="pill ok">réutilisée</span></td></tr>
+    <tr><td>Blocage externe des routes internes ticket-service par la gateway (<code>block-ticket-internal</code>)</td><td>Déjà en place</td><td><span class="pill ok">réutilisée</span></td></tr>
+    <tr><td>Génération QR + PDF côté ticket-service</td><td><code>QrCodeService</code> et endpoint PDF opérationnels</td><td><span class="pill ok">réutilisée</span></td></tr>
+    <tr><td>Mapping compose du secret interne vers auth-service</td><td><b>Absent</b> — auth-service n'avait pas <code>WYDAD_INTERNAL_SECRET</code></td><td><span class="pill fix">corrigé (f344944)</span></td></tr>
+  </table></div>
+</section>
+
+<!-- ═══════════ 2 ═══════════ -->
+<section>
+  <div class="step-head"><span class="step-num">2</span><h2>Ce qui a été construit — backend</h2></div>
+  <p>Quatre pièces nouvelles dans ticket-service, dans l'ordre d'écriture&nbsp;:</p>
+
+  <div class="tbl-wrap"><table>
+    <tr><th>Fichier</th><th>Rôle</th></tr>
+    <tr><td><code>config/InternalSecretValidator.java</code></td><td>Réplique du validateur notification-service&nbsp;: comparaison SHA-256 à temps constant du header <code>X-Internal-Secret</code>.</td></tr>
+    <tr><td><code>client/AuthClient.java</code></td><td>Appelle <code>/api/auth/internal/recipients</code>, filtre les joueurs <code>JOUEUR</code>&nbsp;+ actifs&nbsp;+ <code>VALIDE</code>. Toute erreur réseau → liste vide (dégradation propre).</td></tr>
+    <tr><td><code>service/VipTicketService.java</td><td>Cœur métier&nbsp;: détection domicile (<code>homeTeam</code> contient « wydad »), 4 billets/joueur, prix <code>ZERO</code> + statut <code>PAID</code> hors circuit E-cash, QR unique par billet, idempotence via <code>existsByEventIdAndUserIdAndCategory</code>, notification in-app best-effort.</td></tr>
+    <tr><td><code>controller/InternalTicketController.java</code></td><td><code>POST /api/ticket/internal/vip-generate/{eventId}</code> — relance manuelle&nbsp;; 403 sans secret, 404 événement inconnu, 422 match extérieur.</td></tr>
+  </table></div>
+
+  <p>Deux branchements sur l'existant&nbsp;:</p>
+  <ul style="margin:.75rem 0 0 1.25rem;max-width:44rem">
+    <li><b>Auto-déclenchement</b> — <code>EventService.createEvent()</code> appelle désormais <code>autoGenerateIfHomeEvent(event)</code> en best-effort&nbsp;: une erreur VIP n'annule jamais la création du match (relance manuelle possible).</li>
+    <li><b>Idempotence</b> — ajout de <code>existsByEventIdAndUserIdAndCategory</code> au <code>TicketRepository</code>&nbsp;: un joueur déjà servi n'est jamais doublé, même après plusieurs relances.</li>
+  </ul>
+</section>
+
+<!-- ═══════════ 3 ═══════════ -->
+<section>
+  <div class="step-head"><span class="step-num">3</span><h2>Tests automatisés — au fil de l'eau</h2></div>
+  <p>Chaque pièce a été accompagnée de ses tests avant de passer à la suivante.</p>
+
+  <p style="margin-top:1.1rem"><b>VipTicketServiceTest — 10 tests</b> (Spring Boot + H2 mode PostgreSQL, mocks AuthClient/NotificationClient)&nbsp;:</p>
+  <div class="tbl-wrap"><table>
+    <tr><th>Test</th><th>Partition ISTQB couverte</th></tr>
+    <tr><td>quatreBilletsVipParJoueurActifADomicile</td><td>Flux nominal — 2 joueurs → 8 billets, QR uniques, image non vide</td></tr>
+    <tr><td>matchExterieurRejeteSansAucunBillet</td><td>Classe invalide « extérieur » — exception, zéro appel auth</td></tr>
+    <tr><td>regenerationNeCreeAucunDoublon</td><td>Cas ISTQB « billet dupliqué » — 2ᵉ passe → 0 billet</td></tr>
+    <tr><td>relanceServeLesJoueursManquantsUniquement</td><td>Joueur arrivant entre deux passes — servi seul (+4)</td></tr>
+    <tr><td>billetsVipGratuitsEtPayesHorsCircuitDeVente</td><td>Prix 0 + PAID — aucun débit E-cash possible</td></tr>
+    <tr><td>notificationInAppEnvoyeeAuxJoueursServis</td><td>Notification contenant « billets VIP » × nombre de joueurs</td></tr>
+    <tr><td>evenementInconnuRejeteProprement</td><td>ID inexistant → IllegalArgumentException « non trouvé »</td></tr>
+    <tr><td>autoGenerationSurMatchADomicileCreeLesBillets</td><td>Branchement createEvent — même résultat qu'un appel manuel</td></tr>
+    <tr><td>autoGenerationSurMatchExterieurNeRienFait</td><td>Auto-trigger silencieux hors domicile</td></tr>
+    <tr><td>autoGenerationSansSectionVipNEchouePas</td><td>Best-effort — pas de section VIP ⇒ aucune erreur bloquante</td></tr>
+  </table></div>
+
+  <div class="callout warn"><b>Piège rencontré et documenté</b>
+  <code>@MockBean</code> réinitialise ses stubs après chaque méthode de test&nbsp;: un stub posé en <code>@BeforeAll</code> ne survit qu'au premier test. Les stubs joueurs sont reposés en <code>@BeforeEach</code>.</div>
+
+  <p style="margin-top:1.1rem"><b>Frontend — vip-tickets.spec.ts, 3 tests</b> (Karma/Jasmine, HttpClientTestingModule)&nbsp;:</p>
+  <ul style="margin:.5rem 0 0 1.25rem;max-width:44rem">
+    <li>Ne charge que la catégorie VIP et trie par date croissante ;</li>
+    <li>état vide quand aucun billet VIP n'existe ;</li>
+    <li>erreur HTTP&nbsp;500 absorbée sans crash ni spinner bloquant.</li>
+  </ul>
+
+  <div class="callout"><b>Résultat final</b>
+  Backend ticket-service&nbsp;: <b>19/19 verts</b> (9 préexistants + 10 nouveaux). Frontend&nbsp;: <b>28/28 verts</b> (25 + 3). Build Angular&nbsp;OK (seul subsiste l'alerte budget bundle préexistante, 1,22 Mo contre 1 Mo).</div>
+</section>
+
+<!-- ═══════════ 4 ═══════════ -->
+<section>
+  <div class="step-head"><span class="step-num">4</span><h2>Deux bugs de prod découverts par les tests E2E</h2></div>
+  <p>L'exécution bout en bout sur Azure a révélé deux failles préexistantes, indépendantes de la Phase&nbsp;2 mais touchant tous les utilisateurs non-admin&nbsp;:</p>
+
+  <div class="callout red"><b>Bug 1 — rôle JOUEUR absent des autorisations (commit 6155a5f)</b>
+  <code>@PreAuthorize</code> sur <code>/purchase</code> et <code>/user/{userId}</code> n'acceptait qu'ADHERENT et ADMIN&nbsp;: un joueur connecté recevait <b>403 FORBIDDEN</b> sur sa propre liste de billets. JOUEUR ajouté aux deux annotations.</div>
+
+  <div class="callout red"><b>Bug 2 — contrôle d'ownership sur le mauvais ID (commit 386b302)</b>
+  Les endpoints PDF et QR comparaient <b>l'ID du billet</b> à l'ID de l'utilisateur courant au lieu de comparer <b>l'ID du propriétaire du billet</b>. Conséquence latente&nbsp;: 403 pour tout utilisateur non-admin, y compris les supporters sur leurs propres billets achetés. Corrigé&nbsp;: chargement du billet d'abord, puis <code>assertOwnership(ticket.getUserId())</code>.</div>
+</section>
+
+<!-- ═══════════ 5 ═══════════ -->
+<section>
+  <div class="step-head"><span class="step-num">5</span><h2>Chaîne interne sécurisée — preuve en prod</h2></div>
+  <p>La route de génération est exposée uniquement à l'intérieur du réseau Docker (port 8085 en <code>expose</code>, jamais publié) et doublement protégée&nbsp;:</p>
+  <div class="tbl-wrap"><table>
+    <tr><th>Test</th><th>Résultat</th></tr>
+    <tr><td>Appel externe direct via gateway</td><td><span class="http">bloqué</span> — règle <code>block-ticket-internal</code></td></tr>
+    <tr><td>Appel interne sans header <code>X-Internal-Secret</code></td><td><span class="http">403</span></td></tr>
+    <tr><td>Appel interne avec le secret du .env serveur</td><td><span class="http">200</span> — génération exécutée</td></tr>
+    <tr><td>Relance immédiate (idempotence)</td><td><span class="http">200</span> — <code>{"billetsCrees":0,"joueursServis":N}</code></td></tr>
+  </table></div>
+  <p class="fine" style="margin-top:.75rem">Correctif de wiring au passage (commit f344944)&nbsp;: le bloc compose d'<b>auth-service</b> ne mappait pas <code>INTERNAL_SECRET</code> du .env vers <code>WYDAD_INTERNAL_SECRET</code> — sans lui, tout appel interne légitime était rejeté 403.</p>
+</section>
+
+<!-- ═══════════ 6 ═══════════ -->
+<section>
+  <div class="step-head"><span class="step-num">6</span><h2>Preuves E2E sur Azure</h2></div>
+  <p>Compte de test joueur créé (<code>joueur.test@wac.ma</code>, id&nbsp;5), deux matchs créés via l'API admin&nbsp;:</p>
+  <div class="tbl-wrap"><table>
+    <tr><th>Scénario</th><th>Preuve</th></tr>
+    <tr><td>Génération manuelle — « WAC - FUS Test VIP E2E »</td><td><span class="pill ok">HTTP 200</span> 4 billets VIP créés pour le joueur id&nbsp;5</td></tr>
+    <tr><td>Auto-génération — création « WAC - OCC (auto VIP) »</td><td><span class="pill ok">HTTP 201</span> billets apparus sans aucun appel manuel, section VIP 30→26 places</td></tr>
+    <tr><td>Liste des billets du joueur (rôle JOUEUR, post-fix)</td><td><span class="pill ok">HTTP 200</span> 4 billets <code>price:0.00 status:PAID category:VIP</code></td></tr>
+    <tr><td>Téléchargement PDF (propriétaire)</td><td><span class="pill ok">HTTP 200</span> 5286 octets, signature <code>%PDF-</code></td></tr>
+    <tr><td>Téléchargement QR PNG (propriétaire)</td><td><span class="pill ok">HTTP 200</span> 475 octets</td></tr>
+    <tr><td>Idempotence — relance du endpoint interne</td><td><span class="pill ok">billetsCrees: 0</span> — aucun doublon en base</td></tr>
+    <tr><td>Frontend redéployé</td><td><span class="pill ok">:4200 en ligne</span> — section « Mes billets VIP » servie</td></tr>
+  </table></div>
+</section>
+
+<!-- ═══════════ 7 ═══════════ -->
+<section>
+  <div class="step-head"><span class="step-num">7</span><h2>Commits &amp; déploiements</h2></div>
+  <div class="tbl-wrap"><table>
+    <tr><th>Commit</th><th>Contenu</th><th>Déploiement</th></tr>
+    <tr><td class="num">b8eec87</td><td>Socle VIP&nbsp;: validator, AuthClient, VipTicketService, controller interne, repository, SecurityConfig + 10 tests</td><td>ticket-service reconstruit</td></tr>
+    <tr><td class="num">1e85691</td><td>Auto-déclenchement à la création d'événement (best-effort)</td><td>ticket-service reconstruit</td></tr>
+    <tr><td class="num">f344944</td><td>Compose&nbsp;: mapping INTERNAL_SECRET → auth-service</td><td>auth-service recréé</td></tr>
+    <tr><td class="num">6155a5f</td><td>Fix sécurité&nbsp;: rôle JOUEUR autorisé sur purchase/liste</td><td>ticket-service reconstruit</td></tr>
+    <tr><td class="num">386b302</td><td>Fix sécurité&nbsp;: ownership PDF/QR sur le propriétaire réel</td><td>ticket-service reconstruit</td></tr>
+    <tr><td class="num">11da931</td><td>Frontend&nbsp;: section « Mes billets VIP » dashboard joueur + 3 specs</td><td>frontend reconstruit (:4200)</td></tr>
+  </table></div>
+</section>
+
+<!-- ═══════════ 8 ═══════════ -->
+<section>
+  <div class="step-head"><span class="step-num">8</span><h2>Reste à faire</h2></div>
+  <div class="tbl-wrap"><table>
+    <tr><th>Point</th><th>Priorité</th></tr>
+    <tr><td>Nettoyer les données de test prod (events 1–2, <code>joueur.test@wac.ma</code>) avant mise en service réelle</td><td><span class="pill todo">avant prod</span></td></tr>
+    <tr><td>Changer le mot de passe admin seed après première connexion réelle</td><td><span class="pill todo">avant prod</span></td></tr>
+    <tr><td>Retirer pgAdmin et les ports exposés inutiles, HTTPS Caddy</td><td><span class="pill todo">avant prod</span></td></tr>
+    <tr><td>Phase 1 ter / 3 / 4 / 5 / 5 bis / 6 / 7 de la roadmap communauté</td><td><span class="pill todo">roadmap</span></td></tr>
+    <tr><td>JaCoCo ≥70 %, Testcontainers, Playwright E2E (lot tests ISTQB restant)</td><td><span class="pill todo">qualité</span></td></tr>
+    <tr><td>Vague design&nbsp;1 — ~18 vues encore sombres à migrer vers le thème clair</td><td><span class="pill todo">design</span></td></tr>
+  </table></div>
+</section>
+
+<footer>
+  Rapport généré le 24 août 2026 — Wydad Digital · ticket-service 8085 · Azure B2s_v2 158.158.74.169.<br>
+  Complément du <em>Rapport de réalisation</em> général (rapport-final.html).
+</footer>
+
+</div>
+</body>
+</html>

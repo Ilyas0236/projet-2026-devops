@@ -20,7 +20,9 @@ import com.wydad.digital.sports.repository.ConvocationRepository;
 import com.wydad.digital.sports.repository.PlayerDocumentRepository;
 import com.wydad.digital.sports.repository.PlayerRepository;
 import com.wydad.digital.sports.repository.SessionRepository;
+import com.wydad.digital.sports.exception.MediaIndisponibleException;
 import com.wydad.digital.sports.filter.SportsUserContext;
+import com.wydad.digital.sports.model.Staff;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
@@ -48,6 +50,8 @@ public class PlayerSpaceService {
     private final PlayerRepository playerRepository;
     private final SessionRepository sessionRepository;
     private final NotificationClient notificationClient;
+    private final MediaStorageService mediaStorageService;
+    private final com.wydad.digital.sports.repository.StaffRepository staffRepository;
 
     // ─────────────────────────── CONVOCATIONS ───────────────────────────
 
@@ -239,25 +243,136 @@ public class PlayerSpaceService {
         return toResponse(convocationRepository.save(c));
     }
 
-    // ───────────────────────────── DOCUMENTS ─────────────────────────────
+    // ───────────────────────── DOCUMENTS / MÉDIAS ─────────────────────────
 
-    /** Partage d'un document avec un joueur (staff/admin). */
+    /** Partage d'un document (référence URL existante) avec un joueur. */
     public PlayerDocumentResponse shareDocument(Long joueurUserId, String title, String url) {
         if (title == null || title.isBlank() || url == null || url.isBlank()) {
             throw new IllegalArgumentException("Titre et URL sont obligatoires");
         }
         PlayerDocument doc = PlayerDocument.builder()
                 .joueurUserId(joueurUserId)
+                .recipientUserIds(java.util.Set.of(joueurUserId))
                 .title(title.trim())
                 .url(url.trim())
+                .mediaType(PlayerDocument.MediaType.DOCUMENT)
                 .build();
         return toResponse(playerDocumentRepository.save(doc));
+    }
+
+    /**
+     * Phase 3 — partage d'un média tactique AVEC UPLOAD RÉEL : le staff
+     * envoie un fichier (vidéo/photo/PDF) stocké sur Cloudinary, adressé à
+     * UN joueur ou à TOUTE la catégorie qu'il encadre.
+     */
+    @Transactional
+    public PlayerDocumentResponse shareMedia(
+            Long senderUserId,
+            String title,
+            String message,
+            PlayerDocument.MediaType mediaType,
+            org.springframework.web.multipart.MultipartFile file,
+            Long joueurUserId,
+            boolean wholeTeam) {
+        if (title == null || title.isBlank()) {
+            throw new IllegalArgumentException("Le titre est obligatoire");
+        }
+
+        // Destinataires : un joueur précis ou toute l'équipe de la catégorie du staff.
+        java.util.Set<Long> recipients;
+        Long primaryRecipient;
+        Category teamCategory = null;
+        SportType teamSport = null;
+        if (wholeTeam) {
+            Staff staff = staffRepository.findByUserId(senderUserId)
+                    .orElseThrow(() -> new AccessDeniedException("Aucun profil staff lié à votre compte"));
+            List<Player> team = playerRepository.findBySportTypeAndCategory(
+                    staff.getSportType(), staff.getAssignedCategory());
+            if (team.isEmpty()) {
+                throw new IllegalStateException("Aucun joueur dans votre catégorie");
+            }
+            teamSport = staff.getSportType();
+            teamCategory = staff.getAssignedCategory();
+            recipients = team.stream().map(Player::getUserId)
+                    .collect(java.util.stream.Collectors.toSet());
+            primaryRecipient = recipients.iterator().next(); // compat colonne NOT NULL
+        } else {
+            if (joueurUserId == null) {
+                throw new IllegalArgumentException("Choisissez un joueur ou cochez « toute l'équipe »");
+            }
+            recipients = java.util.Set.of(joueurUserId);
+            primaryRecipient = joueurUserId;
+        }
+
+        // Upload réel du fichier (Cloudinary ; référence locale en mode dégradé).
+        MediaStorageService.UploadResult upload;
+        try {
+            upload = mediaStorageService.uploadMedia(file, "staff-" + senderUserId);
+        } catch (java.io.IOException e) {
+            throw new MediaIndisponibleException(e.getMessage());
+        }
+
+        PlayerDocument doc = PlayerDocument.builder()
+                .senderUserId(senderUserId)
+                .joueurUserId(primaryRecipient)
+                .recipientUserIds(recipients)
+                .title(title.trim())
+                .message(message)
+                .mediaType(resolveMediaType(mediaType, file))
+                .publicId(upload.publicId())
+                .url(upload.secureUrl() != null ? upload.secureUrl() : upload.publicId())
+                .sportType(teamSport)
+                .category(teamCategory)
+                .wholeTeam(wholeTeam)
+                .build();
+        PlayerDocument saved = playerDocumentRepository.save(doc);
+
+        // Notification in-app best-effort à chaque destinataire.
+        for (Long uid : recipients) {
+            try {
+                notificationClient.notifyUser(uid, null,
+                        "Nouveau média de votre entraîneur",
+                        title.trim() + (message != null && !message.isBlank()
+                                ? " — " + message : "") + ". Consultez votre espace joueur.",
+                        "/joueur/dashboard");
+            } catch (Exception e) {
+                org.slf4j.LoggerFactory.getLogger(PlayerSpaceService.class).warn(
+                        "Notification média non envoyée a user {}: {}", uid, e.getMessage());
+            }
+        }
+        return toResponse(saved);
+    }
+
+    /** Médias émis par un staff (suivi côté entraîneur). */
+    public List<PlayerDocumentResponse> getSentMedia(Long senderUserId) {
+        return playerDocumentRepository.findBySenderUserIdOrderByDateAjoutDesc(senderUserId)
+                .stream().map(this::toResponse).toList();
+    }
+
+    /** Type de média : fourni par le staff, sinon déduit du type MIME du fichier. */
+    private PlayerDocument.MediaType resolveMediaType(
+            PlayerDocument.MediaType requested,
+            org.springframework.web.multipart.MultipartFile file) {
+        if (requested != null) {
+            return requested;
+        }
+        String mime = file != null ? file.getContentType() : null;
+        if (mime == null) {
+            return PlayerDocument.MediaType.DOCUMENT;
+        }
+        if (mime.startsWith("video/")) {
+            return PlayerDocument.MediaType.VIDEO;
+        }
+        if (mime.startsWith("image/")) {
+            return PlayerDocument.MediaType.PHOTO;
+        }
+        return PlayerDocument.MediaType.DOCUMENT;
     }
 
     /** Documents adressés au joueur connecté uniquement. */
     public List<PlayerDocumentResponse> getMyDocuments() {
         Long me = requireCurrentUserId();
-        return playerDocumentRepository.findByJoueurUserIdOrderByDateAjoutDesc(me)
+        return playerDocumentRepository.findAllAddressedTo(me)
                 .stream().map(this::toResponse).toList();
     }
 
@@ -360,11 +475,17 @@ public class PlayerSpaceService {
     }
 
     private PlayerDocumentResponse toResponse(PlayerDocument d) {
+        // URL signée à la demande (1 h) pour les médias Cloudinary.
+        String url = mediaStorageService.signedUrl(d.getPublicId(), d.getUrl());
         return PlayerDocumentResponse.builder()
                 .id(d.getId())
                 .title(d.getTitle())
-                .url(d.getUrl())
+                .url(url != null ? url : d.getUrl())
                 .dateAjout(d.getDateAjout())
+                .mediaType(d.getMediaType())
+                .message(d.getMessage())
+                .senderUserId(d.getSenderUserId())
+                .publicId(d.getPublicId())
                 .build();
     }
 }

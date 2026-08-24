@@ -152,6 +152,48 @@ public class PlayerSpaceController {
     }
 
     /**
+     * Phase 3 — envoi d'un média tactique avec UPLOAD RÉEL (multipart) :
+     * vidéo/photo/PDF stocké sur Cloudinary, adressé à UN joueur
+     * ({@code joueurUserId}) ou à TOUTE l'équipe ({@code wholeTeam=true}).
+     * Ownership catégorie vérifié pour chaque destinataire individuel ;
+     * l'envoi équipe est borné à la catégorie du staff.
+     */
+    @PostMapping(value = "/staff/media", consumes = "multipart/form-data")
+    @PreAuthorize("hasAnyRole('ENTRAINEUR','STAFF','ADMIN')")
+    public ResponseEntity<PlayerDocumentResponse> shareMedia(
+            @RequestParam String title,
+            @RequestParam(required = false) String message,
+            @RequestParam(required = false) String mediaType,
+            @RequestParam("file") org.springframework.web.multipart.MultipartFile file,
+            @RequestParam(required = false) Long joueurUserId,
+            @RequestParam(defaultValue = "false") boolean wholeTeam) {
+        Long senderUserId = SportsUserContext.getCurrentUserId();
+        if (!wholeTeam && joueurUserId != null) {
+            ensureStaffCanManage(joueurUserId);
+        }
+        com.wydad.digital.sports.model.PlayerDocument.MediaType type = null;
+        if (mediaType != null && !mediaType.isBlank()) {
+            try {
+                type = com.wydad.digital.sports.model.PlayerDocument.MediaType
+                        .valueOf(mediaType.trim().toUpperCase());
+            } catch (IllegalArgumentException ignored) {
+                // Type inconnu -> déduit du fichier côté service.
+            }
+        }
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(playerSpaceService.shareMedia(senderUserId, title, message, type, file,
+                        joueurUserId, wholeTeam));
+    }
+
+    /** Phase 3 — médias émis par le staff connecté (suivi des envois). */
+    @GetMapping("/staff/media/sent")
+    @PreAuthorize("hasAnyRole('ENTRAINEUR','STAFF','ADMIN')")
+    public ResponseEntity<List<PlayerDocumentResponse>> getSentMedia() {
+        return ResponseEntity.ok(playerSpaceService.getSentMedia(
+                SportsUserContext.getCurrentUserId()));
+    }
+
+    /**
      * B.4 — Saisie d'une statistique de match. Même scoping que les
      * convocations : STAFF de la catégorie du joueur uniquement,
      * ADMIN passe partout. Les totaux de la fiche sont recalculés.

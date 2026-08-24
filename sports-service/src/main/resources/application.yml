@@ -6,11 +6,10 @@ spring:
     name: sports-service
   servlet:
     multipart:
-      # Documents academie (certificat medical, justificatifs) : le controleur
-      # accepte 5 Mo — sans cette cle le defaut Boot est 1 Mo et rejetait
-      # tout document > 1 Mo avant d'atteindre la validation metier.
-      max-file-size: 5MB
-      max-request-size: 6MB
+      # Phase 3 — médias tactiques (vidéos courtes d'analyse) : 25 Mo.
+      # Les documents académie restent limités côté contrôleur (5 Mo).
+      max-file-size: 25MB
+      max-request-size: 26MB
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5433/sports_db}
     username: ${SPRING_DATASOURCE_USERNAME:wydad}
@@ -27,6 +26,13 @@ spring:
 logging:
   level:
     com.wydad.digital.sports: DEBUG
+
+# Phase 3 — médias tactiques (vidéo/photo/PDF) stockés sur Cloudinary.
+# Sans clés, MediaStorageService bascule en mode dégradé (référence locale).
+cloudinary:
+  cloud-name: ${CLOUDINARY_CLOUD_NAME:}
+  api-key: ${CLOUDINARY_API_KEY:}
+  api-secret: ${CLOUDINARY_API_SECRET:}
 
 management:
   endpoints:

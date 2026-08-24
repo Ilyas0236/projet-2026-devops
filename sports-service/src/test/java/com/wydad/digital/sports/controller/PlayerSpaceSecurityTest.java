@@ -49,6 +49,12 @@ import static org.hamcrest.Matchers.nullValue;
  * 8. accusé de lecture : le joueur marque SA convocation, ownership strict
  *    (403 sinon), idempotent ;
  * 9. vue entraîneur : réponses + lecture par séance, compteurs exacts.
+ *
+ * Phase 3 — médias tactiques :
+ * 10. envoi multipart à UN joueur (ownership vérifié), type déduit du MIME,
+ *     notification au destinataire ;
+ * 11. envoi « toute l'équipe » : tous les joueurs de la catégorie notifiés,
+ *     chacun voit le média dans sa boîte de réception.
  */
 @SpringBootTest(properties = {
         "spring.datasource.url=jdbc:h2:mem:playerspace;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1",
@@ -358,5 +364,105 @@ class PlayerSpaceSecurityTest {
                 .andExpect(jsonPath("$.pending").value(1));
 
         assertThat(cb.getReadAt()).isNull();
+    }
+
+    // ─────────────────────── Phase 3 — médias tactiques ───────────────────────
+
+    @Test
+    void mediaVersUnJoueur_uploadEtNotification() throws Exception {
+        Player moi = joueur(321L, "Joueur M");
+        Session s = seance(LocalDateTime.now().plusDays(10));
+
+        staffRepository.save(Staff.builder()
+                .userId(405L).fullName("Coach Média U19")
+                .role(com.wydad.digital.sports.enums.StaffRole.HEAD_COACH)
+                .sportType(SportType.FOOTBALL).assignedCategory(Category.U19)
+                .build());
+
+        byte[] pdf = "%PDF-1.4 test tactique".getBytes();
+        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .multipart("/api/sports/my-space/staff/media")
+                        .file(new org.springframework.mock.web.MockMultipartFile(
+                                "file", "analyse.pdf", "application/pdf", pdf))
+                        .header("X-User-Email", EMAIL)
+                        .header("X-User-Role", "STAFF")
+                        .header("X-User-Id", "405")
+                        .param("title", "Analyse adversaire")
+                        .param("message", "À regarder avant vendredi")
+                        .param("joueurUserId", moi.getUserId().toString()))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.mediaType").value("DOCUMENT"))
+                .andExpect(jsonPath("$.title").value("Analyse adversaire"));
+
+        // Le joueur voit le média dans SA boîte de réception.
+        mvc.perform(get("/api/sports/my-space/documents")
+                        .header("X-User-Email", EMAIL)
+                        .header("X-User-Role", "JOUEUR")
+                        .header("X-User-Id", moi.getUserId().toString()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(1)))
+                .andExpect(jsonPath("$[0].message").value("À regarder avant vendredi"));
+
+        verify(notificationClient).notifyUser(
+                org.mockito.ArgumentMatchers.eq(moi.getUserId()),
+                org.mockito.ArgumentMatchers.isNull(),
+                org.mockito.ArgumentMatchers.contains("média"),
+                org.mockito.ArgumentMatchers.contains("Analyse"),
+                org.mockito.ArgumentMatchers.eq("/joueur/dashboard"));
+    }
+
+    @Test
+    void mediaTouteEquipe_tousLesJoueursDeLaCategorieNotifies() throws Exception {
+        joueur(322L, "Joueur N");
+        joueur(323L, "Joueur O");
+        // Un joueur d'une AUTRE catégorie ne doit PAS recevoir le média équipe.
+        playerRepository.save(Player.builder()
+                .userId(324L).fullName("Joueur P U17")
+                .sportType(SportType.FOOTBALL).category(Category.U17)
+                .position("Gardien").jerseyNumber(1)
+                .build());
+
+        staffRepository.save(Staff.builder()
+                .userId(406L).fullName("Coach Vidéo U19")
+                .role(com.wydad.digital.sports.enums.StaffRole.HEAD_COACH)
+                .sportType(SportType.FOOTBALL).assignedCategory(Category.U19)
+                .build());
+
+        byte[] png = new byte[]{(byte) 0x89, 'P', 'N', 'G'};
+        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .multipart("/api/sports/my-space/staff/media")
+                        .file(new org.springframework.mock.web.MockMultipartFile(
+                                "file", "tableau.png", "image/png", png))
+                        .header("X-User-Email", EMAIL)
+                        .header("X-User-Role", "STAFF")
+                        .header("X-User-Id", "406")
+                        .param("title", "Placement défensif")
+                        .param("wholeTeam", "true"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.mediaType").value("PHOTO"));
+
+        // Chaque joueur U19 voit le média ; le joueur U17 non.
+        for (long uid : new long[]{322, 323}) {
+            mvc.perform(get("/api/sports/my-space/documents")
+                            .header("X-User-Email", EMAIL)
+                            .header("X-User-Role", "JOUEUR")
+                            .header("X-User-Id", String.valueOf(uid)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$", hasSize(1)));
+        }
+        mvc.perform(get("/api/sports/my-space/documents")
+                        .header("X-User-Email", EMAIL)
+                        .header("X-User-Role", "JOUEUR")
+                        .header("X-User-Id", "324"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(0)));
+
+        // Le staff retrouve son envoi dans son historique.
+        mvc.perform(get("/api/sports/my-space/staff/media/sent")
+                        .header("X-User-Email", EMAIL)
+                        .header("X-User-Role", "STAFF")
+                        .header("X-User-Id", "406"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(1)));
     }
 }

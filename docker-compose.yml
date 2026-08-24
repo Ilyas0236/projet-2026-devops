@@ -203,6 +203,10 @@ services:
       # Phase 3 — notifications in-app des convocations (secret interne requis ;
       # l'URI notification-service pointe déjà sur le bon défaut du client)
       - WYDAD_INTERNAL_SECRET=${INTERNAL_SECRET:?INTERNAL_SECRET manquant dans .env}
+      # Phase 3 — médias tactiques stockés sur Cloudinary (mêmes clés que l'auth)
+      - CLOUDINARY_CLOUD_NAME=${CLOUDINARY_CLOUD_NAME:-}
+      - CLOUDINARY_API_KEY=${CLOUDINARY_API_KEY:-}
+      - CLOUDINARY_API_SECRET=${CLOUDINARY_API_SECRET:-}
     depends_on:
       postgres:
         condition: service_healthy
