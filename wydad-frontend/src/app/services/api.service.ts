@@ -505,6 +505,48 @@ export class ApiService {
       `${this.baseUrl}/sports/my-space/staff/convocations?joueurUserId=${joueurUserId}&sessionId=${sessionId}`, {});
   }
 
+  // ==========================================
+  // PHASE 3 — CONVOCATIONS GROUPEES & SUIVI
+  // ==========================================
+  /** Convocation groupée (« liste cochable ») : N joueurs, une séance. */
+  createBatchConvocation(sessionId: number, joueurUserIds: number[]): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/sports/my-space/staff/convocations/batch`,
+      { sessionId, joueurUserIds });
+  }
+
+  /** Réponses (présence + lecture) des joueurs pour une séance. */
+  getSessionResponses(sessionId: number): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/sports/my-space/staff/sessions/${sessionId}/responses`);
+  }
+
+  /** Compteurs de suivi d'une séance (lu/non lu, confirmés/absents/retards). */
+  getSessionSummary(sessionId: number): Observable<any> {
+    return this.http.get<any>(`${this.baseUrl}/sports/my-space/staff/sessions/${sessionId}/responses/summary`);
+  }
+
+  /** Marquer SA convocation comme lue (accusé de lecture). */
+  markConvocationRead(convocationId: number): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/sports/my-space/convocations/${convocationId}/read`, {});
+  }
+
+  /** Envoi d'un média tactique (multipart) à un joueur ou toute l'équipe. */
+  shareMedia(file: File, title: string, message: string | null,
+             opts: { joueurUserId?: number; wholeTeam?: boolean } = {}): Observable<any> {
+    const form = new FormData();
+    form.append('file', file);
+    form.append('title', title);
+    if (message && message.trim()) { form.append('message', message.trim()); }
+    if (opts.joueurUserId != null) { form.append('joueurUserId', String(opts.joueurUserId)); }
+    if (opts.wholeTeam) { form.append('wholeTeam', 'true'); }
+    return this.http.post<any>(`${this.baseUrl}/sports/my-space/staff/media`, form);
+  }
+
+  /** Médias émis par le staff connecté (historique). */
+  getSentMedia(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/sports/my-space/staff/media/sent`);
+  }
+
+
   /** Partage d'un document avec un joueur (staff/admin). */
   shareDocument(joueurUserId: number, title: string, url: string): Observable<any> {
     return this.http.post<any>(

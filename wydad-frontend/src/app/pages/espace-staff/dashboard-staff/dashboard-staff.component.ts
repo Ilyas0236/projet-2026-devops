@@ -38,6 +38,27 @@ export class DashboardStaffComponent implements OnInit {
   convoPlayer: any = null;
   isSubmittingConvo = false;
 
+  // Phase 3 — convocation groupée (« liste cochable ») + suivi des réponses
+  showConvoForm = false;
+  selectedPlayerIds = new Set<number>();
+  convoSessionId: number | null = null;
+  isSubmittingBatch = false;
+  // Suivi par séance : réponses + compteurs
+  trackedSessionId: number | null = null;
+  sessionResponses: any[] = [];
+  sessionSummary: any = null;
+  loadingResponses = false;
+
+  // Phase 3 — envoi de médias tactiques (upload réel Cloudinary)
+  showMediaForm = false;
+  mediaFile: File | null = null;
+  mediaTitle = '';
+  mediaMessage = '';
+  /** Joueur pré-ciblé (icône vidéo du tableau) — null = envoi équipe. */
+  mediaTargetPlayer: any = null;
+  isSubmittingMedia = false;
+  sentMedia: any[] = [];
+
   // B.5 — messagerie (écrire aux joueurs de SA catégorie) et annonces
   inbox: any[] = [];
   conversation: any[] = [];
@@ -134,6 +155,12 @@ export class DashboardStaffComponent implements OnInit {
     });
 
     this.api.getInbox().subscribe({ next: d => this.inbox = d, error: () => {} });
+
+    // Phase 3 — historique des médias émis
+    this.api.getSentMedia().subscribe({
+      next: d => this.sentMedia = d,
+      error: () => {}
+    });
   }
 
   submitSession() {
@@ -213,6 +240,147 @@ export class DashboardStaffComponent implements OnInit {
         this.toast.error(err?.error?.message || 'Convocation impossible');
       }
     });
+  }
+
+  // ─────────────── Phase 3 — Convocation groupée (« liste cochable ») ───────────────
+
+  /** Joueurs aptes (un INAPTE serait rejeté par le serveur). */
+  get joueursAptes(): any[] {
+    return this.players.filter(p => p.medicalStatus !== 'INAPTE');
+  }
+
+  get tousSelectionnes(): boolean {
+    return this.joueursAptes.length > 0
+      && this.selectedPlayerIds.size >= this.joueursAptes.length;
+  }
+
+  /** Titre de la séance suivie (affichage du panneau de suivi). */
+  get trackedSessionTitle(): string {
+    return this.sessions.find(s => s.id === this.trackedSessionId)?.title ?? '';
+  }
+
+  togglePlayerSelection(userId: number) {
+    if (this.selectedPlayerIds.has(userId)) {
+      this.selectedPlayerIds.delete(userId);
+    } else {
+      this.selectedPlayerIds.add(userId);
+    }
+  }
+
+  selectAllPlayers() {
+    // Sélectionne/désélectionne les joueurs aptes uniquement.
+    if (this.tousSelectionnes) {
+      this.selectedPlayerIds.clear();
+    } else {
+      this.joueursAptes.forEach(p => this.selectedPlayerIds.add(p.userId));
+    }
+  }
+
+  submitBatchConvocation() {
+    if (!this.convoSessionId || this.selectedPlayerIds.size === 0) { return; }
+    this.isSubmittingBatch = true;
+    this.api.createBatchConvocation(this.convoSessionId, [...this.selectedPlayerIds]).subscribe({
+      next: (res) => {
+        this.isSubmittingBatch = false;
+        const rejectedCount = res?.rejected?.length ?? 0;
+        if (rejectedCount > 0) {
+          this.toast.error(`${res.created} convocation(s) créée(s), ${rejectedCount} rejetée(s) — ` +
+            res.rejected.map((r: any) => r.reason).join(' · '));
+        } else {
+          this.toast.success(`${res.created} convocation(s) créée(s) — notifications envoyées`);
+        }
+        this.showConvoForm = false;
+        this.selectedPlayerIds.clear();
+      },
+      error: (err) => {
+        console.error(err);
+        this.isSubmittingBatch = false;
+        this.toast.error(err?.error?.message || 'Convocation groupée impossible');
+      }
+    });
+  }
+
+  // ───────────────── Phase 3 — Suivi des réponses d'une séance ─────────────────
+
+  trackSession(sessionId: number) {
+    this.trackedSessionId = sessionId;
+    this.loadingResponses = true;
+    this.api.getSessionSummary(sessionId).subscribe({
+      next: s => { this.sessionSummary = s; this.loadingResponses = false; },
+      error: () => { this.sessionSummary = null; this.loadingResponses = false; }
+    });
+    this.api.getSessionResponses(sessionId).subscribe({
+      next: r => this.sessionResponses = r,
+      error: () => { this.sessionResponses = []; this.loadingResponses = false; }
+    });
+  }
+
+  // ───────────────── Phase 3 — Médias tactiques (upload Cloudinary) ─────────────────
+
+  onMediaFileSelected(event: any) {
+    const file: File | null = event?.target?.files?.[0] ?? null;
+    if (!file) { return; }
+    if (file.size > 25 * 1024 * 1024) {
+      this.toast.error('Fichier trop volumineux (maximum 25 Mo)');
+      event.target.value = '';
+      return;
+    }
+    this.mediaFile = file;
+  }
+
+  submitMedia() {
+    if (!this.mediaFile) {
+      this.toast.error('Choisissez un fichier (vidéo, photo ou PDF, max 25 Mo)');
+      return;
+    }
+    const wholeTeam = this.mediaTargetPlayer == null;
+    const joueurUserId = wholeTeam ? undefined : Number(this.mediaTargetPlayer.userId);
+    this.isSubmittingMedia = true;
+    this.api.shareMedia(this.mediaFile, this.mediaTitle, this.mediaMessage, {
+      joueurUserId, wholeTeam
+    }).subscribe({
+      next: () => {
+        this.isSubmittingMedia = false;
+        this.toast.success(wholeTeam
+          ? 'Média envoyé à toute l\'équipe — notifications envoyées'
+          : 'Média envoyé au joueur — notification envoyée');
+        this.closeMediaForm();
+        // Rafraîchit l'historique des envois
+        this.api.getSentMedia().subscribe({ next: d => this.sentMedia = d });
+      },
+      error: (err) => {
+        console.error(err);
+        this.isSubmittingMedia = false;
+        const msg = err?.status === 413 ? 'Fichier trop volumineux (maximum 25 Mo)'
+          : err?.error?.message || 'Envoi du média impossible';
+        this.toast.error(msg);
+      }
+    });
+  }
+
+  openMediaForm() {
+    this.showMediaForm = !this.showMediaForm;
+    this.mediaFile = null;
+    this.mediaTitle = '';
+    this.mediaMessage = '';
+    this.mediaTargetPlayer = null;
+  }
+
+  /** Ouvre le formulaire média pré-ciblé sur UN joueur (icône vidéo du tableau). */
+  openMediaFormForPlayer(player: any) {
+    this.showMediaForm = true;
+    this.mediaFile = null;
+    this.mediaTitle = '';
+    this.mediaMessage = '';
+    this.mediaTargetPlayer = player;
+  }
+
+  closeMediaForm() {
+    this.showMediaForm = false;
+    this.mediaFile = null;
+    this.mediaTitle = '';
+    this.mediaMessage = '';
+    this.mediaTargetPlayer = null;
   }
 
   // ───────────────── B.6 — Statut médical ─────────────────
