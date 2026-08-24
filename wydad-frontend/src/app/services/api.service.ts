@@ -239,6 +239,19 @@ export class ApiService {
       comment: comment || null
     });
   }
+
+  // ========== CODES PROMO (réservé ADMIN) ==========
+  getPromoCodes(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/shop/promo-codes`);
+  }
+
+  createPromoCode(promo: any): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/shop/promo-codes`, promo);
+  }
+
+  setPromoCodeActive(promoId: number, active: boolean): Observable<any> {
+    return this.http.patch<any>(`${this.baseUrl}/shop/promo-codes/${promoId}/active`, { active });
+  }
   // TICKET SERVICE (Billetterie)
   // ==========================================
   getEvents(): Observable<any[]> {

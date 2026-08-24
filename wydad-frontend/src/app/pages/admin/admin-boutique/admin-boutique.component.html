@@ -5,60 +5,154 @@
   <div class="flex justify-between items-center flex-wrap gap-4">
     <div>
       <h2 class="text-2xl font-display font-bold uppercase tracking-wider text-white">Gestion Boutique</h2>
-      <p class="text-sm text-gray-400 mt-1">Gérez les produits de la boutique officielle du WAC.</p>
+      <p class="text-sm text-gray-400 mt-1">Gérez les produits et promotions de la boutique officielle du WAC.</p>
     </div>
-    <button (click)="openAddModal()" class="bg-wydad-red hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-colors">
-      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-      Nouveau Produit
-    </button>
+    <!-- Onglets B.12.d -->
+    <div class="flex gap-2 bg-surface-2 border border-white/10 rounded-lg p-1">
+      <button (click)="switchTab('produits')"
+              class="px-4 py-1.5 rounded-md text-sm font-medium transition-colors"
+              [ngClass]="activeTab === 'produits' ? 'bg-wydad-red text-white' : 'text-gray-400 hover:text-white'">
+        Produits
+      </button>
+      <button (click)="switchTab('promos')"
+              class="px-4 py-1.5 rounded-md text-sm font-medium transition-colors"
+              [ngClass]="activeTab === 'promos' ? 'bg-wydad-red text-white' : 'text-gray-400 hover:text-white'">
+        Codes promo
+      </button>
+    </div>
   </div>
 
-  <!-- Table -->
-  <div class="bg-white/5 border border-white/10 rounded-lg overflow-hidden overflow-x-auto">
-    <table class="w-full text-left border-collapse">
-      <thead>
-        <tr class="bg-black/50 border-b border-white/10 text-xs font-display font-bold text-gray-400 uppercase tracking-wider">
-          <th class="px-6 py-3">Produit</th>
-          <th class="px-6 py-3">Sport</th>
-          <th class="px-6 py-3">Catégorie</th>
-          <th class="px-6 py-3">Prix (DH)</th>
-          <th class="px-6 py-3">Stock</th>
-          <th class="px-6 py-3 text-right">Actions</th>
-        </tr>
-      </thead>
-      <tbody class="divide-y divide-white/5">
-        <tr *ngFor="let product of products" class="hover:bg-white/5 transition-colors">
-          <td class="px-6 py-4 font-medium text-white flex items-center gap-3">
-            <img *ngIf="product.images?.length" [src]="api.getMediaUrl(product.images[0])" class="w-10 h-10 object-cover rounded bg-black/50 border border-white/10" alt="prod">
-            {{ product.name }}
-          </td>
-          <td class="px-6 py-4 text-gray-300 text-sm">{{ product.sportSection || '-' }}</td>
-          <td class="px-6 py-4 text-gray-300 text-sm">{{ product.categoryName || '-' }}</td>
-          <td class="px-6 py-4 text-white font-bold">{{ product.basePrice }} DH</td>
-          <td class="px-6 py-4">
-            <span class="px-2 py-1 rounded text-xs font-medium"
-                  [ngClass]="(product.variants?.[0]?.stockQuantity ?? 0) > 10 ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'">
-              {{ product.variants?.[0]?.stockQuantity ?? 0 }} unités
-            </span>
-          </td>
-          <td class="px-6 py-4 text-right">
-            <button (click)="openEditModal(product)" class="text-blue-400 hover:text-blue-300 mr-3 transition-colors uppercase text-xs font-bold">Éditer</button>
-            <button (click)="deleteProduct(product.id)" class="text-red-400 hover:text-red-300 transition-colors uppercase text-xs font-bold">Supprimer</button>
-          </td>
-        </tr>
+  <!-- ==================== TAB PRODUITS ==================== -->
+  <div *ngIf="activeTab === 'produits'" class="space-y-6">
 
-        <tr *ngIf="products.length === 0 && !loading">
-          <td colspan="6" class="px-6 py-8 text-center text-gray-500">
-            Aucun produit trouvé. Cliquez sur "Nouveau Produit" pour commencer.
-          </td>
-        </tr>
-        <tr *ngIf="loading">
-          <td colspan="6" class="px-6 py-8 text-center text-gray-500">
-            Chargement des produits...
-          </td>
-        </tr>
-      </tbody>
-    </table>
+    <div class="flex justify-end">
+      <button (click)="openAddModal()" class="bg-wydad-red hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-colors">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+        Nouveau Produit
+      </button>
+    </div>
+
+    <!-- Table -->
+    <div class="bg-white/5 border border-white/10 rounded-lg overflow-hidden overflow-x-auto">
+      <table class="w-full text-left border-collapse">
+        <thead>
+          <tr class="bg-black/50 border-b border-white/10 text-xs font-display font-bold text-gray-400 uppercase tracking-wider">
+            <th class="px-6 py-3">Produit</th>
+            <th class="px-6 py-3">Sport</th>
+            <th class="px-6 py-3">Catégorie</th>
+            <th class="px-6 py-3">Prix (DH)</th>
+            <th class="px-6 py-3">Stock</th>
+            <th class="px-6 py-3 text-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-white/5">
+          <tr *ngFor="let product of products" class="hover:bg-white/5 transition-colors">
+            <td class="px-6 py-4 font-medium text-white flex items-center gap-3">
+              <img *ngIf="product.images?.length" [src]="api.getMediaUrl(product.images[0])" class="w-10 h-10 object-cover rounded bg-black/50 border border-white/10" alt="prod">
+              {{ product.name }}
+            </td>
+            <td class="px-6 py-4 text-gray-300 text-sm">{{ product.sportSection || '-' }}</td>
+            <td class="px-6 py-4 text-gray-300 text-sm">{{ product.categoryName || '-' }}</td>
+            <td class="px-6 py-4 text-white font-bold">{{ product.basePrice }} DH</td>
+            <td class="px-6 py-4">
+              <span class="px-2 py-1 rounded text-xs font-medium"
+                    [ngClass]="(product.variants?.[0]?.stockQuantity ?? 0) > 10 ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'">
+                {{ product.variants?.[0]?.stockQuantity ?? 0 }} unités
+              </span>
+            </td>
+            <td class="px-6 py-4 text-right">
+              <button (click)="openEditModal(product)" class="text-blue-400 hover:text-blue-300 mr-3 transition-colors uppercase text-xs font-bold">Éditer</button>
+              <button (click)="deleteProduct(product.id)" class="text-red-400 hover:text-red-300 transition-colors uppercase text-xs font-bold">Supprimer</button>
+            </td>
+          </tr>
+
+          <tr *ngIf="products.length === 0 && !loading">
+            <td colspan="6" class="px-6 py-8 text-center text-gray-500">
+              Aucun produit trouvé. Cliquez sur "Nouveau Produit" pour commencer.
+            </td>
+          </tr>
+          <tr *ngIf="loading">
+            <td colspan="6" class="px-6 py-8 text-center text-gray-500">
+              Chargement des produits...
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ==================== TAB CODES PROMO ==================== -->
+  <div *ngIf="activeTab === 'promos'" class="space-y-6">
+
+    <div class="flex justify-end">
+      <button (click)="openPromoModal()" class="bg-wydad-red hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-colors">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+        Nouveau Code Promo
+      </button>
+    </div>
+
+    <div class="bg-white/5 border border-white/10 rounded-lg overflow-hidden overflow-x-auto">
+      <table class="w-full text-left border-collapse">
+        <thead>
+          <tr class="bg-black/50 border-b border-white/10 text-xs font-display font-bold text-gray-400 uppercase tracking-wider">
+            <th class="px-6 py-3">Code</th>
+            <th class="px-6 py-3">Remise</th>
+            <th class="px-6 py-3">Conditions</th>
+            <th class="px-6 py-3">Utilisations</th>
+            <th class="px-6 py-3">Validité</th>
+            <th class="px-6 py-3">État</th>
+            <th class="px-6 py-3 text-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-white/5">
+          <tr *ngFor="let promo of promoCodes" class="hover:bg-white/5 transition-colors">
+            <td class="px-6 py-4">
+              <span class="font-mono font-bold text-white">{{ promo.code }}</span>
+              <span *ngIf="promo.description" class="block text-xs text-gray-500">{{ promo.description }}</span>
+            </td>
+            <td class="px-6 py-4 text-gray-300 text-sm whitespace-nowrap">
+              {{ promo.discountPercent }} %
+              <span *ngIf="promo.maxDiscountAmount" class="block text-xs text-gray-500">plafonné à {{ promo.maxDiscountAmount }} DH</span>
+            </td>
+            <td class="px-6 py-4 text-gray-300 text-sm whitespace-nowrap">
+              <span *ngIf="promo.minOrderAmount">min. {{ promo.minOrderAmount }} DH</span>
+              <span *ngIf="!promo.minOrderAmount">—</span>
+            </td>
+            <td class="px-6 py-4 text-gray-300 text-sm whitespace-nowrap">
+              {{ promo.currentUses }}<span *ngIf="promo.maxUses"> / {{ promo.maxUses }}</span>
+            </td>
+            <td class="px-6 py-4 text-gray-400 text-xs whitespace-nowrap">
+              <span *ngIf="promo.validUntil">jusqu'au {{ promo.validUntil | date:'dd/MM/yyyy' }}</span>
+              <span *ngIf="!promo.validUntil">illimitée</span>
+            </td>
+            <td class="px-6 py-4">
+              <span class="px-2 py-1 rounded text-xs font-medium whitespace-nowrap"
+                    [ngClass]="promo.active ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-400'">
+                {{ promo.active ? 'Actif' : 'Inactif' }}
+              </span>
+            </td>
+            <td class="px-6 py-4 text-right">
+              <button (click)="togglePromo(promo)" [disabled]="togglingPromoId === promo.id"
+                      class="uppercase text-xs font-bold transition-colors disabled:opacity-40"
+                      [class]="promo.active ? 'text-red-400 hover:text-red-300' : 'text-green-400 hover:text-green-300'">
+                {{ togglingPromoId === promo.id ? '...' : (promo.active ? 'Désactiver' : 'Réactiver') }}
+              </button>
+            </td>
+          </tr>
+
+          <tr *ngIf="promoCodes.length === 0 && !promosLoading">
+            <td colspan="7" class="px-6 py-8 text-center text-gray-500">
+              Aucun code promo. Cliquez sur "Nouveau Code Promo" pour lancer une promotion.
+            </td>
+          </tr>
+          <tr *ngIf="promosLoading">
+            <td colspan="7" class="px-6 py-8 text-center text-gray-500">
+              Chargement des codes promo...
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 </div>
 
@@ -126,6 +220,74 @@
       <span class="admin-footer-note">* Champs obligatoires</span>
       <button (click)="closeAddModal()" class="admin-btn-ghost">Annuler</button>
       <button (click)="saveProduct()" [disabled]="uploadingPhoto" class="admin-btn-primary">Sauvegarder</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal création code promo (B.12.d) -->
+<div *ngIf="showPromoModal" class="admin-overlay">
+  <div class="admin-modal max-w-lg">
+    <div class="admin-modal-header">
+      <h3>Nouveau code promo</h3>
+      <button (click)="closePromoModal()" class="admin-modal-close" aria-label="Fermer">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      </button>
+    </div>
+
+    <div class="admin-modal-body space-y-5">
+      <p class="text-sm text-gray-400">
+        La remise est appliquée et plafonnée côté serveur lors de la commande.
+      </p>
+
+      <div class="grid grid-cols-2 gap-4">
+        <div class="admin-field">
+          <label class="admin-label" for="promo-code">Code<span class="req">*</span></label>
+          <input id="promo-code" type="text" [(ngModel)]="newPromo.code" class="admin-input uppercase" placeholder="WAC20">
+        </div>
+        <div class="admin-field">
+          <label class="admin-label" for="promo-percent">Remise (%)<span class="req">*</span></label>
+          <input id="promo-percent" type="number" min="1" max="100" [(ngModel)]="newPromo.discountPercent" class="admin-input">
+        </div>
+      </div>
+
+      <div class="admin-field">
+        <label class="admin-label" for="promo-desc">Description</label>
+        <input id="promo-desc" type="text" [(ngModel)]="newPromo.description" class="admin-input" placeholder="Promotion rentrée...">
+      </div>
+
+      <div class="grid grid-cols-3 gap-4">
+        <div class="admin-field">
+          <label class="admin-label" for="promo-max">Plafond (DH)</label>
+          <input id="promo-max" type="number" min="0" [(ngModel)]="newPromo.maxDiscountAmount" class="admin-input" placeholder="50">
+        </div>
+        <div class="admin-field">
+          <label class="admin-label" for="promo-min">Panier min. (DH)</label>
+          <input id="promo-min" type="number" min="0" [(ngModel)]="newPromo.minOrderAmount" class="admin-input" placeholder="100">
+        </div>
+        <div class="admin-field">
+          <label class="admin-label" for="promo-uses">Utilisations max.</label>
+          <input id="promo-uses" type="number" min="1" [(ngModel)]="newPromo.maxUses" class="admin-input" placeholder="illimité">
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-4">
+        <div class="admin-field">
+          <label class="admin-label" for="promo-from">Début de validité</label>
+          <input id="promo-from" type="datetime-local" [(ngModel)]="newPromo.validFrom" class="admin-input">
+        </div>
+        <div class="admin-field">
+          <label class="admin-label" for="promo-until">Fin de validité</label>
+          <input id="promo-until" type="datetime-local" [(ngModel)]="newPromo.validUntil" class="admin-input">
+        </div>
+      </div>
+    </div>
+
+    <div class="admin-modal-footer">
+      <span class="admin-footer-note">Le code est créé actif.</span>
+      <button (click)="closePromoModal()" class="admin-btn-ghost">Annuler</button>
+      <button (click)="savePromoCode()" [disabled]="savingPromo || !newPromo.code.trim()" class="admin-btn-primary">
+        {{ savingPromo ? 'Création...' : 'Créer le code' }}
+      </button>
     </div>
   </div>
 </div>
