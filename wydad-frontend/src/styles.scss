@@ -38,6 +38,15 @@ html {
   --color-surface-4: #1C1C1C;
   --color-surface-5: #222222;
 
+  // Thème clair « rouge & blanc » (pages publiques)
+  --color-paper-0: #FFFFFF;
+  --color-paper-1: #F7F7F8;
+  --color-paper-2: #EFEFF1;
+  --color-paper-3: #E5E5E8;
+  --color-ink-primary: #141414;
+  --color-ink-secondary: #4A4A4F;
+  --color-ink-tertiary: #88888E;
+
   --radius-sm: 0.5rem;
   --radius-md: 0.75rem;
   --radius-lg: 1rem;
@@ -844,4 +853,184 @@ select.admin-input {
 .wac-logo-3d:hover {
   transform: translateY(8px) scale(1.05); /* Reste descendu, mais s'agrandit */
   filter: drop-shadow(0px 12px 18px rgba(227, 6, 19, 0.35));
+}
+
+// ═══════════════════════════════════════════════════════════
+// THÈME CLAIR « ROUGE & BLANC » — pages publiques
+// Direction validée (hybride) : le site public passe en blanc
+// dominant avec accent rouge Wydad ; le back-office ADMIN
+// reste sur le thème sombre ci-dessus. Tokens paper-*/ink-*
+// définis dans tailwind.config.js.
+// ═══════════════════════════════════════════════════════════
+
+// ─── Page wrapper clair : à mettre sur la racine d'une page publique
+.light-page {
+  background-color: var(--color-paper-0, #FFFFFF);
+  color: var(--color-ink-primary, #141414);
+}
+
+// ─── Cartes claires signature : blanc + liseré rouge au survol
+.paper-card {
+  background: #FFFFFF;
+  border: 1px solid var(--color-paper-3, #E5E5E8);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 2px 12px rgba(20, 20, 20, 0.06), 0 1px 3px rgba(20, 20, 20, 0.04);
+  transition: all var(--transition-base);
+
+  &:hover {
+    border-color: rgba(var(--color-wydad-red-rgb), 0.45);
+    box-shadow: 0 12px 40px rgba(220, 20, 60, 0.14), 0 2px 8px rgba(20, 20, 20, 0.08);
+    transform: translateY(-3px);
+  }
+}
+
+// Variante interactive (liens cliquables)
+a.paper-card,
+button.paper-card {
+  cursor: pointer;
+
+  &:active {
+    transform: translateY(-1px);
+  }
+}
+
+// ─── Boutons clairs : rouge plein / contour noir / bandeau dégradé
+.paper-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.75rem;
+  font-family: 'Oswald', sans-serif;
+  font-weight: 600;
+  font-size: 0.875rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  background: linear-gradient(135deg, var(--color-wydad-red) 0%, #B01030 100%);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  box-shadow: 0 4px 16px rgba(220, 20, 60, 0.25);
+
+  &:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 28px rgba(220, 20, 60, 0.4);
+  }
+
+  &:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+}
+
+.paper-btn-outline {
+  @extend .paper-btn-primary;
+  background: transparent;
+  color: var(--color-ink-primary, #141414);
+  border: 1.5px solid rgba(20, 20, 20, 0.2);
+  box-shadow: none;
+
+  &:hover:not(:disabled) {
+    border-color: var(--color-wydad-red);
+    color: var(--color-wydad-red);
+    box-shadow: none;
+  }
+}
+
+// ─── Inputs clairs
+.paper-input {
+  width: 100%;
+  padding: 0.8rem 1rem;
+  background: #FFFFFF;
+  border: 1.5px solid var(--color-paper-3, #E5E5E8);
+  border-radius: var(--radius-sm);
+  color: var(--color-ink-primary, #141414);
+  font-family: 'Inter', sans-serif;
+  font-size: 0.9375rem;
+  outline: none;
+  transition: all var(--transition-fast);
+
+  &::placeholder {
+    color: #A8A8AE;
+  }
+
+  &:focus {
+    border-color: var(--color-wydad-red);
+    box-shadow: 0 0 0 3px rgba(var(--color-wydad-red-rgb), 0.12);
+  }
+}
+
+// ─── Badge clair
+.paper-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.7rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border-radius: 9999px;
+  background: rgba(var(--color-wydad-red-rgb), 0.08);
+  color: var(--color-wydad-red);
+  border: 1px solid rgba(var(--color-wydad-red-rgb), 0.22);
+}
+
+// ─── Bandeau rouge signature (CTA full-width, séparateurs de section)
+.red-band {
+  background: linear-gradient(135deg, #DC143C 0%, #9B0000 100%);
+  color: #fff;
+}
+
+// ─── Titre de section clair : Oswald noir + trait rouge oblique
+.section-title-light {
+  font-family: 'Oswald', sans-serif;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: -0.01em;
+  color: var(--color-ink-primary, #141414);
+
+  // Trait oblique rouge signature avant le titre
+  &::before {
+    content: '';
+    display: inline-block;
+    width: 6px;
+    height: 0.85em;
+    margin-right: 0.65rem;
+    background: linear-gradient(180deg, var(--color-wydad-red), #9B0000);
+    transform: skewX(-12deg);
+  }
+}
+
+// ─── Table claire (statistiques, classements publics)
+.paper-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+
+  th {
+    padding: 0.875rem 1rem;
+    font-family: 'Oswald', sans-serif;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--color-ink-secondary, #4A4A4F);
+    text-align: left;
+    background: var(--color-paper-1, #F7F7F8);
+    border-bottom: 2px solid var(--color-wydad-red);
+  }
+
+  td {
+    padding: 0.95rem 1rem;
+    font-size: 0.875rem;
+    color: var(--color-ink-primary, #141414);
+    border-bottom: 1px solid var(--color-paper-2, #EFEFF1);
+  }
+
+  tbody tr:hover td {
+    background: rgba(220, 20, 60, 0.03);
+  }
 }

@@ -28,6 +28,18 @@ module.exports = {
         'text-tertiary': '#666666',
         'text-muted': '#444444',
 
+        // ─── Thème clair « rouge & blanc » (pages publiques) ───
+        // paper = surfaces blanches, ink = textes noirs.
+        // L'ADMIN reste sur surface-*/text-* sombres : les deux
+        // familles coexistent sans régression back-office.
+        'paper-0': '#FFFFFF',      // fond principal blanc pur
+        'paper-1': '#F7F7F8',      // section alternée gris très pâle
+        'paper-2': '#EFEFF1',      // panneaux élevés
+        'paper-3': '#E5E5E8',      // bordures/hover clairs
+        'ink-primary': '#141414',  // texte principal noir
+        'ink-secondary': '#4A4A4F',// texte secondaire
+        'ink-tertiary': '#88888E', // texte discret
+
         // Semantic Colors
         'success': '#00C853',
         'warning': '#FFB300',
@@ -57,6 +69,9 @@ module.exports = {
         'shimmer': 'linear-gradient(110deg, transparent 33%, rgba(255,255,255,0.05) 50%, transparent 67%)',
         'red-glow': 'radial-gradient(ellipse at center, rgba(220,20,60,0.15) 0%, transparent 70%)',
         'gold-glow': 'radial-gradient(ellipse at center, rgba(212,175,55,0.1) 0%, transparent 70%)',
+        // Thème clair : dégradés signature « blanc → rouge »
+        'hero-light': 'linear-gradient(180deg, #FFFFFF 0%, #FFF5F6 45%, rgba(220,20,60,0.10) 100%)',
+        'red-band': 'linear-gradient(135deg, #DC143C 0%, #9B0000 100%)',
       },
       boxShadow: {
         'glow-red': '0 0 30px rgba(220, 20, 60, 0.3)',
@@ -66,6 +81,9 @@ module.exports = {
         'card-hover': '0 8px 40px rgba(0, 0, 0, 0.7)',
         'glass': '0 8px 32px rgba(0, 0, 0, 0.4)',
         'inner-glow': 'inset 0 1px 0 rgba(255,255,255,0.05)',
+        // Thème clair : ombres douces à teinte rouge
+        'paper-card': '0 2px 12px rgba(20, 20, 20, 0.06), 0 1px 3px rgba(20, 20, 20, 0.04)',
+        'paper-card-hover': '0 12px 40px rgba(220, 20, 60, 0.14), 0 2px 8px rgba(20, 20, 20, 0.08)',
       },
       borderRadius: {
         '2xl': '1rem',
