@@ -135,6 +135,24 @@
               <span class="text-wydad-red font-display uppercase text-xs tracking-widest">Adresse:</span> {{ clubInfo.adresse }}
             </li>
           </ul>
+
+          <!-- Newsletter publique : inscription anonyme (notification-service) -->
+          <div class="mt-6">
+            <h4 class="font-display font-bold text-sm uppercase tracking-wider mb-3 text-text-primary">Newsletter</h4>
+            <p class="text-xs text-text-tertiary mb-3">Recevez les actualités et résultats des Rouges.</p>
+            <div *ngIf="!newsletterDone" class="flex gap-2">
+              <input type="email" [(ngModel)]="newsletterEmail" name="newsletter-email"
+                     placeholder="votre@email.ma" [disabled]="newsletterBusy"
+                     (keyup.enter)="subscribeNewsletter()"
+                     class="flex-1 min-w-0 bg-surface-2 border border-white/10 rounded px-3 py-2 text-sm text-white placeholder:text-text-tertiary focus:outline-none focus:border-wydad-red">
+              <button (click)="subscribeNewsletter()" [disabled]="newsletterBusy || !newsletterEmail?.trim()"
+                      class="wydad-btn-primary px-4 py-2 font-display text-xs uppercase tracking-widest shrink-0 disabled:opacity-40">
+                OK
+              </button>
+            </div>
+            <p *ngIf="newsletterDone" class="text-xs text-green-400 font-semibold">{{ newsletterMessage }}</p>
+            <p *ngIf="newsletterError" class="text-xs text-red-400 mt-2">{{ newsletterError }}</p>
+          </div>
         </div>
       </div>
       <div class="border-t border-white/[0.04] pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-text-tertiary">

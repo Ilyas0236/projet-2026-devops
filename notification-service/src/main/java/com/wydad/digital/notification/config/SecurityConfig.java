@@ -25,6 +25,10 @@ public class SecurityConfig {
                 // X-User-* et seraient sinon rejetés à tort en 401/403.
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/notification/internal/**").permitAll()
+                        // Newsletter publique : inscription anonyme depuis le
+                        // footer. Validation serveur du format + unicité email
+                        // (preuves : NewsletterSecurityTest).
+                        .requestMatchers("/api/notification/newsletter/**").permitAll()
                         .anyRequest().authenticated())
                 .addFilterBefore(userContextFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();

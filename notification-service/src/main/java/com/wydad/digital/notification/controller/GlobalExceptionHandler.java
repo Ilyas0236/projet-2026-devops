@@ -33,6 +33,20 @@ public class GlobalExceptionHandler {
         ));
     }
 
+    /** Validation jakarta (@Valid/@NotBlank...) : 400 avec le message du champ. */
+    @ExceptionHandler(org.springframework.web.bind.MethodArgumentNotValidException.class)
+    public ResponseEntity<Map<String, Object>> handleValidation(org.springframework.web.bind.MethodArgumentNotValidException ex) {
+        String message = ex.getBindingResult().getFieldErrors().stream()
+                .findFirst()
+                .map(f -> f.getField() + " : " + f.getDefaultMessage())
+                .orElse("Requête invalide");
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of(
+                "error", "BAD_REQUEST",
+                "message", message,
+                "timestamp", LocalDateTime.now().toString()
+        ));
+    }
+
     @ExceptionHandler({IllegalArgumentException.class, IllegalStateException.class})
     public ResponseEntity<Map<String, Object>> handleBadRequest(RuntimeException ex) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of(

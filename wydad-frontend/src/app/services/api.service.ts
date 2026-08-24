@@ -173,6 +173,11 @@ export class ApiService {
     return this.http.put(`${this.baseUrl}/content/settings/${key}`, value);
   }
 
+  // NEWSLETTER publique — inscription anonyme depuis le footer (notification-service)
+  subscribeNewsletter(email: string): Observable<any> {
+    return this.http.post(`${this.baseUrl}/notification/newsletter/subscribe`, { email });
+  }
+
   // SPONSORS (B.7) — lecture publique, ecriture ADMIN
   getSponsorsPublic(): Observable<any[]> {
     return this.http.get<any[]>(`${this.baseUrl}/content/sponsors/public`);
