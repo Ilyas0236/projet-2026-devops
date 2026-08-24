@@ -21,8 +21,19 @@ public class NotificationOrchestrator {
     private final EmailService emailService;
     private final PushNotificationService pushNotificationService;
     private final AuthServiceClient authServiceClient;
+    private final NotificationPreferenceService preferenceService;
 
     public Notification processNotification(NotificationRequest request) {
+        // Fonctionnalité 4/6 — la préférence du membre est appliquée À L'ENVOI,
+        // quel que soit le point d'entrée (ADMIN /send, broadcast, /internal/send) :
+        // canal désactivé -> aucune notification créée ni envoyée.
+        if (request.getUserId() != null
+                && !preferenceService.isChannelAllowed(request.getUserId(), request.getType().name())) {
+            log.info("🔕 Envoi bloqué par préférence utilisateur {} : canal {}",
+                    request.getUserId(), request.getType());
+            return null;
+        }
+
         Notification notification = Notification.builder()
                 .userId(request.getUserId())
                 .title(request.getTitle())
@@ -96,6 +107,16 @@ public class NotificationOrchestrator {
                 .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException("Notification non trouvée"));
     }
 
+    /** Fonctionnalité 4/6 — accès aux préférences du membre (délégation service). */
+    public com.wydad.digital.notification.model.NotificationPreference getPreferences(Long userId) {
+        return preferenceService.getOrCreate(userId);
+    }
+
+    public com.wydad.digital.notification.model.NotificationPreference updatePreferences(
+            Long userId, boolean emailEnabled, boolean pushEnabled, boolean inAppEnabled) {
+        return preferenceService.update(userId, emailEnabled, pushEnabled, inAppEnabled);
+    }
+
     public List<Notification> getAllNotifications() {
         return notificationRepository.findAll();
     }
@@ -118,10 +139,12 @@ public class NotificationOrchestrator {
             request.setUserEmail(recipient.email());
             request.setTargetUrl(template.getTargetUrl());
             request.setImageUrl(template.getImageUrl());
-            processNotification(request);
-            created++;
+            // null = membre ayant désactivé ce canal : il n'est pas compté.
+            if (processNotification(request) != null) {
+                created++;
+            }
         }
-        log.info("📢 Broadcast : {} notification(s) créée(s) pour {} destinataire(s)",
+        log.info("📢 Broadcast : {} notification(s) créée(s) pour {} destinataire(s) (préférences respectées)",
                 created, recipients.size());
         return created;
     }

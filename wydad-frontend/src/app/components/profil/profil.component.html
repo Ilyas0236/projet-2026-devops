@@ -130,6 +130,14 @@
                   }">
             🎧 Support
           </button>
+          <button (click)="activeTab = 'prefs'"
+                  class="whitespace-nowrap px-6 py-3 rounded-xl font-display font-bold uppercase text-xs tracking-wider transition-all duration-300 border"
+                  [ngClass]="{
+                    'bg-wydad-red text-white border-wydad-red': activeTab === 'prefs',
+                    'bg-surface-2 border-white/10 text-text-secondary': activeTab !== 'prefs'
+                  }">
+            🔔 Notifications
+          </button>
         </div>
 
         <div class="glass-strong rounded-3xl p-6 md:p-10 shadow-card">
@@ -394,6 +402,71 @@
                 Envoyer ma réclamation
               </button>
             </form>
+          </div>
+
+          <!-- TAB: PREFS NOTIFICATIONS (Fonctionnalité 4/6 — appliquées à l'envoi côté serveur) -->
+          <div *ngIf="activeTab === 'prefs'" class="animate-fade-in">
+            <h3 class="font-display font-bold text-2xl uppercase tracking-wider mb-2">Préférences de Notification</h3>
+            <p class="text-text-secondary text-sm mb-8">
+              Choisissez par quels canaux le club peut vous contacter. Vos choix sont
+              appliqués immédiatement à l'envoi — y compris pour les envois du club et les
+              confirmations automatiques.
+            </p>
+
+            <div *ngIf="prefsLoading" class="text-text-secondary">Chargement…</div>
+
+            <div *ngIf="!prefsLoading" class="space-y-4 max-w-xl">
+              <div class="flex items-center justify-between gap-4 rounded-2xl border border-white/10 bg-surface-2 px-6 py-5">
+                <div>
+                  <p class="font-display font-bold uppercase text-sm tracking-wider flex items-center gap-2">
+                    📧 E-mail
+                  </p>
+                  <p class="text-text-secondary text-xs mt-1">Confirmations d'achat, reçus, newsletters officielles.</p>
+                </div>
+                <button type="button" (click)="togglePreference('emailEnabled')"
+                        [disabled]="prefsSaving"
+                        [ngClass]="prefs.emailEnabled ? 'bg-wydad-red border-wydad-red' : 'bg-transparent border-white/20'"
+                        class="relative w-14 h-8 rounded-full border transition-colors duration-300 shrink-0 disabled:opacity-50"
+                        role="switch" [attr.aria-checked]="prefs.emailEnabled" aria-label="Activer ou désactiver les e-mails">
+                  <span class="absolute top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-white transition-all duration-300"
+                        [style.left.rem]="prefs.emailEnabled ? '1.75' : '0.25'"></span>
+                </button>
+              </div>
+
+              <div class="flex items-center justify-between gap-4 rounded-2xl border border-white/10 bg-surface-2 px-6 py-5">
+                <div>
+                  <p class="font-display font-bold uppercase text-sm tracking-wider flex items-center gap-2">
+                    📱 Notifications push
+                  </p>
+                  <p class="text-text-secondary text-xs mt-1">Alertes en temps réel : buts, résultats, convocations.</p>
+                </div>
+                <button type="button" (click)="togglePreference('pushEnabled')"
+                        [disabled]="prefsSaving"
+                        [ngClass]="prefs.pushEnabled ? 'bg-wydad-red border-wydad-red' : 'bg-transparent border-white/20'"
+                        class="relative w-14 h-8 rounded-full border transition-colors duration-300 shrink-0 disabled:opacity-50"
+                        role="switch" [attr.aria-checked]="prefs.pushEnabled" aria-label="Activer ou désactiver les notifications push">
+                  <span class="absolute top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-white transition-all duration-300"
+                        [style.left.rem]="prefs.pushEnabled ? '1.75' : '0.25'"></span>
+                </button>
+              </div>
+
+              <div class="flex items-center justify-between gap-4 rounded-2xl border border-white/10 bg-surface-2 px-6 py-5">
+                <div>
+                  <p class="font-display font-bold uppercase text-sm tracking-wider flex items-center gap-2">
+                    🔔 Notifications in-app
+                  </p>
+                  <p class="text-text-secondary text-xs mt-1">Messages conservés dans votre boîte de réception sur le site.</p>
+                </div>
+                <button type="button" (click)="togglePreference('inAppEnabled')"
+                        [disabled]="prefsSaving"
+                        [ngClass]="prefs.inAppEnabled ? 'bg-wydad-red border-wydad-red' : 'bg-transparent border-white/20'"
+                        class="relative w-14 h-8 rounded-full border transition-colors duration-300 shrink-0 disabled:opacity-50"
+                        role="switch" [attr.aria-checked]="prefs.inAppEnabled" aria-label="Activer ou désactiver les notifications in-app">
+                  <span class="absolute top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-white transition-all duration-300"
+                        [style.left.rem]="prefs.inAppEnabled ? '1.75' : '0.25'"></span>
+                </button>
+              </div>
+            </div>
           </div>
 
         </div>

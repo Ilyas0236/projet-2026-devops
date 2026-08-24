@@ -3,6 +3,7 @@ package com.wydad.digital.notification.controller;
 import com.wydad.digital.notification.dto.NotificationRequest;
 import com.wydad.digital.notification.filter.UserContext;
 import com.wydad.digital.notification.model.Notification;
+import com.wydad.digital.notification.model.NotificationPreference;
 import com.wydad.digital.notification.service.NotificationOrchestrator;
 import com.wydad.digital.notification.config.InternalSecretValidator;
 import jakarta.validation.Valid;
@@ -27,6 +28,10 @@ public class NotificationController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Notification> sendNotification(@Valid @RequestBody NotificationRequest request) {
         Notification notification = orchestrator.processNotification(request);
+        // null = canal désactivé par le membre : requête acceptée, rien de livré.
+        if (notification == null) {
+            return ResponseEntity.accepted().build();
+        }
         return ResponseEntity.status(HttpStatus.CREATED).body(notification);
     }
 
@@ -82,8 +87,40 @@ public class NotificationController {
             throw new AccessDeniedException("Secret interne invalide");
         }
         Notification notification = orchestrator.processNotification(request);
+        // null = canal désactivé par le membre (best-effort côté appelant).
+        if (notification == null) {
+            return ResponseEntity.accepted().build();
+        }
         return ResponseEntity.status(HttpStatus.CREATED).body(notification);
     }
+
+    /**
+     * Fonctionnalité 4/6 — Préférences de notification du membre connecté.
+     * L'identité vient des en-têtes X-User-* (jamais du path/body) : chacun
+     * ne lit et modifie QUE SES préférences.
+     */
+    @GetMapping("/preferences")
+    public ResponseEntity<NotificationPreference> getMyPreferences() {
+        Long userId = UserContext.getCurrentUserId();
+        if (userId == null) {
+            throw new AccessDeniedException("Utilisateur non identifié");
+        }
+        return ResponseEntity.ok(orchestrator.getPreferences(userId));
+    }
+
+    @PutMapping("/preferences")
+    public ResponseEntity<NotificationPreference> updateMyPreferences(
+            @RequestBody PreferenceUpdateRequest request) {
+        Long userId = UserContext.getCurrentUserId();
+        if (userId == null) {
+            throw new AccessDeniedException("Utilisateur non identifié");
+        }
+        NotificationPreference updated = orchestrator.updatePreferences(userId,
+                request.emailEnabled(), request.pushEnabled(), request.inAppEnabled());
+        return ResponseEntity.ok(updated);
+    }
+
+    public record PreferenceUpdateRequest(Boolean emailEnabled, Boolean pushEnabled, Boolean inAppEnabled) {}
 
     /** Un utilisateur ne peut lire que ses notifications ; ADMIN autorisé. */
     private void assertSelfOrAdmin(Long targetUserId) {

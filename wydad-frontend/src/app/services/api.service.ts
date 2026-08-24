@@ -338,6 +338,15 @@ export class ApiService {
     return this.http.patch<any>(`${this.baseUrl}/notification/${notificationId}/read`, {});
   }
 
+  // --- Fonctionnalité 4/6 : préférences de notification (appliquées à l'envoi côté serveur) ---
+  getMyPreferences(): Observable<any> {
+    return this.http.get<any>(`${this.baseUrl}/notification/preferences`);
+  }
+
+  updateMyPreferences(prefs: { emailEnabled: boolean; pushEnabled: boolean; inAppEnabled: boolean }): Observable<any> {
+    return this.http.put<any>(`${this.baseUrl}/notification/preferences`, prefs);
+  }
+
   // ==========================================
   // ACADEMY SERVICE
   // ==========================================

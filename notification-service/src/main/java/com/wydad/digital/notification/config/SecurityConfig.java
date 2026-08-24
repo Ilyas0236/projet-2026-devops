@@ -19,7 +19,13 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http, UserContextFilter userContextFilter) throws Exception {
         http.csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(auth -> auth.anyRequest().authenticated())
+                // Les routes /internal/** sont protégées par le secret partagé
+                // X-Internal-Secret validé DANS le contrôleur (pas par Spring
+                // Security) : les appels service-à-service n'ont pas d'en-têtes
+                // X-User-* et seraient sinon rejetés à tort en 401/403.
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/api/notification/internal/**").permitAll()
+                        .anyRequest().authenticated())
                 .addFilterBefore(userContextFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }

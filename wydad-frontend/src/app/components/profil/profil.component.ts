@@ -56,6 +56,49 @@ export class ProfilComponent implements OnInit {
   reclamations: any[] = [];
   reclamationDraft = { subject: 'SHOP', title: '', description: '' };
 
+  // Fonctionnalité 4/6 — Préférences de notification (appliquées à l'envoi
+  // côté serveur, prouvé par NotificationPreferenceTest).
+  prefs = { emailEnabled: true, pushEnabled: true, inAppEnabled: true };
+  prefsLoading = true;
+  prefsSaving = false;
+
+  loadPreferences() {
+    this.prefsLoading = true;
+    this.apiService.getMyPreferences().subscribe({
+      next: (p) => {
+        this.prefs = {
+          emailEnabled: p.emailEnabled !== false,
+          pushEnabled: p.pushEnabled !== false,
+          inAppEnabled: p.inAppEnabled !== false
+        };
+        this.prefsLoading = false;
+      },
+      error: () => {
+        this.prefsLoading = false;
+      }
+    });
+  }
+
+  togglePreference(channel: 'emailEnabled' | 'pushEnabled' | 'inAppEnabled') {
+    if (this.prefsSaving) return;
+    this.prefs[channel] = !this.prefs[channel];
+    this.prefsSaving = true;
+    this.apiService.updateMyPreferences({ ...this.prefs }).subscribe({
+      next: (p) => {
+        this.prefs = { ...this.prefs };
+        this.prefsSaving = false;
+        const label = channel === 'emailEnabled' ? 'E-mail'
+          : channel === 'pushEnabled' ? 'Notifications push' : 'Notifications in-app';
+        this.toast.success(`${label} : ${this.prefs[channel] ? 'activé' : 'désactivé'}. Le club ne vous contactera plus par ce canal si désactivé.`);
+      },
+      error: (err) => {
+        // Revert on failure
+        this.loadPreferences();
+        this.toast.error(err.error?.message || 'Erreur lors de la mise à jour des préférences.');
+      }
+    });
+  }
+
   private apiService = inject(ApiService);
 
   authService = inject(AuthService);
@@ -67,6 +110,7 @@ export class ProfilComponent implements OnInit {
     this.loadProfile();
     this.loadSessions();
     this.loadReclamations();
+    this.loadPreferences();
   }
 
   // --- B.10 : Réclamations ---
