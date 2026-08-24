@@ -25,6 +25,11 @@ public class SecurityConfig {
                         // Le VOTE reste réservé aux membres authentifiés.
                         .requestMatchers(org.springframework.http.HttpMethod.GET,
                                 "/api/sports/polls/active").permitAll()
+                        // Phase 4 — handshake SockJS du chat de groupe : l'upgrade
+                        // WebSocket ne transporte pas les headers X-User-* de la
+                        // gateway ; l'identité est exigée par frame STOMP CONNECT
+                        // (TeamChatAuthInterceptor) et l'adhésion revérifiée par envoi.
+                        .requestMatchers("/ws/team-chat/**", "/ws/team-chat").permitAll()
                         .anyRequest().authenticated())
                 .addFilterBefore(userContextFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();

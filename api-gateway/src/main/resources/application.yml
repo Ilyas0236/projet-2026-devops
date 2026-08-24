@@ -101,6 +101,17 @@ spring:
           uri: ${SPORTS_SERVICE_URI:http://localhost:8087}
           predicates:
             - Path=/api/sports/**
+        # Phase 4 — chat de groupe : upgrade WebSocket/STOMP (SockJS inclus)
+        # route vers sports-service. Le JWT est exige par le filtre global
+        # ci-dessus ; l'identite X-User-* est retransmise au service.
+        - id: sports-websocket
+          uri: ${SPORTS_SERVICE_URI:http://localhost:8087}
+          predicates:
+            - Path=/ws/team-chat/**
+        - id: sports-websocket-root
+          uri: ${SPORTS_SERVICE_URI:http://localhost:8087}
+          predicates:
+            - Path=/ws/team-chat
         - id: gamification-service
           uri: ${GAMIFICATION_SERVICE_URI:http://localhost:8088}
           predicates:
