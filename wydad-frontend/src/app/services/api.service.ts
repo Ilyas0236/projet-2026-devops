@@ -231,6 +231,14 @@ export class ApiService {
   getAllOrders(): Observable<any> {
     return this.http.get<any>(`${this.baseUrl}/shop/orders/all`);
   }
+
+  /** Changement de statut d'une commande (réservé ADMIN, transitions validées serveur) */
+  updateOrderStatus(orderNumber: string, status: string, comment?: string): Observable<any> {
+    return this.http.patch<any>(`${this.baseUrl}/shop/orders/${orderNumber}/status`, {
+      status,
+      comment: comment || null
+    });
+  }
   // TICKET SERVICE (Billetterie)
   // ==========================================
   getEvents(): Observable<any[]> {

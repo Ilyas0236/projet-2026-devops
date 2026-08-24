@@ -46,6 +46,7 @@ import { DashboardStaffComponent } from './pages/espace-staff/dashboard-staff/da
 import { EspaceFanComponent } from './pages/espace-fan/espace-fan.component';
 import { SondagesComponent } from './pages/sondages/sondages.component';
 import { AdminSondagesComponent } from './pages/admin/admin-sondages/admin-sondages.component';
+import { AdminCommandesComponent } from './pages/admin/admin-commandes/admin-commandes.component';
 export const routes: Routes = [
   {
     // L'arbre admin DOIT être déclaré avant le layout public : celui-ci
@@ -61,6 +62,7 @@ export const routes: Routes = [
       { path: 'matchs', component: AdminMatchsComponent },
       { path: 'classements', component: AdminClassementsComponent },
       { path: 'boutique', component: AdminBoutiqueComponent },
+      { path: 'commandes', component: AdminCommandesComponent },
       { path: 'billetterie', component: AdminBilletterieComponent },
       { path: 'effectif', component: AdminEffectifComponent },
       { path: 'staff', component: AdminStaffComponent },
