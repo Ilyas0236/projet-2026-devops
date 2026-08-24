@@ -97,7 +97,7 @@ public class PlayerSpaceController {
      * du joueur (ou l'ADMIN) peut convoquer — règle d'ownership vérifiée ici.
      */
     @PostMapping("/staff/convocations")
-    @PreAuthorize("hasRole('STAFF') or hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ENTRAINEUR','STAFF','ADMIN')")
     public ResponseEntity<ConvocationResponse> createConvocation(
             @RequestParam Long joueurUserId,
             @RequestParam Long sessionId) {
@@ -112,7 +112,7 @@ public class PlayerSpaceController {
      * joueur visé avant création ; les rejets sont motivés joueur par joueur.
      */
     @PostMapping("/staff/convocations/batch")
-    @PreAuthorize("hasRole('STAFF') or hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ENTRAINEUR','STAFF','ADMIN')")
     public ResponseEntity<PlayerSpaceDtos.BatchConvocationResponse> createBatchConvocation(
             @RequestBody PlayerSpaceDtos.BatchConvocationRequest request) {
         // Ownership catégorie vérifié joueur par joueur : le staffId passé
@@ -126,7 +126,7 @@ public class PlayerSpaceController {
 
     /** Phase 3 — suivi des réponses d'une séance (vue entraîneur). */
     @GetMapping("/staff/sessions/{sessionId}/responses")
-    @PreAuthorize("hasRole('STAFF') or hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ENTRAINEUR','STAFF','ADMIN')")
     public ResponseEntity<List<PlayerSpaceDtos.StaffConvocationView>> getSessionResponses(
             @PathVariable Long sessionId) {
         return ResponseEntity.ok(playerSpaceService.getSessionResponses(sessionId));
@@ -134,7 +134,7 @@ public class PlayerSpaceController {
 
     /** Phase 3 — compteurs de suivi d'une séance (lu/non lu, présences). */
     @GetMapping("/staff/sessions/{sessionId}/responses/summary")
-    @PreAuthorize("hasRole('STAFF') or hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ENTRAINEUR','STAFF','ADMIN')")
     public ResponseEntity<PlayerSpaceDtos.SessionResponsesSummary> getSessionSummary(
             @PathVariable Long sessionId) {
         return ResponseEntity.ok(playerSpaceService.getSessionSummary(sessionId));
@@ -142,7 +142,7 @@ public class PlayerSpaceController {
 
     /** Partage d'un document médiathèque avec un joueur (staff/admin). */
     @PostMapping("/staff/documents")
-    @PreAuthorize("hasRole('STAFF') or hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ENTRAINEUR','STAFF','ADMIN')")
     public ResponseEntity<PlayerDocumentResponse> shareDocument(
             @RequestParam Long joueurUserId,
             @RequestBody ShareDocumentRequest body) {
@@ -157,7 +157,7 @@ public class PlayerSpaceController {
      * ADMIN passe partout. Les totaux de la fiche sont recalculés.
      */
     @PostMapping("/staff/stats")
-    @PreAuthorize("hasRole('STAFF') or hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ENTRAINEUR','STAFF','ADMIN')")
     public ResponseEntity<MatchStatResponse> addPlayerStat(
             @RequestParam Long joueurUserId,
             @RequestBody MatchStatRequest body) {
@@ -168,7 +168,7 @@ public class PlayerSpaceController {
 
     /** Consultation des stats détaillées d'un joueur (staff/admin). */
     @GetMapping("/staff/stats")
-    @PreAuthorize("hasRole('STAFF') or hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ENTRAINEUR','STAFF','ADMIN')")
     public ResponseEntity<List<MatchStatResponse>> getPlayerStats(
             @RequestParam Long joueurUserId) {
         ensureStaffCanManage(joueurUserId);
@@ -180,7 +180,7 @@ public class PlayerSpaceController {
      * de la catégorie du joueur (ou ADMIN) — vérifié dans MedicalService.
      */
     @PutMapping("/staff/medical-status")
-    @PreAuthorize("hasRole('STAFF') or hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ENTRAINEUR','STAFF','ADMIN')")
     public ResponseEntity<MedicalResponse> setMedicalStatus(
             @RequestParam Long joueurUserId,
             @RequestBody MedicalStatusRequest body) {
