@@ -269,6 +269,43 @@
             </div>
           </div>
 
+          <!-- MES BILLETS VIP (Phase 2 — 4 billets offerts par match à domicile) -->
+          <div class="paper-card rounded-3xl p-8">
+            <div class="flex justify-between items-end mb-6 flex-wrap gap-3">
+              <div>
+                <h3 class="section-title-light font-display text-2xl uppercase tracking-wider mb-1">Mes billets VIP</h3>
+                <p class="text-ink-tertiary text-xs uppercase tracking-widest">4 billets offerts par match à domicile · téléchargez le PDF avec QR</p>
+              </div>
+              <a routerLink="/profil/billets" class="bg-paper-2 hover:bg-paper-3 text-ink-primary border border-paper-3 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors whitespace-nowrap">
+                Tous mes billets
+              </a>
+            </div>
+
+            <p *ngIf="vipTicketsLoading" class="text-ink-secondary text-sm py-8 text-center">Chargement de vos billets VIP…</p>
+
+            <div *ngIf="!vipTicketsLoading && vipTickets.length === 0" class="rounded-2xl border border-paper-3 bg-paper-1 p-8 text-center">
+              <p class="text-ink-secondary text-sm">Aucun billet VIP pour le moment. Ils sont générés automatiquement dès qu'un match à domicile est créé.</p>
+            </div>
+
+            <div *ngIf="!vipTicketsLoading && vipTickets.length > 0"
+                 class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+              <div *ngFor="let t of vipTickets" class="bg-white border border-paper-3 rounded-2xl p-5 flex flex-col gap-3 hover:border-wydad-red/40 transition-all shadow-sm">
+                <div class="flex items-center justify-between gap-2">
+                  <span class="px-2 py-0.5 rounded-full bg-wydad-red text-white text-[10px] font-bold uppercase tracking-widest">VIP</span>
+                  <code class="text-[10px] text-ink-tertiary truncate">{{ t.ticketNumber }}</code>
+                </div>
+                <div class="min-w-0">
+                  <h4 class="font-bold text-sm text-ink-primary truncate">{{ t.eventTitle }}</h4>
+                  <p class="text-ink-tertiary text-xs mt-1">{{ t.eventDate | date:'dd/MM/yyyy HH:mm' }} · {{ t.venue }}</p>
+                </div>
+                <button (click)="downloadVipPdf(t)" [disabled]="vipDownloadingId === t.id"
+                        class="mt-auto bg-wydad-red hover:bg-wydad-red-dark disabled:opacity-50 text-white px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-widest transition-colors w-full">
+                  {{ vipDownloadingId === t.id ? '⏳' : '⬇ PDF' }}
+                </button>
+              </div>
+            </div>
+          </div>
+
           <!-- MES CONVOCATIONS (B.3.a) -->
           <div class="paper-card rounded-3xl p-8">
             <div class="flex justify-between items-end mb-8">

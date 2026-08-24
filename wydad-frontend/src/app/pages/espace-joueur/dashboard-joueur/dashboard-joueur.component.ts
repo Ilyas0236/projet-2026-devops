@@ -87,10 +87,50 @@ export class DashboardJoueurComponent implements OnInit {
         this.loadSessions();
         this.loadMySpace();
         this.loadRapportsFinanciers();
+        this.loadVipTickets(userId);
       },
       error: () => {
         this.loadError = true;
         this.loading = false;
+      }
+    });
+  }
+
+  // Phase 2 — billets VIP du joueur (4 par match à domicile, générés auto)
+  vipTickets: any[] = [];
+  vipTicketsLoading = false;
+  vipDownloadingId: number | null = null;
+
+  /** Billets VIP uniquement (catégorie VIP), les plus proches en premier. */
+  loadVipTickets(userId: number) {
+    this.vipTicketsLoading = true;
+    this.api.getTicketsByUser(userId).subscribe({
+      next: (data) => {
+        this.vipTickets = (data || [])
+          .filter((t: any) => t.category === 'VIP')
+          .sort((a: any, b: any) =>
+            new Date(a.eventDate).getTime() - new Date(b.eventDate).getTime());
+        this.vipTicketsLoading = false;
+      },
+      error: () => { this.vipTicketsLoading = false; }
+    });
+  }
+
+  downloadVipPdf(ticket: any) {
+    this.vipDownloadingId = ticket.id;
+    this.api.getTicketPdf(ticket.id).subscribe({
+      next: (blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `billet-vip-${ticket.ticketNumber}.pdf`;
+        a.click();
+        window.URL.revokeObjectURL(url);
+        this.vipDownloadingId = null;
+      },
+      error: () => {
+        this.toast.error('Erreur lors du téléchargement du billet VIP.');
+        this.vipDownloadingId = null;
       }
     });
   }
