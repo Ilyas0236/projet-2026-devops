@@ -1,87 +1,86 @@
 <!-- ═══════════════════════════════════════════════════════════ -->
-<!-- WYDAD DIGITAL — DASHBOARD STAFF (Premium Dark Mode)       -->
+<!-- WYDAD DIGITAL — DASHBOARD STAFF (Thème clair blanc/rouge)  -->
 <!-- ═══════════════════════════════════════════════════════════ -->
-<div class="min-h-screen bg-surface-0 text-white pt-28 pb-24 zellige-bg">
+<div class="min-h-screen bg-paper-1 light-page text-ink-primary pt-28 pb-24">
   <div class="container-wydad">
-    
+
     <!-- LOADING STATE -->
     <div *ngIf="loading" class="flex justify-center py-32 animate-fade-in">
-      <div class="w-12 h-12 border-4 border-wydad-red border-t-transparent rounded-full animate-spin shadow-glow-red"></div>
+      <div class="w-12 h-12 border-4 border-wydad-red border-t-transparent rounded-full animate-spin"></div>
     </div>
 
     <!-- NOT FOUND STATE -->
     <div *ngIf="!loading && staffNotFound" class="flex justify-center py-20 animate-fade-in-up">
-      <div class="glass rounded-3xl p-12 max-w-lg w-full text-center border border-white/10">
-        <div class="w-20 h-20 bg-surface-3 rounded-full flex items-center justify-center text-4xl mx-auto mb-6 border border-white/5 opacity-50">
-          ⚠️
+      <div class="paper-card rounded-3xl p-12 max-w-lg w-full text-center">
+        <div class="w-20 h-20 bg-paper-2 rounded-full flex items-center justify-center mx-auto mb-6 border border-paper-3">
+          <svg class="w-10 h-10 text-ink-tertiary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 9v2m0 4h.01M5 19h14a2 2 0 001.84-2.75L13.74 4a2 2 0 00-3.5 0L3.16 16.25A2 2 0 005 19z"/></svg>
         </div>
         <h2 class="font-display font-bold text-2xl uppercase tracking-wider mb-3">Profil Staff non trouvé</h2>
-        <p class="text-text-secondary text-sm">Votre compte n'est pas lié à un profil staff. L'administrateur doit d'abord créer votre profil technique.</p>
+        <p class="text-ink-secondary text-sm">Votre compte n'est pas lié à un profil staff. L'administrateur doit d'abord créer votre profil technique.</p>
       </div>
     </div>
 
     <!-- STAFF DASHBOARD -->
     <div *ngIf="!loading && staff">
-      
+
       <!-- Header Area -->
       <div class="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 gap-6 animate-fade-in-up" style="animation-delay: 0.1s; opacity: 0;">
         <div>
           <span class="text-wydad-red font-bold tracking-[0.2em] uppercase text-xs mb-2 block">Management Technique</span>
-          <h1 class="font-display text-4xl md:text-5xl font-black uppercase tracking-tighter">{{ staff.fullName }}</h1>
+          <h1 class="font-display text-4xl md:text-5xl font-black uppercase tracking-tighter text-ink-primary">{{ staff.fullName }}</h1>
           <div class="flex flex-wrap items-center gap-3 mt-3">
-            <span class="px-3 py-1 bg-surface-2 border border-white/10 text-xs font-bold uppercase tracking-widest rounded-full text-white">{{ staff.role }}</span>
-            <span class="px-3 py-1 bg-wydad-red border border-wydad-red text-xs font-bold uppercase tracking-widest rounded-full text-white shadow-glow-red">{{ staff.sportType }} {{ staff.assignedCategory || staff.category }}</span>
+            <span class="px-3 py-1 bg-paper-2 border border-paper-3 text-xs font-bold uppercase tracking-widest rounded-full text-ink-secondary">{{ staff.role }}</span>
+            <span class="px-3 py-1 red-band border border-wydad-red-dark text-xs font-bold uppercase tracking-widest rounded-full text-white shadow-sm">{{ staff.sportType }} {{ staff.assignedCategory || staff.category }}</span>
           </div>
         </div>
-        
-        <button (click)="showForm = !showForm" class="wydad-btn-primary flex items-center gap-3 py-3 px-6 shrink-0">
+
+        <button (click)="showForm = !showForm" class="paper-btn-primary flex items-center gap-3 py-3 px-6 shrink-0">
           <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
           <span>Planifier Séance</span>
         </button>
 
         <button (click)="showAnnouncementForm = !showAnnouncementForm"
-                class="bg-surface-2 hover:bg-surface-3 border border-white/10 rounded-xl py-3 px-6 text-xs font-bold uppercase tracking-widest transition-colors shrink-0 flex items-center gap-2">
-          📣 Annonce
+                class="bg-white hover:bg-paper-2 text-ink-primary border border-paper-3 hover:border-wydad-red/40 rounded-xl py-3 px-6 text-xs font-bold uppercase tracking-widest transition-colors shrink-0 flex items-center gap-2 shadow-sm">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"/></svg>
+          Annonce
         </button>
       </div>
 
       <!-- Planning Form (Collapsible) -->
-      <div *ngIf="showForm" class="glass-strong rounded-[2rem] border border-wydad-red/30 p-8 md:p-10 mb-12 animate-fade-in shadow-[0_0_50px_rgba(220,20,60,0.1)] relative overflow-hidden">
+      <div *ngIf="showForm" class="paper-card rounded-[2rem] p-8 md:p-10 mb-12 animate-fade-in relative overflow-hidden">
         <!-- Decoration -->
-        <div class="absolute -right-20 -top-20 w-64 h-64 bg-wydad-red opacity-10 rounded-full blur-3xl pointer-events-none"></div>
+        <div class="absolute -right-20 -top-20 w-64 h-64 bg-wydad-red/5 rounded-full blur-3xl pointer-events-none"></div>
 
         <div class="flex justify-between items-center mb-8 relative z-10">
-          <h2 class="font-display text-2xl font-bold uppercase tracking-wider flex items-center gap-3">
-            <span class="w-10 h-10 rounded-full bg-wydad-red text-white flex items-center justify-center text-sm shadow-glow-red">📅</span>
-            Nouvelle Séance
-          </h2>
-          <button (click)="showForm = false" class="w-10 h-10 rounded-full bg-surface-2 hover:bg-surface-3 border border-white/5 flex items-center justify-center text-text-tertiary hover:text-white transition-colors">
+          <h2 class="section-title-light font-display text-2xl font-bold uppercase tracking-wider flex items-center gap-3">Nouvelle Séance</h2>
+          <button (click)="showForm = false" aria-label="Fermer le formulaire de séance"
+                  class="w-10 h-10 rounded-full bg-paper-1 hover:bg-paper-2 border border-paper-3 flex items-center justify-center text-ink-secondary transition-colors">
             <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
           </button>
         </div>
-        
+
         <form [formGroup]="sessionForm" (ngSubmit)="submitSession()" class="relative z-10">
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
             <div>
-              <label class="wydad-label text-xs">Titre de la séance</label>
-              <input type="text" formControlName="title" placeholder="Ex: Entraînement tactique..." class="wydad-input py-3">
+              <label for="session-title" class="block text-[11px] font-bold uppercase tracking-widest text-ink-secondary mb-2">Titre de la séance</label>
+              <input id="session-title" type="text" formControlName="title" placeholder="Ex: Entraînement tactique..." class="paper-input py-3">
             </div>
             <div>
-              <label class="wydad-label text-xs">Date et Heure</label>
-              <!-- The datepicker needs to be styled for dark mode implicitly, some browsers use system theme -->
-              <input type="datetime-local" formControlName="sessionDate" class="wydad-input py-3 [color-scheme:dark]">
+              <label for="session-date" class="block text-[11px] font-bold uppercase tracking-widest text-ink-secondary mb-2">Date et Heure</label>
+              <!-- Datepicker natif : color-scheme light pour cohérence avec le thème clair -->
+              <input id="session-date" type="datetime-local" formControlName="sessionDate" class="paper-input py-3 [color-scheme:light]">
             </div>
             <div class="md:col-span-2">
-              <label class="wydad-label text-xs">Lieu</label>
-              <input type="text" formControlName="location" class="wydad-input py-3">
+              <label for="session-location" class="block text-[11px] font-bold uppercase tracking-widest text-ink-secondary mb-2">Lieu</label>
+              <input id="session-location" type="text" formControlName="location" class="paper-input py-3">
             </div>
             <div class="md:col-span-2">
-              <label class="wydad-label text-xs">Description / Consignes</label>
-              <textarea formControlName="description" rows="3" placeholder="Objectifs et déroulement de la séance..." class="wydad-input py-3 resize-none"></textarea>
+              <label for="session-description" class="block text-[11px] font-bold uppercase tracking-widest text-ink-secondary mb-2">Description / Consignes</label>
+              <textarea id="session-description" formControlName="description" rows="3" placeholder="Objectifs et déroulement de la séance..." class="paper-input py-3 resize-none"></textarea>
             </div>
           </div>
           <div class="flex justify-end">
-            <button type="submit" [disabled]="sessionForm.invalid || isSubmitting" class="wydad-btn-primary px-10 py-3 disabled:opacity-50">
+            <button type="submit" [disabled]="sessionForm.invalid || isSubmitting" class="paper-btn-primary px-10 py-3 disabled:opacity-50">
               {{ isSubmitting ? 'Création en cours...' : 'Confirmer la séance' }}
             </button>
           </div>
@@ -89,58 +88,58 @@
       </div>
 
       <!-- B.5 — FORMULAIRE ANNONCE (collapsible) -->
-      <div *ngIf="showAnnouncementForm" class="glass-strong rounded-[2rem] border border-white/10 p-8 mb-12 animate-fade-in">
+      <div *ngIf="showAnnouncementForm" class="paper-card rounded-[2rem] p-8 mb-12 animate-fade-in">
         <div class="flex justify-between items-center mb-6">
-          <h2 class="font-display text-xl font-bold uppercase tracking-wider">📣 Nouvelle annonce</h2>
-          <button (click)="showAnnouncementForm = false"
-                  class="w-10 h-10 rounded-full bg-surface-2 hover:bg-surface-3 border border-white/5 flex items-center justify-center text-text-tertiary hover:text-white transition-colors">✕</button>
+          <h2 class="section-title-light font-display text-xl font-bold uppercase tracking-wider">Nouvelle annonce</h2>
+          <button (click)="showAnnouncementForm = false" aria-label="Fermer le formulaire d'annonce"
+                  class="w-10 h-10 rounded-full bg-paper-1 hover:bg-paper-2 border border-paper-3 flex items-center justify-center text-ink-secondary transition-colors">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
         </div>
         <form [formGroup]="announcementForm" (ngSubmit)="submitAnnouncement()">
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
             <div class="md:col-span-2">
-              <label class="wydad-label text-xs" for="ann-title">Titre *</label>
-              <input id="ann-title" type="text" formControlName="title" placeholder="Ex : Tenue obligatoire dimanche" class="wydad-input py-3">
+              <label class="block text-[11px] font-bold uppercase tracking-widest text-ink-secondary mb-2" for="ann-title">Titre *</label>
+              <input id="ann-title" type="text" formControlName="title" placeholder="Ex : Tenue obligatoire dimanche" class="paper-input py-3">
             </div>
             <div>
-              <label class="wydad-label text-xs" for="ann-scope">Portée</label>
-              <select id="ann-scope" formControlName="scope" class="wydad-input py-3">
+              <label class="block text-[11px] font-bold uppercase tracking-widest text-ink-secondary mb-2" for="ann-scope">Portée</label>
+              <select id="ann-scope" formControlName="scope" class="paper-input py-3">
                 <option value="category">Ma catégorie uniquement ({{ staff.sportType }} {{ staff.assignedCategory || staff.category }})</option>
                 <option value="club">Tout le club</option>
               </select>
             </div>
             <div class="md:col-span-3">
-              <label class="wydad-label text-xs" for="ann-body">Contenu *</label>
+              <label class="block text-[11px] font-bold uppercase tracking-widest text-ink-secondary mb-2" for="ann-body">Contenu *</label>
               <textarea id="ann-body" formControlName="body" rows="3" maxlength="2000"
-                        placeholder="Message aux joueurs…" class="wydad-input py-3 resize-none"></textarea>
+                        placeholder="Message aux joueurs…" class="paper-input py-3 resize-none"></textarea>
             </div>
           </div>
           <div class="flex justify-end">
             <button type="submit" [disabled]="announcementForm.invalid || isSubmittingAnnouncement"
-                    class="wydad-btn-primary px-8 py-3 disabled:opacity-50">
+                    class="paper-btn-primary px-8 py-3 disabled:opacity-50">
               {{ isSubmittingAnnouncement ? 'Publication…' : 'Publier l\'annonce' }}
             </button>
           </div>
         </form>
       </div>
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        
+
         <!-- ROSTER (Left Side) -->
         <div class="lg:col-span-8 animate-fade-in-up" style="animation-delay: 0.2s; opacity: 0;">
-          <div class="glass-strong rounded-3xl border border-white/5 shadow-card overflow-hidden h-full flex flex-col">
-            
-            <div class="p-6 md:p-8 border-b border-white/[0.04] flex flex-wrap justify-between items-center gap-4 bg-surface-1/50">
-              <h3 class="font-display font-bold text-2xl uppercase tracking-wider flex items-center gap-3">
-                <span class="text-wydad-red">👕</span> Mon Effectif
-              </h3>
-              <span class="bg-surface-3 border border-white/10 px-4 py-1.5 rounded-xl text-xs font-bold uppercase tracking-widest text-text-secondary">
+          <div class="paper-card overflow-hidden h-full flex flex-col">
+
+            <div class="p-6 md:p-8 border-b border-paper-2 flex flex-wrap justify-between items-center gap-4 bg-paper-1/60">
+              <h3 class="section-title-light font-display font-bold text-2xl uppercase tracking-wider flex items-center gap-3">Mon Effectif</h3>
+              <span class="bg-paper-2 border border-paper-3 px-4 py-1.5 rounded-xl text-xs font-bold uppercase tracking-widest text-ink-secondary">
                 {{ players.length }} Joueurs
               </span>
             </div>
-            
+
             <div class="flex-1 overflow-x-auto">
               <table class="w-full text-left border-collapse min-w-[600px]">
                 <thead>
-                  <tr class="bg-surface-1 border-b border-white/5 text-xs text-text-tertiary uppercase tracking-widest font-bold">
+                  <tr class="bg-paper-1 border-b-2 border-wydad-red text-xs text-ink-secondary uppercase tracking-widest font-bold">
                     <th class="p-5 font-bold w-20 text-center">N°</th>
                     <th class="p-5 font-bold">Joueur</th>
                     <th class="p-5 font-bold">Poste</th>
@@ -149,23 +148,23 @@
                     <th class="p-5 font-bold text-center">Actions</th>
                   </tr>
                 </thead>
-                <tbody class="divide-y divide-white/[0.02]">
-                  <tr *ngFor="let player of players" class="hover:bg-surface-2 transition-colors group">
-                    <td class="p-5 font-display font-black text-2xl text-text-muted text-center w-20 group-hover:text-white transition-colors">
+                <tbody class="divide-y divide-paper-2">
+                  <tr *ngFor="let player of players" class="hover:bg-paper-1 transition-colors group">
+                    <td class="p-5 font-display font-black text-2xl text-ink-tertiary text-center w-20 group-hover:text-wydad-red transition-colors">
                       {{ player.jerseyNumber || '-' }}
                     </td>
                     <td class="p-5">
-                      <div class="font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                      <div class="font-bold text-ink-primary uppercase tracking-wider flex items-center gap-2">
                         {{ player.fullName }}
                         <span *ngIf="player.medicalStatus === 'INAPTE'"
-                              class="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-widest bg-red-700/30 text-red-300 border border-red-500/40"
+                              class="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-widest bg-wydad-red/10 text-wydad-red border border-wydad-red/30"
                               title="{{ player.medicalNote || 'Joueur inapte' }}">INAPTE</span>
                       </div>
                     </td>
-                    <td class="p-5 text-text-secondary text-sm font-medium uppercase tracking-widest">
+                    <td class="p-5 text-ink-secondary text-sm font-medium uppercase tracking-widest">
                       {{ player.position || '-' }}
                     </td>
-                    <td class="p-5 text-center font-display font-bold text-lg text-white">
+                    <td class="p-5 text-center font-display font-bold text-lg text-ink-primary">
                       {{ player.matchesPlayed || 0 }}
                     </td>
                     <td class="p-5 text-center font-display font-bold text-lg text-wydad-red">
@@ -174,22 +173,22 @@
                     <td class="p-5 text-center">
                       <div class="flex items-center justify-center gap-2">
                         <button *ngIf="isMedicalStaff" (click)="openMedicalForm(player)"
-                                class="w-10 h-10 rounded-full bg-surface-2 border border-white/5 flex items-center justify-center text-text-tertiary mx-auto hover:bg-purple-600 hover:text-white hover:border-transparent transition-all shadow-lg"
+                                class="w-10 h-10 rounded-full bg-paper-2 border border-paper-3 flex items-center justify-center text-ink-secondary mx-auto hover:bg-purple-100 hover:text-purple-700 hover:border-purple-300 transition-all shadow-sm"
                                 title="Statut médical">
                           <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>
                         </button>
                         <button (click)="openStatForm(player)"
-                                class="w-10 h-10 rounded-full bg-surface-2 border border-white/5 flex items-center justify-center text-text-tertiary mx-auto hover:bg-wydad-red hover:text-white hover:border-transparent transition-all shadow-lg"
+                                class="w-10 h-10 rounded-full bg-paper-2 border border-paper-3 flex items-center justify-center text-ink-secondary mx-auto hover:bg-wydad-red hover:text-white hover:border-wydad-red transition-all shadow-sm"
                                 title="Saisir une stat de match">
                           <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
                         </button>
                         <button (click)="convoquer(player, sessions[0]?.id)" *ngIf="sessions.length > 0" [disabled]="isSubmittingConvo"
-                                class="w-10 h-10 rounded-full bg-surface-2 border border-white/5 flex items-center justify-center text-text-tertiary mx-auto hover:bg-blue-600 hover:text-white hover:border-transparent transition-all shadow-lg disabled:opacity-40"
+                                class="w-10 h-10 rounded-full bg-paper-2 border border-paper-3 flex items-center justify-center text-ink-secondary mx-auto hover:bg-blue-100 hover:text-blue-700 hover:border-blue-300 transition-all shadow-sm disabled:opacity-40"
                                 title="Convoquer pour la prochaine séance">
                           <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                         </button>
                         <button (click)="openConversation(player.userId, player.fullName)"
-                                class="w-10 h-10 rounded-full bg-surface-2 border border-white/5 flex items-center justify-center text-text-tertiary mx-auto hover:bg-green-600 hover:text-white hover:border-transparent transition-all shadow-lg"
+                                class="w-10 h-10 rounded-full bg-paper-2 border border-paper-3 flex items-center justify-center text-ink-secondary mx-auto hover:bg-green-100 hover:text-green-700 hover:border-green-300 transition-all shadow-sm"
                                 title="Écrire au joueur">
                           <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
                         </button>
@@ -198,9 +197,11 @@
                   </tr>
                 </tbody>
               </table>
-              
-              <div *ngIf="players.length === 0" class="flex flex-col items-center justify-center py-20 text-text-tertiary">
-                <div class="text-4xl mb-4 opacity-50">👥</div>
+
+              <div *ngIf="players.length === 0" class="flex flex-col items-center justify-center py-20 text-ink-tertiary">
+                <div class="w-16 h-16 rounded-full bg-paper-2 border border-paper-3 flex items-center justify-center mb-4">
+                  <svg class="w-8 h-8 text-ink-tertiary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                </div>
                 <div class="font-display text-lg uppercase tracking-wider">Aucun joueur assigné.</div>
               </div>
             </div>
@@ -208,34 +209,36 @@
           </div>
         </div>
 
-        <!-- SIDEBAR (Calendar) -->
-        <div class="lg:col-span-4 animate-fade-in-up" style="animation-delay: 0.3s; opacity: 0;">
-          <div class="glass-strong rounded-3xl border border-white/5 shadow-card p-6 md:p-8 h-full flex flex-col">
-            <h3 class="font-display font-bold text-xl uppercase tracking-wider border-b border-white/5 pb-6 mb-6 flex justify-between items-center">
+        <!-- SIDEBAR (Calendar + Messagerie) -->
+        <div class="lg:col-span-4 animate-fade-in-up space-y-8" style="animation-delay: 0.3s; opacity: 0;">
+          <div class="paper-card p-6 md:p-8 h-full flex flex-col">
+            <h3 class="font-display font-bold text-xl uppercase tracking-wider border-b border-paper-2 pb-6 mb-6 flex justify-between items-center">
               Planning
-              <span class="text-xs text-text-secondary bg-surface-2 px-3 py-1 rounded-full">{{ sessions.length }}</span>
+              <span class="text-xs text-ink-secondary bg-paper-2 px-3 py-1 rounded-full">{{ sessions.length }}</span>
             </h3>
-            
-            <div *ngIf="sessions.length === 0" class="flex-1 flex flex-col items-center justify-center text-text-tertiary py-10">
-              <div class="text-3xl mb-3 opacity-50">🗓️</div>
+
+            <div *ngIf="sessions.length === 0" class="flex-1 flex flex-col items-center justify-center text-ink-tertiary py-10">
+              <div class="w-14 h-14 rounded-full bg-paper-2 border border-paper-3 flex items-center justify-center mb-3">
+                <svg class="w-7 h-7 text-ink-tertiary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+              </div>
               <p class="text-sm uppercase tracking-widest text-center">Aucune séance</p>
             </div>
 
             <div class="space-y-4 flex-1">
-              <div *ngFor="let session of sessions" class="flex gap-4 p-4 rounded-2xl bg-surface-1 border border-white/5 hover:border-white/20 hover:bg-surface-2 transition-colors group">
-                
-                <div class="flex flex-col items-center justify-center min-w-[70px] bg-surface-0 rounded-xl border border-white/5 p-2 shrink-0 group-hover:border-wydad-red/30">
+              <div *ngFor="let session of sessions" class="flex gap-4 p-4 rounded-2xl bg-paper-1 border border-paper-3 hover:border-wydad-red/40 hover:bg-paper-2 transition-colors group">
+
+                <div class="flex flex-col items-center justify-center min-w-[70px] bg-white rounded-xl border border-paper-3 p-2 shrink-0 group-hover:border-wydad-red/40">
                   <span class="text-wydad-red font-bold text-[10px] uppercase tracking-widest">{{ session.sessionDate | date:'MMM' }}</span>
-                  <span class="text-2xl font-display font-black text-white">{{ session.sessionDate | date:'dd' }}</span>
+                  <span class="text-2xl font-display font-black text-ink-primary">{{ session.sessionDate | date:'dd' }}</span>
                 </div>
-                
+
                 <div class="flex-1 flex flex-col justify-center min-w-0">
-                  <h4 class="font-bold text-sm text-white mb-1 leading-tight truncate group-hover:text-wydad-red transition-colors">{{ session.title }}</h4>
-                  <div class="flex items-center gap-2 text-[10px] uppercase tracking-widest text-text-secondary font-bold mb-1">
+                  <h4 class="font-bold text-sm text-ink-primary mb-1 leading-tight truncate group-hover:text-wydad-red transition-colors">{{ session.title }}</h4>
+                  <div class="flex items-center gap-2 text-[10px] uppercase tracking-widest text-ink-secondary font-bold mb-1">
                     <span class="w-1.5 h-1.5 rounded-full bg-wydad-red"></span>
                     {{ session.sessionDate | date:'HH:mm' }}
                   </div>
-                  <div class="text-xs text-text-tertiary truncate flex items-center gap-1" [title]="session.location">
+                  <div class="text-xs text-ink-tertiary truncate flex items-center gap-1" [title]="session.location">
                     <svg class="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
                     <span class="truncate">{{ session.location }}</span>
                   </div>
@@ -245,27 +248,28 @@
           </div>
 
           <!-- B.5 — MESSAGERIE : messages reçus des joueurs -->
-          <div class="glass-strong rounded-3xl border border-white/5 shadow-card p-6 md:p-8 mt-8">
-            <h3 class="font-display font-bold text-xl uppercase tracking-wider border-b border-white/5 pb-6 mb-6 flex items-center gap-3">
-              ✉️ Messagerie
-              <span *ngIf="conversationWith" class="text-[10px] text-text-secondary bg-surface-2 px-3 py-1 rounded-full normal-case tracking-normal">avec {{ conversationWith.name }}</span>
+          <div class="paper-card p-6 md:p-8">
+            <h3 class="font-display font-bold text-xl uppercase tracking-wider border-b border-paper-2 pb-6 mb-6 flex items-center gap-3">
+              <svg class="w-5 h-5 text-ink-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+              Messagerie
+              <span *ngIf="conversationWith" class="text-[10px] text-ink-secondary bg-paper-2 px-3 py-1 rounded-full normal-case tracking-normal">avec {{ conversationWith.name }}</span>
             </h3>
 
             <ng-container *ngIf="!conversationWith">
-              <p *ngIf="inbox.length === 0" class="text-text-tertiary text-xs uppercase tracking-widest py-4">
+              <p *ngIf="inbox.length === 0" class="text-ink-tertiary text-xs uppercase tracking-widest py-4">
                 Aucun message reçu.
               </p>
               <div class="space-y-3">
                 <button *ngFor="let m of inbox" (click)="openConversation(m.senderUserId, m.senderName)"
-                        class="w-full text-left flex items-start justify-between gap-3 bg-surface-1 hover:bg-surface-2 rounded-2xl p-4 border border-white/5 hover:border-wydad-red/40 transition-colors group">
+                        class="w-full text-left flex items-start justify-between gap-3 bg-paper-1 hover:bg-paper-2 rounded-2xl p-4 border border-paper-3 hover:border-wydad-red/40 transition-colors group">
                   <div class="min-w-0">
-                    <p class="text-sm font-bold truncate">{{ m.senderName }} <span class="text-[10px] uppercase tracking-widest text-text-tertiary font-normal">{{ m.senderRole }}</span></p>
-                    <p class="text-xs text-text-secondary truncate mt-0.5">{{ m.content }}</p>
+                    <p class="text-sm font-bold truncate text-ink-primary">{{ m.senderName }} <span class="text-[10px] uppercase tracking-widest text-ink-tertiary font-normal">{{ m.senderRole }}</span></p>
+                    <p class="text-xs text-ink-secondary truncate mt-0.5">{{ m.content }}</p>
                   </div>
-                  <p class="shrink-0 text-[10px] uppercase tracking-widest text-text-tertiary">{{ m.createdAt | date:'dd/MM HH:mm' }}</p>
+                  <p class="shrink-0 text-[10px] uppercase tracking-widest text-ink-tertiary">{{ m.createdAt | date:'dd/MM HH:mm' }}</p>
                 </button>
               </div>
-              <button (click)="closeConversation()" class="mt-3 text-[10px] uppercase tracking-widest text-text-tertiary hover:text-white transition-colors">
+              <button (click)="closeConversation()" class="mt-3 text-[10px] uppercase tracking-widest text-ink-tertiary hover:text-wydad-red transition-colors">
                 Actualiser la boîte de réception
               </button>
             </ng-container>
@@ -276,10 +280,10 @@
                      *ngFor="let msg of conversation">
                   <div class="max-w-[85%] rounded-2xl px-4 py-3 border"
                        [ngClass]="auth.getCurrentUserId() == msg.senderUserId
-                         ? 'bg-wydad-red/20 border-wydad-red/30'
-                         : 'bg-surface-1 border-white/10'">
-                    <p class="text-sm whitespace-pre-line break-words">{{ msg.content }}</p>
-                    <p class="text-[10px] uppercase tracking-widest text-text-tertiary mt-1">{{ msg.createdAt | date:'dd/MM HH:mm' }}</p>
+                         ? 'bg-wydad-red/10 border-wydad-red/30'
+                         : 'bg-paper-1 border-paper-3'">
+                    <p class="text-sm whitespace-pre-line break-words text-ink-primary">{{ msg.content }}</p>
+                    <p class="text-[10px] uppercase tracking-widest text-ink-tertiary mt-1">{{ msg.createdAt | date:'dd/MM HH:mm' }}</p>
                   </div>
                 </div>
               </div>
@@ -288,91 +292,95 @@
                 <input id="staff-message-draft" type="text" [(ngModel)]="messageDraft" maxlength="500"
                        (keyup.enter)="sendMessageToPlayer()"
                        placeholder="Répondre à {{ conversationWith.name }}…"
-                       class="flex-1 bg-surface-2 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-wydad-red outline-none">
+                       class="paper-input flex-1 rounded-xl px-4 py-3 text-sm">
                 <button (click)="sendMessageToPlayer()" [disabled]="!messageDraft.trim() || sendingMessage"
-                        class="bg-wydad-red hover:bg-red-700 disabled:opacity-40 px-5 py-3 rounded-xl text-xs font-bold uppercase tracking-widest transition-colors">
+                        class="bg-wydad-red hover:bg-wydad-red-dark disabled:opacity-40 text-white px-5 py-3 rounded-xl text-xs font-bold uppercase tracking-widest transition-colors">
                   {{ sendingMessage ? '…' : 'Envoyer' }}
                 </button>
               </div>
-              <button (click)="closeConversation()" class="mt-3 text-[10px] uppercase tracking-widest text-text-tertiary hover:text-white transition-colors">
-                ← Boîte de réception
+              <button (click)="closeConversation()" class="mt-3 text-[10px] uppercase tracking-widest text-ink-tertiary hover:text-wydad-red transition-colors">
+                &larr; Boîte de réception
               </button>
             </ng-container>
           </div>
 
-    <!-- B.6 — MODAL STATUT MEDICAL (staff médical uniquement, contrôle serveur) -->
-    <div *ngIf="showMedicalForm && medicalPlayer" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm" (click)="closeMedicalForm()">
-      <div class="glass-strong rounded-3xl border border-purple-500/30 p-8 w-full max-w-md animate-fade-in relative z-10" (click)="$event.stopPropagation()">
-        <h2 class="font-display text-xl font-bold uppercase tracking-wider mb-1">
-          Statut médical — <span class="text-purple-400">{{ medicalPlayer.fullName }}</span>
-        </h2>
-        <p class="text-text-tertiary text-xs uppercase tracking-widest mb-6">
-          Réservé au staff médical · le serveur revalide (403 sinon)
-        </p>
+          <!-- B.6 — MODAL STATUT MEDICAL (staff médical uniquement, contrôle serveur) -->
+          <div *ngIf="showMedicalForm && medicalPlayer" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" (click)="closeMedicalForm()" role="dialog" aria-modal="true">
+            <div class="bg-white rounded-3xl border border-purple-300 p-8 w-full max-w-md animate-fade-in relative z-10 shadow-lg" (click)="$event.stopPropagation()">
+              <h2 class="font-display text-xl font-bold uppercase tracking-wider mb-1 text-ink-primary">
+                Statut médical — <span class="text-purple-700">{{ medicalPlayer.fullName }}</span>
+              </h2>
+              <p class="text-ink-tertiary text-xs uppercase tracking-widest mb-6">
+                Réservé au staff médical · le serveur revalide (403 sinon)
+              </p>
 
-        <label class="wydad-label text-xs" for="medical-note-input">Motif / note médicale</label>
-        <textarea id="medical-note-input" rows="3" maxlength="500" [(ngModel)]="medicalNoteDraft"
-                  placeholder="Ex : entorse cheville droite, repos 3 semaines…"
-                  class="wydad-input py-3 resize-none mb-6"></textarea>
+              <label class="block text-[11px] font-bold uppercase tracking-widest text-ink-secondary mb-2" for="medical-note-input">Motif / note médicale</label>
+              <textarea id="medical-note-input" rows="3" maxlength="500" [(ngModel)]="medicalNoteDraft"
+                        placeholder="Ex : entorse cheville droite, repos 3 semaines…"
+                        class="paper-input py-3 resize-none mb-6"></textarea>
 
-        <div class="flex gap-3">
-          <button (click)="setPlayerMedicalStatus('APT')" [disabled]="isSubmittingMedical"
-                  class="flex-1 bg-green-600 hover:bg-green-700 disabled:opacity-50 rounded-xl py-3 text-xs font-bold uppercase tracking-widest transition-colors">
-            Déclarer APT
-          </button>
-          <button (click)="setPlayerMedicalStatus('INAPTE')" [disabled]="isSubmittingMedical || !medicalNoteDraft.trim()"
-                  class="flex-1 bg-red-700 hover:bg-red-800 disabled:opacity-50 rounded-xl py-3 text-xs font-bold uppercase tracking-widest transition-colors">
-            Déclarer INAPTE
-          </button>
+              <div class="flex gap-3">
+                <button (click)="setPlayerMedicalStatus('APT')" [disabled]="isSubmittingMedical"
+                        class="flex-1 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white rounded-xl py-3 text-xs font-bold uppercase tracking-widest transition-colors">
+                  Déclarer APT
+                </button>
+                <button (click)="setPlayerMedicalStatus('INAPTE')" [disabled]="isSubmittingMedical || !medicalNoteDraft.trim()"
+                        class="flex-1 bg-wydad-red hover:bg-wydad-red-dark disabled:opacity-50 text-white rounded-xl py-3 text-xs font-bold uppercase tracking-widest transition-colors">
+                  Déclarer INAPTE
+                </button>
+              </div>
+              <button type="button" (click)="closeMedicalForm()"
+                      class="mt-3 w-full bg-paper-1 hover:bg-paper-2 text-ink-primary border border-paper-3 rounded-xl py-2.5 text-xs font-bold uppercase tracking-widest transition-colors">Annuler</button>
+            </div>
+          </div>
+
+          <!-- B.4 — MODAL SAISIE STAT DE MATCH -->
+          <div *ngIf="showStatForm && statPlayer" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" (click)="closeStatForm()" role="dialog" aria-modal="true">
+            <div class="bg-white rounded-3xl border border-wydad-red/40 p-8 w-full max-w-lg animate-fade-in relative z-10 shadow-lg" (click)="$event.stopPropagation()">
+              <h2 class="font-display text-2xl font-bold uppercase tracking-wider mb-1 text-ink-primary">
+                Stat de match — <span class="text-wydad-red">{{ statPlayer.fullName }}</span>
+              </h2>
+              <p class="text-ink-tertiary text-xs uppercase tracking-widest mb-6">Une ligne par rencontre — totaux recalculés automatiquement</p>
+
+              <form [formGroup]="statForm" (ngSubmit)="submitStat()">
+                <div class="grid grid-cols-2 gap-4 mb-6">
+                  <div class="col-span-2">
+                    <label class="block text-[11px] font-bold uppercase tracking-widest text-ink-secondary mb-2" for="stat-opponent">Adversaire *</label>
+                    <input id="stat-opponent" type="text" formControlName="opponent" placeholder="Ex : Raja U19" class="paper-input py-3">
+                  </div>
+                  <div>
+                    <label class="block text-[11px] font-bold uppercase tracking-widest text-ink-secondary mb-2" for="stat-date">Date du match *</label>
+                    <input id="stat-date" type="date" formControlName="matchDate" class="paper-input py-3 [color-scheme:light]">
+                  </div>
+                  <div>
+                    <label class="block text-[11px] font-bold uppercase tracking-widest text-ink-secondary mb-2" for="stat-competition">Compétition</label>
+                    <input id="stat-competition" type="text" formControlName="competition" placeholder="Championnat U19…" class="paper-input py-3">
+                  </div>
+                  <div>
+                    <label class="block text-[11px] font-bold uppercase tracking-widest text-ink-secondary mb-2" for="stat-goals">Buts</label>
+                    <input id="stat-goals" type="number" min="0" formControlName="goals" class="paper-input py-3">
+                  </div>
+                  <div>
+                    <label for="stat-assists" class="block text-[11px] font-bold uppercase tracking-widest text-ink-secondary mb-2">Passes décisives</label>
+                    <input id="stat-assists" type="number" min="0" formControlName="assists" class="paper-input py-3">
+                  </div>
+                  <div class="col-span-2">
+                    <label class="block text-[11px] font-bold uppercase tracking-widest text-ink-secondary mb-2" for="stat-minutes">Minutes jouées</label>
+                    <input id="stat-minutes" type="number" min="0" max="120" formControlName="minutesPlayed" class="paper-input py-3">
+                  </div>
+                </div>
+                <div class="flex justify-end gap-3">
+                  <button type="button" (click)="closeStatForm()"
+                          class="bg-paper-1 hover:bg-paper-2 text-ink-primary border border-paper-3 rounded-xl px-6 py-3 text-xs font-bold uppercase tracking-widest transition-colors">Annuler</button>
+                  <button type="submit" [disabled]="statForm.invalid || isSubmittingStat"
+                          class="paper-btn-primary px-8 py-3 disabled:opacity-50">
+                    {{ isSubmittingStat ? 'Enregistrement…' : 'Enregistrer la stat' }}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
         </div>
-        <button type="button" (click)="closeMedicalForm()"
-                class="mt-3 w-full bg-surface-2 hover:bg-surface-3 border border-white/10 rounded-xl py-2.5 text-xs font-bold uppercase tracking-widest transition-colors">Annuler</button>
-      </div>
-    </div>
-
-    <!-- B.4 — MODAL SAISIE STAT DE MATCH -->    <div *ngIf="showStatForm && statPlayer" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm" (click)="closeStatForm()">
-      <div class="glass-strong rounded-3xl border border-wydad-red/30 p-8 w-full max-w-lg animate-fade-in relative z-10 shadow-[0_0_50px_rgba(220,20,60,0.15)]" (click)="$event.stopPropagation()">
-        <h2 class="font-display text-2xl font-bold uppercase tracking-wider mb-1">
-          Stat de match — <span class="text-wydad-red">{{ statPlayer.fullName }}</span>
-        </h2>
-        <p class="text-text-tertiary text-xs uppercase tracking-widest mb-6">Une ligne par rencontre — totaux recalculés automatiquement</p>
-
-        <form [formGroup]="statForm" (ngSubmit)="submitStat()">
-          <div class="grid grid-cols-2 gap-4 mb-6">
-            <div class="col-span-2">
-              <label class="wydad-label text-xs" for="stat-opponent">Adversaire *</label>
-              <input id="stat-opponent" type="text" formControlName="opponent" placeholder="Ex : Raja U19" class="wydad-input py-3">
-            </div>
-            <div>
-              <label class="wydad-label text-xs" for="stat-date">Date du match *</label>
-              <input id="stat-date" type="date" formControlName="matchDate" class="wydad-input py-3 [color-scheme:dark]">
-            </div>
-            <div>
-              <label class="wydad-label text-xs" for="stat-competition">Compétition</label>
-              <input id="stat-competition" type="text" formControlName="competition" placeholder="Championnat U19…" class="wydad-input py-3">
-            </div>
-            <div>
-              <label class="wydad-label text-xs" for="stat-goals">Buts</label>
-              <input id="stat-goals" type="number" min="0" formControlName="goals" class="wydad-input py-3">
-            </div>
-            <div>
-              <label class="wydad-label text-xs" for="stat-assists">Passes décisives</label>
-              <input id="stat-assists" type="number" min="0" formControlName="assists" class="wydad-input py-3">
-            </div>
-            <div class="col-span-2">
-              <label class="wydad-label text-xs" for="stat-minutes">Minutes jouées</label>
-              <input id="stat-minutes" type="number" min="0" max="120" formControlName="minutesPlayed" class="wydad-input py-3">
-            </div>
-          </div>
-          <div class="flex justify-end gap-3">
-            <button type="button" (click)="closeStatForm()"
-                    class="bg-surface-2 hover:bg-surface-3 border border-white/10 rounded-xl px-6 py-3 text-xs font-bold uppercase tracking-widest transition-colors">Annuler</button>
-            <button type="submit" [disabled]="statForm.invalid || isSubmittingStat"
-                    class="wydad-btn-primary px-8 py-3 disabled:opacity-50">
-              {{ isSubmittingStat ? 'Enregistrement…' : 'Enregistrer la stat' }}
-            </button>
-          </div>
-        </form>
       </div>
     </div>
   </div>

@@ -1,17 +1,16 @@
 <!-- ═══════════════════════════════════════════════════════════ -->
-<!-- WYDAD DIGITAL — SONDAGES (B.2)                            -->
+<!-- WYDAD DIGITAL — SONDAGES (B.2) — thème clair blanc/rouge  -->
 <!-- Donnees 100% backend : question, options, resultats, mon vote -->
 <!-- ═══════════════════════════════════════════════════════════ -->
-<div class="min-h-screen bg-surface-0 pt-28 pb-24">
+<div class="min-h-screen bg-paper-1 light-page pt-28 pb-24">
 
   <!-- Header -->
   <div class="container-wydad mb-14 text-center relative">
-    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[420px] h-[260px] bg-red-glow opacity-30 pointer-events-none"></div>
     <span class="text-wydad-red font-bold tracking-[0.3em] uppercase text-xs mb-3 block relative z-10">La voix des supporters</span>
-    <h1 class="font-display font-black text-hero uppercase tracking-tighter text-white relative z-10">
+    <h1 class="font-display font-black text-hero uppercase tracking-tighter text-ink-primary relative z-10">
       Sondages <span class="text-wydad-red">WAC</span>
     </h1>
-    <p class="text-text-secondary mt-4 max-w-2xl mx-auto relative z-10">
+    <p class="text-ink-secondary mt-4 max-w-2xl mx-auto relative z-10">
       Donnez votre avis sur les sujets qui font vibrer le club. Un seul vote par membre — les résultats sont comptés côté club, en direct.
     </p>
   </div>
@@ -19,7 +18,7 @@
   <div class="container-wydad max-w-3xl">
 
     <!-- Bandeau non connecté -->
-    <div *ngIf="!isLoggedIn()" class="glass rounded-xl p-4 mb-8 text-sm text-text-secondary text-center">
+    <div *ngIf="!isLoggedIn()" role="status" class="paper-card rounded-xl p-4 mb-8 text-sm text-ink-secondary text-center">
       <a routerLink="/login" class="text-wydad-red font-bold hover:underline">Connectez-vous</a>
       pour participer aux sondages.
     </div>
@@ -31,13 +30,13 @@
                       (retry)="retry()" />
 
     <!-- Skeleton -->
-    <div *ngIf="loading" class="space-y-6">
-      <div *ngFor="let s of [1,2]" class="rounded-2xl border border-white/[0.06] p-8">
-        <div class="h-5 skeleton w-2/3 mb-6"></div>
+    <div *ngIf="loading" class="space-y-6" role="status" aria-label="Chargement des sondages">
+      <div *ngFor="let s of [1,2]" class="rounded-2xl border border-paper-3 bg-paper-0 shadow-paper-card p-8">
+        <div class="h-5 w-2/3 mb-6 rounded" style="background: linear-gradient(90deg, #EFEFF1 25%, #E5E5E8 50%, #EFEFF1 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite;"></div>
         <div class="space-y-3">
-          <div class="h-10 skeleton w-full"></div>
-          <div class="h-10 skeleton w-full"></div>
-          <div class="h-10 skeleton w-3/4"></div>
+          <div class="h-10 w-full rounded" style="background: linear-gradient(90deg, #EFEFF1 25%, #E5E5E8 50%, #EFEFF1 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite;"></div>
+          <div class="h-10 w-full rounded" style="background: linear-gradient(90deg, #EFEFF1 25%, #E5E5E8 50%, #EFEFF1 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite;"></div>
+          <div class="h-10 w-3/4 rounded" style="background: linear-gradient(90deg, #EFEFF1 25%, #E5E5E8 50%, #EFEFF1 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite;"></div>
         </div>
       </div>
     </div>
@@ -46,49 +45,50 @@
     <div *ngIf="!loading" class="space-y-8">
 
       <div *ngIf="polls.length === 0" class="text-center py-20">
-        <div class="glass rounded-2xl p-12 max-w-md mx-auto">
-          <svg class="w-16 h-16 text-text-muted mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="paper-card rounded-2xl p-12 max-w-md mx-auto">
+          <svg class="w-16 h-16 text-ink-tertiary mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
                   d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
           </svg>
-          <p class="text-text-tertiary font-display text-lg uppercase tracking-wider">Aucun sondage en cours</p>
-          <p class="text-text-muted text-sm mt-2">Revenez bientôt : le club lance régulièrement de nouveaux sondages.</p>
+          <p class="text-ink-secondary font-display text-lg uppercase tracking-wider">Aucun sondage en cours</p>
+          <p class="text-ink-tertiary text-sm mt-2">Revenez bientôt : le club lance régulièrement de nouveaux sondages.</p>
         </div>
       </div>
 
-      <article *ngFor="let poll of polls" class="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-8">
+      <article *ngFor="let poll of polls" class="paper-card rounded-2xl p-8">
         <header class="mb-6">
-          <h2 class="font-display font-bold text-xl text-white leading-snug">{{ poll.question }}</h2>
-          <p class="text-xs text-text-muted mt-2 uppercase tracking-wider">
+          <h2 class="font-display font-bold text-xl text-ink-primary leading-snug">{{ poll.question }}</h2>
+          <p class="text-xs text-ink-tertiary mt-2 uppercase tracking-wider">
             {{ poll.totalVotes }} vote{{ poll.totalVotes > 1 ? 's' : '' }}
             <span *ngIf="!poll.active"> · Clôturé</span>
           </p>
         </header>
 
         <!-- Options -->
-        <div class="space-y-3">
+        <div class="space-y-3" role="group" [attr.aria-label]="'Options : ' + poll.question">
           <button *ngFor="let option of poll.options; let i = index"
+                  type="button"
                   (click)="vote(poll, i)"
                   [disabled]="!poll.active || !isLoggedIn() || poll.myVoteIndex !== null || votingPollId === poll.id"
-                  class="relative w-full text-left rounded-lg overflow-hidden border transition-colors group"
+                  class="relative w-full text-left rounded-lg overflow-hidden border transition-colors group bg-paper-0"
                   [ngClass]="{
-                    'border-wydad-red/60': poll.myVoteIndex === i,
-                    'border-white/10': poll.myVoteIndex !== i,
-                    'cursor-default': poll.myVoteIndex !== null || !poll.active,
-                    'hover:border-wydad-red/40': poll.active && isLoggedIn() && poll.myVoteIndex === null
+                    'border-wydad-red bg-wydad-red/[0.06]': poll.myVoteIndex === i,
+                    'border-paper-3 hover:border-wydad-red/50 hover:bg-paper-1': poll.myVoteIndex !== i,
+                    'cursor-default': poll.myVoteIndex !== null || !poll.active
                   }">
 
             <!-- Barre de résultat en fond -->
             <span *ngIf="poll.myVoteIndex !== null || !poll.active"
-                  class="absolute inset-y-0 left-0 bg-wydad-red/20 transition-all duration-700"
+                  class="absolute inset-y-0 left-0 bg-wydad-red/15 transition-all duration-700"
                   [style.width.%]="percents(poll)[i]"></span>
 
             <span class="relative z-10 flex items-center justify-between px-4 py-3">
               <span class="flex items-center gap-3 text-sm"
-                    [class.text-white]="poll.myVoteIndex === i"
-                    [class.text-text-secondary]="poll.myVoteIndex !== i">
+                    [class.text-ink-primary]="poll.myVoteIndex === i"
+                    [class.font-semibold]="poll.myVoteIndex === i"
+                    [class.text-ink-secondary]="poll.myVoteIndex !== i">
                 <svg *ngIf="poll.myVoteIndex === i" class="w-4 h-4 text-wydad-red flex-shrink-0"
-                     fill="currentColor" viewBox="0 0 20 20">
+                     fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
                   <path fill-rule="evenodd"
                         d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/>
                 </svg>
@@ -103,12 +103,12 @@
         </div>
 
         <!-- Invitations contextuelles -->
-        <p *ngIf="poll.active && isLoggedIn() && poll.myVoteIndex === null"
-           class="mt-4 text-xs text-text-muted">
+        <p *ngIf="poll.active && isLoggedIn() && poll.myVoteIndex === null" role="status"
+           class="mt-4 text-xs text-ink-tertiary">
           Cliquez sur une option pour voter. Le vote est définitif.
         </p>
-        <p *ngIf="!isLoggedIn() && poll.active"
-           class="mt-4 text-xs text-text-muted">
+        <p *ngIf="!isLoggedIn() && poll.active" role="status"
+           class="mt-4 text-xs text-ink-tertiary">
           Les résultats sont révélés après votre vote.
         </p>
       </article>

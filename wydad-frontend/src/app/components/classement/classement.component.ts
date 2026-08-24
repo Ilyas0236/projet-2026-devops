@@ -30,20 +30,6 @@ export class ClassementComponent implements OnInit {
     });
   }
 
-  /** Emoji du sport depuis le parametre club (plus de matching par nom). */
-  sportEmoji(name: string): string {
-    const comp = this.competitions.find(c => c.name === name);
-    switch (comp?.sport) {
-      case 'BASKETBALL': return '🏀';
-      case 'HANDBALL': return '🤾';
-      case 'VOLLEYBALL': return '🏐';
-      case 'NATATION': return '🏊';
-      case 'JUDO': return '🥋';
-      case 'ATHLETISME': return '🏃';
-      default: return '⚽';
-    }
-  }
-
   loadStandings() {
     this.api.getClassements(this.selectedComp).subscribe({
       next: (data) => {
