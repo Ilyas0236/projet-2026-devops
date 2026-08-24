@@ -118,6 +118,27 @@ export class ApiService {
     return this.http.delete<any>(`${this.baseUrl}/content/joueurs/${id}`);
   }
 
+  // --- Palmarès du club : lecture publique, écriture ADMIN (TrophySecurityTest) ---
+  getPublicTrophies(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/content/trophies/public`);
+  }
+
+  getAllTrophies(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/content/trophies`);
+  }
+
+  createTrophy(trophy: any): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/content/trophies`, trophy);
+  }
+
+  updateTrophy(id: number, trophy: any): Observable<any> {
+    return this.http.put<any>(`${this.baseUrl}/content/trophies/${id}`, trophy);
+  }
+
+  deleteTrophy(id: number): Observable<any> {
+    return this.http.delete<any>(`${this.baseUrl}/content/trophies/${id}`);
+  }
+
   // Parametres club (paliers adhesion, coordonnees) — source de verite ADMIN
   getClubSettings(): Observable<any[]> {
     return this.http.get<any[]>(`${this.baseUrl}/content/settings`);

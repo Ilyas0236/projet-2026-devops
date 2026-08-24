@@ -6,6 +6,7 @@ import { DashboardComponent } from './pages/admin/dashboard/dashboard.component'
 import { BoutiqueComponent } from './pages/boutique/boutique.component';
 import { BilletterieComponent } from './pages/billetterie/billetterie.component';
 import { EffectifComponent } from './components/effectif/effectif.component';
+import { PalmaresComponent } from './pages/palmares/palmares.component';
 import { AdminBoutiqueComponent } from './pages/admin/admin-boutique/admin-boutique.component';
 import { AdminBilletterieComponent } from './pages/admin/admin-billetterie/admin-billetterie.component';
 import { AdminEffectifComponent } from './pages/admin/admin-effectif/admin-effectif.component';
@@ -50,6 +51,7 @@ import { AdminCommandesComponent } from './pages/admin/admin-commandes/admin-com
 import { AdminBadgesComponent } from './pages/admin/admin-badges/admin-badges.component';
 import { AdminSeancesComponent } from './pages/admin/admin-seances/admin-seances.component';
 import { AdminJoueursPublicComponent } from './pages/admin/admin-joueurs-public/admin-joueurs-public.component';
+import { AdminPalmaresComponent } from './pages/admin/admin-palmares/admin-palmares.component';
 export const routes: Routes = [
   {
     // L'arbre admin DOIT être déclaré avant le layout public : celui-ci
@@ -69,6 +71,7 @@ export const routes: Routes = [
       { path: 'billetterie', component: AdminBilletterieComponent },
       { path: 'effectif', component: AdminEffectifComponent },
       { path: 'effectif-public', component: AdminJoueursPublicComponent },
+      { path: 'palmares', component: AdminPalmaresComponent },
       { path: 'seances', component: AdminSeancesComponent },
       { path: 'staff', component: AdminStaffComponent },
       { path: 'academie', component: AdminAcademieComponent },
@@ -97,6 +100,7 @@ export const routes: Routes = [
       { path: 'billetterie', component: BilletterieComponent },
       { path: 'billetterie/:id', component: BilletterieDetailComponent },
       { path: 'effectif', component: EffectifComponent },
+      { path: 'palmares', component: PalmaresComponent },
       { path: 'espace-fan', component: EspaceFanComponent, canActivate: [authGuard] },
       { path: 'sondages', component: SondagesComponent },
       { path: 'panier', component: CartComponent, canActivate: [authGuard] },
