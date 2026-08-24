@@ -12,38 +12,38 @@ interface MembershipTier {
   features: string[];
 }
 
-// Styles techniques (couleurs/gradients Tailwind) par niveau de membership.
+// Styles techniques (couleurs/gradients Tailwind) par niveau de membership — thème clair.
 // Les donnees metier (noms, prix, avantages) viennent exclusivement de l'API.
 const TIER_STYLES: Record<string, { color: string; gradient: string; borderColor: string; glowClass: string }> = {
   JUNIOR: {
-    color: 'text-text-secondary',
-    gradient: 'from-surface-4 to-surface-3',
-    borderColor: 'border-white/[0.06]',
+    color: 'text-ink-secondary',
+    gradient: 'from-paper-2 to-paper-1',
+    borderColor: 'border-paper-3',
     glowClass: ''
   },
   ROUGE: {
     color: 'text-wydad-red',
-    gradient: 'from-red-950 to-surface-3',
-    borderColor: 'border-wydad-red/30',
+    gradient: 'from-red-50 to-paper-1',
+    borderColor: 'border-wydad-red/40',
     glowClass: 'hover:shadow-glow-red'
   },
   OR: {
-    color: 'text-wydad-gold',
-    gradient: 'from-yellow-950 to-surface-3',
-    borderColor: 'border-wydad-gold/30',
-    glowClass: 'hover:shadow-glow-gold'
+    color: 'text-amber-600',
+    gradient: 'from-amber-50 to-paper-1',
+    borderColor: 'border-amber-400/50',
+    glowClass: 'hover:shadow-[0_8px_30px_rgba(217,119,6,0.15)]'
   },
   DIAMANT: {
-    color: 'tier-diamant',
-    gradient: 'from-cyan-950 to-surface-3',
-    borderColor: 'border-tier-diamant/30',
-    glowClass: 'hover:shadow-[0_0_30px_rgba(185,242,255,0.2)]'
+    color: 'text-cyan-700',
+    gradient: 'from-cyan-50 to-paper-1',
+    borderColor: 'border-cyan-400/50',
+    glowClass: 'hover:shadow-[0_8px_30px_rgba(8,145,178,0.15)]'
   },
   LEGENDE: {
-    color: 'tier-legende',
-    gradient: 'from-purple-950 to-surface-3',
-    borderColor: 'border-tier-legende/30',
-    glowClass: 'hover:shadow-[0_0_30px_rgba(156,39,176,0.2)]'
+    color: 'text-purple-700',
+    gradient: 'from-purple-50 to-paper-1',
+    borderColor: 'border-purple-400/50',
+    glowClass: 'hover:shadow-[0_8px_30px_rgba(147,51,234,0.15)]'
   }
 };
 

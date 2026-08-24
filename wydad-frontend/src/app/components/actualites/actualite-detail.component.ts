@@ -17,7 +17,7 @@ import { ApiService } from '../../services/api.service';
       </div>
 
       <!-- COVER IMAGE -->
-      <div class="cover-image" [style.backgroundImage]="'url(' + (article.imageUrl || 'assets/images/defaults/default-news-cover.jpg') + ')'"></div>
+      <div class="cover-image" [style.backgroundImage]="'url(' + (article.imageUrl || 'assets/images/defaults/default-news-2.svg') + ')'"></div>
 
       <!-- ARTICLE BODY -->
       <div class="article-card">

@@ -145,7 +145,7 @@
                      placeholder="votre@email.ma" [disabled]="newsletterBusy"
                      (keyup.enter)="subscribeNewsletter()"
                      class="flex-1 min-w-0 bg-white/10 border border-white/25 rounded px-3 py-2 text-sm text-white placeholder:text-white/50 focus:outline-none focus:border-white">
-              <button (click)="subscribeNewsletter()" [disabled]="newsletterBusy || !newsletterEmail?.trim()"
+              <button (click)="subscribeNewsletter()" [disabled]="newsletterBusy || !newsletterEmail.trim()"
                       class="bg-white text-wydad-red font-display text-xs uppercase tracking-widest px-4 py-2 shrink-0 disabled:opacity-40 hover:bg-paper-1 transition-colors">
                 OK
               </button>

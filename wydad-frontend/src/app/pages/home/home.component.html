@@ -1,52 +1,47 @@
 <!-- ═══════════════════════════════════════════════════════════ -->
-<!-- WYDAD DIGITAL — HOME PAGE (Premium Dark Mode)            -->
+<!-- WYDAD DIGITAL — HOME PAGE (thème clair blanc/rouge, Lot 1) -->
 <!-- ═══════════════════════════════════════════════════════════ -->
-<div class="bg-surface-0 text-white w-full overflow-hidden">
+<div class="bg-paper-0 text-ink-primary w-full overflow-hidden">
 
   <!-- ─── HERO SECTION ────────────────────────────────────── -->
-  <section class="relative w-full h-screen min-h-[700px] flex items-center justify-center overflow-hidden">
-    <!-- Background -->
-    <div class="absolute inset-0 z-0 bg-black">
-      <div class="absolute inset-0 bg-cover bg-center opacity-40 transform scale-105 animate-slow-zoom"
+  <section class="relative w-full h-screen min-h-[700px] flex items-center justify-center overflow-hidden bg-hero-light">
+    <!-- Photo stadium en voile très léger sur le dégradé blanc -> rouge pâle -->
+    <div class="absolute inset-0 z-0">
+      <div class="absolute inset-0 bg-cover bg-center opacity-[0.08] transform scale-105"
            style="background-image: url('assets/images/backgrounds/hero-stadium.jpg');"></div>
-      <div class="absolute inset-0 bg-gradient-to-t from-surface-0 via-surface-0/60 to-transparent"></div>
-      <div class="absolute inset-0 bg-gradient-to-r from-surface-0/80 to-transparent"></div>
     </div>
 
     <!-- Red accent line top -->
-    <div class="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-wydad-red to-transparent z-20"></div>
-
-    <!-- Zellige watermark -->
-    <div class="absolute inset-0 zellige-bg z-[1]"></div>
+    <div class="absolute top-0 left-0 w-full h-[3px] bg-gradient-to-r from-transparent via-wydad-red to-transparent z-20"></div>
 
     <!-- Content -->
     <div class="relative z-10 text-left px-6 sm:px-8 max-w-7xl mx-auto w-full mt-10">
       <!-- Season badge -->
       <div class="mb-6 animate-fade-in-up" style="animation-delay: 0.2s; opacity: 0;">
-        <span *ngIf="saison" class="inline-flex items-center gap-2 bg-wydad-red/20 text-wydad-red text-[11px] font-bold tracking-[0.2em] uppercase px-4 py-1.5 rounded-full border border-wydad-red/30">
+        <span *ngIf="saison" class="inline-flex items-center gap-2 bg-wydad-red/10 text-wydad-red text-[11px] font-bold tracking-[0.2em] uppercase px-4 py-1.5 rounded-full border border-wydad-red/25">
           <span class="w-1.5 h-1.5 bg-wydad-red rounded-full animate-pulse"></span>
           Saison {{ saison }}
         </span>
       </div>
 
       <!-- Hero Title -->
-      <h1 class="font-display font-black text-hero uppercase tracking-tighter leading-[0.85] mb-6 animate-fade-in-up" style="animation-delay: 0.4s; opacity: 0;">
+      <h1 class="font-display font-black text-hero uppercase tracking-tighter leading-[0.85] mb-6 text-ink-primary animate-fade-in-up" style="animation-delay: 0.4s; opacity: 0;">
         Ensemble<br/>
         Vers La <span class="text-wydad-red">Gloire</span>
       </h1>
 
       <!-- Subtitle -->
-      <p class="text-text-secondary text-lg md:text-xl max-w-xl mb-10 font-sans leading-relaxed animate-fade-in-up" style="animation-delay: 0.6s; opacity: 0;">
+      <p class="text-ink-secondary text-lg md:text-xl max-w-xl mb-10 font-sans leading-relaxed animate-fade-in-up" style="animation-delay: 0.6s; opacity: 0;">
         Bienvenue sur le portail officiel du Wydad Athletic Club.
         L'histoire s'écrit ici. <span class="text-wydad-red font-semibold">Dima Wydad.</span>
       </p>
 
       <!-- CTA Buttons -->
       <div class="flex flex-col sm:flex-row items-start gap-4 animate-fade-in-up" style="animation-delay: 0.8s; opacity: 0;">
-        <a routerLink="/billetterie" class="wydad-btn-skew px-8 py-4 text-base">
+        <a routerLink="/billetterie" class="paper-btn-primary px-8 py-4 text-base">
           <span>Acheter des Billets</span>
         </a>
-        <a routerLink="/boutique" class="wydad-btn-secondary px-8 py-4 text-base font-display tracking-widest uppercase">
+        <a routerLink="/boutique" class="paper-btn-outline px-8 py-4 text-base font-display tracking-widest uppercase">
           Découvrir la Boutique
         </a>
       </div>
@@ -54,41 +49,38 @@
 
     <!-- Scroll indicator -->
     <div class="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 animate-bounce z-10">
-      <span class="text-[10px] uppercase tracking-[0.3em] text-text-tertiary font-bold">Scroll</span>
+      <span class="text-[10px] uppercase tracking-[0.3em] text-ink-tertiary font-bold">Scroll</span>
       <div class="w-px h-10 bg-gradient-to-b from-wydad-red/60 to-transparent"></div>
     </div>
   </section>
 
 
   <!-- ─── NEXT MATCH SECTION ──────────────────────────────── -->
-  <section class="py-20 md:py-28 bg-surface-0 relative">
-    <!-- Red glow background effect -->
-    <div class="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-red-glow opacity-50 pointer-events-none"></div>
-
+  <section class="py-20 md:py-28 bg-paper-1 relative">
     <div class="container-wydad relative z-10">
       <!-- Section Header -->
       <div class="flex items-end justify-between mb-14">
         <div>
-          <span class="text-wydad-red font-bold text-xs uppercase tracking-[0.2em] mb-2 block">Calendrier</span>
+          <span class="section-title-light">Calendrier</span>
           <h2 class="font-display font-bold text-headline uppercase tracking-tight">
             Prochain <span class="text-wydad-red">Match</span>
           </h2>
         </div>
-        <a routerLink="/matchs" class="hidden md:flex items-center gap-2 text-sm font-semibold text-text-secondary hover:text-white transition-colors group">
+        <a routerLink="/matchs" class="hidden md:flex items-center gap-2 text-sm font-semibold text-ink-secondary hover:text-wydad-red transition-colors group">
           Calendrier complet
           <svg class="w-4 h-4 text-wydad-red group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
         </a>
       </div>
 
       <!-- Match Card -->
-      <div *ngIf="nextMatch" class="glass-strong rounded-2xl overflow-hidden group animate-fade-in-up">
+      <div *ngIf="nextMatch" class="bg-white paper-card rounded-2xl overflow-hidden group animate-fade-in-up shadow-paper-card">
         <!-- Competition bar -->
-        <div class="h-1 bg-gradient-to-r from-wydad-red via-wydad-gold to-wydad-red"></div>
+        <div class="h-1 red-band"></div>
 
         <div class="p-8 md:p-14 flex flex-col md:flex-row items-center justify-between gap-10">
           <!-- Home Team -->
           <div class="flex flex-col items-center gap-4 flex-1">
-            <div class="w-28 h-28 md:w-36 md:h-36 rounded-full bg-surface-4 flex items-center justify-center shadow-glow-red border border-wydad-red/10 transition-all duration-500 group-hover:shadow-glow-red-lg">
+            <div class="w-28 h-28 md:w-36 md:h-36 rounded-full bg-paper-1 flex items-center justify-center border border-paper-3 transition-all duration-500 group-hover:border-wydad-red/40">
               <span class="font-display font-bold text-4xl md:text-5xl text-wydad-red">
                 {{ nextMatch.homeTeam === 'Wydad AC' ? 'WAC' : nextMatch.homeTeam.substring(0,3).toUpperCase() }}
               </span>
@@ -98,20 +90,20 @@
 
           <!-- Match Info Center -->
           <div class="flex flex-col items-center gap-3 flex-1 text-center">
-            <span class="wydad-badge-gold">{{ nextMatch.competition }}</span>
-            <div class="text-5xl md:text-6xl font-black font-display tracking-widest my-3 text-text-tertiary">VS</div>
+            <span class="paper-badge">{{ nextMatch.competition }}</span>
+            <div class="text-5xl md:text-6xl font-black font-display tracking-widest my-3 text-paper-3">VS</div>
             <div class="flex flex-col items-center gap-1">
-              <span class="text-text-primary font-semibold text-lg">{{ nextMatch.eventDate | date:'EEEE dd MMMM' }}</span>
+              <span class="text-ink-primary font-semibold text-lg">{{ nextMatch.eventDate | date:'EEEE dd MMMM' }}</span>
               <span class="text-wydad-red font-display font-bold text-2xl tracking-wider">{{ nextMatch.eventDate | date:'HH:mm' }}</span>
-              <span class="text-text-tertiary text-sm mt-1">{{ nextMatch.venue }}</span>
+              <span class="text-ink-tertiary text-sm mt-1">{{ nextMatch.venue }}</span>
             </div>
           </div>
 
           <!-- Away Team -->
           <div class="flex flex-col items-center gap-4 flex-1">
-            <div class="w-28 h-28 md:w-36 md:h-36 rounded-full bg-surface-4 flex items-center justify-center p-5 border border-white/5">
+            <div class="w-28 h-28 md:w-36 md:h-36 rounded-full bg-paper-1 flex items-center justify-center p-5 border border-paper-3">
               <img *ngIf="nextMatch.adversaireLogoUrl" [src]="api.getMediaUrl(nextMatch.adversaireLogoUrl)" class="w-full h-full object-contain" alt="logo adversaire">
-              <span *ngIf="!nextMatch.adversaireLogoUrl" class="font-display font-bold text-3xl md:text-4xl text-text-secondary">
+              <span *ngIf="!nextMatch.adversaireLogoUrl" class="font-display font-bold text-3xl md:text-4xl text-ink-secondary">
                 {{ nextMatch.awayTeam === 'Wydad AC' ? 'WAC' : nextMatch.awayTeam.substring(0,3).toUpperCase() }}
               </span>
             </div>
@@ -120,16 +112,16 @@
         </div>
 
         <!-- Action bar -->
-        <div class="border-t border-white/5 bg-surface-2/50 p-5 flex justify-center">
-          <a routerLink="/billetterie" class="wydad-btn-skew px-10 py-3">
+        <div class="border-t border-paper-3 bg-paper-2/50 p-5 flex justify-center">
+          <a routerLink="/billetterie" class="paper-btn-primary px-10 py-3">
             <span>Acheter des Billets →</span>
           </a>
         </div>
       </div>
 
       <!-- No match fallback -->
-      <div *ngIf="!nextMatch" class="glass rounded-2xl text-center py-20 animate-fade-in">
-        <span class="text-text-tertiary font-display text-xl uppercase tracking-wider">Aucun match prochainement</span>
+      <div *ngIf="!nextMatch" class="paper-card rounded-2xl text-center py-20 animate-fade-in">
+        <span class="text-ink-tertiary font-display text-xl uppercase tracking-wider">Aucun match prochainement</span>
       </div>
     </div>
   </section>
@@ -140,17 +132,17 @@
 
 
   <!-- ─── NEWS SECTION ────────────────────────────────────── -->
-  <section class="py-20 md:py-28 bg-surface-0 relative zellige-bg">
+  <section class="py-20 md:py-28 bg-paper-0 relative">
     <div class="container-wydad relative z-10">
       <!-- Section Header -->
       <div class="flex items-end justify-between mb-14">
         <div>
-          <span class="text-wydad-red font-bold text-xs uppercase tracking-[0.2em] mb-2 block">Actualités</span>
+          <span class="section-title-light">Actualités</span>
           <h2 class="font-display font-bold text-headline uppercase tracking-tight">
             À La <span class="text-wydad-red">Une</span>
           </h2>
         </div>
-        <a routerLink="/actualites" class="hidden md:flex items-center gap-2 text-sm font-semibold text-text-secondary hover:text-white transition-colors group">
+        <a routerLink="/actualites" class="hidden md:flex items-center gap-2 text-sm font-semibold text-ink-secondary hover:text-wydad-red transition-colors group">
           Toutes les actus
           <svg class="w-4 h-4 text-wydad-red group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
         </a>
@@ -159,14 +151,14 @@
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6" *ngIf="articles.length > 0">
         <!-- Main News Card -->
         <a [routerLink]="['/actualites', articles[0].id]"
-           class="md:col-span-2 group relative overflow-hidden rounded-2xl h-[400px] md:h-[500px] cursor-pointer wydad-card-interactive" *ngIf="articles[0]">
+           class="md:col-span-2 group relative overflow-hidden rounded-2xl h-[400px] md:h-[500px] cursor-pointer paper-card red-band" *ngIf="articles[0]">
           <div class="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110"
-               [style.backgroundImage]="'url(' + (articles[0].imageUrl ? api.getMediaUrl(articles[0].imageUrl) : 'assets/images/defaults/default-news-1.jpg') + ')'"></div>
+               [style.backgroundImage]="'url(' + (articles[0].imageUrl ? api.getMediaUrl(articles[0].imageUrl) : 'assets/images/defaults/default-news-1.svg') + ')'"></div>
           <div class="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent"></div>
           <div class="absolute bottom-0 left-0 w-full p-8 md:p-10">
-            <span class="wydad-badge mb-4">{{ articles[0].sport || 'Actualité' }}</span>
-            <h3 class="font-display font-bold text-2xl md:text-4xl leading-tight mb-3 group-hover:text-wydad-red transition-colors duration-300">{{ articles[0].titre }}</h3>
-            <p class="text-text-secondary text-sm line-clamp-2 max-w-lg">{{ articles[0].contenu || '' }}</p>
+            <span class="paper-badge mb-4">{{ articles[0].sport || 'Actualité' }}</span>
+            <h3 class="font-display font-bold text-2xl md:text-4xl text-white leading-tight mb-3">{{ articles[0].titre }}</h3>
+            <p class="text-white/80 text-sm line-clamp-2 max-w-lg">{{ articles[0].contenu || '' }}</p>
           </div>
         </a>
 
@@ -174,24 +166,22 @@
         <div class="flex flex-col gap-6 h-auto md:h-[500px]">
           <!-- Second article -->
           <a [routerLink]="['/actualites', articles[1].id]"
-             class="flex-1 group relative overflow-hidden rounded-2xl cursor-pointer wydad-card-interactive min-h-[200px]" *ngIf="articles[1]">
+             class="flex-1 group relative overflow-hidden rounded-2xl cursor-pointer paper-card red-band min-h-[200px]" *ngIf="articles[1]">
             <div class="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110"
-                 [style.backgroundImage]="'url(' + (articles[1].imageUrl ? api.getMediaUrl(articles[1].imageUrl) : 'assets/images/defaults/default-news-2.jpg') + ')'"></div>
+                 [style.backgroundImage]="'url(' + (articles[1].imageUrl ? api.getMediaUrl(articles[1].imageUrl) : 'assets/images/defaults/default-news-2.svg') + ')'"></div>
             <div class="absolute inset-0 bg-gradient-to-t from-black to-transparent"></div>
             <div class="absolute bottom-0 left-0 w-full p-6">
-              <span class="wydad-badge-gold mb-2">{{ articles[1].sport || 'Sport' }}</span>
-              <h3 class="font-display font-bold text-lg leading-tight group-hover:text-wydad-gold transition-colors duration-300">{{ articles[1].titre }}</h3>
+              <span class="paper-badge mb-2">{{ articles[1].sport || 'Sport' }}</span>
+              <h3 class="font-display font-bold text-lg text-white leading-tight">{{ articles[1].titre }}</h3>
             </div>
           </a>
 
-          <!-- Boutique Promo Card -->
-          <div class="flex-1 group relative overflow-hidden rounded-2xl cursor-pointer min-h-[200px]"
-               style="background: linear-gradient(145deg, #2a0a0f, #0a0505);">
-            <div class="absolute inset-0 zellige-bg opacity-50"></div>
+          <!-- Boutique Promo Card : bande rouge signature -->
+          <div class="red-band group relative overflow-hidden rounded-2xl cursor-pointer min-h-[200px] shadow-paper-card">
             <div class="absolute inset-0 flex flex-col justify-center items-center text-center p-6 z-10">
-              <span class="text-wydad-gold/80 font-bold text-[10px] uppercase tracking-[0.3em] mb-3">Boutique Officielle</span>
+              <span class="text-white/80 font-bold text-[10px] uppercase tracking-[0.3em] mb-3">Boutique Officielle</span>
               <h3 class="font-display font-bold text-2xl leading-tight text-white mb-5">Nouvelle<br/>Collection</h3>
-              <a routerLink="/boutique" class="wydad-btn-primary px-6 py-2.5 text-xs">
+              <a routerLink="/boutique" class="bg-white text-wydad-red font-display font-bold text-xs uppercase tracking-widest px-6 py-2.5 hover:bg-paper-1 transition-colors">
                 Acheter Maintenant
               </a>
             </div>
@@ -206,19 +196,16 @@
   <div class="section-divider"></div>
 
 
-  <!-- ─── MEMBERSHIP SECTION (Premium Adhesion) ───────────── -->
-  <section class="py-20 md:py-28 bg-surface-0 relative">
-    <!-- Gold glow -->
-    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[600px] bg-gold-glow opacity-30 pointer-events-none"></div>
-
+  <!-- ─── MEMBERSHIP SECTION ──────────────────────────────── -->
+  <section class="py-20 md:py-28 bg-paper-1 relative">
     <div class="container-wydad relative z-10">
       <!-- Section Header -->
       <div class="text-center mb-16">
-        <span class="text-wydad-gold font-bold text-xs uppercase tracking-[0.2em] mb-3 block">Rejoignez la famille</span>
+        <span class="section-title-light">Rejoignez la famille</span>
         <h2 class="font-display font-bold text-headline uppercase tracking-tight mb-4">
-          Devenir <span class="text-wydad-gold">Adhérent</span>
+          Devenir <span class="text-wydad-red">Adhérent</span>
         </h2>
-        <p class="text-text-secondary max-w-2xl mx-auto">
+        <p class="text-ink-secondary max-w-2xl mx-auto">
           Choisissez votre niveau d'adhésion et accédez à des avantages exclusifs. Carte membre digitale, billetterie prioritaire, réductions boutique et bien plus.
         </p>
       </div>
@@ -226,14 +213,14 @@
       <!-- Membership Cards Grid -->
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6" *ngIf="membershipTiers.length > 0">
         <div *ngFor="let tier of membershipTiers; let i = index"
-             class="relative rounded-2xl overflow-hidden border transition-all duration-500 animate-fade-in-up"
-             [class]="tierStyle(tier.level).borderColor + ' ' + tierStyle(tier.level).glowClass + ' bg-gradient-to-b ' + tierStyle(tier.level).gradient"
+             class="relative rounded-2xl overflow-hidden border bg-white transition-all duration-500 animate-fade-in-up paper-card"
+             [class]="tierStyle(tier.level).borderColor"
              [style.animation-delay]="(i * 0.15) + 's'"
              style="opacity: 0;">
 
           <!-- Popular badge -->
           <div *ngIf="tier.popular" class="absolute top-4 right-4 z-10">
-            <span class="wydad-badge-gold text-[9px]">Populaire</span>
+            <span class="paper-badge red-band !text-white border-none">Populaire</span>
           </div>
 
           <div class="p-6 md:p-8 flex flex-col h-full">
@@ -242,13 +229,13 @@
 
             <!-- Price -->
             <div class="flex items-baseline gap-1 mb-6">
-              <span class="font-display font-bold text-4xl text-white">{{ tier.price }}</span>
-              <span class="text-text-tertiary text-sm">MAD/an</span>
+              <span class="font-display font-bold text-4xl text-ink-primary">{{ tier.price }}</span>
+              <span class="text-ink-tertiary text-sm">MAD/an</span>
             </div>
 
             <!-- Features -->
             <ul class="flex-1 space-y-3 mb-8">
-              <li *ngFor="let feature of tier.features" class="flex items-start gap-3 text-sm text-text-secondary">
+              <li *ngFor="let feature of tier.features" class="flex items-start gap-3 text-sm text-ink-secondary">
                 <svg class="w-4 h-4 mt-0.5 flex-shrink-0" [class]="tierStyle(tier.level).color" fill="currentColor" viewBox="0 0 20 20">
                   <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
                 </svg>
@@ -258,7 +245,7 @@
 
             <!-- CTA Button -->
             <a routerLink="/adhesion" class="w-full text-center py-3 rounded-lg font-display font-bold uppercase tracking-wider text-sm transition-all duration-300"
-               [class]="tier.popular ? 'bg-wydad-gold text-black hover:shadow-glow-gold' : 'bg-white/5 text-white border border-white/10 hover:bg-white/10'">
+               [class]="tier.popular ? 'red-band text-white hover:shadow-paper-card-hover' : 'bg-white text-ink-primary border border-paper-3 hover:border-wydad-red hover:text-wydad-red'">
               Choisir {{ tier.name }}
             </a>
           </div>
@@ -266,9 +253,9 @@
       </div>
 
       <!-- Fallback si la config club est indisponible (backend down) -->
-      <div *ngIf="membershipTiers.length === 0" class="glass rounded-2xl text-center py-16 animate-fade-in">
-        <p class="text-text-tertiary font-display uppercase tracking-wider">Formules d'adhésion bientôt disponibles</p>
-        <a routerLink="/adhesion" class="inline-block mt-4 wydad-btn-secondary px-6 py-2 text-xs uppercase tracking-widest">Voir les formules</a>
+      <div *ngIf="membershipTiers.length === 0" class="paper-card rounded-2xl text-center py-16 animate-fade-in">
+        <p class="text-ink-tertiary font-display uppercase tracking-wider">Formules d'adhésion bientôt disponibles</p>
+        <a routerLink="/adhesion" class="inline-block mt-4 paper-btn-outline px-6 py-2 text-xs uppercase tracking-widest">Voir les formules</a>
       </div>
     </div>
   </section>
