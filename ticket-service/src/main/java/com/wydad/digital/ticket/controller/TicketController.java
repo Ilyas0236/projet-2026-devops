@@ -65,7 +65,9 @@ public class TicketController {
 
     @GetMapping("/{ticketId}/qr")
     public ResponseEntity<byte[]> getTicketQrCode(@PathVariable Long ticketId) {
-        assertOwnership(ticketId);
+        Ticket ticket = ticketRepository.findById(ticketId)
+                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException("Billet non trouvé"));
+        assertOwnership(ticket.getUserId());
         byte[] qrCode = ticketService.getTicketQrCode(ticketId);
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.IMAGE_PNG);
@@ -74,9 +76,11 @@ public class TicketController {
 
     @GetMapping("/{ticketId}/pdf")
     public ResponseEntity<byte[]> downloadTicketPdf(@PathVariable Long ticketId) {
-        assertOwnership(ticketId);
         Ticket ticket = ticketRepository.findById(ticketId)
                 .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException("Billet non trouvé"));
+        // Ownership sur le PROPRIETAIRE du billet (bug : on comparait
+        // l'id du billet lui-meme -> 403 pour tout utilisateur non admin).
+        assertOwnership(ticket.getUserId());
         byte[] pdf = ticketPdfService.generateTicketPdf(ticket);
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_PDF);
