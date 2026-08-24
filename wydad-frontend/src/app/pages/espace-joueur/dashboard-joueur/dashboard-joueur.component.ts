@@ -6,6 +6,7 @@ import { ApiService } from '../../../services/api.service';
 import { AuthService } from '../../../services/auth.service';
 import { ToastService } from '../../../services/toast.service';
 import { ErrorBannerComponent } from '../../../components/error-banner/error-banner.component';
+import { TeamChatComponent } from '../../../components/team-chat/team-chat.component';
 
 /**
  * Espace joueur connecté (B.3) : profil restreint, convocations (B.3.a),
@@ -16,7 +17,7 @@ import { ErrorBannerComponent } from '../../../components/error-banner/error-ban
 @Component({
   selector: 'app-dashboard-joueur',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule, ErrorBannerComponent],
+  imports: [CommonModule, RouterModule, FormsModule, ErrorBannerComponent, TeamChatComponent],
   templateUrl: './dashboard-joueur.component.html'
 })
 export class DashboardJoueurComponent implements OnInit {

@@ -572,6 +572,12 @@
             </div>
           </div>
 
+          <!-- CHAT DE GROUPE « ÉQUIPE » (Phase 4) — temps réel WebSocket,
+               adhésion déduite de ma fiche (sport/catégorie) côté serveur -->
+          <div *ngIf="player?.sportType && player?.category">
+            <app-team-chat [sportType]="player.sportType" [category]="player.category"></app-team-chat>
+          </div>
+
           <!-- PLANNING (calendrier des séances à venir, lecture seule) -->
           <div class="paper-card rounded-3xl p-8 h-full flex flex-col">
 

@@ -11,6 +11,7 @@
   "include": [
     "src/**/*.spec.ts",
     "src/test-setup.ts",
+    "src/sockjs-polyfills.ts",
     "src/**/*.d.ts"
   ]
 }

@@ -5,11 +5,12 @@ import { RouterModule } from '@angular/router';
 import { ApiService } from '../../../services/api.service';
 import { AuthService } from '../../../services/auth.service';
 import { ToastService } from '../../../services/toast.service';
+import { TeamChatComponent } from '../../../components/team-chat/team-chat.component';
 
 @Component({
   selector: 'app-dashboard-staff',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FormsModule, RouterModule],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, RouterModule, TeamChatComponent],
   templateUrl: './dashboard-staff.component.html'
 })
 export class DashboardStaffComponent implements OnInit {

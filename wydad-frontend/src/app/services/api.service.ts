@@ -602,8 +602,25 @@ export class ApiService {
   }
 
   // ==========================================
-  // STATUT MEDICAL (B.6)
+  // PHASE 4 — CHAT DE GROUPE (WebSocket + repli REST)
   // ==========================================
+  /** Historique persisté des 100 derniers messages du groupe. */
+  getTeamChatHistory(sportType: string, category: string): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/sports/team-chat/${sportType}/${category}/messages`);
+  }
+
+  /** Envoi via le repli REST (si le socket est momentanément coupé). */
+  sendTeamChatMessage(sportType: string, category: string, content: string): Observable<any> {
+    return this.http.post<any>(
+      `${this.baseUrl}/sports/team-chat/${sportType}/${category}/messages`, { content });
+  }
+
+  /** En-tête du groupe : joueurs + staff de la catégorie (contrôle serveur). */
+  getTeamChatMembers(sportType: string, category: string): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/sports/team-chat/${sportType}/${category}/members`);
+  }
+
+
   /** Pose APT/INAPTE — réservé au staff médical de la catégorie (contrôle serveur). */
   setMedicalStatus(joueurUserId: number, status: 'APT' | 'INAPTE', note?: string): Observable<any> {
     const params = new HttpParams().set('joueurUserId', String(joueurUserId));
