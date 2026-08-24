@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
+import { Router } from '@angular/router';
 import { ApiService } from '../../../services/api.service';
 
 @Component({
@@ -20,7 +21,32 @@ export class DashboardComponent implements OnInit {
   totalUsers = 0;
   activeUsers = 0;
 
-  constructor(private api: ApiService) {}
+  constructor(
+    private api: ApiService,
+    private router: Router
+  ) {}
+
+  /** Export CSV des comptes utilisateurs (données affichées sur le dashboard). */
+  exportCsv() {
+    const rows = [
+      ['Total utilisateurs', String(this.totalUsers)],
+      ['Comptes actifs', String(this.activeUsers)],
+      ['Matchs a venir', String(this.upcomingMatches.length)],
+      ['Commandes recentes', String(this.recentOrders.length)]
+    ];
+    const csv = 'Indicateur,Valeur\n' + rows.map(r => r.join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'wydad-dashboard.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  goToNewMatch() {
+    this.router.navigate(['/admin/matchs']);
+  }
 
   ngOnInit() {
     this.loadData();

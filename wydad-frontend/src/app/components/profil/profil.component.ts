@@ -244,6 +244,37 @@ export class ProfilComponent implements OnInit {
   }
 
   // --- KYC Logic ---
+  /** Ouvre le sélecteur de fichier natif (input file caché). */
+  browseKycFile(fileInput: HTMLInputElement) {
+    fileInput.click();
+  }
+
+  /** Réagit à la sélection d'un fichier : valide type + taille puis renseigne kycFilePath. */
+  onKycFileSelected(event: Event) {
+    const input = event.target as HTMLInputElement;
+    this.kycErr = '';
+    this.kycMsg = '';
+    const file = input.files?.[0];
+    if (!file) { this.kycFilePath = ''; return; }
+
+    const allowed = ['image/jpeg', 'image/png', 'application/pdf'];
+    if (!allowed.includes(file.type)) {
+      this.kycErr = 'Format non supporté. Formats acceptés : JPG, PNG ou PDF.';
+      input.value = '';
+      this.kycFilePath = '';
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      this.kycErr = 'Fichier trop volumineux (maximum 5 Mo).';
+      input.value = '';
+      this.kycFilePath = '';
+      return;
+    }
+    // Le backend enregistre une référence document : on transmet le nom réel du fichier choisi.
+    this.kycFilePath = file.name;
+    input.value = '';
+  }
+
   uploadKyc() {
     this.kycUploading = true;
     this.kycErr = '';

@@ -122,7 +122,7 @@
             </td>
             <td class="py-3 px-4 text-right">
               <div class="flex items-center justify-end gap-2">
-                <button class="w-8 h-8 rounded bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors" title="Détails (Non implémenté)">
+                <button (click)="openDetails(user)" class="w-8 h-8 rounded bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors" title="Voir les détails">
                   <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
                 </button>
               </div>
@@ -137,6 +137,66 @@
         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
       </div>
       <p class="text-gray-400 text-sm">Aucun utilisateur trouvé.</p>
+    </div>
+  </div>
+</div>
+
+<!-- Modale détails utilisateur -->
+<div *ngIf="selectedUser" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fade-in"
+     (click)="closeDetails()">
+  <div class="bg-surface-2 border border-white/10 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-scale-in"
+       (click)="$event.stopPropagation()" role="dialog" aria-modal="true" [attr.aria-label]="'Détails de ' + selectedUser.firstName">
+    <!-- Header -->
+    <div class="px-6 py-5 border-b border-white/10 flex items-center gap-4">
+      <div class="w-12 h-12 rounded-full bg-wydad-red/20 text-wydad-red flex items-center justify-center font-display font-bold text-lg uppercase">
+        {{ selectedUser.firstName[0] }}{{ selectedUser.lastName[0] }}
+      </div>
+      <div class="flex-1 min-w-0">
+        <h3 class="font-display font-bold text-lg text-white uppercase tracking-wider truncate">{{ selectedUser.firstName }} {{ selectedUser.lastName }}</h3>
+        <p class="text-xs text-text-secondary truncate">{{ roleLabel(selectedUser.role) }}</p>
+      </div>
+      <button (click)="closeDetails()" class="w-8 h-8 rounded-full hover:bg-white/10 text-text-secondary hover:text-white flex items-center justify-center transition-colors" aria-label="Fermer">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      </button>
+    </div>
+    <!-- Body -->
+    <div class="px-6 py-5 space-y-3 text-sm">
+      <div class="flex justify-between items-center py-2 border-b border-white/[0.04]">
+        <span class="text-text-tertiary text-xs uppercase tracking-wider font-bold">Email</span>
+        <span class="text-text-primary truncate ml-4">{{ selectedUser.email }}</span>
+      </div>
+      <div class="flex justify-between items-center py-2 border-b border-white/[0.04]">
+        <span class="text-text-tertiary text-xs uppercase tracking-wider font-bold">Téléphone</span>
+        <span class="text-text-primary">{{ selectedUser.phone || 'Non renseigné' }}</span>
+      </div>
+      <div class="flex justify-between items-center py-2 border-b border-white/[0.04]">
+        <span class="text-text-tertiary text-xs uppercase tracking-wider font-bold">Rôle</span>
+        <span class="text-text-primary">{{ roleLabel(selectedUser.role) }}</span>
+      </div>
+      <div class="flex justify-between items-center py-2 border-b border-white/[0.04]">
+        <span class="text-text-tertiary text-xs uppercase tracking-wider font-bold">Adhésion</span>
+        <span class="text-text-primary">{{ levelLabel(selectedUser.membershipLevel) }}</span>
+      </div>
+      <div class="flex justify-between items-center py-2 border-b border-white/[0.04]">
+        <span class="text-text-tertiary text-xs uppercase tracking-wider font-bold">KYC</span>
+        <span [class.text-green-400]="selectedUser.kycVerified" [class.text-yellow-400]="!selectedUser.kycVerified">
+          {{ selectedUser.kycVerified ? 'Vérifié' : 'En attente' }}
+        </span>
+      </div>
+      <div class="flex justify-between items-center py-2">
+        <span class="text-text-tertiary text-xs uppercase tracking-wider font-bold">Statut du compte</span>
+        <span [class.text-green-400]="selectedUser.active" [class.text-red-400]="!selectedUser.active">
+          {{ selectedUser.active ? 'Actif' : 'Désactivé' }}
+        </span>
+      </div>
+      <div *ngIf="selectedUser.referralCode" class="flex justify-between items-center py-2 border-t border-white/[0.04]">
+        <span class="text-text-tertiary text-xs uppercase tracking-wider font-bold">Code de parrainage</span>
+        <span class="font-mono text-xs text-text-primary bg-surface-4 px-1.5 py-0.5 rounded">{{ selectedUser.referralCode }}</span>
+      </div>
+    </div>
+    <!-- Footer -->
+    <div class="px-6 py-4 bg-surface-1 border-t border-white/10 flex justify-end">
+      <button (click)="closeDetails()" class="px-5 py-2 rounded-lg bg-surface-3 hover:bg-surface-4 text-text-primary text-sm font-medium transition-colors">Fermer</button>
     </div>
   </div>
 </div>

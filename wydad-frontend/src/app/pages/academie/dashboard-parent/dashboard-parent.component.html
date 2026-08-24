@@ -25,6 +25,12 @@
       <div class="w-12 h-12 border-4 border-wydad-red border-t-transparent rounded-full animate-spin shadow-glow-red"></div>
     </div>
 
+    <!-- Toast message (téléchargements) -->
+    <div *ngIf="message" role="status" class="mb-6 p-4 rounded-xl text-sm font-medium animate-fade-in"
+         [ngClass]="messageKind === 'success' ? 'bg-green-500/10 border border-green-500/40 text-green-400' : 'bg-wydad-red/10 border border-wydad-red/40 text-wydad-red'">
+      {{ message }}
+    </div>
+
     <!-- EMPTY STATE -->
     <div *ngIf="!loading && children.length === 0" class="glass rounded-[2rem] p-12 text-center border border-white/10 animate-fade-in-up" style="animation-delay: 0.2s; opacity: 0;">
       <div class="w-24 h-24 bg-surface-3 rounded-full flex items-center justify-center mx-auto mb-6 border border-white/5 shadow-[0_0_30px_rgba(255,255,255,0.05)] text-4xl opacity-50">
@@ -84,14 +90,31 @@
           </div>
           
           <div class="flex gap-3">
-            <button class="flex-1 bg-surface-2 hover:bg-surface-3 text-white py-3 rounded-xl text-xs uppercase tracking-wider font-bold transition-colors border border-white/5 flex items-center justify-center gap-2">
+            <button type="button" (click)="togglePlanning(child)"
+                    [attr.aria-expanded]="planningOpen[child.id] || false"
+                    class="flex-1 bg-surface-2 hover:bg-surface-3 text-white py-3 rounded-xl text-xs uppercase tracking-wider font-bold transition-colors border border-white/5 flex items-center justify-center gap-2">
               <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
               Planning
             </button>
-            <button class="flex-1 bg-surface-3 border border-white/10 hover:border-white/30 text-white py-3 rounded-xl text-xs uppercase tracking-wider font-bold transition-all shadow-lg flex items-center justify-center gap-2 group-hover:shadow-[0_0_15px_rgba(255,255,255,0.1)]">
-              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-              Attestation
+            <button type="button" (click)="downloadDocuments(child)" [disabled]="docsLoading[child.id]"
+                    class="flex-1 bg-surface-3 border border-white/10 hover:border-white/30 text-white py-3 rounded-xl text-xs uppercase tracking-wider font-bold transition-all shadow-lg flex items-center justify-center gap-2 group-hover:shadow-[0_0_15px_rgba(255,255,255,0.1)] disabled:opacity-50 disabled:cursor-not-allowed">
+              <svg *ngIf="!docsLoading[child.id]" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+              {{ docsLoading[child.id] ? 'Téléchargement...' : 'Documents' }}
             </button>
+          </div>
+
+          <!-- Planning déplié : séances du sport/catégorie de l'enfant -->
+          <div *ngIf="planningOpen[child.id]" class="mt-4 bg-surface-2 rounded-xl border border-white/5 p-4">
+            <p class="text-[10px] font-bold uppercase tracking-widest text-text-tertiary mb-3">Planning — {{ child.sportType }}</p>
+            <div *ngIf="sessionsLoading[child.id]" class="text-text-secondary text-xs py-2">Chargement du planning...</div>
+            <div *ngIf="!sessionsLoading[child.id] && (!sessions[child.id] || sessions[child.id].length === 0)"
+                 class="text-text-secondary text-xs py-2">Aucune séance programmée pour cette catégorie.</div>
+            <ul *ngIf="!sessionsLoading[child.id] && sessions[child.id]?.length" class="space-y-2">
+              <li *ngFor="let s of sessions[child.id]" class="flex justify-between items-center text-xs bg-surface-3 rounded-lg px-3 py-2 border border-white/[0.04]">
+                <span class="font-bold text-white capitalize">{{ formatSessionDate(s) || s.dayOfWeek }}</span>
+                <span class="text-text-secondary">{{ formatSessionTime(s) }}<span *ngIf="s.location"> · {{ s.location }}</span></span>
+              </li>
+            </ul>
           </div>
         </div>
       </div>

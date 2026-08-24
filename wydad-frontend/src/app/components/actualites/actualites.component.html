@@ -98,9 +98,10 @@
           
           <div class="flex items-center justify-between border-t border-white/[0.04] pt-4 mt-auto">
             <span class="text-xs text-text-muted font-medium">✍️ Par <span class="text-white">{{ article.auteur }}</span></span>
-            <button class="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center text-text-secondary group-hover:bg-wydad-red group-hover:text-white group-hover:border-transparent transition-all">
+            <!-- Décoratif : la carte entière est un lien (routerLink) -->
+            <span aria-hidden="true" class="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center text-text-secondary group-hover:bg-wydad-red group-hover:text-white group-hover:border-transparent transition-all">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
-            </button>
+            </span>
           </div>
         </div>
       </div>

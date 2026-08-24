@@ -277,10 +277,16 @@
               </div>
 
               <div>
-                <label class="wydad-label">Chemin du document (Faux fichier pour démo)</label>
+                <label class="wydad-label" for="kyc-file">Document justificatif (JPG, PNG ou PDF — max 5 Mo)</label>
+                <input #kycFileInput type="file" id="kyc-file" class="hidden" accept=".jpg,.jpeg,.png,.pdf"
+                       (change)="onKycFileSelected($event)">
                 <div class="flex">
-                  <input type="text" [(ngModel)]="kycFilePath" placeholder="Ex: cin-recto-verso.jpg" class="wydad-input rounded-r-none border-r-0">
-                  <button class="bg-surface-4 px-4 rounded-r-lg border border-white/10 border-l-0 text-text-secondary text-sm font-bold">Parcourir</button>
+                  <input type="text" [value]="kycFilePath" readonly placeholder="Aucun fichier sélectionné"
+                         (click)="browseKycFile(kycFileInput)" class="wydad-input rounded-r-none border-r-0 cursor-pointer">
+                  <button type="button" (click)="browseKycFile(kycFileInput)"
+                          class="bg-surface-4 px-4 rounded-r-lg border border-white/10 border-l-0 text-text-secondary hover:text-text-primary hover:bg-surface-3 transition-colors text-sm font-bold">
+                    Parcourir
+                  </button>
                 </div>
               </div>
               

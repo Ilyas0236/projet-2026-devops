@@ -7,8 +7,8 @@
       <p class="text-sm text-text-secondary mt-1">Statistiques et KPIs de l'écosystème Wydad Digital.</p>
     </div>
     <div class="flex gap-3">
-      <button class="px-5 py-2.5 bg-surface-3 border border-white/[0.04] rounded-lg text-sm font-medium text-text-secondary hover:text-text-primary hover:bg-surface-4 transition-colors">Exporter</button>
-      <button class="wydad-btn-primary wydad-btn-skew">
+      <button (click)="exportCsv()" class="px-5 py-2.5 bg-surface-3 border border-white/[0.04] rounded-lg text-sm font-medium text-text-secondary hover:text-text-primary hover:bg-surface-4 transition-colors">Exporter</button>
+      <button (click)="goToNewMatch()" class="wydad-btn-primary wydad-btn-skew">
         <span class="skew-content">Nouveau Match</span>
       </button>
     </div>
@@ -71,7 +71,7 @@
     <div class="bg-surface-3 rounded-xl border border-white/[0.04] shadow-sm p-6">
       <div class="flex justify-between items-center mb-6">
         <h3 class="text-lg font-display font-bold text-text-primary uppercase tracking-wider">Prochains Matchs</h3>
-        <button class="text-text-secondary hover:text-wydad-red text-xs transition-colors">Voir tout</button>
+        <a routerLink="/admin/matchs" class="text-text-secondary hover:text-wydad-red text-xs transition-colors cursor-pointer">Voir tout</a>
       </div>
       <div class="space-y-4" *ngIf="upcomingMatches.length; else noMatches">
         <div *ngFor="let match of upcomingMatches" class="flex items-center gap-4 p-3 rounded-lg bg-surface-2 border border-white/[0.02] hover:border-white/[0.05] transition-colors">

@@ -110,4 +110,27 @@ export class AdminUsersComponent implements OnInit {
       }
     });
   }
+
+  // ─── Modale détails utilisateur ──────────────────────────────
+  selectedUser: any = null;
+
+  openDetails(user: any) {
+    this.selectedUser = user;
+  }
+
+  closeDetails() {
+    this.selectedUser = null;
+  }
+
+  /** Libellés lisibles des rôles / niveaux d'adhésion. */
+  roleLabel(role: string): string {
+    return ({
+      VISITEUR: 'Visiteur', ADHERENT: 'Adhérent', PARENT: 'Parent',
+      JOUEUR: 'Joueur', STAFF: 'Staff', ADMIN: 'Administrateur'
+    } as Record<string, string>)[role] || role || '—';
+  }
+
+  levelLabel(level: string): string {
+    return ({ ROUGE: 'Rouge', OR: 'Or', DIAMANT: 'Diamant', LEGENDE: 'Légende', JUNIOR: 'Junior' } as Record<string, string>)[level] || level || '—';
+  }
 }

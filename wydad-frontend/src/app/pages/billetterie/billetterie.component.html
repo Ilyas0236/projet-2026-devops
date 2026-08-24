@@ -90,7 +90,7 @@
              class="wydad-btn-skew px-8 py-3 text-xs w-full md:w-auto text-center">
             <span>Acheter →</span>
           </a>
-          <button *ngIf="!isUpcoming(event.status)"
+          <button *ngIf="!isUpcoming(event.status)" disabled
                   class="px-8 py-3 bg-surface-4 text-text-muted font-display uppercase text-xs font-bold tracking-wider transform skew-x-[-10deg] cursor-not-allowed w-full md:w-auto">
             <span class="skew-x-[10deg] block">Indisponible</span>
           </button>
