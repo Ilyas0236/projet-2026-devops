@@ -27,13 +27,13 @@ public class TicketController {
     private final TicketRepository ticketRepository;
 
     @PostMapping("/purchase")
-    @PreAuthorize("hasRole('ADHERENT') or hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADHERENT') or hasRole('JOUEUR') or hasRole('ADMIN')")
     public ResponseEntity<List<TicketResponse>> purchaseTickets(@Valid @RequestBody PurchaseTicketRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(ticketService.purchaseTickets(request));
     }
 
     @GetMapping("/user/{userId}")
-    @PreAuthorize("hasRole('ADHERENT') or hasRole('ADMIN') or hasRole('STAFF')")
+    @PreAuthorize("hasRole('ADHERENT') or hasRole('JOUEUR') or hasRole('ADMIN') or hasRole('STAFF')")
     public ResponseEntity<List<TicketResponse>> getTicketsByUser(@PathVariable Long userId) {
         if (!UserContext.isAdmin() && !userId.equals(UserContext.getCurrentUserId())) {
             throw new AccessDeniedException("Accès aux billets d'un autre utilisateur interdit");
