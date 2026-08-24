@@ -19,7 +19,13 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http, UserContextFilter userContextFilter) throws Exception {
         http.csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(auth -> auth.anyRequest().authenticated())
+                .authorizeHttpRequests(auth -> auth
+                        // Sondages actifs : donnée non personnelle consultable
+                        // par un visiteur anonyme (page /sondages publique).
+                        // Le VOTE reste réservé aux membres authentifiés.
+                        .requestMatchers(org.springframework.http.HttpMethod.GET,
+                                "/api/sports/polls/active").permitAll()
+                        .anyRequest().authenticated())
                 .addFilterBefore(userContextFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
