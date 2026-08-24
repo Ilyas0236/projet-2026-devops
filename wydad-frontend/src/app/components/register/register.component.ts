@@ -17,8 +17,11 @@ export class RegisterComponent implements OnInit {
   password = '';
   firstName = '';
   lastName = '';
-  membershipLevel = 'ROUGE';
   referralCode = '';
+  /** Niveau pré-sélectionné depuis la page adhésion — informatif uniquement :
+   * le serveur attribue ROUGE à l'inscription ; la montée de niveau se fait
+   * après paiement (POST /upgrade). */
+  selectedTier: any = null;
   loading = false;
   error = '';
   success = false;
@@ -36,17 +39,15 @@ export class RegisterComponent implements OnInit {
     this.api.getClubSetting('membership_tiers').subscribe({
       next: (tiers) => {
         this.tiers = Array.isArray(tiers) ? tiers.filter(t => t.price != null) : [];
+        const level = this.route.snapshot.queryParamMap.get('level');
+        if (level && RegisterComponent.ALLOWED_LEVELS.includes(level)) {
+          this.selectedTier = this.tiers.find(t => t.level === level) || null;
+        }
       },
       error: () => {
         this.tiers = [];
       }
     });
-
-    // Pre-selection du niveau depuis la page adhesion (?level=OR)
-    const level = this.route.snapshot.queryParamMap.get('level');
-    if (level && RegisterComponent.ALLOWED_LEVELS.includes(level)) {
-      this.membershipLevel = level;
-    }
   }
 
   isValidForm(): boolean {
@@ -64,13 +65,14 @@ export class RegisterComponent implements OnInit {
     this.error = '';
     this.success = false;
 
+    // Pas de membershipLevel dans la requête : le serveur force le niveau de
+    // départ — la montée passe par /upgrade après paiement.
     const requestData = {
       email: this.email,
       phone: this.phone,
       password: this.password,
       firstName: this.firstName,
       lastName: this.lastName,
-      membershipLevel: this.membershipLevel,
       referralCode: this.referralCode ? this.referralCode : null
     };
 

@@ -46,9 +46,16 @@ public class AuthController {
             @RequestHeader(value = "X-User-Email", required = false) String gatewayEmail,
             @RequestHeader(value = "X-User-Role", required = false) String gatewayRole) {
 
+        // S5 (défense-en-profondeur) : la gateway exige le JWT et pose TOUJOURS
+        // X-User-* ; si ces headers sont absents, la requête n'est pas passée
+        // par elle (appel direct au port du service) → refus systématique,
+        // même si l'email demandé correspondrait à un compte existant.
+        if (gatewayEmail == null || gatewayRole == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
         // Un utilisateur ne peut consulter que sa propre carte, sauf l'admin
         boolean isAdmin = "ADMIN".equals(gatewayRole);
-        if (!isAdmin && gatewayEmail != null && !gatewayEmail.equalsIgnoreCase(email)) {
+        if (!isAdmin && !gatewayEmail.equalsIgnoreCase(email)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
         return ResponseEntity.ok(authService.getMemberCard(email));
@@ -60,9 +67,13 @@ public class AuthController {
             @RequestHeader(value = "X-User-Email", required = false) String gatewayEmail,
             @RequestHeader(value = "X-User-Role", required = false) String gatewayRole) {
 
+        // S5 : mêmes garanties que member-card — headers d'identité obligatoires.
+        if (gatewayEmail == null || gatewayRole == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
         // Un utilisateur ne peut générer que sa propre attestation, sauf l'admin
         boolean isAdmin = "ADMIN".equals(gatewayRole);
-        if (!isAdmin && gatewayEmail != null && !gatewayEmail.equalsIgnoreCase(email)) {
+        if (!isAdmin && !gatewayEmail.equalsIgnoreCase(email)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
         byte[] pdf = authService.generateAttestation(email);
@@ -202,6 +213,17 @@ public class AuthController {
         return valid
                 ? ResponseEntity.ok("OTP validé avec succès")
                 : ResponseEntity.badRequest().body("OTP invalide ou expiré");
+    }
+
+    /**
+     * S6 : finalisation de la réinitialisation de mot de passe. Public
+     * (l'utilisateur a perdu son mot de passe) mais protégé par l'OTP —
+     * send → (reçoit le code) → reset. Les sessions actives sont coupées.
+     */
+    @PostMapping("/password/reset")
+    public ResponseEntity<String> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        authService.resetPassword(request);
+        return ResponseEntity.ok("Mot de passe réinitialisé avec succès");
     }
 
     @PostMapping("/kyc/upload")

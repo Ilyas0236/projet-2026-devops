@@ -60,11 +60,11 @@ public class GamificationController {
     @PostMapping("/points/add")
     public ResponseEntity<String> addPoints(
             @RequestParam Long userId,
-            @RequestParam int amount,
-            @RequestHeader(value = "X-User-Role", required = false) String role) {
+            @RequestParam int amount) {
 
-        // Réservé aux appels administrateur (ou futurs appels service-à-service authentifiés)
-        if (!"ADMIN".equals(role)) {
+        // S5 : même source de vérité que les autres endpoints — le rôle vient
+        // du contexte JWT posé par la gateway, pas d'un header lu à la main.
+        if (!UserContext.isAdmin()) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Accès refusé");
         }
         gamificationService.addPoints(userId, amount);

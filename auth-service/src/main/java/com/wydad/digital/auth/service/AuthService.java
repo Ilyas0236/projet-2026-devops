@@ -37,6 +37,9 @@ public class AuthService {
     private final PdfService pdfService;
     private final OtpService otpService;
 
+    /** Niveau attribué à l'inscription : le plus bas payant (S3). */
+    private static final MembershipLevel NIVEAU_INSCRIPTION = MembershipLevel.ROUGE;
+
     public AuthResponse register(RegisterRequest request) {
         if (userRepository.existsByEmail(request.email())) {
             throw new EmailAlreadyExistsException(request.email());
@@ -51,7 +54,7 @@ public class AuthService {
                 .password(passwordEncoder.encode(request.password()))
                 .firstName(request.firstName())
                 .lastName(request.lastName())
-                .membershipLevel(request.membershipLevel())
+                .membershipLevel(NIVEAU_INSCRIPTION)
                 .role(Role.ADHERENT)
                 .membershipExpiresAt(LocalDateTime.now().plusYears(1))
                 .referralCode(UUID.randomUUID().toString().substring(0, 8).toUpperCase())
@@ -84,6 +87,12 @@ public class AuthService {
                 .orElseThrow(InvalidCredentialsException::new);
 
         if (!passwordEncoder.matches(request.password(), user.getPassword())) {
+            throw new InvalidCredentialsException();
+        }
+
+        // S1 : un compte désactivé par l'admin ne doit plus pouvoir obtenir
+        // de tokens. Même message que mauvaises credentials (pas d'énumération).
+        if (!user.isActive()) {
             throw new InvalidCredentialsException();
         }
 
@@ -143,12 +152,25 @@ public class AuthService {
     }
 
     public AuthResponse refreshToken(RefreshTokenRequest request, String ipAddress, String userAgent) {
-        if (!jwtUtils.validateToken(request.refreshToken())) {
+        // S2 : exiger typ=refresh — un access token (volé) ne doit jamais
+        // permettre de régénérer un couple de tokens.
+        if (!jwtUtils.validateRefreshToken(request.refreshToken())) {
             throw new RuntimeException("Refresh token invalide");
+        }
+        // S4 : le refresh est rattaché aux sessions révocables — si toutes les
+        // sessions du compte ont été révoquées ("déconnexion partout"), plus
+        // aucun refresh n'est accepté.
+        if (!activeSessionRepository.existsByEmailAndRevokedFalse(jwtUtils.getEmailFromToken(request.refreshToken()))) {
+            throw new RuntimeException("Session révoquée : reconnectez-vous");
         }
         String email = jwtUtils.getEmailFromToken(request.refreshToken());
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UserNotFoundException(email));
+
+        // S1 bis : pareil qu'au login, un compte désactivé ne rafraîchit pas.
+        if (!user.isActive()) {
+            throw new InvalidCredentialsException();
+        }
 
         String accessToken = jwtUtils.generateAccessToken(user.getId(), email, user.getRole().name());
         String refreshToken = jwtUtils.generateRefreshToken(user.getId(), email);
@@ -252,6 +274,27 @@ public class AuthService {
 
     public boolean verifyOtp(OtpVerifyRequest request) {
         return otpService.verifyOtp(request.email(), request.code());
+    }
+
+    /**
+     * S6 : réinitialisation de mot de passe via OTP — donne un usage réel au
+     * flux OTP (send → verify → reset). Le code est re-vérifié puis consommé
+     * (verifyOtp le supprime) ; les sessions actives sont révoquées pour
+     * couper les éventuels voleurs de session.
+     */
+    @Transactional
+    public void resetPassword(ResetPasswordRequest request) {
+        if (!otpService.verifyOtp(request.email(), request.otpCode())) {
+            throw new RuntimeException("Code OTP invalide ou expiré");
+        }
+        if (request.newPassword() == null || request.newPassword().length() < 6) {
+            throw new RuntimeException("Le nouveau mot de passe doit contenir au moins 6 caractères");
+        }
+        User user = userRepository.findByEmailIgnoreCase(request.email())
+                .orElseThrow(() -> new UserNotFoundException(request.email()));
+        user.setPassword(passwordEncoder.encode(request.newPassword()));
+        userRepository.save(user);
+        activeSessionRepository.deleteByEmail(user.getEmail());
     }
 
     // ============================================

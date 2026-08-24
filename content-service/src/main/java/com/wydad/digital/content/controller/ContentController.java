@@ -94,9 +94,12 @@ public class ContentController {
     }
 
     // ==================== CLASSEMENTS (F4) ====================
-    /** Liste complete pour le back-office (ADMIN). */
+    /**
+     * S7 : lecture publique, cohérente avec /classements/{competition} —
+     * un classement est une donnée publique affichée aux visiteurs ; seules
+     * les écritures (POST/PUT/DELETE) sont réservées à l'ADMIN.
+     */
     @GetMapping("/classements")
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<ClassementResponse>> getAllClassements() {
         return ResponseEntity.ok(contentService.getAllClassements());
     }

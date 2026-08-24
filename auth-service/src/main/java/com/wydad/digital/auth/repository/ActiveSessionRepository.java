@@ -10,6 +10,7 @@ import java.util.Optional;
 @Repository
 public interface ActiveSessionRepository extends JpaRepository<ActiveSession, Long> {
     List<ActiveSession> findByEmailAndRevokedFalse(String email);
+    boolean existsByEmailAndRevokedFalse(String email);
     Optional<ActiveSession> findByTokenAndRevokedFalse(String token);
     void deleteByEmail(String email);
 }
