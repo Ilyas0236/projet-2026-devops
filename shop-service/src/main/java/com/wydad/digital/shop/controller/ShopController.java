@@ -73,6 +73,7 @@ public class ShopController {
 
     // ========== PANIER ==========
     @GetMapping("/cart")
+    @PreAuthorize("hasRole('ADHERENT') or hasRole('ADMIN')")
     public ResponseEntity<List<CartItemDto>> getCart(
             @RequestHeader("X-User-Email") String userEmail) {
         return ResponseEntity.ok(cartService.getCart(userEmail));
