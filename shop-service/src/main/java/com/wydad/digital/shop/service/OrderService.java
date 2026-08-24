@@ -30,13 +30,14 @@ public class OrderService {
     private final ShopOrderRepository shopOrderRepository;
     private final com.wydad.digital.shop.client.NotificationClient notificationClient;
     private final com.wydad.digital.shop.client.PaymentClient paymentClient;
+    private final com.wydad.digital.shop.client.LoyaltyClient loyaltyClient;
     private final CartItemRepository cartItemRepository;
     private final ProductVariantRepository productVariantRepository;
     private final PromoCodeRepository promoCodeRepository;
     private final StoreRepository storeRepository;
     private final OrderStatusHistoryRepository orderStatusHistoryRepository;
 
-    public OrderResponseDto createOrder(String userEmail, OrderRequestDto dto) {
+    public OrderResponseDto createOrder(String userEmail, Long userId, OrderRequestDto dto) {
         var cartItems = cartItemRepository.findByUserEmail(userEmail);
         if (cartItems.isEmpty()) {
             throw new RuntimeException("Panier vide");
@@ -185,6 +186,12 @@ public class OrderService {
                 "Votre commande " + saved.getOrderNumber() + " d'un montant de "
                         + saved.getTotalAmount() + " DH a été enregistrée.",
                 "/profil/commandes");
+
+        // Fidélité : crédite des points sur le montant réellement payé
+        // (barème serveur 1 pt / 10 DH, prouvé côté gamification-service).
+        // Best-effort : une panne ne doit pas annuler un achat déjà débité.
+        loyaltyClient.creditPointsForPurchase(
+                userId, saved.getTotalAmount(), saved.getOrderNumber());
 
         return mapToDto(saved);
     }

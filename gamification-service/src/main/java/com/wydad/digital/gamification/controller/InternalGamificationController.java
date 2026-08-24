@@ -40,4 +40,34 @@ public class InternalGamificationController {
 
     public record ResolutionResult(Long matchId, int resolvedCount) {
     }
+
+    /**
+     * Fidélité : crédite des points suite à un achat réel (boutique,
+     * billetterie). Appelé par les autres services après paiement confirmé.
+     * Barème serveur : 1 point par 10 DH dépensés. Best-effort côté appelant :
+     * une panne de gamification ne doit pas annuler un achat payé.
+     */
+    @PostMapping("/points/credit")
+    public ResponseEntity<?> creditPoints(
+            @RequestHeader(value = "X-Internal-Secret", required = false) String secret,
+            @RequestBody CreditRequest request) {
+        if (!secretValidator.isInternalCallAuthorized(secret)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        if (request.userId() == null || request.amountDh() == null
+                || request.amountDh().signum() <= 0) {
+            throw new IllegalArgumentException("userId et amountDh (> 0) sont obligatoires");
+        }
+        int points = request.amountDh().intValue() / 10; // 1 pt / 10 DH
+        if (points > 0) {
+            gamificationService.addPoints(request.userId(), points);
+        }
+        return ResponseEntity.ok(new CreditResult(request.userId(), points));
+    }
+
+    public record CreditRequest(Long userId, java.math.BigDecimal amountDh) {
+    }
+
+    public record CreditResult(Long userId, int pointsCredited) {
+    }
 }

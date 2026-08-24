@@ -78,12 +78,15 @@ class OrderServiceTest {
     @Autowired
     private ShopOrderRepository orderRepository;
 
-    /** Aucun appel HTTP reel vers payment-service / notification-service. */
+    /** Aucun appel HTTP reel vers payment-service / notification-service / gamification-service. */
     @MockBean
     private PaymentClient paymentClient;
 
     @MockBean
     private NotificationClient notificationClient;
+
+    @MockBean
+    private com.wydad.digital.shop.client.LoyaltyClient loyaltyClient;
 
     private Long variantId;
 
@@ -141,7 +144,12 @@ class OrderServiceTest {
     void prixDelaCommandeEstRecalculeDepuisLaBase() {
         int stockAvant = variantRepository.findById(variantId).orElseThrow().getStockQuantity();
 
-        OrderResponseDto order = orderService.createOrder(EMAIL, request(null));
+        OrderResponseDto order = orderService.createOrder(EMAIL, 42L, request(null));
+
+        // Fidélité : le montant payé est transmis au gamification-service
+        // (barème 1 pt / 10 DH appliqué et prouvé côté gamification-service).
+        verify(loyaltyClient).creditPointsForPurchase(
+                eq(42L), eq(new BigDecimal("628.00")), anyString());
 
         assertEquals(0, new BigDecimal("628.00").compareTo(order.getTotalAmount()),
                 "Total = 2 x 299 DH (prix base) + 30 DH livraison, jamais une valeur client");
@@ -183,7 +191,7 @@ class OrderServiceTest {
         int itemsPanierAvant = cartItemRepository.findByUserEmail(EMAIL).size();
 
         RuntimeException ex = assertThrows(RuntimeException.class,
-                () -> orderService.createOrder(EMAIL, request(null)));
+                () -> orderService.createOrder(EMAIL, 42L, request(null)));
 
         assertTrue(ex.getMessage().contains("solde E-cash insuffisant"),
                 "L'erreur de paiement remonte au client");

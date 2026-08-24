@@ -22,8 +22,9 @@ public class OrderController {
     @PreAuthorize("hasRole('ADHERENT') or hasRole('ADMIN')")
     public ResponseEntity<OrderResponseDto> createOrder(
             @RequestHeader("X-User-Email") String userEmail,
+            @RequestHeader(value = "X-User-Id", required = false) Long userId,
             @Valid @RequestBody OrderRequestDto dto) {
-        return ResponseEntity.ok(orderService.createOrder(userEmail, dto));
+        return ResponseEntity.ok(orderService.createOrder(userEmail, userId, dto));
     }
 
     @GetMapping
