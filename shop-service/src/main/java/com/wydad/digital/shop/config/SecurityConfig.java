@@ -19,7 +19,13 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http, UserContextFilter userContextFilter) throws Exception {
         http.csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(auth -> auth.anyRequest().authenticated())
+                .authorizeHttpRequests(auth -> auth
+                        // Catalogue produits : donnée publique consultable par
+                        // un visiteur anonyme (page /boutique du site public).
+                        // Panier/commandes/promos restent strictement réservés.
+                        .requestMatchers(org.springframework.http.HttpMethod.GET,
+                                "/api/shop/products", "/api/shop/products/{id}").permitAll()
+                        .anyRequest().authenticated())
                 .addFilterBefore(userContextFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }

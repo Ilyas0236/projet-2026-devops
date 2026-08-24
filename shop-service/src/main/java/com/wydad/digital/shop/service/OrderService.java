@@ -199,7 +199,7 @@ public class OrderService {
     @Transactional(readOnly = true)
     public OrderResponseDto getOrder(String userEmail, String orderNumber) {
         ShopOrder order = shopOrderRepository.findByOrderNumberAndUserEmail(orderNumber, userEmail)
-                .orElseThrow(() -> new RuntimeException("Commande non trouvée"));
+                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException("Commande non trouvée"));
         return mapToDto(order);
     }
 
@@ -223,7 +223,7 @@ public class OrderService {
     @Transactional
     public OrderResponseDto updateOrderStatus(String orderNumber, String newStatusStr, String comment) {
         ShopOrder order = shopOrderRepository.findByOrderNumber(orderNumber)
-                .orElseThrow(() -> new RuntimeException("Commande non trouvée: " + orderNumber));
+                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException("Commande non trouvée: " + orderNumber));
 
         OrderStatus newStatus;
         try {

@@ -47,7 +47,7 @@ public class ProductService {
 
     public ProductDto getProductById(Long id) {
         Product product = productRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Produit non trouvé: " + id));
+                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException("Produit non trouvé: " + id));
         return mapToDto(product);
     }
 
@@ -67,7 +67,7 @@ public class ProductService {
     @Transactional
     public ProductDto updateProduct(Long id, ProductRequest request) {
         Product product = productRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Produit non trouvé: " + id));
+                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException("Produit non trouvé: " + id));
         // slug/sku existants conservés : ne pas casser les liens et références
         applyRequest(product, request, false);
         return mapToDto(productRepository.save(product));
@@ -76,7 +76,7 @@ public class ProductService {
     @Transactional
     public void deleteProduct(Long id) {
         Product product = productRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Produit non trouvé: " + id));
+                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException("Produit non trouvé: " + id));
         productRepository.delete(product);
     }
 

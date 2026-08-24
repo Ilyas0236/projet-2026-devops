@@ -19,7 +19,16 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http, UserContextFilter userContextFilter) throws Exception {
         http.csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(auth -> auth.anyRequest().authenticated())
+                .authorizeHttpRequests(auth -> auth
+                        // Catalogue d'événements : donnée publique consultable
+                        // par un visiteur anonyme (page /billetterie du site
+                        // public). Achat et gestion des billets restent réservés.
+                        .requestMatchers(org.springframework.http.HttpMethod.GET,
+                                "/api/ticket/events", "/api/ticket/events/{id}",
+                                "/api/ticket/events/upcoming",
+                                "/api/ticket/events/type/{type}").permitAll()
+                        // La recherche sert aussi à l'achat (membre) : conservée AUTH.
+                        .anyRequest().authenticated())
                 .addFilterBefore(userContextFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }

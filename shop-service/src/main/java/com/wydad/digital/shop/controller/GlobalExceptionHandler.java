@@ -25,6 +25,16 @@ public class GlobalExceptionHandler {
         ));
     }
 
+    /** Ressource introuvable (produit, commande...) : 404 et non 400/500. */
+    @ExceptionHandler(jakarta.persistence.EntityNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleNotFound(jakarta.persistence.EntityNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
+                "error", "NOT_FOUND",
+                "message", ex.getMessage() != null ? ex.getMessage() : "Ressource non trouvee",
+                "timestamp", LocalDateTime.now().toString()
+        ));
+    }
+
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<Map<String, Object>> handleRuntime(RuntimeException ex) {
         Map<String, Object> body = new HashMap<>();
