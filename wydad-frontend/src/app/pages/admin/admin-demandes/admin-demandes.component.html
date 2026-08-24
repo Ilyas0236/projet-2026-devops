@@ -26,6 +26,23 @@
     {{ error }}
   </div>
 
+  <!-- Phase 1 bis — erreur consultation justificatif -->
+  <div *ngIf="kycError" role="alert"
+       class="p-4 rounded-lg bg-wydad-red/10 border border-wydad-red/30 text-wydad-red text-sm">
+    {{ kycError }}
+  </div>
+
+  <!-- Phase 1 bis — métadonnées du justificatif (mode dégradé, pas d'URL Cloudinary) -->
+  <div *ngIf="kycView" class="p-4 rounded-lg bg-surface-2 border border-surface-3 text-sm">
+    <p class="text-text-primary font-bold mb-1">Justificatif — {{ kycView.email }}</p>
+    <p class="text-text-secondary">
+      Type : {{ kycView.documentType }} · N° : {{ kycView.documentNumber }} ·
+      Déposé le {{ kycView.uploadedAt | date:'dd/MM/yyyy à HH:mm' }} ·
+      Vérifié : {{ kycView.verified ? 'oui' : 'non' }}
+      <span class="text-text-tertiary">(stockage local — fichier non disponible)</span>
+    </p>
+  </div>
+
   <!-- EMPTY -->
   <div *ngIf="!loading && !error && demandes.length === 0"
        class="bg-surface-1 border border-surface-3 rounded-2xl p-12 text-center">
@@ -57,6 +74,11 @@
         </div>
 
         <div class="flex gap-3 shrink-0">
+          <button type="button" (click)="viewJustificatif(d)" [disabled]="kycLoadingEmail === d.email"
+                  class="px-4 py-2 rounded-lg bg-transparent border border-surface-3 text-text-secondary hover:text-text-primary hover:border-text-tertiary text-xs font-bold uppercase tracking-wider transition-colors disabled:opacity-40"
+                  [attr.aria-label]="'Consulter le justificatif de ' + d.email">
+            {{ kycLoadingEmail === d.email ? '...' : '📄 Justificatif' }}
+          </button>
           <button type="button" (click)="validate(d)"
                   class="px-4 py-2 rounded-lg bg-green-600 hover:bg-green-500 text-white text-xs font-bold uppercase tracking-wider transition-colors">
             Valider

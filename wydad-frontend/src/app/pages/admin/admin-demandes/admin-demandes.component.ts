@@ -28,6 +28,11 @@ export class AdminDemandesComponent implements OnInit {
   motif = '';
   refusing = false;
 
+  // Phase 1 bis — consultation du justificatif (URL signée Cloudinary)
+  kycView: any = null;
+  kycLoadingEmail = '';
+  kycError = '';
+
   constructor(
     private http: HttpClient,
     private auth: AuthService,
@@ -67,6 +72,35 @@ export class AdminDemandesComponent implements OnInit {
   openRefuse(d: any) {
     this.refuseTarget = d;
     this.motif = '';
+  }
+
+  /**
+   * Phase 1 bis — charge l'URL signée du justificatif du demandeur et
+   * l'ouvre dans un nouvel onglet. L'URL expire au bout d'une heure.
+   */
+  viewJustificatif(d: any) {
+    this.kycLoadingEmail = d.email;
+    this.kycError = '';
+    this.http.get<any>(`${environment.apiBaseUrl}/auth/admin/kyc/document`, {
+      params: { email: d.email }
+    }).subscribe({
+      next: (res) => {
+        this.kycLoadingEmail = '';
+        if (res?.documentUrl) {
+          window.open(res.documentUrl, '_blank', 'noopener');
+          this.toast.info(`Justificatif de ${d.email} ouvert dans un nouvel onglet (lien valable 1 h).`);
+        } else {
+          // Mode dégradé : pas d'URL Cloudinary, on affiche les métadonnées.
+          this.kycView = res;
+          this.toast.info(`Aucun fichier Cloudinary pour ${d.email} — métadonnées affichées ci-dessous.`);
+        }
+      },
+      error: (err) => {
+        this.kycLoadingEmail = '';
+        this.kycError = err.error?.message || `Aucun justificatif trouvé pour ${d.email}.`;
+        setTimeout(() => (this.kycError = ''), 5000);
+      }
+    });
   }
 
   closeRefuse() {

@@ -372,6 +372,24 @@ public class AuthService {
         }
     }
 
+    /** Vue admin d'un justificatif : métadonnées + URL signée temporaire. */
+    public record KycDocumentView(String email, String documentType, String documentNumber,
+                                  boolean verified, LocalDateTime uploadedAt, String documentUrl) {}
+
+    /**
+     * Phase 1 bis — consultation du justificatif par l'ADMIN : renvoie les
+     * métadonnées du dossier KYC et une URL signée Cloudinary (1 h) pour
+     * examiner la pièce avant de valider ou refuser le compte.
+     */
+    public KycDocumentView getKycDocumentView(String email) {
+        KycDocument doc = kycDocumentRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException(
+                        "Aucun justificatif déposé pour " + email));
+        return new KycDocumentView(doc.getEmail(), doc.getDocumentType(),
+                doc.getDocumentNumber(), doc.isVerified(), doc.getUploadedAt(),
+                cloudinaryService.signedUrl(doc.getFilePath(), doc.getSecureUrl()));
+    }
+
     public KycResponse verifyKyc(String email) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UserNotFoundException(email));

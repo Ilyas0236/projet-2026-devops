@@ -351,6 +351,17 @@ public class AuthController {
         return ResponseEntity.ok(authService.refuseAccount(id, motif));
     }
 
+    /**
+     * Phase 1 bis — consultation du justificatif d'un utilisateur par l'admin :
+     * métadonnées + URL signée Cloudinary (1 h) pour vérifier la pièce avant
+     * validation/refus du compte.
+     */
+    @GetMapping("/admin/kyc/document")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<AuthService.KycDocumentView> adminKycDocument(@RequestParam String email) {
+        return ResponseEntity.ok(authService.getKycDocumentView(email));
+    }
+
     @PostMapping("/admin/users/create")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<UserProfileResponse> adminCreateUser(@Valid @RequestBody AdminCreateUserRequest request) {

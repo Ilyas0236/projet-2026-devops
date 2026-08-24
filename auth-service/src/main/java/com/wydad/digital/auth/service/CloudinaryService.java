@@ -90,13 +90,30 @@ public class CloudinaryService {
      * l'admin lors de la validation du compte. Retourne null en mode dégradé.
      */
     public String signedUrl(String publicId) {
+        return signedUrl(publicId, null);
+    }
+
+    /**
+     * Variante qui déduit le resource_type de l'URL stockée : les images partent
+     * en {@code image}, les PDF en {@code raw} (upload resource_type auto) —
+     * une URL signée avec le mauvais type ne s'ouvre pas.
+     */
+    public String signedUrl(String publicId, String storedSecureUrl) {
         if (!configured || publicId == null || !publicId.startsWith("kyc-documents/")) {
             return null;
+        }
+        String resourceType = "image";
+        if (storedSecureUrl != null) {
+            if (storedSecureUrl.contains("/raw/")) {
+                resourceType = "raw";
+            } else if (storedSecureUrl.contains("/video/")) {
+                resourceType = "video";
+            }
         }
         try {
             @SuppressWarnings("unchecked")
             String url = cloudinary.url()
-                    .resourceType("image")
+                    .resourceType(resourceType)
                     .signed(true)
                     .secure(true)
                     .generate(publicId);
