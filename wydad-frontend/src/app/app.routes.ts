@@ -49,6 +49,7 @@ import { AdminSondagesComponent } from './pages/admin/admin-sondages/admin-sonda
 import { AdminCommandesComponent } from './pages/admin/admin-commandes/admin-commandes.component';
 import { AdminBadgesComponent } from './pages/admin/admin-badges/admin-badges.component';
 import { AdminSeancesComponent } from './pages/admin/admin-seances/admin-seances.component';
+import { AdminJoueursPublicComponent } from './pages/admin/admin-joueurs-public/admin-joueurs-public.component';
 export const routes: Routes = [
   {
     // L'arbre admin DOIT être déclaré avant le layout public : celui-ci
@@ -67,6 +68,7 @@ export const routes: Routes = [
       { path: 'commandes', component: AdminCommandesComponent },
       { path: 'billetterie', component: AdminBilletterieComponent },
       { path: 'effectif', component: AdminEffectifComponent },
+      { path: 'effectif-public', component: AdminJoueursPublicComponent },
       { path: 'seances', component: AdminSeancesComponent },
       { path: 'staff', component: AdminStaffComponent },
       { path: 'academie', component: AdminAcademieComponent },

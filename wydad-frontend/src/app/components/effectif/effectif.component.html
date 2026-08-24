@@ -48,17 +48,17 @@
         <!-- Number Badge -->
         <div class="absolute top-4 left-4 z-20 flex flex-col gap-1.5">
           <span class="bg-wydad-red text-white font-display font-black text-xl w-11 h-11 flex items-center justify-center rounded-lg shadow-glow-red">
-            {{ player.jerseyNumber || '?' }}
+            {{ player.numero || '?' }}
           </span>
           <span class="glass text-white text-[9px] font-bold uppercase tracking-wider px-2 py-1 text-center rounded">
-            {{ player.position }}
+            {{ player.poste }}
           </span>
         </div>
 
         <!-- Nationality flag (if available) -->
-        <div class="absolute top-4 right-4 z-20" *ngIf="player.nationality">
+        <div class="absolute top-4 right-4 z-20" *ngIf="player.nationalite">
           <span class="text-[10px] font-semibold text-text-tertiary bg-surface-2/80 backdrop-blur-sm px-2 py-1 rounded">
-            {{ player.nationality }}
+            {{ player.nationalite }}
           </span>
         </div>
 
@@ -78,30 +78,30 @@
 
           <!-- Decorative name watermark -->
           <span class="absolute bottom-14 left-0 right-0 font-display font-black text-[4rem] text-white/[0.03] uppercase tracking-tighter whitespace-nowrap overflow-hidden text-center pointer-events-none">
-            {{ player.fullName?.split(' ')[1] || player.fullName }}
+            {{ player.nom?.split(' ')[1] || player.nom }}
           </span>
 
           <!-- Player info overlay -->
           <div class="absolute bottom-0 left-0 w-full p-5 relative z-10">
-            <h3 class="font-display font-bold text-lg text-white uppercase leading-tight mb-0.5">{{ player.fullName }}</h3>
-            <p class="text-xs text-text-tertiary">{{ getAge(player.birthDate) }} ans</p>
+            <h3 class="font-display font-bold text-lg text-white uppercase leading-tight mb-0.5">{{ player.nom }}</h3>
+            <p class="text-xs text-text-tertiary" *ngIf="player.age">{{ player.age }} ans</p>
           </div>
         </div>
 
         <!-- Stats bar -->
         <div class="p-4 flex justify-between items-center border-t border-white/[0.04]">
           <div class="flex flex-col items-center flex-1">
-            <span class="font-display font-bold text-lg text-wydad-gold">{{ player.matchesPlayed || 0 }}</span>
+            <span class="font-display font-bold text-lg text-wydad-gold">{{ player.matchsJoues || 0 }}</span>
             <span class="text-[9px] text-text-muted uppercase tracking-wider font-semibold">Matchs</span>
           </div>
           <div class="w-px h-8 bg-white/[0.06]"></div>
           <div class="flex flex-col items-center flex-1">
-            <span class="font-display font-bold text-lg text-wydad-gold">{{ player.goals || 0 }}</span>
+            <span class="font-display font-bold text-lg text-wydad-gold">{{ player.buts || 0 }}</span>
             <span class="text-[9px] text-text-muted uppercase tracking-wider font-semibold">{{ getGoalLabel() }}</span>
           </div>
           <div class="w-px h-8 bg-white/[0.06]"></div>
           <div class="flex flex-col items-center flex-1">
-            <span class="font-display font-bold text-lg text-wydad-gold">{{ player.assists || 0 }}</span>
+            <span class="font-display font-bold text-lg text-wydad-gold">{{ player.passes || 0 }}</span>
             <span class="text-[9px] text-text-muted uppercase tracking-wider font-semibold">Passes</span>
           </div>
         </div>

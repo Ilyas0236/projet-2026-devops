@@ -55,10 +55,4 @@ export class EffectifComponent implements OnInit {
   getGoalLabel(): string {
     return this.selectedSport === 'BASKETBALL' ? 'Points' : 'Buts';
   }
-
-  getAge(birthDate: string): number {
-    if (!birthDate) return 0;
-    const diff = Date.now() - new Date(birthDate).getTime();
-    return Math.abs(new Date(diff).getUTCFullYear() - 1970);
-  }
 }

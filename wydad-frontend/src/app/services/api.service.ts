@@ -101,6 +101,23 @@ export class ApiService {
     return this.http.get<any[]>(`${this.baseUrl}/content/joueurs/sport/${sport}`);
   }
 
+  // --- Fonctionnalité 6/6 : gestion ADMIN des fiches publiques joueurs (stats) ---
+  getAllJoueurs(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/sports/players`);
+  }
+
+  createJoueur(joueur: any): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/content/joueurs`, joueur);
+  }
+
+  updateJoueur(id: number, joueur: any): Observable<any> {
+    return this.http.put<any>(`${this.baseUrl}/content/joueurs/${id}`, joueur);
+  }
+
+  deleteJoueur(id: number): Observable<any> {
+    return this.http.delete<any>(`${this.baseUrl}/content/joueurs/${id}`);
+  }
+
   // Parametres club (paliers adhesion, coordonnees) — source de verite ADMIN
   getClubSettings(): Observable<any[]> {
     return this.http.get<any[]>(`${this.baseUrl}/content/settings`);
