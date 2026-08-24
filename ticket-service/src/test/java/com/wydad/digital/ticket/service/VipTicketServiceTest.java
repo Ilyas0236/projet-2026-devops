@@ -249,4 +249,75 @@ class VipTicketServiceTest {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("non trouvé");
     }
+
+    // ---------- 7. Auto-déclenchement à la création ----------
+
+    /**
+     * L'auto-génération sur un match à domicile produit bien les billets
+     * (même résultat qu'un appel manuel).
+     */
+    @Test
+    void autoGenerationSurMatchADomicileCreeLesBillets() {
+        Event home2 = eventRepository.save(Event.builder()
+                .title("WAC - Berkane (auto test)")
+                .eventType(com.wydad.digital.ticket.enums.EventType.FOOTBALL)
+                .homeTeam("Wydad AC")
+                .awayTeam("RS Berkane")
+                .venue("Complexe Mohammed V")
+                .eventDate(LocalDateTime.now().plusDays(15))
+                .basePrice(new BigDecimal("100.00"))
+                .totalCapacity(100)
+                .availableSeats(100)
+                .soldTickets(0)
+                .build());
+        sectionRepository.save(Section.builder()
+                .name("VIP auto test")
+                .category(TicketCategory.VIP)
+                .capacity(40)
+                .availableSeats(40)
+                .price(BigDecimal.ZERO)
+                .event(home2)
+                .build());
+
+        vipTicketService.autoGenerateIfHomeEvent(home2);
+
+        var billets = ticketRepository.findByUserIdOrderByCreatedAtDesc(JOUEUR_1_ID).stream()
+                .filter(t -> t.getEvent().getId().equals(home2.getId()))
+                .toList();
+        assertThat(billets).hasSize(4);
+    }
+
+    /** Un match à l'extérieur ne déclenche RIEN, sans erreur. */
+    @Test
+    void autoGenerationSurMatchExterieurNeRienFait() {
+        Event away = eventRepository.findById(awayEventId).orElseThrow();
+        int avant = ticketRepository.findAll().size();
+
+        vipTicketService.autoGenerateIfHomeEvent(away);
+
+        assertThat(ticketRepository.findAll()).hasSize(avant);
+    }
+
+    /** Section VIP absente : l'auto-génération avale l'erreur (best-effort). */
+    @Test
+    void autoGenerationSansSectionVipNEchouePas() {
+        Event home3 = eventRepository.save(Event.builder()
+                .title("WAC - Hassania (sans VIP)")
+                .eventType(com.wydad.digital.ticket.enums.EventType.FOOTBALL)
+                .homeTeam("Wydad AC")
+                .awayTeam("Hassania Agadir")
+                .venue("Complexe Mohammed V")
+                .eventDate(LocalDateTime.now().plusDays(20))
+                .basePrice(new BigDecimal("90.00"))
+                .totalCapacity(80)
+                .availableSeats(80)
+                .soldTickets(0)
+                .build());
+
+        org.assertj.core.api.Assertions.assertThatCode(
+                () -> vipTicketService.autoGenerateIfHomeEvent(home3))
+                .doesNotThrowAnyException();
+        // Aucun billet créé (pas de section)
+        assertThat(ticketRepository.findByUserIdOrderByCreatedAtDesc(JOUEUR_1_ID)).isEmpty();
+    }
 }

@@ -57,6 +57,29 @@ public class VipTicketService {
      */
     public record VipGenerationResult(int joueursServis, int billetsCrees) {}
 
+    /**
+     * Déclencheur automatique après création d'un événement : génère les
+     * billets VIP si c'est un match à domicile. Best-effort et silencieux :
+     * une erreur ici ne DOIT JAMAIS faire échouer la création de l'événement
+     * (relançable via /internal/vip-generate, génération idempotente).
+     */
+    @Transactional
+    public void autoGenerateIfHomeEvent(Event event) {
+        try {
+            if (!isHomeMatch(event)) {
+                return;
+            }
+            VipGenerationResult result = generateVipTicketsForEvent(event.getId());
+            log.info("Auto-génération VIP après création de l'événement {} : {} joueur(s), {} billet(s)",
+                    event.getId(), result.joueursServis(), result.billetsCrees());
+        } catch (Exception e) {
+            // Section VIP absente, auth-service injoignable... : l'ADMIN peut
+            // relancer manuellement via POST /api/ticket/internal/vip-generate/{eventId}.
+            log.warn("Auto-génération VIP non aboutie pour l'événement {} — relance manuelle possible",
+                    event.getId(), e);
+        }
+    }
+
     @Transactional
     public VipGenerationResult generateVipTicketsForEvent(Long eventId) {
         Event event = eventRepository.findById(eventId)

@@ -22,6 +22,7 @@ public class EventService {
 
     private final EventRepository eventRepository;
     private final SectionRepository sectionRepository;
+    private final VipTicketService vipTicketService;
 
     @Transactional
     public EventResponse createEvent(CreateEventRequest request) {
@@ -58,6 +59,11 @@ public class EventService {
                 event.getSections().add(section);
             }
         }
+
+        // Phase 2 : à la création d'un match à domicile, génération automatique
+        // des 4 billets VIP par joueur actif. Best-effort : ne bloque jamais
+        // la création (relance manuelle possible via /internal/vip-generate).
+        vipTicketService.autoGenerateIfHomeEvent(event);
 
         return mapToResponse(event);
     }
