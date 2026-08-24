@@ -27,6 +27,10 @@ public class SecurityConfig {
                                 "/api/ticket/events", "/api/ticket/events/{id}",
                                 "/api/ticket/events/upcoming",
                                 "/api/ticket/events/type/{type}").permitAll()
+                        // Routes internes service-à-service : protégées par le
+                        // secret partagé X-Internal-Secret (validé dans le
+                        // contrôleur) ; la gateway les bloque en amont.
+                        .requestMatchers("/api/ticket/internal/**").permitAll()
                         // La recherche sert aussi à l'achat (membre) : conservée AUTH.
                         .anyRequest().authenticated())
                 .addFilterBefore(userContextFilter, UsernamePasswordAuthenticationFilter.class);
