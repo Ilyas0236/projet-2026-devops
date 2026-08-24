@@ -53,6 +53,35 @@ import { ToastService } from '../../../services/toast.service';
           </div>
         </div>
 
+        <!-- Page « Stade » (stadium_info) : alimente la page publique /stade -->
+        <div class="bg-white/5 border border-white/10 rounded-lg p-5">
+          <h3 class="font-display font-bold uppercase tracking-wider text-wydad-gold text-sm mb-1">Stade</h3>
+          <p class="text-xs text-gray-600 mb-4">Informations affichées sur la page publique « Stade » (/stade).</p>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <input [(ngModel)]="stadiumDraft.name" name="std-name" required placeholder="Nom du stade *"
+                   class="admin-input !text-sm">
+            <input [(ngModel)]="stadiumDraft.city" name="std-city" required placeholder="Ville *"
+                   class="admin-input !text-sm">
+            <input [(ngModel)]="stadiumDraft.capacity" name="std-capacity" type="number" min="1" required
+                   placeholder="Capacité (places) *" class="admin-input !text-sm">
+            <input [(ngModel)]="stadiumDraft.openedYear" name="std-year" type="number" min="1900"
+                   placeholder="Année d'inauguration" class="admin-input !text-sm">
+            <input [(ngModel)]="stadiumDraft.address" name="std-address" placeholder="Adresse"
+                   class="admin-input !text-sm md:col-span-2">
+            <textarea [(ngModel)]="stadiumDraft.accessInfo" name="std-access" rows="2"
+                      placeholder="Accès (tramway, bus…)" class="admin-input !text-sm md:col-span-2"></textarea>
+            <textarea [(ngModel)]="stadiumDraft.history" name="std-history" rows="3"
+                      placeholder="Histoire du stade" class="admin-input !text-sm md:col-span-2"></textarea>
+          </div>
+          <div class="flex justify-end mt-3">
+            <button (click)="saveStadium()" [disabled]="!canSaveStadium() || stadiumSaving"
+                    class="px-4 py-2 bg-wydad-red disabled:opacity-40 disabled:cursor-not-allowed hover:bg-red-700 text-white uppercase text-xs font-bold tracking-wider">
+              {{ stadiumSaving ? 'Enregistrement...' : 'Enregistrer le stade' }}
+            </button>
+          </div>
+        </div>
+
         <!-- B.7 : Sponsors & partenaires (ecriture ADMIN, lecture publique) -->
         <div class="bg-white/5 border border-white/10 rounded-lg p-5">
           <h3 class="font-display font-bold uppercase tracking-wider text-wydad-gold text-sm mb-1">Sponsors &amp; partenaires</h3>
@@ -152,12 +181,60 @@ export class AdminSettingsComponent implements OnInit {
   socialLinks: any[] = [];
   socialDraft: any = { platform: '', url: '' };
 
+  // Page « Stade » (cle de configuration "stadium_info", prouvée par StadiumInfoSecurityTest)
+  stadiumDraft: any = {
+    name: '', city: '', capacity: null as number | null, openedYear: null as number | null,
+    address: '', accessInfo: '', history: ''
+  };
+  stadiumSaving = false;
+
   constructor(private apiService: ApiService, private toast: ToastService) {}
 
   ngOnInit() {
     this.loadSettings();
     this.loadSponsors();
     this.loadSocialLinks();
+    this.loadStadium();
+  }
+
+  loadStadium() {
+    this.apiService.getClubSetting('stadium_info').subscribe({
+      next: (info) => {
+        if (info && typeof info === 'object') {
+          this.stadiumDraft = { ...this.stadiumDraft, ...info };
+        }
+      },
+      error: () => {/* pas encore saisi : formulaire vierge */}
+    });
+  }
+
+  canSaveStadium(): boolean {
+    return !!this.stadiumDraft.name?.trim() && !!this.stadiumDraft.city?.trim()
+      && !!this.stadiumDraft.capacity;
+  }
+
+  saveStadium() {
+    if (!this.canSaveStadium() || this.stadiumSaving) return;
+    this.stadiumSaving = true;
+    const payload = {
+      name: this.stadiumDraft.name.trim(),
+      city: this.stadiumDraft.city.trim(),
+      capacity: Number(this.stadiumDraft.capacity),
+      openedYear: this.stadiumDraft.openedYear ? Number(this.stadiumDraft.openedYear) : null,
+      address: this.stadiumDraft.address?.trim() || null,
+      accessInfo: this.stadiumDraft.accessInfo?.trim() || null,
+      history: this.stadiumDraft.history?.trim() || null
+    };
+    this.apiService.updateClubSetting('stadium_info', payload).subscribe({
+      next: () => {
+        this.stadiumSaving = false;
+        this.toast.success('Informations du stade enregistrées — visibles sur /stade.');
+      },
+      error: () => {
+        this.stadiumSaving = false;
+        this.toast.error("Échec de l'enregistrement.");
+      }
+    });
   }
 
   loadSocialLinks() {

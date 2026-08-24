@@ -54,6 +54,7 @@ import { AdminJoueursPublicComponent } from './pages/admin/admin-joueurs-public/
 import { AdminPalmaresComponent } from './pages/admin/admin-palmares/admin-palmares.component';
 import { AdminLegendesComponent } from './pages/admin/admin-legendes/admin-legendes.component';
 import { LegendesComponent } from './pages/legendes/legendes.component';
+import { StadeComponent } from './pages/stade/stade.component';
 export const routes: Routes = [
   {
     // L'arbre admin DOIT être déclaré avant le layout public : celui-ci
@@ -105,6 +106,7 @@ export const routes: Routes = [
       { path: 'effectif', component: EffectifComponent },
       { path: 'palmares', component: PalmaresComponent },
       { path: 'legendes', component: LegendesComponent },
+      { path: 'stade', component: StadeComponent },
       { path: 'espace-fan', component: EspaceFanComponent, canActivate: [authGuard] },
       { path: 'sondages', component: SondagesComponent },
       { path: 'panier', component: CartComponent, canActivate: [authGuard] },
