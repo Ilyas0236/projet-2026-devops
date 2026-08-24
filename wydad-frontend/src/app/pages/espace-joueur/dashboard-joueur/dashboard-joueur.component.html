@@ -172,12 +172,29 @@
             <p *ngIf="documents.length === 0" class="text-ink-tertiary text-xs uppercase tracking-widest">Aucun document partagé.</p>
             <div class="space-y-3">
               <a *ngFor="let doc of documents" [href]="doc.url" target="_blank" rel="noopener"
-                 class="flex items-center justify-between gap-3 bg-paper-1 rounded-2xl p-4 border border-paper-3 hover:border-wydad-red/40 transition-colors group">
+                 class="flex items-start justify-between gap-3 bg-paper-1 rounded-2xl p-4 border border-paper-3 hover:border-wydad-red/40 transition-colors group">
                 <div class="min-w-0">
-                  <p class="text-sm font-bold truncate text-ink-primary">{{ doc.title }}</p>
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <!-- Badge type de média (même code couleur que la sidebar staff) -->
+                    <span class="shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest"
+                          [ngClass]="{
+                            'bg-purple-100 text-purple-700': doc.mediaType === 'VIDEO',
+                            'bg-blue-100 text-blue-700': doc.mediaType === 'PHOTO',
+                            'bg-paper-2 text-ink-secondary border border-paper-3': !doc.mediaType || doc.mediaType === 'DOCUMENT'
+                          }">
+                      {{ mediaTypeLabel(doc.mediaType) }}
+                    </span>
+                    <p class="text-sm font-bold truncate text-ink-primary">{{ doc.title }}</p>
+                  </div>
+                  <p *ngIf="doc.message" class="text-xs text-ink-secondary mt-1.5">{{ doc.message }}</p>
+                  <p *ngIf="doc.senderName" class="text-[10px] uppercase tracking-widest text-ink-tertiary mt-1">
+                    De la part de <span class="font-bold">{{ doc.senderName }}</span>
+                  </p>
                   <p class="text-[10px] uppercase tracking-widest text-ink-tertiary mt-0.5">Ajouté le {{ doc.dateAjout | date:'dd/MM/yyyy' }}</p>
                 </div>
-                <svg class="w-5 h-5 shrink-0 text-wydad-red opacity-60 group-hover:opacity-100" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                <svg *ngIf="!doc.mediaType || doc.mediaType === 'DOCUMENT'" class="w-5 h-5 shrink-0 text-wydad-red opacity-60 group-hover:opacity-100" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                <svg *ngIf="doc.mediaType === 'VIDEO'" class="w-5 h-5 shrink-0 text-purple-600 opacity-70 group-hover:opacity-100" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                <svg *ngIf="doc.mediaType === 'PHOTO'" class="w-5 h-5 shrink-0 text-blue-500 opacity-70 group-hover:opacity-100" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
               </a>
             </div>
           </div>
@@ -332,7 +349,17 @@
                       <span class="text-2xl font-display font-black text-ink-primary">{{ c.sessionDate | date:'dd' }}</span>
                     </div>
                     <div class="min-w-0">
-                      <h4 class="font-display font-bold uppercase tracking-wider truncate text-ink-primary">{{ c.sessionTitle }}</h4>
+                      <div class="flex items-center gap-2">
+                        <h4 class="font-display font-bold uppercase tracking-wider truncate text-ink-primary">{{ c.sessionTitle }}</h4>
+                        <!-- Phase 3 — accusé de lecture (alimente le suivi entraîneur) -->
+                        <span *ngIf="c.readAt" class="shrink-0 inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-green-600"
+                              [title]="'Vu le ' + (c.readAt | date:'dd/MM/yyyy HH:mm')">
+                          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                          Vu
+                        </span>
+                        <span *ngIf="!c.readAt" class="shrink-0 w-2 h-2 rounded-full bg-wydad-red animate-pulse"
+                              title="Non encore lue — marquée comme lue à l'affichage"></span>
+                      </div>
                       <p class="text-ink-tertiary text-xs uppercase tracking-widest mt-1">
                         {{ c.sessionDate | date:'HH:mm' }} · {{ c.sessionLocation }}
                       </p>

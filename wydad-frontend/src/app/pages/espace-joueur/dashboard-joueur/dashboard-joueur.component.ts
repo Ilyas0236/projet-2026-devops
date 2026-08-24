@@ -151,7 +151,17 @@ export class DashboardJoueurComponent implements OnInit {
 
   /** Convocations + historique + documents de MON espace (filtrés par le backend). */
   loadMySpace() {
-    this.api.getMyConvocations().subscribe({ next: d => this.convocations = d, error: () => {} });
+    this.api.getMyConvocations().subscribe({
+      next: d => {
+        // Garde-fou : une payload non-tableau (réponse dégradée) ne casse pas l'espace.
+        const list = Array.isArray(d) ? d : [];
+        this.convocations = list;
+        // Phase 3 — accusé de lecture : consulter sa boîte = lire ses
+        // convocations. Idempotent côté serveur ; alimente le suivi entraîneur.
+        list.filter(c => !c.readAt).forEach(c => this.markConvocationRead(c));
+      },
+      error: () => {}
+    });
     this.api.getMyPresence().subscribe({ next: d => this.presence = d, error: () => {} });
     this.api.getMyDocuments().subscribe({ next: d => this.documents = d, error: () => {} });
     this.api.getMyStats().subscribe({ next: d => this.matchStats = d, error: () => {} });
@@ -249,6 +259,26 @@ export class DashboardJoueurComponent implements OnInit {
           this.submittingResponse = false;
         }
       });
+  }
+
+  /**
+   * Phase 3 — accusé de lecture silencieux (fire-and-forget) : le joueur
+   * a vu sa convocation, l'entraîneur le voit dans son suivi. Idempotent.
+   */
+  markConvocationRead(c: any) {
+    this.api.markConvocationRead(c.id).subscribe({
+      next: () => { c.readAt = new Date().toISOString(); },
+      error: () => {}
+    });
+  }
+
+  /** Pastille de type média (même code couleur que la sidebar staff). */
+  mediaTypeLabel(mediaType: string | null | undefined): string {
+    switch (mediaType) {
+      case 'VIDEO': return 'Vidéo';
+      case 'PHOTO': return 'Photo';
+      default: return 'Document';
+    }
   }
 
   private reloadConvocations() {
