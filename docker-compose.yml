@@ -200,6 +200,9 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/sports_db
       - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER:-wydad}
       - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD:-wydad2024}
+      # Phase 3 — notifications in-app des convocations (secret interne requis ;
+      # l'URI notification-service pointe déjà sur le bon défaut du client)
+      - WYDAD_INTERNAL_SECRET=${INTERNAL_SECRET:?INTERNAL_SECRET manquant dans .env}
     depends_on:
       postgres:
         condition: service_healthy
