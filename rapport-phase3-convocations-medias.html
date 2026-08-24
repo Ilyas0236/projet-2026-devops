@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Phase 3 — Convocations & Médias tactiques</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800;900&family=Archivo+Narrow:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --rouge: #C8102E;
+    --rouge-fonce: #9E0B22;
+    --papier: #FAFAF8;
+    --carte: #FFFFFF;
+    --encre: #1A1A1A;
+    --encre-2: #55555A;
+    --encre-3: #8E8E93;
+    --ligne: #E7E4DE;
+    --vert: #15803D;
+    --ambre: #B45309;
+    --bleu: #2563EB;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Archivo', system-ui, sans-serif;
+    background: var(--papier);
+    color: var(--encre);
+    line-height: 1.6;
+    padding-bottom: 4rem;
+  }
+  .wrap { max-width: 880px; margin: 0 auto; padding: 0 1.25rem; }
+
+  header.hero { background: linear-gradient(135deg, var(--rouge), var(--rouge-fonce)); color: #fff; padding: 3.5rem 0 2.5rem; }
+  header.hero .kicker { font-size: 11px; letter-spacing: 0.25em; text-transform: uppercase; opacity: .85; font-weight: 600; }
+  header.hero h1 { font-weight: 900; font-size: clamp(1.8rem, 5vw, 2.6rem); text-transform: uppercase; letter-spacing: -0.01em; margin-top: .5rem; }
+  header.hero p.sous { margin-top: .75rem; max-width: 60ch; opacity: .92; font-size: .95rem; }
+
+  .bandeau { display: flex; flex-wrap: wrap; gap: .75rem; margin-top: 1.75rem; }
+  .stat { background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.25); border-radius: 14px; padding: .65rem 1rem; min-width: 120px; }
+  .stat b { display: block; font-size: 1.35rem; font-weight: 900; font-variant-numeric: tabular-nums; }
+  .stat span { font-size: 10px; text-transform: uppercase; letter-spacing: .15em; opacity: .85; }
+
+  section { background: var(--carte); border: 1px solid var(--ligne); border-radius: 20px; padding: 2rem; margin-top: 1.5rem; }
+  h2 { font-size: .95rem; text-transform: uppercase; letter-spacing: .18em; color: var(--rouge); margin-bottom: 1rem; font-weight: 800; }
+  h3 { font-size: 1rem; margin: 1.25rem 0 .5rem; font-weight: 800; }
+
+  table { width: 100%; border-collapse: collapse; font-size: .88rem; }
+  th { text-align: left; font-size: 10px; text-transform: uppercase; letter-spacing: .12em; color: var(--encre-3); border-bottom: 2px solid var(--ligne); padding: .5rem .6rem; }
+  td { padding: .6rem; border-bottom: 1px solid var(--ligne); vertical-align: top; }
+  td code, p code { font-family: ui-monospace, Consolas, monospace; font-size: .78em; background: var(--papier); border: 1px solid var(--ligne); border-radius: 6px; padding: .1em .4em; }
+
+  .pill { display: inline-block; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; border-radius: 999px; padding: .15rem .6rem; }
+  .pill.ok { background: #DCFCE7; color: var(--vert); }
+  .pill.warn { background: #FEF3C7; color: var(--ambre); }
+  .pill.info { background: #DBEAFE; color: var(--bleu); }
+  .pill.red { background: #FEE2E2; color: var(--rouge); }
+
+  ul.liste { list-style: none; }
+  ul.liste li { padding-left: 1.4rem; position: relative; margin-bottom: .45rem; font-size: .92rem; color: var(--encre-2); }
+  ul.liste li::before { content: ""; position: absolute; left: 0; top: .55em; width: .55rem; height: .55rem; border-radius: 50%; background: var(--rouge); }
+  ul.liste li b { color: var(--encre); }
+
+  .preuve { background: #101418; color: #D6E2EE; border-radius: 12px; padding: .9rem 1.1rem; font-family: ui-monospace, Consolas, monospace; font-size: .76rem; overflow-x: auto; white-space: pre; margin: .75rem 0; }
+  .preuve .g { color: #6EE7A0; } .preuve .c { color: #7C8B99; }
+
+  footer { text-align: center; margin-top: 2.5rem; color: var(--encre-3); font-size: 11px; text-transform: uppercase; letter-spacing: .2em; }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <p class="kicker">Wydad Digital · Rapport de phase</p>
+    <h1>Phase 3 — Convocations &amp; Médias tactiques</h1>
+    <p class="sous">Convocation groupée avec liste cochable, accusés de lecture suivis côté entraîneur,
+       envoi de médias tactiques (vidéo / photo / PDF) stockés sur Cloudinary, et boîte de réception
+       unifiée côté joueur.</p>
+    <div class="bandeau">
+      <div class="stat"><b>46</b><span>tests sports-service</span></div>
+      <div class="stat"><b>28</b><span>tests frontend Karma</span></div>
+      <div class="stat"><b>4</b><span>lots livrés</span></div>
+      <div class="stat"><b>✓</b><span>E2E prouvé en prod</span></div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <section>
+    <h2>Lot 1 — Backend : convocation groupée + suivi</h2>
+    <ul class="liste">
+      <li><b>Convocation groupée</b> <code>POST /my-space/staff/convocations/batch</code> : une séance, N joueurs,
+        un seul appel. Chaque joueur est traité individuellement — doublon ou INAPTE n'annule pas les autres,
+        il alimente la liste des <b>rejets motivés</b>.</li>
+      <li><b>Accusé de lecture</b> <code>POST /my-space/convocations/{id}/read</code> : ownership strict (403 sinon),
+        idempotent (re-lecture ne change pas la date).</li>
+      <li><b>Vue entraîneur</b> <code>GET /staff/sessions/{id}/responses</code> + <code>/summary</code> :
+        réponses présence + lecture par joueur, compteurs confirmés / absents / retards / en attente / non lus.</li>
+      <li>Notifications in-app automatiques pour chaque convocation créée.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Lot 2 — Backend : médias tactiques avec upload Cloudinary réel</h2>
+    <ul class="liste">
+      <li><b>Envoi multipart</b> <code>POST /my-space/staff/media</code> : vidéo / photo / PDF jusqu'à 25 Mo,
+        adressé à UN joueur (<code>joueurUserId</code>) ou à TOUTE la catégorie du staff (<code>wholeTeam=true</code>).</li>
+      <li>Upload réel sur <b>Cloudinary</b> (type <code>authenticated</code>) ; URL <b>signée à la demande, valable 1 h</b>,
+        jamais d'URL publique permanente stockée côté joueur.</li>
+      <li>Ownership catégorie vérifié joueur par joueur ; l'envoi équipe est borné à la catégorie du staff.</li>
+      <li>Notification « Nouveau média de votre entraîneur » à chaque destinataire (best-effort).</li>
+      <li>Historique des envois <code>GET /staff/media/sent</code> avec nom de l'expéditeur résolu côté service.</li>
+      <li>Gestion d'erreurs dédiée : 503 si stockage indisponible, 413 si fichier trop volumineux.</li>
+    </ul>
+    <p style="font-size:.85rem;color:var(--encre-2)">Cloudinary valide les formats réels côté serveur :
+      un faux PDF est rejeté (« Invalid PDF file ») — comportement attendu, prouvé pendant les tests E2E.</p>
+  </section>
+
+  <section>
+    <h2>Lot 3 — Frontend staff : checklist &amp; envoi média</h2>
+    <ul class="liste">
+      <li><b>Liste cochable</b> des joueurs aptes (badge INAPTE visible mais non cochable),
+        sélection « tout l'effectif », toast récapitulant créations + rejets motivés.</li>
+      <li><b>Suivi par séance</b> : cliquer une séance du planning affiche les compteurs
+        (confirmés / absents / en attente / non lus) et le détail par joueur avec pastille de lecture
+        et pilule de réponse.</li>
+      <li><b>Formulaire média</b> : fichier ≤ 25 Mo contrôlé côté client, message optionnel,
+        ciblage UN joueur (pré-ciblage depuis le tableau de l'effectif via icône vidéo) ou toute l'équipe.</li>
+      <li>Sidebar « Médias envoyés » avec badges VIDEO / PHOTO / DOCUMENT et note sur les liens signés 1 h.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Lot 4 — Frontend joueur : boîte de réception unifiée</h2>
+    <ul class="liste">
+      <li><b>Mes documents enrichis</b> : badge de type (Vidéo / Photo / Document, même code couleur que la sidebar staff),
+        message du coach, ligne « De la part de … » avec le nom du staff, icône selon le type.</li>
+      <li><b>Accusé de lecture automatique</b> : consulter son espace marque ses convocations non-lues
+        (idempotent, silencieux) — le coach voit le compteur « non lu » tomber dans son suivi.</li>
+      <li>Pastille « Vu ✓ » verte sur les convocations lues, point rouge pulsant tant qu'elle ne l'est pas.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Preuve E2E en production (VM Azure 158.158.74.169)</h2>
+    <h3>Accusé de lecture → suivi entraîneur</h3>
+    <div class="preuve"><span class="c"># Séance 2 créée, joueur 9 convoqué (convocation id 4)</span>
+== summary AVANT lecture ==
+{"sessionId":2,"total":1,"unread":<span class="g">1</span>,"confirmed":0,"absent":0,"late":0,"pending":1}
+<span class="c"># Le joueur consulte sa convocation (POST /convocations/4/read)</span>
+"readAt":"2026-08-24T21:25:47.949995254"
+== summary APRES lecture ==
+{"sessionId":2,"total":1,"unread":<span class="g">0</span>,"confirmed":0,"absent":0,"late":0,"pending":1}</div>
+
+    <h3>Médias adressés au joueur 9</h3>
+    <div class="preuve">GET /api/sports/my-space/documents
+#2 [PHOTO]    Placement defensif   | de: Hassan CoachP3 | msg: Schema a memoriser
+#1 [DOCUMENT] Analyse adverse Friday | de: Hassan CoachP3 | msg: A regarder avant vendredi</div>
+    <p style="font-size:.85rem;color:var(--encre-2)">
+      L'envoi « toute l'équipe » (PNG → PHOTO id 2) a été délivré aux deux joueurs U19 ;
+      le joueur hors catégorie ne voit rien (scoping prouvé) ;
+      les notifications sont arrivées avec lien profond <code>/joueur/dashboard</code>.</p>
+  </section>
+
+  <section>
+    <h2>Qualité — tests automatisés au fil de l'eau</h2>
+    <table>
+      <tr><th>Suite</th><th>Couverture ajoutée</th><th>Résultat</th></tr>
+      <tr><td>sports-service (JUnit)</td>
+          <td>Batch (création + rejets motivés), ownership read/respond (403), scoping équipe vs hors-catégorie,
+              upload média individuel avec notification, envoi équipe multi-destinataires, historique staff</td>
+          <td><span class="pill ok">46/46 vert</span></td></tr>
+      <tr><td>wydad-frontend (Karma)</td>
+          <td>Logique VIP joueur conservée + garde-fou payload non-tableau sur les convocations</td>
+          <td><span class="pill ok">28/28 SUCCESS</span></td></tr>
+      <tr><td>Build production Angular</td><td>ng build OK (budget initial légèrement dépassé — non bloquant)</td>
+          <td><span class="pill warn">OK</span></td></tr>
+    </table>
+  </section>
+
+  <section>
+    <h2>Déploiement &amp; commits</h2>
+    <ul class="liste">
+      <li><code>e79eddd</code> — Lot 1+2 backend (batch, read receipts, médias Cloudinary, tests).</li>
+      <li>Commit correctif <code>senderName</code> résolu côté service (lookup staff).</li>
+      <li>Lot 3 — frontend staff (checklist groupée, envoi média multipart, panneau de suivi).</li>
+      <li><code>b938997</code> — Lot 4 — boîte de réception unifiée joueur.</li>
+      <li>Frontend reconstruit dans le conteneur Docker et redéployé : HTTP 200 sur
+        <code>:4200</code>, nouveau bundle vérifié dans le conteneur.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Reste à faire (hors périmètre phase 3)</h2>
+    <ul class="liste">
+      <li>Vérification visuelle manuelle des deux dashboards dans le navigateur.</li>
+      <li>Nettoyage des données de test avant vraie production : comptes phase 3 (ids 8–10 auth_db),
+        lignes <code>player_documents</code>, sessions/convocations de démonstration.</li>
+      <li>Blockeurs prod déjà listés dans l'audit : changer le mot de passe seed admin,
+        retirer pgAdmin / ports exposés, HTTPS Caddy, régénérer la clé Cloudinary.</li>
+    </ul>
+  </section>
+
+  <footer>Wydad Digital · Phase 3 clôturée · 24 août 2026</footer>
+
+</div>
+</body>
+</html>
