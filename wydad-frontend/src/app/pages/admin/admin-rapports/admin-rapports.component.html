@@ -1,0 +1,92 @@
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- WYDAD DIGITAL — ADMIN : RAPPORTS FINANCIERS (transparence)   -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="space-y-6">
+  <div>
+    <h1 class="text-2xl font-display font-bold text-text-primary uppercase tracking-wider">Rapports financiers</h1>
+    <p class="text-text-secondary text-sm mt-1">
+      Publiez le rapport financier : il apparaît dans l'interface de chaque adhérent et sur la page publique Transparence.
+    </p>
+  </div>
+
+  <!-- FORMULAIRE DE PUBLICATION -->
+  <div class="bg-surface-1 border border-surface-3 rounded-2xl p-6">
+    <h2 class="font-display font-bold text-text-primary uppercase tracking-wider text-sm mb-5">Nouveau rapport</h2>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+      <div class="md:col-span-2">
+        <label for="rap-titre" class="block text-[10px] font-bold text-text-tertiary uppercase tracking-widest mb-2">Titre</label>
+        <input id="rap-titre" name="rapTitre" type="text" [(ngModel)]="titre" maxlength="200"
+               placeholder="Ex. : Rapport financier annuel"
+               class="w-full bg-surface-2 border border-surface-3 rounded-lg px-4 py-2.5 text-sm text-text-primary focus:outline-none focus:border-wydad-red">
+      </div>
+      <div>
+        <label for="rap-annee" class="block text-[10px] font-bold text-text-tertiary uppercase tracking-widest mb-2">Exercice</label>
+        <input id="rap-annee" name="rapAnnee" type="number" [(ngModel)]="annee" min="1900" max="2100"
+               class="w-full bg-surface-2 border border-surface-3 rounded-lg px-4 py-2.5 text-sm text-text-primary focus:outline-none focus:border-wydad-red">
+      </div>
+    </div>
+
+    <div class="mb-4">
+      <label for="rap-desc" class="block text-[10px] font-bold text-text-tertiary uppercase tracking-widest mb-2">Description (optionnelle)</label>
+      <textarea id="rap-desc" name="rapDesc" [(ngModel)]="description" rows="2" maxlength="500"
+                placeholder="Quelques mots sur ce rapport…"
+                class="w-full bg-surface-2 border border-surface-3 rounded-lg px-4 py-2.5 text-sm text-text-primary focus:outline-none focus:border-wydad-red resize-none"></textarea>
+    </div>
+
+    <!-- Upload PDF -->
+    <div class="flex flex-col md:flex-row md:items-center gap-3 mb-2">
+      <input #pdfInput type="file" id="rap-pdf" accept=".pdf,application/pdf" class="hidden" (change)="onFileSelected($event)">
+      <button type="button" (click)="browseFile(pdfInput)" [disabled]="uploading"
+              class="px-4 py-2.5 rounded-lg bg-surface-2 border border-surface-3 text-text-primary text-xs font-bold uppercase tracking-wider hover:border-wydad-red/50 transition-colors disabled:opacity-50">
+        {{ uploading ? 'Téléversement…' : (fileUrl ? '✔ PDF téléversé — remplacer' : 'Choisir le fichier PDF') }}
+      </button>
+      <span *ngIf="originalName && fileUrl" class="text-text-secondary text-xs truncate">{{ originalName }}</span>
+    </div>
+    <p *ngIf="uploadErr" role="alert" class="text-wydad-red text-xs mb-3">{{ uploadErr }}</p>
+    <p class="text-text-tertiary text-[11px] mb-5">PDF uniquement, 20 Mo max.</p>
+
+    <button type="button" (click)="publish()" [disabled]="!canPublish() || publishing"
+            class="px-6 py-2.5 rounded-lg bg-wydad-red hover:bg-red-700 text-white text-xs font-bold uppercase tracking-wider transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
+      {{ publishing ? 'Publication…' : 'Publier' }}
+    </button>
+  </div>
+
+  <!-- LISTE DES RAPPORTS -->
+  <div *ngIf="loading" role="status" class="flex justify-center py-12">
+    <div class="w-10 h-10 border-4 border-wydad-red border-t-transparent rounded-full animate-spin"></div>
+  </div>
+
+  <div *ngIf="!loading && rapports.length === 0"
+       class="bg-surface-1 border border-surface-3 rounded-2xl p-10 text-center text-text-secondary text-sm">
+    Aucun rapport publié pour le moment.
+  </div>
+
+  <div *ngFor="let r of rapports" class="bg-surface-1 border border-surface-3 rounded-2xl p-6 flex flex-col md:flex-row md:items-center gap-4 justify-between">
+    <div class="min-w-0">
+      <div class="flex items-center gap-3 flex-wrap mb-1">
+        <span class="px-2.5 py-0.5 rounded-full bg-wydad-red/15 text-wydad-red text-[10px] font-bold uppercase tracking-widest">{{ r.annee }}</span>
+        <span class="font-bold text-text-primary">{{ r.titre }}</span>
+      </div>
+      <p *ngIf="r.description" class="text-text-secondary text-sm truncate">{{ r.description }}</p>
+      <p class="text-text-tertiary text-xs mt-1">
+        Publié le {{ r.publieLe | date:'dd/MM/yyyy' }} par {{ r.publiePar }}
+      </p>
+    </div>
+
+    <div class="flex gap-2 shrink-0 flex-wrap">
+      <a [href]="r.fileUrl" target="_blank" rel="noopener"
+         class="px-3 py-2 rounded-lg border border-surface-3 text-text-secondary hover:text-text-primary text-xs font-bold uppercase tracking-wider transition-colors">
+        Voir
+      </a>
+      <button type="button" (click)="notifyAll(r)" [disabled]="notifyingId === r.id"
+              class="px-3 py-2 rounded-lg bg-green-600 hover:bg-green-500 text-white text-xs font-bold uppercase tracking-wider transition-colors disabled:opacity-50">
+        {{ notifyingId === r.id ? 'Envoi…' : 'Notifier les adhérents' }}
+      </button>
+      <button type="button" (click)="delete(r)"
+              class="px-3 py-2 rounded-lg border border-wydad-red/60 text-wydad-red hover:bg-wydad-red/10 text-xs font-bold uppercase tracking-wider transition-colors">
+        Supprimer
+      </button>
+    </div>
+  </div>
+</div>

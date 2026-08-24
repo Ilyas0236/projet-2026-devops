@@ -241,6 +241,34 @@
             </div>
           </div>
 
+          <!-- TRANSPARENCE FINANCIÈRE — rapports publiés par le club -->
+          <div class="paper-card rounded-3xl p-8" *ngIf="rapportsFinanciers.length > 0">
+            <div class="flex justify-between items-end mb-6">
+              <div>
+                <h3 class="font-display font-bold text-lg uppercase tracking-wider flex items-center gap-3">
+                  <span class="w-8 h-8 rounded-full bg-wydad-red/10 text-wydad-red flex items-center justify-center text-sm">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z"/></svg>
+                  </span>
+                  Transparence financière
+                </h3>
+                <p class="text-ink-tertiary text-xs uppercase tracking-widest mt-1">Rapports officiels du club</p>
+              </div>
+              <a routerLink="/transparence" class="text-wydad-red hover:underline text-xs font-bold uppercase tracking-widest whitespace-nowrap">Tout voir</a>
+            </div>
+
+            <div class="space-y-3">
+              <a *ngFor="let r of rapportsFinanciers" [href]="api.getMediaUrl(r.fileUrl)" target="_blank" rel="noopener"
+                 class="flex items-center gap-4 rounded-2xl border border-paper-3 bg-paper-1 px-5 py-4 hover:border-wydad-red/50 transition-colors group">
+                <span class="shrink-0 w-12 text-center px-2 py-1.5 rounded-lg bg-wydad-red text-white text-xs font-bold">{{ r.annee }}</span>
+                <span class="min-w-0 flex-1">
+                  <span class="block font-bold text-sm text-ink-primary truncate">{{ r.titre }}</span>
+                  <span class="block text-[10px] uppercase tracking-widest text-ink-tertiary mt-0.5">Publié le {{ r.publieLe | date:'dd/MM/yyyy' }}</span>
+                </span>
+                <svg class="w-5 h-5 text-ink-tertiary group-hover:text-wydad-red transition-colors shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+              </a>
+            </div>
+          </div>
+
           <!-- MES CONVOCATIONS (B.3.a) -->
           <div class="paper-card rounded-3xl p-8">
             <div class="flex justify-between items-end mb-8">

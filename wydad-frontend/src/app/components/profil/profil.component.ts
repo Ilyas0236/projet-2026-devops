@@ -62,6 +62,20 @@ export class ProfilComponent implements OnInit {
   prefsLoading = true;
   prefsSaving = false;
 
+  // Transparence financière — rapports publiés par l'ADMIN
+  rapportsFinanciers: any[] = [];
+  rapportsLoading = true;
+
+  loadRapportsFinanciers() {
+    this.apiService.getRapportsFinanciers().subscribe({
+      next: (list) => {
+        this.rapportsFinanciers = Array.isArray(list) ? list : [];
+        this.rapportsLoading = false;
+      },
+      error: () => (this.rapportsLoading = false)
+    });
+  }
+
   loadPreferences() {
     this.prefsLoading = true;
     this.apiService.getMyPreferences().subscribe({
@@ -99,7 +113,7 @@ export class ProfilComponent implements OnInit {
     });
   }
 
-  private apiService = inject(ApiService);
+  apiService = inject(ApiService);
 
   authService = inject(AuthService);
   router = inject(Router);
@@ -111,6 +125,7 @@ export class ProfilComponent implements OnInit {
     this.loadSessions();
     this.loadReclamations();
     this.loadPreferences();
+    this.loadRapportsFinanciers();
   }
 
   // --- B.10 : Réclamations ---

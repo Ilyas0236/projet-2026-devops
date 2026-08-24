@@ -692,6 +692,21 @@ export class ApiService {
     return this.http.post<any>(`${this.baseUrl}/content/media/upload`, formData);
   }
 
+  // ==========================================
+  // RAPPORTS FINANCIERS (transparence)
+  // ==========================================
+  getRapportsFinanciers(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/content/rapports-financiers`);
+  }
+
+  publierRapportFinancier(rapport: { titre: string; annee: number; description?: string; fileUrl: string; originalName?: string }): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/content/rapports-financiers`, rapport);
+  }
+
+  supprimerRapportFinancier(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/content/rapports-financiers/${id}`);
+  }
+
   getMediaUrl(relativeUrl: string): string {
     if (!relativeUrl) return '';
     if (relativeUrl.startsWith('http')) return relativeUrl;

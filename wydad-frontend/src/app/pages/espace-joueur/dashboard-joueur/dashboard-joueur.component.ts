@@ -65,6 +65,16 @@ export class DashboardJoueurComponent implements OnInit {
   unreadNotifications = 0;
   markingNotificationId: number | null = null;
 
+  // Transparence financière — rapports publiés par le club
+  rapportsFinanciers: any[] = [];
+
+  loadRapportsFinanciers() {
+    this.api.getRapportsFinanciers().subscribe({
+      next: (list) => (this.rapportsFinanciers = Array.isArray(list) ? list.slice(0, 3) : []),
+      error: () => (this.rapportsFinanciers = [])
+    });
+  }
+
   ngOnInit() {
     const userId = this.auth.getCurrentUserId();
     if (!userId) {
@@ -76,6 +86,7 @@ export class DashboardJoueurComponent implements OnInit {
         this.player = data;
         this.loadSessions();
         this.loadMySpace();
+        this.loadRapportsFinanciers();
       },
       error: () => {
         this.loadError = true;

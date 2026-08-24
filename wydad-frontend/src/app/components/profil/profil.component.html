@@ -149,6 +149,15 @@
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
             Support
           </button>
+          <button (click)="activeTab = 'finances'"
+                  class="whitespace-nowrap px-6 py-3 rounded-xl font-display font-bold uppercase text-xs tracking-wider transition-all duration-300 border flex items-center gap-2"
+                  [ngClass]="{
+                    'bg-wydad-red text-white border-wydad-red': activeTab === 'finances',
+                    'bg-paper-2 border-paper-3 text-ink-secondary hover:border-wydad-red/40': activeTab !== 'finances'
+                  }">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2zM10 9.5a.5.5 0 11-1 0 .5.5 0 011 0zm5 5a.5.5 0 11-1 0 .5.5 0 011 0z"/></svg>
+            Finances
+          </button>
           <button (click)="activeTab = 'prefs'"
                   class="whitespace-nowrap px-6 py-3 rounded-xl font-display font-bold uppercase text-xs tracking-wider transition-all duration-300 border flex items-center gap-2"
                   [ngClass]="{
@@ -434,6 +443,34 @@
                 Envoyer ma réclamation
               </button>
             </form>
+          </div>
+
+          <!-- TAB: FINANCES (transparence — rapports financiers du club) -->
+          <div *ngIf="activeTab === 'finances'" class="animate-fade-in">
+            <h3 class="section-title-light font-display font-bold text-2xl uppercase tracking-wider mb-2">Transparence financière</h3>
+            <p class="text-ink-secondary text-sm mb-8">
+              Consultez les rapports financiers publiés par le club.
+              Ils sont également disponibles publiquement sur la page
+              <a routerLink="/transparence" class="text-wydad-red hover:underline font-semibold">Transparence</a>.
+            </p>
+
+            <div *ngIf="rapportsLoading" class="text-ink-secondary">Chargement…</div>
+
+            <div *ngIf="!rapportsLoading && rapportsFinanciers.length === 0" class="text-ink-secondary text-sm py-4">
+              Aucun rapport financier publié pour le moment.
+            </div>
+
+            <div class="space-y-3 max-w-2xl">
+              <a *ngFor="let r of rapportsFinanciers" [href]="apiService.getMediaUrl(r.fileUrl)" target="_blank" rel="noopener"
+                 class="flex items-center gap-4 rounded-2xl border border-paper-3 bg-paper-0 px-5 py-4 hover:border-wydad-red/50 transition-colors group">
+                <span class="shrink-0 w-14 text-center px-2 py-1.5 rounded-lg bg-wydad-red text-white text-xs font-bold">{{ r.annee }}</span>
+                <span class="min-w-0 flex-1">
+                  <span class="block font-bold text-sm text-ink-primary truncate">{{ r.titre }}</span>
+                  <span class="block text-xs text-ink-tertiary mt-0.5">Publié le {{ r.publieLe | date:'dd/MM/yyyy' }}</span>
+                </span>
+                <svg class="w-5 h-5 text-ink-tertiary group-hover:text-wydad-red transition-colors shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+              </a>
+            </div>
           </div>
 
           <!-- TAB: PREFS NOTIFICATIONS (Fonctionnalité 4/6 — appliquées à l'envoi côté serveur) -->

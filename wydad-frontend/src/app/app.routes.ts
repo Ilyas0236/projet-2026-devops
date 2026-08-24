@@ -12,6 +12,7 @@ import { AdminBilletterieComponent } from './pages/admin/admin-billetterie/admin
 import { AdminEffectifComponent } from './pages/admin/admin-effectif/admin-effectif.component';
 import { AdminUsersComponent } from './pages/admin/admin-users/admin-users.component';
 import { AdminDemandesComponent } from './pages/admin/admin-demandes/admin-demandes.component';
+import { AdminRapportsComponent } from './pages/admin/admin-rapports/admin-rapports.component';
 import { AdminActualitesComponent } from './pages/admin/admin-actualites/admin-actualites.component';
 import { AdminMatchsComponent } from './pages/admin/admin-matchs/admin-matchs.component';
 import { AdminClassementsComponent } from './pages/admin/admin-classements/admin-classements.component';
@@ -56,6 +57,7 @@ import { AdminPalmaresComponent } from './pages/admin/admin-palmares/admin-palma
 import { AdminLegendesComponent } from './pages/admin/admin-legendes/admin-legendes.component';
 import { LegendesComponent } from './pages/legendes/legendes.component';
 import { StadeComponent } from './pages/stade/stade.component';
+import { TransparenceComponent } from './pages/transparence/transparence.component';
 export const routes: Routes = [
   {
     // L'arbre admin DOIT être déclaré avant le layout public : celui-ci
@@ -67,6 +69,7 @@ export const routes: Routes = [
     children: [
       { path: '', component: DashboardComponent, pathMatch: 'full' },
       { path: 'demandes', component: AdminDemandesComponent },
+      { path: 'rapports-financiers', component: AdminRapportsComponent },
       { path: 'utilisateurs', component: AdminUsersComponent },
       { path: 'actualites', component: AdminActualitesComponent },
       { path: 'matchs', component: AdminMatchsComponent },
@@ -109,6 +112,7 @@ export const routes: Routes = [
       { path: 'palmares', component: PalmaresComponent },
       { path: 'legendes', component: LegendesComponent },
       { path: 'stade', component: StadeComponent },
+      { path: 'transparence', component: TransparenceComponent },
       { path: 'espace-fan', component: EspaceFanComponent, canActivate: [authGuard] },
       { path: 'sondages', component: SondagesComponent },
       { path: 'panier', component: CartComponent, canActivate: [authGuard] },

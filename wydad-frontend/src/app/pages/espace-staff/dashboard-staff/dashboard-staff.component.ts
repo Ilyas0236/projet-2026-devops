@@ -51,6 +51,16 @@ export class DashboardStaffComponent implements OnInit {
   // B.6 — statut médical : réservé au staff médical (contrôle serveur)
   isMedicalStaff = false;
   medicalPlayer: any = null;
+
+  // Transparence financière — rapports publiés par le club
+  rapportsFinanciers: any[] = [];
+
+  loadRapportsFinanciers() {
+    this.api.getRapportsFinanciers().subscribe({
+      next: (list) => (this.rapportsFinanciers = Array.isArray(list) ? list.slice(0, 3) : []),
+      error: () => (this.rapportsFinanciers = [])
+    });
+  }
   showMedicalForm = false;
   isSubmittingMedical = false;
   medicalNoteDraft = '';
@@ -87,6 +97,7 @@ export class DashboardStaffComponent implements OnInit {
           this.isMedicalStaff =
             data.role === 'DOCTOR' || data.role === 'PHYSIOTHERAPIST';
           this.loadDashboardData();
+          this.loadRapportsFinanciers();
         },
         error: (err) => {
           console.error('Profil staff non trouvé', err);
