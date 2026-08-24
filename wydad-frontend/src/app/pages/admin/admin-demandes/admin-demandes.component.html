@@ -69,7 +69,9 @@
           </div>
           <p class="text-text-secondary text-sm truncate">{{ d.email }}</p>
           <p class="text-text-tertiary text-xs mt-1">
-            Demande créée le {{ d.createdAt | date:'dd/MM/yyyy à HH:mm' }}
+            Demande créée le {{ d.createdAt | date:'dd/MM/yyyy à HH:mm' }} ·
+            <!-- Phase 1 ter — statut KYC visible directement dans la liste -->
+            Justificatif : {{ d.kycVerified ? '✅ vérifié' : (kycView?.email === d.email ? '📄 consulté' : '⏳ non déposé ou non vérifié') }}
           </p>
         </div>
 

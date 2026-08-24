@@ -1,6 +1,7 @@
 package com.wydad.digital.auth.exception;
 
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
@@ -8,6 +9,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 
 import java.time.LocalDateTime;
 
+@Slf4j
 @ControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -87,6 +89,26 @@ public class GlobalExceptionHandler {
                 request.getRequestURI()
         );
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+    }
+
+    /**
+     * Phase 1 ter — panne du service d'upload (Cloudinary) : 503 avec un
+     * message actionnable, distinct d'une faute de saisie (400). Le détail
+     * technique est journalisé côté serveur uniquement.
+     */
+    @ExceptionHandler(CloudinaryIndisponibleException.class)
+    public ResponseEntity<ErrorResponse> handleCloudinaryIndisponible(
+            CloudinaryIndisponibleException ex, HttpServletRequest request) {
+
+        log.warn("Upload Cloudinary indisponible sur {}: {}", request.getRequestURI(), ex.getDetail());
+        ErrorResponse error = new ErrorResponse(
+                LocalDateTime.now(),
+                HttpStatus.SERVICE_UNAVAILABLE.value(),
+                "SERVICE_UNAVAILABLE",
+                ex.getMessage(),
+                request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(error);
     }
 
     @ExceptionHandler(RuntimeException.class)

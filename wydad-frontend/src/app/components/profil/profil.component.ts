@@ -315,6 +315,12 @@ export class ProfilComponent implements OnInit {
         },
         error: (err) => {
           this.kycUploading = false;
+          // Phase 1 ter — le backend renvoie 503 quand Cloudinary est
+          // indisponible : message actionnable, pas une faute de l'utilisateur.
+          if (err.status === 503) {
+            this.kycErr = 'Le service de dépôt de documents est momentanément indisponible. Votre document n\'a pas été envoyé — merci de réessayer dans quelques instants.';
+            return;
+          }
           const raison = err.status === 401 ? ' (session expirée — reconnectez-vous)'
             : err.status === 413 ? ' (fichier trop volumineux)'
             : err.status === 403 ? ' (action non autorisée pour votre compte)'

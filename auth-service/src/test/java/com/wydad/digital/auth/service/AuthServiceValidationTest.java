@@ -40,6 +40,7 @@ class AuthServiceValidationTest {
     @Mock ActiveSessionRepository activeSessionRepository;
     @Mock PasswordEncoder passwordEncoder;
     @Mock JwtUtils jwtUtils;
+    @Mock com.wydad.digital.auth.client.NotificationClient notificationClient;
 
     private AuthService authService;
 
@@ -60,7 +61,8 @@ class AuthServiceValidationTest {
     @BeforeEach
     void setUp() {
         authService = new AuthService(userRepository, kycDocumentRepository,
-                activeSessionRepository, passwordEncoder, jwtUtils, null, null, null, null);
+                activeSessionRepository, passwordEncoder, jwtUtils, null, null,
+                null, null, notificationClient);
     }
 
     // ---------- Login bloqué si compte non VALIDE ----------
@@ -128,12 +130,21 @@ class AuthServiceValidationTest {
     @DisplayName("validateAccount passe EN_ATTENTE à VALIDE et efface le motif")
     void validateAccount_pendingToValid() {
         User u = user(Role.JOURNALISTE, StatutCompte.EN_ATTENTE);
+        u.setId(7L); // en réel, l'ID vient de la séquence DB
         when(userRepository.findById(7L)).thenReturn(Optional.of(u));
 
         UserProfileResponse resp = authService.validateAccount(7L);
         assertEquals(StatutCompte.VALIDE, u.getStatutCompte());
         assertNull(u.getMotifRefus());
         assertEquals(StatutCompte.VALIDE, resp.statutCompte());
+
+        // Phase 1 ter — le membre est prévenu in-app de la validation.
+        verify(notificationClient).notifyUser(
+                org.mockito.ArgumentMatchers.eq(7L),
+                org.mockito.ArgumentMatchers.eq("user@test.ma"),
+                org.mockito.ArgumentMatchers.contains("valid"),
+                org.mockito.ArgumentMatchers.anyString(),
+                org.mockito.ArgumentMatchers.anyString());
     }
 
     @Test
@@ -159,12 +170,21 @@ class AuthServiceValidationTest {
     @DisplayName("refuseAccount enregistre le motif et révoque les sessions")
     void refuseAccount_savesMotif_andRevokesSessions() {
         User u = user(Role.ENTRAINEUR, StatutCompte.EN_ATTENTE);
+        u.setId(7L); // en réel, l'ID vient de la séquence DB
         when(userRepository.findById(7L)).thenReturn(Optional.of(u));
 
         authService.refuseAccount(7L, "Pièces justificatives manquantes");
         assertEquals(StatutCompte.REFUSE, u.getStatutCompte());
         assertEquals("Pièces justificatives manquantes", u.getMotifRefus());
         verify(activeSessionRepository).deleteByEmail("user@test.ma");
+
+        // Phase 1 ter — la notification de refus reprend le motif.
+        verify(notificationClient).notifyUser(
+                org.mockito.ArgumentMatchers.eq(7L),
+                org.mockito.ArgumentMatchers.eq("user@test.ma"),
+                org.mockito.ArgumentMatchers.anyString(),
+                org.mockito.ArgumentMatchers.contains("Pièces justificatives manquantes"),
+                org.mockito.ArgumentMatchers.anyString());
     }
 
     @Test

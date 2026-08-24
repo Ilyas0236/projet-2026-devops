@@ -39,6 +39,7 @@ public class AuthService {
     private final PdfService pdfService;
     private final OtpService otpService;
     private final CloudinaryService cloudinaryService;
+    private final com.wydad.digital.auth.client.NotificationClient notificationClient;
 
     /** Niveau attribué à l'inscription : le plus bas payant (S3). */
     private static final MembershipLevel NIVEAU_INSCRIPTION = MembershipLevel.ROUGE;
@@ -51,6 +52,12 @@ public class AuthService {
             throw new EmailAlreadyExistsException(request.phone());
         }
 
+        // Phase 1 ter — seule demande de rôle acceptée du public : JOURNALISTE
+        // (accréditation presse). Tout autre rôle privilégié reste une décision
+        // admin exclusive ; un client ne choisit jamais ENTRAINEUR/PRESIDENT.
+        boolean demandeAccreditation =
+                "JOURNALISTE".equalsIgnoreCase(request.demandeRole());
+
         User user = User.builder()
                 .email(request.email())
                 .phone(request.phone())
@@ -58,7 +65,9 @@ public class AuthService {
                 .firstName(request.firstName())
                 .lastName(request.lastName())
                 .membershipLevel(NIVEAU_INSCRIPTION)
-                .role(Role.ADHERENT)
+                .role(demandeAccreditation ? Role.JOURNALISTE : Role.ADHERENT)
+                // Un journaliste en attente d'accréditation passe par la file admin.
+                .statutCompte(demandeAccreditation ? StatutCompte.EN_ATTENTE : StatutCompte.VALIDE)
                 .membershipExpiresAt(LocalDateTime.now().plusYears(1))
                 .referralCode(UUID.randomUUID().toString().substring(0, 8).toUpperCase())
                 .referredBy(request.referralCode())
@@ -368,7 +377,9 @@ public class AuthService {
 
             return new KycResponse(doc.getEmail(), doc.getDocumentType(), doc.getDocumentNumber(), doc.isVerified(), doc.getUploadedAt());
         } catch (java.io.IOException e) {
-            throw new RuntimeException("Échec de l'envoi du document : " + e.getMessage(), e);
+            // Phase 1 ter : panne Cloudinary → message actionnable pour le
+            // membre, détail technique réservé aux logs serveur.
+            throw new com.wydad.digital.auth.exception.CloudinaryIndisponibleException(e.getMessage());
         }
     }
 
@@ -587,6 +598,7 @@ public class AuthService {
         user.setStatutCompte(StatutCompte.VALIDE);
         user.setMotifRefus(null);
         userRepository.save(user);
+        notifyCompteDecision(user, true, null); // Phase 1 ter : in-app best-effort
         return mapToProfile(user);
     }
 
@@ -604,7 +616,27 @@ public class AuthService {
         userRepository.save(user);
         // Le refus coupe aussi les éventuelles sessions ouvertes.
         activeSessionRepository.deleteByEmail(user.getEmail());
+        notifyCompteDecision(user, false, motif.trim()); // Phase 1 ter : in-app best-effort
         return mapToProfile(user);
+    }
+
+    /**
+     * Phase 1 ter — notification in-app au membre après décision de l'admin
+     * sur son compte. Best-effort : jamais bloquante.
+     */
+    private void notifyCompteDecision(User user, boolean valide, String motif) {
+        String titre = valide ? "Compte validé" : "Demande de compte refusée";
+        String message = valide
+                ? "Bonne nouvelle : votre compte a été validé par le club. Vous pouvez maintenant utiliser toutes les fonctionnalités de votre espace."
+                : "Votre demande de compte n'a pas été retenue. Motif : " + motif;
+        String target = "/profil";
+        try {
+            notificationClient.notifyUser(user.getId(), user.getEmail(), titre, message, target);
+        } catch (Exception e) {
+            // Ne doit jamais faire échouer la décision admin elle-même.
+            org.slf4j.LoggerFactory.getLogger(AuthService.class)
+                    .warn("Notification décision compte non envoyée à {}: {}", user.getId(), e.getMessage());
+        }
     }
 
     @Transactional
