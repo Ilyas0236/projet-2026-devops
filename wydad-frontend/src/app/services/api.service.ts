@@ -139,6 +139,27 @@ export class ApiService {
     return this.http.delete<any>(`${this.baseUrl}/content/trophies/${id}`);
   }
 
+  // --- Légendes (Hall of Fame) : lecture publique, écriture ADMIN (ClubLegendSecurityTest) ---
+  getPublicLegends(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/content/legends/public`);
+  }
+
+  getAllLegends(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/content/legends`);
+  }
+
+  createLegend(legend: any): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/content/legends`, legend);
+  }
+
+  updateLegend(id: number, legend: any): Observable<any> {
+    return this.http.put<any>(`${this.baseUrl}/content/legends/${id}`, legend);
+  }
+
+  deleteLegend(id: number): Observable<any> {
+    return this.http.delete<any>(`${this.baseUrl}/content/legends/${id}`);
+  }
+
   // Parametres club (paliers adhesion, coordonnees) — source de verite ADMIN
   getClubSettings(): Observable<any[]> {
     return this.http.get<any[]>(`${this.baseUrl}/content/settings`);

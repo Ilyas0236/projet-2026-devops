@@ -52,6 +52,8 @@ import { AdminBadgesComponent } from './pages/admin/admin-badges/admin-badges.co
 import { AdminSeancesComponent } from './pages/admin/admin-seances/admin-seances.component';
 import { AdminJoueursPublicComponent } from './pages/admin/admin-joueurs-public/admin-joueurs-public.component';
 import { AdminPalmaresComponent } from './pages/admin/admin-palmares/admin-palmares.component';
+import { AdminLegendesComponent } from './pages/admin/admin-legendes/admin-legendes.component';
+import { LegendesComponent } from './pages/legendes/legendes.component';
 export const routes: Routes = [
   {
     // L'arbre admin DOIT être déclaré avant le layout public : celui-ci
@@ -72,6 +74,7 @@ export const routes: Routes = [
       { path: 'effectif', component: AdminEffectifComponent },
       { path: 'effectif-public', component: AdminJoueursPublicComponent },
       { path: 'palmares', component: AdminPalmaresComponent },
+      { path: 'legendes', component: AdminLegendesComponent },
       { path: 'seances', component: AdminSeancesComponent },
       { path: 'staff', component: AdminStaffComponent },
       { path: 'academie', component: AdminAcademieComponent },
@@ -101,6 +104,7 @@ export const routes: Routes = [
       { path: 'billetterie/:id', component: BilletterieDetailComponent },
       { path: 'effectif', component: EffectifComponent },
       { path: 'palmares', component: PalmaresComponent },
+      { path: 'legendes', component: LegendesComponent },
       { path: 'espace-fan', component: EspaceFanComponent, canActivate: [authGuard] },
       { path: 'sondages', component: SondagesComponent },
       { path: 'panier', component: CartComponent, canActivate: [authGuard] },
