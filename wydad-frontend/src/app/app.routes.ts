@@ -47,6 +47,7 @@ import { EspaceFanComponent } from './pages/espace-fan/espace-fan.component';
 import { SondagesComponent } from './pages/sondages/sondages.component';
 import { AdminSondagesComponent } from './pages/admin/admin-sondages/admin-sondages.component';
 import { AdminCommandesComponent } from './pages/admin/admin-commandes/admin-commandes.component';
+import { AdminBadgesComponent } from './pages/admin/admin-badges/admin-badges.component';
 export const routes: Routes = [
   {
     // L'arbre admin DOIT être déclaré avant le layout public : celui-ci
@@ -71,6 +72,7 @@ export const routes: Routes = [
       { path: 'notifications', component: AdminNotificationsComponent },
       { path: 'reclamations', component: AdminReclamationsComponent },
       { path: 'sondages', component: AdminSondagesComponent },
+      { path: 'badges', component: AdminBadgesComponent },
       { path: 'parametres', component: AdminSettingsComponent }
     ]
   },

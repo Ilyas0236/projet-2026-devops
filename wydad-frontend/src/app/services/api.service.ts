@@ -593,6 +593,23 @@ export class ApiService {
     return this.http.get<any[]>(`${this.baseUrl}/gamification/badges/user/${userId}`);
   }
 
+  /** ADMIN — gestion complète du catalogue de badges (B.8) */
+  getAllBadges(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/gamification/badges/all`);
+  }
+
+  createBadge(badge: any): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/gamification/badges`, badge);
+  }
+
+  updateBadge(badgeId: number, badge: any): Observable<any> {
+    return this.http.put<any>(`${this.baseUrl}/gamification/badges/${badgeId}`, badge);
+  }
+
+  deleteBadge(badgeId: number): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/gamification/badges/${badgeId}`);
+  }
+
   // ==========================================
   // MEDIA UPLOAD
   // ==========================================
