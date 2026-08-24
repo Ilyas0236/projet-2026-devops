@@ -56,6 +56,7 @@ services:
       - SPRING_REDIS_PORT=6379
       - JWT_SECRET=${JWT_SECRET:?JWT_SECRET doit être défini dans le fichier .env}
       - ADMIN_SEED_PASSWORD=${ADMIN_SEED_PASSWORD:?ADMIN_SEED_PASSWORD doit être défini dans le fichier .env}
+      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-http://localhost:4200}
     depends_on:
       postgres:
         condition: service_healthy
