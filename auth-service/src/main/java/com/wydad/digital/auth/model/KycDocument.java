@@ -29,7 +29,11 @@ public class KycDocument {
     private String documentNumber;
 
     @Column(nullable = false)
-    private String filePath; // Chemin du fichier uploadé (mock)
+    private String filePath; // Référence du fichier : publicId Cloudinary (Phase 1) ou nom local (dégradé)
+
+    /** URL sécurisée Cloudinary (mode cloud uniquement). */
+    @Column
+    private String secureUrl;
 
     @Column(nullable = false)
     private boolean verified = false;

@@ -9,4 +9,6 @@ import java.util.Optional;
 @Repository
 public interface KycDocumentRepository extends JpaRepository<KycDocument, Long> {
     Optional<KycDocument> findByEmail(String email);
+
+    void deleteByEmail(String email);
 }

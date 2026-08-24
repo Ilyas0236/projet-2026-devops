@@ -309,11 +309,11 @@
               </div>
 
               <div>
-                <label for="kyc-file" class="block mb-2 text-ink-secondary text-xs uppercase tracking-wider font-semibold">Document justificatif (JPG, PNG ou PDF — max 5 Mo)</label>
+                <label for="kyc-file" class="block mb-2 text-ink-secondary text-xs uppercase tracking-wider font-semibold">Document justificatif (JPG, PNG ou PDF — max 10 Mo)</label>
                 <input #kycFileInput type="file" id="kyc-file" class="hidden" accept=".jpg,.jpeg,.png,.pdf"
                        (change)="onKycFileSelected($event)">
                 <div class="flex">
-                  <input type="text" [value]="kycFilePath" readonly placeholder="Aucun fichier sélectionné" aria-label="Fichier sélectionné"
+                  <input type="text" [value]="kycFileName || kycFilePath" readonly placeholder="Aucun fichier sélectionné" aria-label="Fichier sélectionné"
                          (click)="browseKycFile(kycFileInput)" class="paper-input rounded-r-none border-r-0 cursor-pointer">
                   <button type="button" (click)="browseKycFile(kycFileInput)"
                           class="bg-paper-2 px-4 rounded-r-lg border border-paper-3 border-l-0 text-ink-secondary hover:text-wydad-red hover:bg-paper-3 transition-colors text-sm font-bold">
@@ -323,7 +323,7 @@
               </div>
 
               <div class="pt-4 flex flex-col sm:flex-row gap-4">
-                <button (click)="uploadKyc()" [disabled]="kycUploading || !kycDocNumber || !kycFilePath" class="paper-btn-primary flex-1 py-3">
+                <button (click)="uploadKyc()" [disabled]="kycUploading || !kycDocNumber || (!hasKycFile && !kycFilePath)" class="paper-btn-primary flex-1 py-3">
                   {{ kycUploading ? 'Upload en cours...' : '1. Envoyer le document' }}
                 </button>
                 <button (click)="verifyKyc()" [disabled]="!kycUploaded || kycVerifying" class="inline-flex items-center justify-center gap-2 flex-1 py-3 rounded-lg border border-green-600/40 text-green-700 font-display font-semibold uppercase tracking-wider text-sm hover:bg-green-50 transition-colors disabled:opacity-45 disabled:cursor-not-allowed">

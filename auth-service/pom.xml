@@ -73,6 +73,13 @@
             <artifactId>openpdf</artifactId>
             <version>2.0.3</version>
         </dependency>
+        <!-- Phase 1 : stockage des pieces justificatives (KYC) sur Cloudinary.
+             SDK Java officiel, plan gratuit. -->
+        <dependency>
+            <groupId>com.cloudinary</groupId>
+            <artifactId>cloudinary-http5</artifactId>
+            <version>2.0.0</version>
+        </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>

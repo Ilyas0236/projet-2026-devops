@@ -60,7 +60,7 @@ class AuthServiceValidationTest {
     @BeforeEach
     void setUp() {
         authService = new AuthService(userRepository, kycDocumentRepository,
-                activeSessionRepository, passwordEncoder, jwtUtils, null, null, null);
+                activeSessionRepository, passwordEncoder, jwtUtils, null, null, null, null);
     }
 
     // ---------- Login bloqué si compte non VALIDE ----------

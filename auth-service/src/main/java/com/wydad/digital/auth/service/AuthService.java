@@ -38,6 +38,7 @@ public class AuthService {
     private final QrCodeService qrCodeService;
     private final PdfService pdfService;
     private final OtpService otpService;
+    private final CloudinaryService cloudinaryService;
 
     /** Niveau attribué à l'inscription : le plus bas payant (S3). */
     private static final MembershipLevel NIVEAU_INSCRIPTION = MembershipLevel.ROUGE;
@@ -328,6 +329,47 @@ public class AuthService {
 
         kycDocumentRepository.save(doc);
         return new KycResponse(doc.getEmail(), doc.getDocumentType(), doc.getDocumentNumber(), doc.isVerified(), doc.getUploadedAt());
+    }
+
+    /**
+     * Phase 1 — upload RÉEL du justificatif : le fichier part sur Cloudinary
+     * (folder privé kyc-documents), seuls publicId + URL sécurisée sont
+     * stockés. Un seul dossier KYC actif par utilisateur (le nouveau remplace
+     * l'ancien, non vérifié ou vérifié).
+     */
+    public KycResponse uploadKycFile(org.springframework.web.multipart.MultipartFile file,
+                                     String email, String documentType, String documentNumber) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UserNotFoundException(email));
+
+        try {
+            CloudinaryService.UploadResult up = cloudinaryService.uploadKycDocument(file, email);
+
+            // Remplace tout dossier KYC précédent du même utilisateur.
+            kycDocumentRepository.deleteByEmail(email);
+
+            KycDocument doc = KycDocument.builder()
+                    .email(email)
+                    .documentType(documentType)
+                    .documentNumber(documentNumber)
+                    .filePath(up.publicId())
+                    .secureUrl(up.secureUrl())
+                    .verified(false)
+                    .build();
+            kycDocumentRepository.save(doc);
+
+            // Le dépôt d'un justificatif complet marque la demande comme
+            // soumise : elle repart dans le circuit de validation admin.
+            if (user.getStatutCompte() == StatutCompte.REFUSE) {
+                user.setStatutCompte(StatutCompte.EN_ATTENTE);
+                user.setMotifRefus(null);
+                userRepository.save(user);
+            }
+
+            return new KycResponse(doc.getEmail(), doc.getDocumentType(), doc.getDocumentNumber(), doc.isVerified(), doc.getUploadedAt());
+        } catch (java.io.IOException e) {
+            throw new RuntimeException("Échec de l'envoi du document : " + e.getMessage(), e);
+        }
     }
 
     public KycResponse verifyKyc(String email) {

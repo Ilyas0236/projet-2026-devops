@@ -131,6 +131,19 @@ export class AuthService {
     return this.http.post(`${this.baseUrl}/kyc/upload`, { email, documentType, documentNumber, filePath });
   }
 
+  /**
+   * Phase 1 — upload RÉEL du justificatif : le fichier part en multipart
+   * vers /kyc/upload-file et est stocké sur Cloudinary côté backend.
+   * L'utilisateur courant ne peut déposer que pour SON compte.
+   */
+  uploadKycFile(file: File, documentType: string, documentNumber: string): Observable<any> {
+    const form = new FormData();
+    form.append('file', file);
+    form.append('documentType', documentType);
+    form.append('documentNumber', documentNumber);
+    return this.http.post(`${this.baseUrl}/kyc/upload-file`, form);
+  }
+
   verifyKycMock(email: string): Observable<any> {
     return this.http.post(`${this.baseUrl}/kyc/verify?email=${email}`, {});
   }

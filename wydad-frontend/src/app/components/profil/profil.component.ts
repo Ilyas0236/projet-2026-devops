@@ -33,6 +33,11 @@ export class ProfilComponent implements OnInit {
   kycDocType = 'CIN';
   kycDocNumber = '';
   kycFilePath = '';
+  /** Fichier réellement sélectionné (envoyé en multipart vers Cloudinary). */
+  private kycFile: File | null = null;
+  /** Accès template : un vrai fichier a-t-il été choisi ? */
+  get hasKycFile(): boolean { return this.kycFile !== null; }
+  kycFileName = '';
   kycUploading = false;
   kycUploaded = false;
   kycVerifying = false;
@@ -264,39 +269,67 @@ export class ProfilComponent implements OnInit {
     fileInput.click();
   }
 
-  /** Réagit à la sélection d'un fichier : valide type + taille puis renseigne kycFilePath. */
+  /** Réagit à la sélection d'un fichier : valide type + taille puis garde le File en mémoire. */
   onKycFileSelected(event: Event) {
     const input = event.target as HTMLInputElement;
     this.kycErr = '';
     this.kycMsg = '';
     const file = input.files?.[0];
-    if (!file) { this.kycFilePath = ''; return; }
+    if (!file) { this.kycFile = null; this.kycFileName = ''; return; }
 
     const allowed = ['image/jpeg', 'image/png', 'application/pdf'];
     if (!allowed.includes(file.type)) {
       this.kycErr = 'Format non supporté. Formats acceptés : JPG, PNG ou PDF.';
       input.value = '';
-      this.kycFilePath = '';
+      this.kycFile = null;
+      this.kycFileName = '';
       return;
     }
-    if (file.size > 5 * 1024 * 1024) {
-      this.kycErr = 'Fichier trop volumineux (maximum 5 Mo).';
+    if (file.size > 10 * 1024 * 1024) {
+      this.kycErr = 'Fichier trop volumineux (maximum 10 Mo).';
       input.value = '';
-      this.kycFilePath = '';
+      this.kycFile = null;
+      this.kycFileName = '';
       return;
     }
-    // Le backend enregistre une référence document : on transmet le nom réel du fichier choisi.
-    this.kycFilePath = file.name;
-    input.value = '';
+    // Phase 1 : le fichier est conservé tel quel et part en multipart vers
+    // /kyc/upload-file (stockage Cloudinary côté backend).
+    this.kycFile = file;
+    this.kycFileName = file.name;
   }
 
   uploadKyc() {
-    this.kycUploading = true;
     this.kycErr = '';
     this.kycMsg = '';
-    const email = localStorage.getItem('wydad_email');
-    if (!email) { this.kycErr = 'Non connecté.'; this.kycUploading = false; return; }
 
+    // Phase 1 — upload RÉEL si un fichier a été choisi ; sinon fallback sur
+    // l'ancien flux (référence textuelle) pour ne pas casser le parcours.
+    if (this.kycFile) {
+      if (!this.kycDocNumber.trim()) { this.kycErr = 'Renseignez le numéro du document.'; return; }
+      this.kycUploading = true;
+      this.authService.uploadKycFile(this.kycFile, this.kycDocType, this.kycDocNumber.trim()).subscribe({
+        next: () => {
+          this.kycUploading = false;
+          this.kycUploaded = true;
+          this.kycMsg = 'Document envoyé. En attente de validation administrateur.';
+        },
+        error: (err) => {
+          this.kycUploading = false;
+          const raison = err.status === 401 ? ' (session expirée — reconnectez-vous)'
+            : err.status === 413 ? ' (fichier trop volumineux)'
+            : err.status === 403 ? ' (action non autorisée pour votre compte)'
+            : '';
+          this.kycErr = (err.error?.message || 'Échec du téléversement') + raison + ` [erreur ${err.status}]`;
+        }
+      });
+      return;
+    }
+
+    const email = localStorage.getItem('wydad_email');
+    if (!email) { this.kycErr = 'Non connecté.'; return; }
+    if (!this.kycFilePath.trim()) { this.kycErr = 'Choisissez un fichier ou indiquez une référence document.'; return; }
+
+    this.kycUploading = true;
     this.authService.uploadKyc(this.kycDocType, this.kycDocNumber, this.kycFilePath).subscribe({
       next: () => {
         this.kycUploading = false;

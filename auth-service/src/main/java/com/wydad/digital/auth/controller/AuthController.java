@@ -233,6 +233,34 @@ public class AuthController {
         return ResponseEntity.ok(authService.uploadKyc(request));
     }
 
+    /**
+     * Phase 1 — upload RÉEL du justificatif (multipart) : le fichier part vers
+     * Cloudinary (folder privé), seuls publicId + URL sécurisée sont stockés.
+     * L'utilisateur ne peut déposer que pour SON compte ; l'admin pour tous.
+     */
+    @PostMapping(value = "/kyc/upload-file", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasRole('ADHERENT') or hasRole('JOURNALISTE') or hasRole('ENTRAINEUR') or hasRole('ADMIN')")
+    public ResponseEntity<KycResponse> uploadKycFile(
+            @RequestParam("file") org.springframework.web.multipart.MultipartFile file,
+            @RequestParam("documentType") String documentType,
+            @RequestParam("documentNumber") String documentNumber,
+            @RequestHeader(value = "X-User-Email", required = false) String gatewayEmail,
+            @RequestHeader(value = "X-User-Role", required = false) String gatewayRole,
+            @RequestParam(value = "email", required = false) String targetEmail) {
+
+        if (gatewayEmail == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        // Un utilisateur ne dépose que pour son propre compte, sauf l'admin.
+        String email = targetEmail != null && !targetEmail.isBlank() && "ADMIN".equals(gatewayRole)
+                ? targetEmail
+                : gatewayEmail;
+        if (!"ADMIN".equals(gatewayRole) && !email.equalsIgnoreCase(gatewayEmail)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        return ResponseEntity.ok(authService.uploadKycFile(file, email, documentType, documentNumber));
+    }
+
     @PostMapping("/kyc/verify")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<KycResponse> verifyKyc(@RequestParam("email") String email) {
