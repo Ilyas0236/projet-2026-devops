@@ -22,7 +22,10 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api/content/media")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "${cors.allowed-origins:http://localhost:4200}")
+// Pas de @CrossOrigin ici : le CORS est géré centralement par le CorsWebFilter
+// de l'api-gateway (CORS_ALLOWED_ORIGINS). Une annotation locale avec un défaut
+// localhost rejetait en 403 "Invalid CORS request" les POST du navigateur en
+// production (Origin http://158.158.74.169:4200) alors que la gateway acceptait.
 public class MediaController {
 
     private final MediaRepository mediaRepository;
