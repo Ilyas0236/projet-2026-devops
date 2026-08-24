@@ -44,23 +44,23 @@ Le Président a sa propre interface (rôle `PRESIDENT` existe déjà depuis la P
 ## 2. Les phases de développement (dans l'ordre)
 
 ### Phase 1 ter — Finaliser la validation des comptes *(petit lot avant les grosses phases)*
-- [ ] Admin : afficher statut KYC (`verified`) et justificatif consultable directement dans la liste des demandes (le bouton 📄 existe ; ajouter le statut vérifié/nom du document)
+- [x] Admin : afficher statut KYC (`verified`) et justificatif consultable directement dans la liste des demandes (le bouton 📄 existe ; ajouter le statut vérifié/nom du document)
 - [ ] Journaliste : demande d'accréditation = formulaire dédié + pièces jointes → statut EN_ATTENTE (Phase F)
-- [ ] Notification in-app à l'utilisateur quand son compte est validé/refusé (notification-service)
-- [ ] Surface d'erreur Cloudinary explicite côté utilisateur (« service d'upload momentanément indisponible »)
+- [x] Notification in-app à l'utilisateur quand son compte est validé/refusé (notification-service)
+- [x] Surface d'erreur Cloudinary explicite côté utilisateur (« service d'upload momentanément indisponible »)
 
-### Phase 2 — Billets VIP joueurs (PDF + QR)
-- [ ] À chaque création de match **à domicile** (sports/content-service) → appel interne vers ticket-service
-- [ ] Ticket-service génère automatiquement **4 billets VIP** par joueur actif, réservés à son compte
-- [ ] QR : bibliothèque **ZXing** (gratuite) ; PDF : **OpenPDF** ou **PDFBox**
-- [ ] Espace joueur : liste de ses billets par match, téléchargement PDF (QR unique scannable)
+### Phase 2 — Billets VIP joueurs (PDF + QR) ✅ *terminée 2026-08-24*
+- [x] À chaque création de match **à domicile** (sports/content-service) → appel interne vers ticket-service
+- [x] Ticket-service génère automatiquement **4 billets VIP** par joueur actif, réservés à son compte
+- [x] QR : bibliothèque **ZXing** (gratuite) ; PDF : **OpenPDF** ou **PDFBox**
+- [x] Espace joueur : liste de ses billets par match, téléchargement PDF (QR unique scannable)
 - [ ] Idem accréditation journaliste validée → PDF généré pareillement
 - Cas ISTQB explicites : billet dupliqué / scanné deux fois, joueur sans billet, match extérieur (aucun billet)
 
-### Phase 3 — Convocations & médias tactiques
-- [ ] Entraîneur : créer une convocation (match, date, heure, liste cochable) → notification in-app à chaque joueur
-- [ ] Entraîneur : envoyer médias (vidéo/photo Cloudinary, PDF tactique, message) → UN joueur ou TOUTE l'équipe (réutiliser CloudinaryService comme modèle auth-service)
-- [ ] Joueur : boîte de réception unifiée (convocations, médias, messages) + réponses (lu/non lu côté entraîneur)
+### Phase 3 — Convocations & médias tactiques ✅ *terminée 2026-08-24*
+- [x] Entraîneur : créer une convocation (match, date, heure, liste cochable) → notification in-app à chaque joueur
+- [x] Entraîneur : envoyer médias (vidéo/photo Cloudinary, PDF tactique, message) → UN joueur ou TOUTE l'équipe (réutiliser CloudinaryService comme modèle auth-service)
+- [x] Joueur : boîte de réception unifiée (convocations, médias, messages) + réponses (lu/non lu côté entraîneur)
 
 ### Phase 4 — Messagerie groupe joueurs (« WhatsApp »)
 - [ ] WebSocket + STOMP natif Spring Boot exposé via api-gateway
