@@ -11,6 +11,7 @@ import { AdminBoutiqueComponent } from './pages/admin/admin-boutique/admin-bouti
 import { AdminBilletterieComponent } from './pages/admin/admin-billetterie/admin-billetterie.component';
 import { AdminEffectifComponent } from './pages/admin/admin-effectif/admin-effectif.component';
 import { AdminUsersComponent } from './pages/admin/admin-users/admin-users.component';
+import { AdminDemandesComponent } from './pages/admin/admin-demandes/admin-demandes.component';
 import { AdminActualitesComponent } from './pages/admin/admin-actualites/admin-actualites.component';
 import { AdminMatchsComponent } from './pages/admin/admin-matchs/admin-matchs.component';
 import { AdminClassementsComponent } from './pages/admin/admin-classements/admin-classements.component';
@@ -65,6 +66,7 @@ export const routes: Routes = [
     canActivate: [adminGuard],
     children: [
       { path: '', component: DashboardComponent, pathMatch: 'full' },
+      { path: 'demandes', component: AdminDemandesComponent },
       { path: 'utilisateurs', component: AdminUsersComponent },
       { path: 'actualites', component: AdminActualitesComponent },
       { path: 'matchs', component: AdminMatchsComponent },

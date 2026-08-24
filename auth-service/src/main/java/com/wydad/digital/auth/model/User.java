@@ -43,6 +43,20 @@ public class User {
     @Column(nullable = false)
     private Role role;
 
+    /**
+     * Phase 0 : circuit de validation. Les comptes ADHERENT sont VALIDE
+     * dès l'inscription ; les rôles privilégiés (ENTRAINEUR, JOURNALISTE,
+     * PRESIDENT) passent par la validation d'un ADMIN avant de pouvoir
+     * se connecter.
+     */
+    @Builder.Default
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private StatutCompte statutCompte = StatutCompte.VALIDE;
+
+    /** Motif du refus (visible dans l'écran admin des demandes). */
+    private String motifRefus;
+
     private LocalDateTime membershipExpiresAt;
 
     private String referralCode;

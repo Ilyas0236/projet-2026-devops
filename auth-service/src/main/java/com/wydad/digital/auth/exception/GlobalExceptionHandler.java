@@ -29,6 +29,24 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
     }
 
+    /**
+     * Phase 0 : credentials correctes mais compte EN_ATTENTE/REFUSE → 403
+     * avec le message explicite (différent du 401 "identifiants invalides").
+     */
+    @ExceptionHandler(CompteNonValideException.class)
+    public ResponseEntity<ErrorResponse> handleCompteNonValide(
+            CompteNonValideException ex, HttpServletRequest request) {
+
+        ErrorResponse error = new ErrorResponse(
+                LocalDateTime.now(),
+                HttpStatus.FORBIDDEN.value(),
+                "COMPTE_NON_VALIDE",
+                ex.getMessage(),
+                request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
+    }
+
     @ExceptionHandler(EmailAlreadyExistsException.class)
     public ResponseEntity<ErrorResponse> handleEmailAlreadyExists(
             EmailAlreadyExistsException ex, HttpServletRequest request) {

@@ -1,6 +1,7 @@
 package com.wydad.digital.auth.service;
 
 import com.wydad.digital.auth.dto.*;
+import com.wydad.digital.auth.exception.CompteNonValideException;
 import com.wydad.digital.auth.exception.EmailAlreadyExistsException;
 import com.wydad.digital.auth.exception.InvalidCredentialsException;
 import com.wydad.digital.auth.exception.UserNotFoundException;
@@ -8,6 +9,7 @@ import com.wydad.digital.auth.model.ActiveSession;
 import com.wydad.digital.auth.model.KycDocument;
 import com.wydad.digital.auth.model.MembershipLevel;
 import com.wydad.digital.auth.model.Role;
+import com.wydad.digital.auth.model.StatutCompte;
 import com.wydad.digital.auth.model.User;
 import com.wydad.digital.auth.repository.ActiveSessionRepository;
 import com.wydad.digital.auth.repository.KycDocumentRepository;
@@ -96,6 +98,14 @@ public class AuthService {
             throw new InvalidCredentialsException();
         }
 
+        // Phase 0 : un compte en attente de validation ou refusé ne peut pas
+        // se connecter. Message explicite (le compte existe, ce n'est pas un
+        // problème d'identifiants) mais sans révéler si l'email existe pour
+        // un autre cas — ici les credentials SONT valides.
+        if (user.getStatutCompte() != StatutCompte.VALIDE) {
+            throw new CompteNonValideException(user.getStatutCompte(), user.getMotifRefus());
+        }
+
         String accessToken = jwtUtils.generateAccessToken(user.getId(), user.getEmail(), user.getRole().name());
         String refreshToken = jwtUtils.generateRefreshToken(user.getId(), user.getEmail());
 
@@ -167,9 +177,13 @@ public class AuthService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UserNotFoundException(email));
 
-        // S1 bis : pareil qu'au login, un compte désactivé ne rafraîchit pas.
+        // S1 bis : pareil qu'au login — compte désactivé ou non validé
+        // (Phase 0) : aucun refresh n'est délivré.
         if (!user.isActive()) {
             throw new InvalidCredentialsException();
+        }
+        if (user.getStatutCompte() != StatutCompte.VALIDE) {
+            throw new CompteNonValideException(user.getStatutCompte(), user.getMotifRefus());
         }
 
         String accessToken = jwtUtils.generateAccessToken(user.getId(), email, user.getRole().name());
@@ -456,6 +470,7 @@ public class AuthService {
                 user.getLastName(),
                 user.getMembershipLevel(),
                 user.getRole(),
+                user.getStatutCompte(),
                 user.getMembershipExpiresAt(),
                 user.getReferralCode(),
                 user.isActive(),
@@ -474,8 +489,62 @@ public class AuthService {
     @Transactional
     public void changeUserRole(Long id, String roleName) {
         User user = userRepository.findById(id).orElseThrow(() -> new RuntimeException("User not found"));
-        user.setRole(Role.valueOf(roleName.toUpperCase()));
+        Role newRole = Role.valueOf(roleName.toUpperCase());
+        user.setRole(newRole);
+
+        // Phase 0 : l'attribution d'un rôle privilégié repasse TOUJOURS par la
+        // validation de l'admin (vérification des justificatifs) — même si le
+        // compte était VALIDE en tant qu'adhérent. Un compte déjà REFUSE est
+        // ré-examiné.
+        if (newRole == Role.ENTRAINEUR || newRole == Role.JOURNALISTE || newRole == Role.PRESIDENT) {
+            user.setStatutCompte(StatutCompte.EN_ATTENTE);
+            user.setMotifRefus(null);
+        }
         userRepository.save(user);
+    }
+
+    // ============================================
+    // Phase 0 — Circuit de validation des comptes
+    // ============================================
+
+    /** Demandes en attente (écran admin « demandes de comptes »). */
+    public List<UserProfileResponse> getPendingAccounts() {
+        return userRepository.findByStatutCompte(StatutCompte.EN_ATTENTE).stream()
+                .map(this::mapToProfile)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public UserProfileResponse validateAccount(Long id) {
+        User user = userRepository.findById(id).orElseThrow(() -> new RuntimeException("User not found"));
+        if (user.getStatutCompte() == StatutCompte.VALIDE) {
+            throw new RuntimeException("Ce compte est déjà validé");
+        }
+        if (user.getRole() != Role.ADMIN
+                && !(user.getRole() == Role.ENTRAINEUR || user.getRole() == Role.JOURNALISTE || user.getRole() == Role.PRESIDENT)) {
+            throw new RuntimeException("Seuls les comptes à rôle privilégié nécessitent une validation");
+        }
+        user.setStatutCompte(StatutCompte.VALIDE);
+        user.setMotifRefus(null);
+        userRepository.save(user);
+        return mapToProfile(user);
+    }
+
+    @Transactional
+    public UserProfileResponse refuseAccount(Long id, String motif) {
+        User user = userRepository.findById(id).orElseThrow(() -> new RuntimeException("User not found"));
+        if (user.getStatutCompte() == StatutCompte.VALIDE) {
+            throw new RuntimeException("Impossible de refuser un compte déjà validé");
+        }
+        if (motif == null || motif.isBlank()) {
+            throw new RuntimeException("Un motif de refus est obligatoire");
+        }
+        user.setStatutCompte(StatutCompte.REFUSE);
+        user.setMotifRefus(motif.trim());
+        userRepository.save(user);
+        // Le refus coupe aussi les éventuelles sessions ouvertes.
+        activeSessionRepository.deleteByEmail(user.getEmail());
+        return mapToProfile(user);
     }
 
     @Transactional
@@ -510,6 +579,7 @@ public class AuthService {
                 user.getLastName(),
                 user.getMembershipLevel(),
                 user.getRole(),
+                user.getStatutCompte(),
                 user.getMembershipExpiresAt(),
                 user.getReferralCode(),
                 user.isActive(),

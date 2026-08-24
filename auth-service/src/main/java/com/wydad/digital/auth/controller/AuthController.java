@@ -109,6 +109,7 @@ public class AuthController {
                 user.getLastName(),
                 user.getMembershipLevel(),
                 user.getRole(),
+                user.getStatutCompte(),
                 user.getMembershipExpiresAt(),
                 user.getReferralCode(),
                 user.isActive(),
@@ -292,6 +293,34 @@ public class AuthController {
     public ResponseEntity<String> changeUserRole(@PathVariable Long id, @RequestParam String newRole) {
         authService.changeUserRole(id, newRole);
         return ResponseEntity.ok("Rôle utilisateur mis à jour");
+    }
+
+    // ============================================
+    // Phase 0 — Circuit de validation des comptes
+    // ============================================
+
+    /** Liste des demandes de comptes en attente de validation. */
+    @GetMapping("/admin/accounts/pending")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<UserProfileResponse>> getPendingAccounts() {
+        return ResponseEntity.ok(authService.getPendingAccounts());
+    }
+
+    /** Valide une demande de compte (rôles privilégiés). */
+    @PatchMapping("/admin/accounts/{id}/validate")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<UserProfileResponse> validateAccount(@PathVariable Long id) {
+        return ResponseEntity.ok(authService.validateAccount(id));
+    }
+
+    /** Refuse une demande de compte avec motif obligatoire. */
+    @PatchMapping("/admin/accounts/{id}/refuse")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<UserProfileResponse> refuseAccount(
+            @PathVariable Long id,
+            @org.springframework.web.bind.annotation.RequestBody
+            @jakarta.validation.constraints.NotBlank String motif) {
+        return ResponseEntity.ok(authService.refuseAccount(id, motif));
     }
 
     @PostMapping("/admin/users/create")
