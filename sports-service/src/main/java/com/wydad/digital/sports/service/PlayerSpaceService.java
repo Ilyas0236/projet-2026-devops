@@ -477,6 +477,11 @@ public class PlayerSpaceService {
     private PlayerDocumentResponse toResponse(PlayerDocument d) {
         // URL signée à la demande (1 h) pour les médias Cloudinary.
         String url = mediaStorageService.signedUrl(d.getPublicId(), d.getUrl());
+        // Nom de l'expéditeur (affichage « de la part de … » côté front).
+        String senderName = d.getSenderUserId() == null ? null
+                : staffRepository.findByUserId(d.getSenderUserId())
+                        .map(com.wydad.digital.sports.model.Staff::getFullName)
+                        .orElse(null);
         return PlayerDocumentResponse.builder()
                 .id(d.getId())
                 .title(d.getTitle())
@@ -485,6 +490,7 @@ public class PlayerSpaceService {
                 .mediaType(d.getMediaType())
                 .message(d.getMessage())
                 .senderUserId(d.getSenderUserId())
+                .senderName(senderName)
                 .publicId(d.getPublicId())
                 .build();
     }
