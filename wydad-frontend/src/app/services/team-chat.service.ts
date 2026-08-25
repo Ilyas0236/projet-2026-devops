@@ -27,8 +27,8 @@ export interface GroupMember {
  * Phase 4 — client STOMP du chat de groupe « WhatsApp ».
  *
  * <p>Le JWT transite en en-tête natif du frame CONNECT (l'upgrade WebSocket
- * ne peut pas porter de header Authorization) ; sports-service valide la
- * signature lui-même. L'adhésion au groupe est revérifiée côté serveur à
+ * ne peut pas porter de header Authorization) ; communication-service valide
+ * la signature lui-même. L'adhésion au groupe est revérifiée côté serveur à
  * chaque envoi.</p>
  */
 @Injectable({ providedIn: 'root' })
@@ -49,7 +49,7 @@ export class TeamChatService {
   private groups = new Set<string>();
   private subscriptions: StompSubscription[] = [];
 
-  /** WS endpoint : même origine que l'API (gateway → sports-service). */
+  /** WS endpoint : même origine que l'API (gateway → communication-service). */
   private wsUrl(): string {
     const base = environment.apiBaseUrl.replace(/\/api\/?$/, '');
     return `${base}/ws/team-chat`;

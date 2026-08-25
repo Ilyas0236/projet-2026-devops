@@ -102,10 +102,6 @@ export class ApiService {
   }
 
   // --- Fonctionnalité 6/6 : gestion ADMIN des fiches publiques joueurs (stats) ---
-  getAllJoueurs(): Observable<any[]> {
-    return this.http.get<any[]>(`${this.baseUrl}/sports/players`);
-  }
-
   createJoueur(joueur: any): Observable<any> {
     return this.http.post<any>(`${this.baseUrl}/content/joueurs`, joueur);
   }

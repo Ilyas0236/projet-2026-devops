@@ -39,7 +39,7 @@ import { BoutiqueDetailComponent } from './pages/boutique-detail/boutique-detail
 import { CartComponent } from './components/cart/cart.component';
 import { MesCommandesComponent } from './pages/mes-commandes/mes-commandes.component';
 import { authGuard } from './guards/auth.guard';
-import { joueurGuard, staffGuard, parentGuard } from './guards/role.guard';
+import { roleGuard, joueurGuard, staffGuard, parentGuard } from './guards/role.guard';
 import { NotFoundComponent } from './pages/not-found/not-found.component';
 import { adminGuard } from './guards/admin.guard';
 import { InscriptionAcademieComponent } from './pages/academie/inscription/inscription.component';
@@ -122,7 +122,9 @@ export const routes: Routes = [
       { path: 'profil/billets', component: MesBilletsComponent, canActivate: [authGuard] },
       { path: 'profil/commandes', component: MesCommandesComponent, canActivate: [authGuard] },
       { path: 'don', component: DonComponent, canActivate: [authGuard] },
-      { path: 'academie/inscription', component: InscriptionAcademieComponent, canActivate: [authGuard] },
+      // Le backend n'accepte l'inscription académie que PARENT/ADMIN —
+      // on aligne la garde frontend pour éviter un 403 après remplissage.
+      { path: 'academie/inscription', component: InscriptionAcademieComponent, canActivate: [roleGuard('PARENT', 'ADMIN')] },
       { path: 'academie/mes-enfants', component: DashboardParentComponent, canActivate: [parentGuard] },
       { path: 'joueur/dashboard', component: DashboardJoueurComponent, canActivate: [joueurGuard] },
       { path: 'staff/dashboard', component: DashboardStaffComponent, canActivate: [staffGuard] },

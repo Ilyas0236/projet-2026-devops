@@ -28,6 +28,12 @@ export class DashboardStaffComponent implements OnInit {
   staffNotFound = false;
   /** Phase 5 — le président n'a pas de fiche staff : vue réduite aux appels programmés. */
   isPresident = false;
+  /**
+   * Phase 5 — la programmation d'appels est réservée ENTRAINEUR/PRESIDENT/ADMIN
+   * côté backend (@PreAuthorize ScheduledCallController) ; on masque le
+   * formulaire au STAFF simple (médecin, kiné…) pour éviter un 403 à la soumission.
+   */
+  canScheduleCalls = false;
 
   /** Phase 5 — rafraîchit l'agenda des appels après une programmation. */
   onCallCreated() {
@@ -119,7 +125,10 @@ export class DashboardStaffComponent implements OnInit {
 
     // Charger le profil staff depuis le backend via l'ID utilisateur connecté
     const userId = this.auth.getCurrentUserId();
-    this.isPresident = this.auth.getTokenRole() === 'PRESIDENT';
+    const tokenRole = this.auth.getTokenRole();
+    this.isPresident = tokenRole === 'PRESIDENT';
+    this.canScheduleCalls = tokenRole === 'ENTRAINEUR'
+        || tokenRole === 'PRESIDENT' || tokenRole === 'ADMIN';
     if (userId) {
       this.api.getStaffByUserId(userId).subscribe({
         next: (data) => {
