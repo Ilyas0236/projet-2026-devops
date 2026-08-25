@@ -249,3 +249,11 @@ Tests gateway : 5/5 verts local (`InternalRoutesBlockedTest` 3 + `PublicCatalogA
 ### Reste à faire avant ouverture publique
 - [x] Changer le mot de passe seed admin (fait le 25/08 — ancien rejeté 401, preuve en prod ; comptes test ids 5→10 également supprimés, il ne reste que admin@wac.ma)
 - ~~Régénérer secret LiveKit + clé API Cloudinary~~ — **clés conservées** (décision du propriétaire du 25/08) ; procédure de rotation documentée dans `docs/PROCEDURE-REGENERATION-SECRETS.md` si besoin un jour
+
+### Design system « Club » premium — déploiement & vérification prod (25/08)
+- Commit 9585ca6 déployé (`git pull` + `docker compose up -d --build frontend`).
+- Nouveau système dans `styles.scss` : `.club-hero` (dégradé rouge animé clubHeroShift, halos or/blanc, texture diagonale), `.club-underline`, `.club-badge-gold`, `.club-card`, `.club-photo-card`, `.club-skeleton` — guards `prefers-reduced-motion`.
+- Pages converties : legendes, palmares, stade, billetterie-detail, espace-fan, inscription académie, boutique-detail, not-found, footer/top-strip publics, cart/mes-billets/mes-commandes (bannières rouge Club), pill team-chat, toasts + confirm-dialog neutres lisibles partout.
+- Tokens morts éliminés : `bg-wydad-dark`, `bg-wydad-light`, `to-wydad-darkred`, `text-wydad-dark` n'existaient pas dans tailwind.config.js (no-op → fonds noirs involontaires). Back-office ADMIN volontairement sombre (décision documentée dans tailwind.config.js).
+- QA associé : audit 145 URLs front↔gateway↔contrôleurs = 145/145 PASS ; build prod vert ; 38/38 specs Angular ; sports 55 / communication 16 tests verts.
+- Vérification prod : 7 pages clés HTTP 200 (`/`, `/legendes`, `/palmares`, `/stade`, `/espace-fan`, `/billetterie`, `/inscription-academie`) ; CSS servi contient `clubHeroShift`, `.club-hero`, `.club-underline`, `.club-skeleton`, `.paper-btn-primary`, `.light-page` ; bundle main.js embarque `club-hero` ×10, `club-badge-gold` ×4, `club-photo-card` ×2.
