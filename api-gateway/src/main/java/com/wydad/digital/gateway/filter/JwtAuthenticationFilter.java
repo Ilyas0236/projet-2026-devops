@@ -98,6 +98,20 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
             return chain.filter(exchange);
         }
 
+        // Boutique & billetterie : catalogue consultable sans compte (pages
+        // publiques boutique/billetterie). Les services revalident deja via
+        // permitAll cote SecurityConfig ; achat/scan restent authentifies.
+        if ("GET".equals(method)
+                && (path.equals("/api/shop/products")
+                    || path.matches("/api/shop/products/\\d+")
+                    || path.startsWith("/api/ticket/events"))) {
+            String catalogAuthHeader = request.getHeaders().getFirst("Authorization");
+            if (catalogAuthHeader != null && catalogAuthHeader.startsWith("Bearer ")) {
+                return validateAndForward(exchange, chain);
+            }
+            return chain.filter(exchange);
+        }
+
         // For all other routes, enforce JWT (this covers /api/auth/me, /api/auth/admin/**, and all other services)
         return validateAndForward(exchange, chain);
 
