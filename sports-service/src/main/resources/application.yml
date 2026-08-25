@@ -34,6 +34,12 @@ cloudinary:
   api-key: ${CLOUDINARY_API_KEY:}
   api-secret: ${CLOUDINARY_API_SECRET:}
 
+# Phase 5 — appels vidéo/vocaux (LiveKit Cloud, mode dégradé si vides).
+livekit:
+  url: ${LIVEKIT_URL:}
+  api-key: ${LIVEKIT_API_KEY:}
+  api-secret: ${LIVEKIT_API_SECRET:}
+
 management:
   endpoints:
     web:
