@@ -107,7 +107,7 @@ import { ErrorBannerComponent } from '../../components/error-banner/error-banner
   `,
   styles: [`
     .page-header {
-      background: linear-gradient(90deg, #1a1a2e, #0f0f1a);
+      background: linear-gradient(90deg, #DC143C, #9B0000);
       color: white;
       padding: 3rem 2rem;
       text-align: center;

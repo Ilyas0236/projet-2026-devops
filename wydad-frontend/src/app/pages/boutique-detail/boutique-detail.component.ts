@@ -11,7 +11,7 @@ import { ErrorBannerComponent } from '../../components/error-banner/error-banner
   standalone: true,
   imports: [CommonModule, FormsModule, ErrorBannerComponent],
   template: `
-    <div class="min-h-screen bg-wydad-light pt-32 pb-24 font-sans">
+    <div class="min-h-screen bg-paper-1 pt-32 pb-24 font-sans">
       <div class="max-w-7xl mx-auto px-6" *ngIf="loading">
         <div class="text-center py-20 text-gray-500">Chargement du produit...</div>
       </div>
@@ -63,7 +63,7 @@ import { ErrorBannerComponent } from '../../components/error-banner/error-banner
               <div class="flex flex-wrap gap-2">
                 <button *ngFor="let size of availableSizes"
                         (click)="selectSize(size)"
-                        [class.bg-wydad-dark]="selectedSize === size"
+                        [class.bg-gray-900]="selectedSize === size"
                         [class.text-white]="selectedSize === size"
                         [class.border-wydad-dark]="selectedSize === size"
                         class="min-w-[48px] h-12 border-2 border-gray-300 rounded-lg font-bold text-sm uppercase hover:border-wydad-dark transition-colors flex items-center justify-center">
@@ -113,7 +113,7 @@ import { ErrorBannerComponent } from '../../components/error-banner/error-banner
             <!-- Add to cart -->
             <button (click)="addToCart()"
                     [disabled]="!selectedVariant || selectedVariant.stockQuantity <= 0 || addingToCart"
-                    class="w-full py-4 bg-wydad-dark hover:bg-wydad-red text-white font-display uppercase font-bold tracking-wider rounded-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 shadow-lg">
+                    class="w-full py-4 bg-gray-900 hover:bg-wydad-red text-white font-display uppercase font-bold tracking-wider rounded-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 shadow-lg">
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
               {{ addingToCart ? 'Ajout en cours...' : 'Ajouter au panier' }}
             </button>

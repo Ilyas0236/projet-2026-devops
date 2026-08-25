@@ -119,7 +119,7 @@ import { ToastService } from '../../services/toast.service';
   `,
   styles: [`
     .page-header {
-      background: linear-gradient(90deg, #b71c1c, #8e0000);
+      background: linear-gradient(135deg, #DC143C 0%, #9B0000 100%);
       color: white;
       padding: 3rem 2rem;
       text-align: center;

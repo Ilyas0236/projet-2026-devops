@@ -726,13 +726,8 @@ export class ApiService {
     return this.http.get<any[]>(`${this.baseUrl}/auth/admin/users`);
   }
 
-  changeUserRole(userId: number, newRole: string): Observable<any> {
-    return this.http.patch(`${this.baseUrl}/auth/admin/users/${userId}/role?newRole=${newRole}`, {}, { responseType: 'text' as 'json' });
-  }
-
-  toggleUserActive(userId: number, status: boolean): Observable<any> {
-    return this.http.patch(`${this.baseUrl}/auth/admin/users/${userId}/activate?status=${status}`, {}, { responseType: 'text' as 'json' });
-  }
+  // NB : changeUserRole/toggleUserActive vivent dans AuthService (utilisées
+  // par admin-users). Ne pas les dupliquer ici.
 
   // ==========================================
   // GAMIFICATION & ENGAGEMENT

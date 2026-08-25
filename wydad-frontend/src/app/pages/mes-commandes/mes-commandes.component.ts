@@ -115,7 +115,7 @@ import { AuthService } from '../../services/auth.service';
   `,
   styles: [`
     .page-header {
-      background: linear-gradient(90deg, #b71c1c, #8e0000);
+      background: linear-gradient(135deg, #DC143C 0%, #9B0000 100%);
       color: white; padding: 3rem 2rem; text-align: center;
     }
     .page-header h1 { font-size: 2.5rem; margin-bottom: 0.5rem; font-weight: 900; }

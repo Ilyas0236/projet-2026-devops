@@ -1,22 +1,22 @@
-<div class="pt-32 pb-20 min-h-screen bg-gray-50">
+<div class="pt-32 pb-20 min-h-screen light-page bg-paper-1">
   <div class="max-w-4xl mx-auto px-6">
     <div class="mb-10 text-center">
-      <h1 class="font-display text-4xl font-bold uppercase tracking-wider text-wydad-dark mb-4">Académie Wydad</h1>
-      <p class="text-gray-600">Inscription en ligne<ng-container *ngIf="saison"> pour la saison {{ saison }}</ng-container></p>
+      <h1 class="font-display text-4xl font-bold uppercase tracking-wider text-ink-primary mb-4">Académie Wydad</h1>
+      <p class="text-ink-secondary">Inscription en ligne<ng-container *ngIf="saison"> pour la saison {{ saison }}</ng-container></p>
     </div>
 
     <!-- Stepper -->
     <div class="flex justify-between items-center mb-12 relative">
-      <div class="absolute left-0 top-1/2 -translate-y-1/2 w-full h-1 bg-gray-200 -z-10 rounded-full"></div>
+      <div class="absolute left-0 top-1/2 -translate-y-1/2 w-full h-1 bg-paper-3 -z-10 rounded-full"></div>
       <div class="absolute left-0 top-1/2 -translate-y-1/2 h-1 bg-wydad-red -z-10 rounded-full transition-all duration-500" [style.width]="((currentStep - 1) / (totalSteps - 1)) * 100 + '%'"></div>
       
       <div *ngFor="let step of [1, 2, 3, 4]; let i = index" class="relative flex flex-col items-center">
         <div class="w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg transition-colors duration-300 shadow-sm"
-             [ngClass]="currentStep >= step ? 'bg-wydad-red text-white border-4 border-white' : 'bg-gray-100 text-gray-400 border-4 border-white'">
+             [ngClass]="currentStep >= step ? 'bg-wydad-red text-white border-4 border-white' : 'bg-paper-2 text-ink-tertiary border-4 border-white'">
           {{ step }}
         </div>
         <span class="absolute -bottom-8 text-xs font-bold uppercase tracking-wider hidden sm:block whitespace-nowrap"
-              [ngClass]="currentStep >= step ? 'text-wydad-red' : 'text-gray-400'">
+              [ngClass]="currentStep >= step ? 'text-wydad-red' : 'text-ink-tertiary'">
           {{ i === 0 ? 'Enfant' : i === 1 ? 'Médical' : i === 2 ? 'Documents' : 'Paiement' }}
         </span>
       </div>
@@ -27,30 +27,30 @@
       <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
       </div>
-      <h2 class="font-display text-2xl font-bold text-gray-800 mb-2">Inscription Réussie !</h2>
-      <p class="text-gray-600 mb-6">Le dossier de votre enfant a bien été transmis. Redirection vers votre espace...</p>
+      <h2 class="font-display text-2xl font-bold text-ink-primary mb-2">Inscription Réussie !</h2>
+      <p class="text-ink-secondary mb-6">Le dossier de votre enfant a bien été transmis. Redirection vers votre espace...</p>
     </div>
 
     <!-- Form -->
-    <div *ngIf="!success" class="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100">
+    <div *ngIf="!success" class="bg-white rounded-2xl shadow-xl overflow-hidden border border-paper-3">
       <form [formGroup]="inscriptionForm" (ngSubmit)="submitInscription()">
         
         <!-- STEP 1: Child Info -->
         <div *ngIf="currentStep === 1" formGroupName="childInfo" class="p-8 md:p-12 animate-fade-in">
-          <h2 class="font-display text-2xl font-bold text-wydad-dark mb-8 border-l-4 border-wydad-red pl-4">Informations de l'enfant</h2>
+          <h2 class="font-display text-2xl font-bold text-ink-primary mb-8 border-l-4 border-wydad-red pl-4">Informations de l'enfant</h2>
           
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label class="block text-sm font-bold text-gray-700 mb-2">Nom Complet</label>
-              <input type="text" formControlName="childFullName" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:border-wydad-red focus:ring-1 focus:ring-wydad-red transition-colors" placeholder="Nom et prénom">
+              <label class="block text-sm font-bold text-ink-primary mb-2">Nom Complet</label>
+              <input type="text" formControlName="childFullName" class="w-full px-4 py-3 bg-paper-1 border border-paper-3 rounded-lg focus:outline-none focus:border-wydad-red focus:ring-1 focus:ring-wydad-red transition-colors" placeholder="Nom et prénom">
             </div>
             <div>
-              <label class="block text-sm font-bold text-gray-700 mb-2">Date de naissance</label>
-              <input type="date" formControlName="childBirthDate" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:border-wydad-red focus:ring-1 focus:ring-wydad-red transition-colors">
+              <label class="block text-sm font-bold text-ink-primary mb-2">Date de naissance</label>
+              <input type="date" formControlName="childBirthDate" class="w-full px-4 py-3 bg-paper-1 border border-paper-3 rounded-lg focus:outline-none focus:border-wydad-red focus:ring-1 focus:ring-wydad-red transition-colors">
             </div>
             <div>
-              <label class="block text-sm font-bold text-gray-700 mb-2">Sport</label>
-              <select formControlName="sportType" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:border-wydad-red focus:ring-1 focus:ring-wydad-red transition-colors">
+              <label class="block text-sm font-bold text-ink-primary mb-2">Sport</label>
+              <select formControlName="sportType" class="w-full px-4 py-3 bg-paper-1 border border-paper-3 rounded-lg focus:outline-none focus:border-wydad-red focus:ring-1 focus:ring-wydad-red transition-colors">
                 <option value="FOOTBALL">Football</option>
                 <option value="BASKETBALL">Basketball</option>
                 <option value="HANDBALL">Handball</option>
@@ -58,8 +58,8 @@
               </select>
             </div>
             <div>
-              <label class="block text-sm font-bold text-gray-700 mb-2">Niveau estimé</label>
-              <select formControlName="level" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:border-wydad-red focus:ring-1 focus:ring-wydad-red transition-colors">
+              <label class="block text-sm font-bold text-ink-primary mb-2">Niveau estimé</label>
+              <select formControlName="level" class="w-full px-4 py-3 bg-paper-1 border border-paper-3 rounded-lg focus:outline-none focus:border-wydad-red focus:ring-1 focus:ring-wydad-red transition-colors">
                 <option value="Débutant">Débutant</option>
                 <option value="Intermédiaire">Intermédiaire</option>
                 <option value="Avancé">Avancé</option>
@@ -70,12 +70,12 @@
 
         <!-- STEP 2: Medical -->
         <div *ngIf="currentStep === 2" formGroupName="medical" class="p-8 md:p-12 animate-fade-in">
-          <h2 class="font-display text-2xl font-bold text-wydad-dark mb-8 border-l-4 border-wydad-red pl-4">Dossier Médical</h2>
+          <h2 class="font-display text-2xl font-bold text-ink-primary mb-8 border-l-4 border-wydad-red pl-4">Dossier Médical</h2>
           
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
             <div>
-              <label class="block text-sm font-bold text-gray-700 mb-2">Groupe Sanguin</label>
-              <select formControlName="bloodType" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:border-wydad-red">
+              <label class="block text-sm font-bold text-ink-primary mb-2">Groupe Sanguin</label>
+              <select formControlName="bloodType" class="w-full px-4 py-3 bg-paper-1 border border-paper-3 rounded-lg focus:outline-none focus:border-wydad-red">
                 <option value="">Sélectionner</option>
                 <option value="O+">O+</option><option value="O-">O-</option>
                 <option value="A+">A+</option><option value="A-">A-</option>
@@ -84,63 +84,63 @@
               </select>
             </div>
             <div>
-              <label class="block text-sm font-bold text-gray-700 mb-2">Allergies connues</label>
-              <input type="text" formControlName="allergies" placeholder="Ex: Pénicilline, Arachides..." class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:border-wydad-red">
+              <label class="block text-sm font-bold text-ink-primary mb-2">Allergies connues</label>
+              <input type="text" formControlName="allergies" placeholder="Ex: Pénicilline, Arachides..." class="w-full px-4 py-3 bg-paper-1 border border-paper-3 rounded-lg focus:outline-none focus:border-wydad-red">
             </div>
           </div>
 
           <div class="mb-8">
-            <label class="block text-sm font-bold text-gray-700 mb-2">Historique Médical Pertinent</label>
-            <textarea formControlName="medicalHistory" rows="3" placeholder="Antécédents médicaux pertinents pour la pratique sportive..." class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:border-wydad-red"></textarea>
+            <label class="block text-sm font-bold text-ink-primary mb-2">Historique Médical Pertinent</label>
+            <textarea formControlName="medicalHistory" rows="3" placeholder="Antécédents médicaux pertinents pour la pratique sportive..." class="w-full px-4 py-3 bg-paper-1 border border-paper-3 rounded-lg focus:outline-none focus:border-wydad-red"></textarea>
           </div>
 
-          <h3 class="font-bold text-gray-800 mb-4 pb-2 border-b">Contact en cas d'urgence</h3>
+          <h3 class="font-bold text-ink-primary mb-4 pb-2 border-b">Contact en cas d'urgence</h3>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label class="block text-sm font-bold text-gray-700 mb-2">Nom du contact</label>
-              <input type="text" formControlName="emergencyContactName" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:border-wydad-red">
+              <label class="block text-sm font-bold text-ink-primary mb-2">Nom du contact</label>
+              <input type="text" formControlName="emergencyContactName" class="w-full px-4 py-3 bg-paper-1 border border-paper-3 rounded-lg focus:outline-none focus:border-wydad-red">
             </div>
             <div>
-              <label class="block text-sm font-bold text-gray-700 mb-2">Téléphone d'urgence</label>
-              <input type="tel" formControlName="emergencyContactPhone" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:border-wydad-red">
+              <label class="block text-sm font-bold text-ink-primary mb-2">Téléphone d'urgence</label>
+              <input type="tel" formControlName="emergencyContactPhone" class="w-full px-4 py-3 bg-paper-1 border border-paper-3 rounded-lg focus:outline-none focus:border-wydad-red">
             </div>
           </div>
         </div>
 
         <!-- STEP 3: Documents -->
         <div *ngIf="currentStep === 3" formGroupName="documents" class="p-8 md:p-12 animate-fade-in">
-          <h2 class="font-display text-2xl font-bold text-wydad-dark mb-8 border-l-4 border-wydad-red pl-4">Pièces Justificatives</h2>
+          <h2 class="font-display text-2xl font-bold text-ink-primary mb-8 border-l-4 border-wydad-red pl-4">Pièces Justificatives</h2>
           
           <div class="space-y-6">
-            <div class="border-2 border-dashed border-gray-300 rounded-xl p-6 flex flex-col sm:flex-row items-center gap-6 hover:border-wydad-red transition-colors bg-gray-50">
-              <div class="w-16 h-16 bg-white rounded-full flex items-center justify-center text-gray-400 shadow-sm shrink-0">
+            <div class="border-2 border-dashed border-paper-3 rounded-xl p-6 flex flex-col sm:flex-row items-center gap-6 hover:border-wydad-red transition-colors bg-paper-1">
+              <div class="w-16 h-16 bg-white rounded-full flex items-center justify-center text-ink-tertiary shadow-sm shrink-0">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
               </div>
               <div class="flex-1 text-center sm:text-left">
-                <h4 class="font-bold text-gray-800">Extrait de naissance</h4>
-                <p class="text-sm text-gray-500 mb-2">Format PDF ou Image (Max 5MB)</p>
+                <h4 class="font-bold text-ink-primary">Extrait de naissance</h4>
+                <p class="text-sm text-ink-secondary mb-2">Format PDF ou Image (Max 5MB)</p>
                 <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" (change)="onDocumentSelected('BIRTH_CERTIFICATE', $event)" class="text-sm">
               </div>
             </div>
 
-            <div class="border-2 border-dashed border-gray-300 rounded-xl p-6 flex flex-col sm:flex-row items-center gap-6 hover:border-wydad-red transition-colors bg-gray-50">
-              <div class="w-16 h-16 bg-white rounded-full flex items-center justify-center text-gray-400 shadow-sm shrink-0">
+            <div class="border-2 border-dashed border-paper-3 rounded-xl p-6 flex flex-col sm:flex-row items-center gap-6 hover:border-wydad-red transition-colors bg-paper-1">
+              <div class="w-16 h-16 bg-white rounded-full flex items-center justify-center text-ink-tertiary shadow-sm shrink-0">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
               </div>
               <div class="flex-1 text-center sm:text-left">
-                <h4 class="font-bold text-gray-800">Certificat d'aptitude médicale</h4>
-                <p class="text-sm text-gray-500 mb-2">Valide pour l'année en cours</p>
+                <h4 class="font-bold text-ink-primary">Certificat d'aptitude médicale</h4>
+                <p class="text-sm text-ink-secondary mb-2">Valide pour l'année en cours</p>
                 <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" (change)="onDocumentSelected('MEDICAL_CERTIFICATE', $event)" class="text-sm">
               </div>
             </div>
 
-            <div class="border-2 border-dashed border-gray-300 rounded-xl p-6 flex flex-col sm:flex-row items-center gap-6 hover:border-wydad-red transition-colors bg-gray-50">
-              <div class="w-16 h-16 bg-white rounded-full flex items-center justify-center text-gray-400 shadow-sm shrink-0">
+            <div class="border-2 border-dashed border-paper-3 rounded-xl p-6 flex flex-col sm:flex-row items-center gap-6 hover:border-wydad-red transition-colors bg-paper-1">
+              <div class="w-16 h-16 bg-white rounded-full flex items-center justify-center text-ink-tertiary shadow-sm shrink-0">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
               </div>
               <div class="flex-1 text-center sm:text-left">
-                <h4 class="font-bold text-gray-800">Photo d'identité</h4>
-                <p class="text-sm text-gray-500 mb-2">Pour la licence (Fond blanc)</p>
+                <h4 class="font-bold text-ink-primary">Photo d'identité</h4>
+                <p class="text-sm text-ink-secondary mb-2">Pour la licence (Fond blanc)</p>
                 <input type="file" accept=".jpg,.jpeg,.png,.webp" (change)="onDocumentSelected('PHOTO', $event)" class="text-sm">
               </div>
             </div>
@@ -149,11 +149,11 @@
 
         <!-- STEP 4: Payment -->
         <div *ngIf="currentStep === 4" formGroupName="payment" class="p-8 md:p-12 animate-fade-in">
-          <h2 class="font-display text-2xl font-bold text-wydad-dark mb-8 border-l-4 border-wydad-red pl-4">Récapitulatif & Paiement</h2>
+          <h2 class="font-display text-2xl font-bold text-ink-primary mb-8 border-l-4 border-wydad-red pl-4">Récapitulatif & Paiement</h2>
           
-          <div class="bg-gray-50 rounded-xl p-6 mb-8 border border-gray-200">
+          <div class="bg-paper-1 rounded-xl p-6 mb-8 border border-paper-3">
             <h3 class="font-bold text-lg mb-4 pb-2 border-b">Inscription Académie</h3>
-            <p class="text-sm text-gray-600 leading-relaxed">
+            <p class="text-sm text-ink-secondary leading-relaxed">
               Votre demande d'inscription sera transmise à l'administration de l'académie.
               Elle restera <strong>en attente de validation</strong> jusqu'à confirmation par le club,
               qui vous contactera pour finaliser les frais d'inscription et le paiement.
@@ -161,12 +161,12 @@
           </div>
 
           <div class="space-y-4">
-            <label class="block text-sm font-bold text-gray-700 mb-2">Méthode de paiement</label>
+            <label class="block text-sm font-bold text-ink-primary mb-2">Méthode de paiement</label>
             <div class="flex items-center gap-4 p-4 border rounded-xl bg-white hover:border-wydad-red cursor-pointer">
               <input type="radio" formControlName="paymentMethod" value="ECASH" class="w-5 h-5 text-wydad-red">
               <div class="flex-1">
                 <h4 class="font-bold">E-Cash Wydad</h4>
-                <p class="text-xs text-gray-500">Payer avec votre solde E-Cash</p>
+                <p class="text-xs text-ink-secondary">Payer avec votre solde E-Cash</p>
               </div>
               <div class="w-10 h-10 bg-wydad-red text-white rounded-lg flex items-center justify-center font-bold text-xs">EC</div>
             </div>
@@ -174,21 +174,21 @@
               <input type="radio" formControlName="paymentMethod" value="CARD" class="w-5 h-5 text-wydad-red">
               <div class="flex-1">
                 <h4 class="font-bold">Carte Bancaire</h4>
-                <p class="text-xs text-gray-500">Paiement sécurisé via CMI / ChariBaaS</p>
+                <p class="text-xs text-ink-secondary">Paiement sécurisé via CMI / ChariBaaS</p>
               </div>
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-ink-tertiary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>
             </div>
           </div>
         </div>
 
         <!-- Footer Actions -->
-        <div class="px-8 md:px-12 py-6 bg-gray-50 border-t border-gray-100 flex justify-between items-center">
-          <button type="button" *ngIf="currentStep > 1" (click)="prevStep()" class="px-6 py-3 border border-gray-300 rounded font-bold text-gray-600 hover:bg-gray-100 transition-colors">
+        <div class="px-8 md:px-12 py-6 bg-paper-1 border-t border-paper-3 flex justify-between items-center">
+          <button type="button" *ngIf="currentStep > 1" (click)="prevStep()" class="px-6 py-3 border border-paper-3 rounded font-bold text-ink-secondary hover:bg-paper-2 transition-colors">
             Retour
           </button>
           <div *ngIf="currentStep === 1" class="w-full"></div>
           
-          <button type="button" *ngIf="currentStep < totalSteps" (click)="nextStep()" class="px-8 py-3 bg-wydad-dark text-white rounded font-bold uppercase tracking-wider hover:bg-black transition-colors skew-x-[-10deg]">
+          <button type="button" *ngIf="currentStep < totalSteps" (click)="nextStep()" class="px-8 py-3 bg-gradient-to-r from-wydad-red to-wydad-red-dark text-white rounded font-bold uppercase tracking-wider hover:bg-black transition-colors skew-x-[-10deg]">
             <span class="skew-x-[10deg] block">Suivant</span>
           </button>
           

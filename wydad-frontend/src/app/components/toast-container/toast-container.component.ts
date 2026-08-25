@@ -31,9 +31,9 @@ import { ToastService } from '../../services/toast.service';
               }
             }
           </svg>
-          <p class="text-sm leading-snug flex-1 text-text-primary">{{ toast.message }}</p>
+          <p class="text-sm leading-snug flex-1 text-white">{{ toast.message }}</p>
           <button type="button" (click)="toastService.dismiss(toast.id)"
-                  class="text-text-tertiary hover:text-text-primary transition-colors -mt-0.5"
+                  class="text-white/70 hover:text-white transition-colors -mt-0.5"
                   aria-label="Fermer">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
                  fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
@@ -56,18 +56,18 @@ export class ToastContainerComponent {
     switch (type) {
       case 'success':
         return {
-          box: 'bg-surface-1/95 border-emerald-500/30',
+          box: 'bg-gray-900/95 text-white border-emerald-500/40',
           icon: 'text-emerald-400 shrink-0'
         };
       case 'error':
         return {
-          box: 'bg-surface-1/95 border-wydad-red/40',
-          icon: 'text-wydad-red shrink-0'
+          box: 'bg-gray-900/95 text-white border-wydad-red/60',
+          icon: 'text-wydad-red-light shrink-0'
         };
       default:
         return {
-          box: 'bg-surface-1/95 border-white/[0.08]',
-          icon: 'text-text-secondary shrink-0'
+          box: 'bg-gray-900/95 text-white border-white/15',
+          icon: 'text-wydad-gold-light shrink-0'
         };
     }
   }
