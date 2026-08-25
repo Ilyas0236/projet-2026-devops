@@ -369,4 +369,3 @@ volumes:
 networks:
   default:
     name: wydad-network
-    name: wydad-network
