@@ -84,6 +84,20 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
             return chain.filter(exchange);
         }
 
+        // Gouvernance (election-service) : lecture publique sans compte.
+        // Exigence B.8 — resultats publies visibles y compris des visiteurs non
+        // connects ; sondages actifs en lecture libre (le service revalide :
+        // vote/cloture restent authentifies cote @PreAuthorize).
+        if ("GET".equals(method)
+                && (path.equals("/api/polls/active")
+                    || path.startsWith("/api/elections/published"))) {
+            String governanceAuthHeader = request.getHeaders().getFirst("Authorization");
+            if (governanceAuthHeader != null && governanceAuthHeader.startsWith("Bearer ")) {
+                return validateAndForward(exchange, chain);
+            }
+            return chain.filter(exchange);
+        }
+
         // For all other routes, enforce JWT (this covers /api/auth/me, /api/auth/admin/**, and all other services)
         return validateAndForward(exchange, chain);
 
