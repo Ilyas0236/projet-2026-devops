@@ -32,8 +32,11 @@ logging:
     com.wydad.digital.sports: DEBUG
 
 # Secret partagé des appels internes (notifications, auth, API roster).
+# Même nom de variable que les 9 autres services (docker-compose passe
+# WYDAD_INTERNAL_SECRET) — un écart de nommage rendait la propriété vide
+# et faisait échouer en 403 tous les appels internes roster/chat.
 wydad:
-  internal-secret: ${INTERNAL_SECRET:}
+  internal-secret: ${WYDAD_INTERNAL_SECRET:}
 
 # Phase 3 — médias tactiques (vidéo/photo/PDF) stockés sur Cloudinary.
 # Sans clés, MediaStorageService bascule en mode dégradé (référence locale).

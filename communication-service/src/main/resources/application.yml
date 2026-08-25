@@ -26,9 +26,12 @@ logging:
     com.wydad.digital.communication: DEBUG
 
 # Secret partagé pour les appels internes (roster sports-service, notifs).
+# Même nom de variable que les autres services : docker-compose exporte
+# WYDAD_INTERNAL_SECRET — avec ${INTERNAL_SECRET:} la propriété restait
+# vide et le chat échouait en 403 côté roster (bug re-test 25/08).
 wydad:
   jwt-secret: ${JWT_SECRET:}
-  internal-secret: ${INTERNAL_SECRET:}
+  internal-secret: ${WYDAD_INTERNAL_SECRET:}
   notification-service-uri: ${NOTIFICATION_SERVICE_URI:http://notification-service:8086}
   sports-service-uri: ${SPORTS_SERVICE_URI:http://sports-service:8087}
 
