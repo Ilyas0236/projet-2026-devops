@@ -227,6 +227,11 @@ Tests gateway : 5/5 verts local (`InternalRoutesBlockedTest` 3 + `PublicCatalogA
 - Test manuel du script : dump gzip de **1,3 Mo** produit dans `~/backups/`.
 - Correctif connexe : pools Hikari 10 services × max 5 (`HIKARI_MAX_POOL`) — le défaut (×10) saturait `max_connections=100`, ce qui faisait échouer `pg_dumpall` (« too many clients »). Vérifié après redéploiement : 26 connexions JDBC, 15 conteneurs healthy.
 
+### Élections du président — parcours E2E prouvé en prod (25/08)
+- Front déployé (commit d5fb499) : `/elections` publique, `/mes-elections` adhérent, `/admin/elections`.
+- Déroulé complet sur la VM : register adhérent jetable → admin crée élection + 2 candidats → vote membre ✅ → re-vote **409** ✅ → clôture admin (CLOSED, published, winnerCandidateId=1) ✅ → `GET /api/elections/published/latest` **sans token** 200 avec results=[1,0] / percentages=[100,0] (B.8) ✅ → page `:4200/elections` HTTP 200.
+- Données de test supprimées après preuve (elections_db + auth_db), mot de passe jetable effacé du serveur.
+
 ### Reste à faire avant ouverture publique
 - [ ] Changer le mot de passe seed admin
 - [ ] Régénérer secret LiveKit + clé API Cloudinary (exposés par le passé)

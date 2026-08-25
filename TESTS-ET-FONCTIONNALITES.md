@@ -62,8 +62,31 @@ Les suites sports (51), election (24) et communication (15) sont passées **en v
 - Cohérence URLs : sondages migrés vers `/polls/**` (election-service) ; messagerie/chat conservent les chemins historiques `/sports/messaging|team-chat` routés vers communication-service par la gateway (aucune rupture utilisateur).
 
 ### Reste à faire frontend (priorisé)
-1. Élections président : page publique des résultats, espace adhérent (vote unique), UI admin (ouverture session, candidats nom/photo/présentation, clôture auto-calculée gagnant+%).
-2. Étendre les specs Angular aux composants critiques : login, register, profil KYC, admin-demandes, guards, intercepteur JWT, join() LiveKit, schedule-call-form.
+1. Étendre les specs Angular aux composants critiques : login, register, profil KYC, admin-demandes, guards, intercepteur JWT, join() LiveKit, schedule-call-form (+ elections/mes-elections/admin-elections).
+
+---
+
+## 3.bis Élections du président (B.8) — TERMINÉE 25/08
+
+**Frontend livré et déployé** (commit d5fb499) :
+- `/elections` — page publique des résultats (thème clair) : gagnant surligné avec %, barres par candidat (`[style.width.%]`), état vide vers `/sondages`, skeleton de chargement. Accessible SANS connexion (exigence B.8).
+- `/mes-elections` — espace adhérent (garde auth) : vote en un clic, boutons désactivés après vote (`myVoteIndex`), anti-double-clic, confirmation verte + lien résultats.
+- `/admin/elections` — UI admin (thème sombre cohérente avec admin-sondages) : création session (titre + datetime-local), ajout/retrait candidats (nom, photo URL, présentation ≤1000), clôture « & publier » avec ConfirmService.
+- Navigation : lien public navbar+footer « Élections », entrée menu admin (le lien `/admin/sondages` manquant a aussi été ajouté — page jusque-là inatteignable).
+- 8 méthodes ApiService nouvelles ; build prod vert, 38/38 specs front.
+
+**Parcours E2E prouvé EN PROD sur la VM (25/08)** :
+1. `POST /api/auth/register` → compte adhérent jetable (id11, rôle ADHERENT).
+2. Admin : création élection id1 (« Élection Présidentielle WAC 2026 ») + 2 candidats.
+3. Membre `GET /api/elections/open` → liste avec candidats ✅
+4. Membre `POST /api/elections/1/vote {candidateId:1}` → accepté ✅
+5. Re-vote candidat 2 → **409** « Vous avez déjà voté pour cette élection » ✅
+6. Admin `POST /api/elections/1/close` → status CLOSED, published=true, winnerCandidateId=1 ✅
+7. `GET /api/elections/published/latest` **SANS token** → 200 avec totalVotes=1, results=[1,0], percentages=[100,0] (exigence B.8 : résultats publics) ✅
+8. Page publique `http://158.158.74.169:4200/elections` → HTTP 200 ✅
+9. Nettoyage complet : votes/candidats/élection/compte test supprimés (elections_db + auth_db), mot de passe jetable effacé du serveur.
+
+Piège Angular documenté : un binding `[class.bg-wydad-red/10]` (slash dans le nom de classe) casse le parseur de template avec des erreurs NG5002 trompeuses — utiliser `[style.background]` ou une classe sans slash.
 
 ---
 
@@ -75,8 +98,6 @@ Les suites sports (51), election (24) et communication (15) sont passées **en v
 | `e2e-calls.sh` | Programmer appel → agenda → jeton LiveKit → annulation 400 | ✅ Prouvé Phase 5 |
 | Routing gateway (25/08) | `/api/polls/active`, `/api/elections/published/**`, `/api/shop/products`, `/api/ticket/events*` publics sans JWT ; messaging/team-chat sans JWT → 401 (routés vers communication-service) ; `/api/sports/internal/**` et `/api/communication/internal/**` bloqués depuis l'extérieur (exigence B.8 + pages publiques boutique/billetterie) | ✅ Vérifié sur la VM après rebuild gateway (2 correctifs : sondages/résultats puis catalogue shop/ticket — commit 5d69380) |
 | Gateway unitaires (`InternalRoutesBlockedTest` 3 + `PublicCatalogAccessTest` 2) | Lecture publique jamais 401 sans token sur les 6 chemins publics ; POST catalogue toujours 401 ; endpoints internes bloqués même avec JWT valide | ✅ 5/5 verts local |
-
-### Audit de cohérence backend↔frontend (25/08)
 
 ### Audit de cohérence backend↔frontend (25/08)
 Audit exhaustif : chaque URL du frontend vérifiée contre routes gateway + contrôleurs backend + rôles.
@@ -126,6 +147,5 @@ Secrets : uniquement `.env` serveur (chmod 600) + gestionnaire de mots de passe.
 - **Correctifs déploiement 25/08** — surefire épinglé dans le parent (Maven ≤3.8 exécutait 0 test) ; `elections_db`/`communication_db` ajoutées aux init-scripts ; clé compose dupliquée ; lecture publique polls/résultats **puis catalogue shop/ticket** côté gateway (commit 5d69380, matrice routage validée sur VM)
 
 ## 8. Prochaines étapes
-1. Frontend élections président (page publique résultats, vote adhérent, UI admin)
-2. JaCoCo ≥70% + extension specs Angular composants critiques
-3. Refactor thématique content/sports ; unification des méthodes dupliquées du front
+1. JaCoCo ≥70% + extension specs Angular composants critiques (+ elections)
+2. Refactor thématique content/sports ; unification des méthodes dupliquées du front
