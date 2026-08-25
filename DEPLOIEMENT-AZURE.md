@@ -201,7 +201,21 @@ Le portail affiche directement **« Solde restant »** sur la page du sponsoring
 
 ---
 
-## 6. Journal — 25/08/2026 : audit thématique + correctifs de routage public
+## 6. Journal — 25/08/2026 : campagne de re-test complète — 2 vrais bugs corrigés
+
+> Détail complet dans **RAPPORT-PROJET.md** §6. Synthèse :
+
+1. **Newsletter publique 401** (a47553d) : dérogation gateway manquante pour `/api/notification/newsletter/**` — footer cassé pour tout visiteur anonyme. Corrigé + test unitaire ; preuve prod : subscribe 201 / email invalide 400 / broadcast 401.
+2. **Chat & messagerie 403** (7e326da + 9fd0010), 2 couches :
+   - sports/communication lisaient `${INTERNAL_SECRET:}` alors que le compose exporte `WYDAD_INTERNAL_SECRET` → propriété vide → tous les appels internes signaient/rejetaient avec un secret vide ;
+   - dérogations Spring Security perdues à la migration : `/api/sports/internal/**` (appel service-à-service sans X-User-*) et `/ws/team-chat/**` (handshake SockJS sans JWT possible) tombaient sous `anyRequest().authenticated()` → 403 avant même le validateur.
+   - Preuves prod après correctif : roster bon secret 404 / mauvais 403, `/info` 200, inbox+messages 200, **E2E WS complet rejoué PASS** (frame MESSAGE temps réel + persistance). Tests de non-régression : InternalRosterAccessTest (4), WsHandshakeAccessTest (1). Suites locales : sports 55/55, communication 16/16.
+
+---
+
+### Historique du jour (plus ancien)
+
+#### Audit thématique + correctifs de routage public
 
 ### Ce qui a été déployé
 - **Nouveaux services en prod** : `election-service` (:8089, élections président + sondages) et `communication-service` (:8090, messagerie privée + annonces staff + chat de groupe STOMP) → **15 conteneurs healthy**.

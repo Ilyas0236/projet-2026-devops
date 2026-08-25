@@ -94,7 +94,7 @@ Piège Angular documenté : un binding `[class.bg-wydad-red/10]` (slash dans le 
 
 | Script | Preuve attendue | Dernier statut |
 |---|---|---|
-| `e2e-ws.sh` + `e2e-ws-frames.py` | Deux sessions SockJS, frame MESSAGE reçue en temps réel + persistance REST | ✅ Prouvé Phase 4 |
+| `e2e-ws.sh` + `e2e-ws-frames.py` | Deux sessions SockJS, frame MESSAGE reçue en temps réel + persistance REST | ✅ Réprouvé 25/08 après correctifs bugs #2 (voir RAPPORT-PROJET.md §6) |
 | `e2e-calls.sh` | Programmer appel → agenda → jeton LiveKit → annulation 400 | ✅ Prouvé Phase 5 |
 | Routing gateway (25/08) | `/api/polls/active`, `/api/elections/published/**`, `/api/shop/products`, `/api/ticket/events*` publics sans JWT ; messaging/team-chat sans JWT → 401 (routés vers communication-service) ; `/api/sports/internal/**` et `/api/communication/internal/**` bloqués depuis l'extérieur (exigence B.8 + pages publiques boutique/billetterie) | ✅ Vérifié sur la VM après rebuild gateway (2 correctifs : sondages/résultats puis catalogue shop/ticket — commit 5d69380) |
 | Gateway unitaires (`InternalRoutesBlockedTest` 3 + `PublicCatalogAccessTest` 2) | Lecture publique jamais 401 sans token sur les 6 chemins publics ; POST catalogue toujours 401 ; endpoints internes bloqués même avec JWT valide | ✅ 5/5 verts local |
