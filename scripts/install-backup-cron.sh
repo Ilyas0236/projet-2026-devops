@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# Installe le cron de sauvegarde DB sur la VM Azure (à lancer UNE fois sur la VM).
+# Cron : tous les jours à 04h17 (heure VM), script scripts/backup-db.sh du repo.
+set -euo pipefail
+REPO_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+chmod +x "$REPO_DIR/scripts/backup-db.sh"
+
+CRON_LINE="17 4 * * * $REPO_DIR/scripts/backup-db.sh >> $HOME/backups/cron.log 2>&1"
+
+( crontab -l 2>/dev/null | grep -v 'backup-db.sh' ; echo "$CRON_LINE" ) | crontab -
+echo "Cron installé : $CRON_LINE"
+crontab -l | grep backup

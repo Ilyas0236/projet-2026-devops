@@ -20,6 +20,21 @@
       </div>
     </div>
 
+    <!-- PRÉSIDENT SANS FICHE STAFF — vue dédiée Phase 5 (appels programmés uniquement) -->
+    <div *ngIf="!loading && !staff && isPresident" class="animate-fade-in-up">
+      <div class="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 gap-6">
+        <div>
+          <span class="text-wydad-red font-bold tracking-[0.2em] uppercase text-xs mb-2 block">Présidence</span>
+          <h1 class="font-display text-4xl md:text-5xl font-black uppercase tracking-tighter text-ink-primary">Espace Président</h1>
+          <p class="text-ink-secondary mt-3 max-w-xl">Programmez des appels vidéo pour les adhérents PREMIUM et suivez votre agenda.</p>
+        </div>
+      </div>
+      <div class="space-y-8">
+        <app-schedule-call-form (created)="onCallCreated()"></app-schedule-call-form>
+        <app-my-calls></app-my-calls>
+      </div>
+    </div>
+
     <!-- STAFF DASHBOARD -->
     <div *ngIf="!loading && staff">
 

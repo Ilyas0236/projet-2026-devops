@@ -19,6 +19,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
+@org.springframework.validation.annotation.Validated
 public class AuthController {
 
     private final AuthService authService;
@@ -341,14 +342,13 @@ public class AuthController {
         return ResponseEntity.ok(authService.validateAccount(id));
     }
 
-    /** Refuse une demande de compte avec motif obligatoire. */
+    /** Refuse une demande de compte avec motif obligatoire (corps typé + @Valid). */
     @PatchMapping("/admin/accounts/{id}/refuse")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<UserProfileResponse> refuseAccount(
             @PathVariable Long id,
-            @org.springframework.web.bind.annotation.RequestBody
-            @jakarta.validation.constraints.NotBlank String motif) {
-        return ResponseEntity.ok(authService.refuseAccount(id, motif));
+            @Valid @RequestBody com.wydad.digital.auth.dto.RefuseAccountRequest request) {
+        return ResponseEntity.ok(authService.refuseAccount(id, request.getMotif()));
     }
 
     /**

@@ -15,36 +15,24 @@
 | Phase 2 | Billets VIP joueurs (PDF + QR) | ✅ Terminé |
 | Phase 3 | Convocations & médias tactiques Cloudinary + boîte joueur unifiée | ✅ Terminé |
 | **Phase 4** | **Messagerie groupe joueurs WebSocket/STOMP** | ✅ **Terminée 25/08** |
-| Phase 5 | Appels vidéo/vocaux programmés | ⬜ À faire |
+| **Phase 5** | **Appels vidéo/vocaux programmés (LiveKit)** | ✅ **Terminée 25/08** — E2E prod prouvé |
 | Phase 5 bis | Espace Président | ⬜ À faire |
 | Phase 6 | Tests ISTQB + automatisation (JaCoCo, Testcontainers, Playwright) | 🔄 En cours |
-| Phase 7 | Finitions avant mise en production | ⬜ À faire |
+| Phase 7 | Finitions avant mise en production | 🔄 Démarrée (durcissement compose + scripts backup prêts) |
 
 **Coût Azure vérifié ce jour : 0,48 $ dépensés sur 100 $ — reste ≈ 99,52 $.**
 
 ---
 
-## Phase 5 — Appels vidéo/vocaux programmés ⬜
+## Phase 5 — Appels vidéo/vocaux programmés ✅ (terminée 25/08)
 
-Objectif : l'entraîneur et le président programment des appels ; les participants reçoivent une notification avec lien/date. Le média transite chez un fournisseur gratuit — aucune charge sur la VM.
+Terminée et prouvée E2E en prod (commits 7624456 → f4b52c6). Backend : `ScheduledCallService` + `LiveKitTokenService`
+(jetons JWT HS256 room/contrôlés serveur), contrôle d'accès coach/président/joueur, notifications in-app.
+Frontend : agenda appels (`my-calls`), formulaire programmation (`schedule-call-form`), rejoindre via SDK `livekit-client`.
+Script E2E prod : `scripts/` (programmer → jeton → annuler 400).
 
-### Prérequis (à toi)
-1. **Créer un compte LiveKit Cloud** (recommandé) ou Daily.co — gratuit ~10 000 min/mois.
-2. Récupérer API Key + Secret → à coller directement dans le `.env` serveur (PAS dans git ni dans le chat).
-
-### Développement (moi)
-3. Backend sports-service :
-   - Endpoint `POST /api/sports/calls/tokens` : génère un jeton LiveKit signé (rôle/room contrôlés côté serveur).
-   - Contrôle d'accès : entraîneur → room de sa catégorie ; président → room adhérents PREMIUM/joueurs/staff ; joueur/adhérent → ne peut que REJOINDRE une room où il est convié.
-   - Entité `ScheduledCall` (titre, room, date/heure, organisateur, liste destinataires) + notification in-app avec lien profond `/appel/{id}`.
-   - Tests : génération jeton, refus si non-autorisé sur room, notification émise (H2, pattern existant).
-4. Frontend Angular :
-   - Page « rejoindre l'appel » intégrant le SDK web LiveKit (`livekit-client`, léger).
-   - Formulaire entraîneur/président « programmer un appel » (date, heure, cible : un joueur / toute la catégorie / premium).
-   - Badge dans la boîte de réception du joueur quand un appel est programmé.
-5. E2E : programmer → notifier → rejoindre avec deux comptes test.
-
-⚠️ Si aucun compte cloud créé : la phase peut être développée en mode « stub » (jetons simulés) puis branchée en 30 min le jour où les clés existent.
+**Reste de Phase 5 (tests)** : scénario ISTQB « accès STANDARD refusé aux appels » à expliciter
+(membership STANDARD vs PREMIUM au moment du joinToken) — voir Phase 6.
 
 ---
 
@@ -65,25 +53,36 @@ Aucune dépendance externe — recommandée pour démarrer demain.
 
 ## Phase 6 — Tests (ISTQB + automatisation) 🔄
 
-Déjà fait : infra Karma (33 specs), suites sécurité par service (auth 34/34, content 56, sports 9 classes…).
+Déjà fait (audit 25/08) : 43 classes de test backend, ~251 @Test. Scénarios ISTQB déjà couverts :
+billet QR re-scanné (`TicketServiceTest`), message vide chat → 400 (`TeamChatSecurityTest`, HTTP+WS),
+refus compte avec motif (`AuthServiceValidationTest`, unitaire), non-convié ADHERENT jeton refusé
+(`ScheduledCallServiceTest`). Infra Karma front : 7 specs sérieux (~598 lignes).
 
 ### Restant
-1. **JaCoCo ≥ 70 %** sur logique métier critique :
-   - Ajouter le plugin au pom parent + seuil `check` sur sports-service et auth-service d'abord.
-   - Combler les trous sur TeamChatService, CloudinaryService, TicketService (les classes qui portent l'argent et les droits).
-2. **Testcontainers PostgreSQL** : remplacer les H2 `MODE=PostgreSQL` par de vrais conteneurs Postgres pour les tests d'intégration (audit : dépendance déclarée jamais utilisée). Priorité : auth-service (CHECK enums) et sports-service.
-3. **Scénarios ISTQB restants** (liste explicite) :
-   - Billet VIP dupliqué / scanné 2× (rejet QR déjà scanné).
-   - Accès STANDARD aux appels refusé (dépend Phase 5).
-   - Upload trop volumineux (> 25 Mo → 413).
-   - Message vide chat refusé (couvert côté service — à prouver via HTTP 400).
-   - Refus compte avec motif (admin refuse → email/notification motif visible).
-4. **Playwright E2E navigateur** sur parcours critiques :
-   - inscription → validation admin → connexion joueur ;
-   - réception convocation → accusé lecture → suivi coach ;
-   - chat deux onglets temps réel ;
-   - billet VIP téléchargé + QR scanné.
-5. Étendre specs Angular aux composants critiques restants (login, register, profil KYC, admin-demandes).
+1. **JaCoCo ≥ 70 %** : plugin absent des 10 poms → à ajouter au parent + seuils `check` auth/sports.
+2. **Testcontainers PostgreSQL** : dépendance déclarée dans auth-service mais jamais utilisée ;
+   H2 `MODE=PostgreSQL` partout. Priorité : un test d'intégration Postgres réel sur auth-service (CHECK enums).
+3. **Scénarios ISTQB manquants / à renforcer** :
+   - ~~Upload > 25 Mo → 413~~ ✅ 25/08 `MediaUploadLimitTest` (4 tests : 24 Mo OK, 26 Mo → 413,
+     staff sans fiche → 403, anonyme refusé). *Au passage* : le garde-fou applicatif
+     `MediaStorageService` lançait `IllegalArgumentException` (→400) ; corrigé en
+     `MaxUploadSizeExceededException` → handler dédié → 413.
+   - ~~Billet CANCELLED scanné + QR inconnu + endpoint HTTP scanner~~ ✅ 25/08
+     `TicketScanSecurityTest` (6 tests, MockMvc H2). *Au passage* : le handler générique
+     `Exception` du ticket-service avalait `MethodArgumentNotValidException`/JSON malformé
+     (500 au lieu de 400) — handlers dédiés ajoutés.
+   - ~~Refus compte avec motif : monter en MockMvc~~ ✅ 25/08 `AccountRefusalTest` (4 tests).
+     *Défauts réels découverts et corrigés* : (1) `{}` désérialisé en chaîne littérale `"{}"`
+     passait @NotBlank sur `@RequestBody String` → corps typé `RefuseAccountRequest` DTO +
+     front aligné (`{ motif }`) ; (2) `@Validated` manquant sur AuthController.
+   - Accès STANDARD aux appels explicite (membership STANDARD vs PREMIUM au joinToken) —
+     couvert indirectement par `presidentPeutCiblerLesAdherentsPremium` (ROUGE/OR exclus) ;
+     test direct à évaluer.
+4. **Frontend** : specs manquantes critiques = login, register, profil KYC, admin-demandes,
+   guards (auth/admin/role), intercepteur JWT, `join()` LiveKit, `schedule-call-form`.
+   CI GitHub Actions : les tests Angular ne tournent jamais → ajouter job `ng test --watch=false --browsers=ChromeHeadless --code-coverage`.
+5. **Playwright E2E navigateur** sur parcours critiques (inscription→validation→connexion ; convocation→accusé ;
+   chat 2 onglets ; billet VIP téléchargé + QR scanné).
 
 ---
 
@@ -106,7 +105,7 @@ Déjà fait : infra Karma (33 specs), suites sécurité par service (auth 34/34,
 | 1 | Changer mot de passe admin seed | ❌ En attente |
 | 2 | Supprimer pgAdmin du compose prod ; fermer ports hôte Postgres/Redis (5433/6379) | ❌ Exposés actuellement |
 | 3 | HTTPS Caddy + domaine (eu.org/DuckDNS gratuit possible) ; CORS_ALLOWED_ORIGINS vers domaine final | ❌ |
-| 4 | Sauvegardes : cron quotidien `pg_dumpall` + copie hors serveur hebdomadaire | ❌ |
+| 4 | Sauvegardes : cron quotidien `pg_dumpall` (scripts/backup-db.sh + install-backup-cron.sh prêts, à installer sur la VM) + copie hors serveur hebdomadaire | 🔄 Scripts prêts |
 | 5 | Monitoring minimal : cron `docker compose ps` + alerte email conteneur unhealthy | ❌ |
 | 6 | Régénérer la clé API Cloudinary (secret passé par chat) | ❌ À faire en vrai prod |
 

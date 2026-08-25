@@ -20,16 +20,9 @@ public class SecurityConfig {
         http.csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        // Sondages actifs : donnée non personnelle consultable
-                        // par un visiteur anonyme (page /sondages publique).
-                        // Le VOTE reste réservé aux membres authentifiés.
-                        .requestMatchers(org.springframework.http.HttpMethod.GET,
-                                "/api/sports/polls/active").permitAll()
-                        // Phase 4 — handshake SockJS du chat de groupe : l'upgrade
-                        // WebSocket ne transporte pas les headers X-User-* de la
-                        // gateway ; l'identité est exigée par frame STOMP CONNECT
-                        // (TeamChatAuthInterceptor) et l'adhésion revérifiée par envoi.
-                        .requestMatchers("/ws/team-chat/**", "/ws/team-chat").permitAll()
+                        // Toute la surface HTTP exige une identité propagée par la
+                        // gateway. Les sondages (→ election-service) et le chat WS
+                        // (→ communication-service) ont quitté ce service.
                         .anyRequest().authenticated())
                 .addFilterBefore(userContextFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();

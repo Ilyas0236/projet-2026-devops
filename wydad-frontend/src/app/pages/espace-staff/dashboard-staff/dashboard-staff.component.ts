@@ -26,6 +26,8 @@ export class DashboardStaffComponent implements OnInit {
   sessions: any[] = [];
   loading = true;
   staffNotFound = false;
+  /** Phase 5 — le président n'a pas de fiche staff : vue réduite aux appels programmés. */
+  isPresident = false;
 
   /** Phase 5 — rafraîchit l'agenda des appels après une programmation. */
   onCallCreated() {
@@ -117,6 +119,7 @@ export class DashboardStaffComponent implements OnInit {
 
     // Charger le profil staff depuis le backend via l'ID utilisateur connecté
     const userId = this.auth.getCurrentUserId();
+    this.isPresident = this.auth.getTokenRole() === 'PRESIDENT';
     if (userId) {
       this.api.getStaffByUserId(userId).subscribe({
         next: (data) => {
@@ -130,7 +133,8 @@ export class DashboardStaffComponent implements OnInit {
         },
         error: (err) => {
           console.error('Profil staff non trouvé', err);
-          this.staffNotFound = true;
+          // Le président sans fiche staff a quand même accès aux appels programmés.
+          this.staffNotFound = !this.isPresident;
           this.loading = false;
         }
       });

@@ -63,6 +63,12 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-security</artifactId>
         </dependency>
+        <!-- Tests MockMvc avec le vrai filtre Spring Security (.with(user(...))) -->
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-test</artifactId>
+            <scope>test</scope>
+        </dependency>
         <!-- For QR Codes -->
         <dependency>
             <groupId>com.google.zxing</groupId>

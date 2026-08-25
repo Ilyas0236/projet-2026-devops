@@ -111,6 +111,28 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(error);
     }
 
+    /**
+     * Violation de contrainte sur un paramètre (@Validated + @NotBlank sur le
+     * motif de refus, etc.) : 400 avec la violation lisible — sinon tomberait
+     * dans le handler générique RuntimeException.
+     */
+    @ExceptionHandler(jakarta.validation.ConstraintViolationException.class)
+    public ResponseEntity<ErrorResponse> handleConstraintViolation(
+            jakarta.validation.ConstraintViolationException ex, HttpServletRequest request) {
+
+        String details = ex.getConstraintViolations().stream()
+                .map(v -> v.getPropertyPath() + ": " + v.getMessage())
+                .collect(java.util.stream.Collectors.joining("; "));
+        ErrorResponse error = new ErrorResponse(
+                LocalDateTime.now(),
+                HttpStatus.BAD_REQUEST.value(),
+                "BAD_REQUEST",
+                details,
+                request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+    }
+
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<ErrorResponse> handleRuntime(
             RuntimeException ex, HttpServletRequest request) {

@@ -29,6 +29,8 @@
         <module>notification-service</module>
         <module>sports-service</module>
         <module>gamification-service</module>
+        <module>election-service</module>
+        <module>communication-service</module>
     </modules>
 
     <dependencyManagement>

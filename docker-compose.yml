@@ -6,8 +6,10 @@ services:
       POSTGRES_DB: auth_db
       POSTGRES_USER: ${POSTGRES_USER:-wydad}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-wydad2024}
-    ports:
-      - "${POSTGRES_HOST_PORT:-5433}:5432"
+    # Pas de port hôte : la base n'est accessible que depuis le réseau Docker interne.
+    # Pour un accès manuel : docker exec -it wydad-postgres psql -U wydad -d <db>
+    expose:
+      - "5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./init-scripts:/docker-entrypoint-initdb.d
@@ -20,8 +22,9 @@ services:
   redis:
     image: redis:7-alpine
     container_name: wydad-redis
-    ports:
-      - "${REDIS_HOST_PORT:-6379}:6379"
+    # Pas de port hôte : Redis n'est accessible que depuis le réseau Docker interne.
+    expose:
+      - "6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -34,8 +37,10 @@ services:
     environment:
       PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@wydad.ma}
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin}
+    # pgAdmin : accès par tunnel SSH uniquement (ssh -L 5050:localhost:5050),
+    # jamais exposé publiquement — le NSG Azure bloque déjà 5050.
     ports:
-      - "${PGADMIN_HOST_PORT:-5050}:80"
+      - "127.0.0.1:${PGADMIN_HOST_PORT:-5050}:80"
     depends_on:
       postgres:
         condition: service_healthy
@@ -275,6 +280,8 @@ services:
       - NOTIFICATION_SERVICE_URI=http://notification-service:8086
       - SPORTS_SERVICE_URI=http://sports-service:8087
       - GAMIFICATION_SERVICE_URI=http://gamification-service:8088
+      - ELECTION_SERVICE_URI=http://election-service:8089
+      - COMMUNICATION_SERVICE_URI=http://communication-service:8090
       - JWT_SECRET=${JWT_SECRET:?JWT_SECRET doit être défini dans le fichier .env}
       - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-http://localhost:4200}
     depends_on:
@@ -294,15 +301,72 @@ services:
         condition: service_healthy
       gamification-service:
         condition: service_healthy
+      election-service:
+        condition: service_healthy
+      communication-service:
+        condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "wget -q -S -O /dev/null http://localhost:8080/actuator/health 2>&1 | grep -q 'HTTP/' || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
 
+  election-service:
+    build:
+      context: ./election-service
+      dockerfile: Dockerfile
+    container_name: wydad-election-service
+    expose:
+      - "8089"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/elections_db
+      - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER:-wydad}
+      - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD:-wydad2024}
+      # Notifications in-app de la publication des résultats (secret interne requis)
+      - WYDAD_INTERNAL_SECRET=${INTERNAL_SECRET:?INTERNAL_SECRET manquant dans .env}
+      - NOTIFICATION_SERVICE_URI=http://notification-service:8086
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -S -O /dev/null http://localhost:8089/actuator/health 2>&1 | grep -q 'HTTP/' || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+
+  communication-service:
+    build:
+      context: ./communication-service
+      dockerfile: Dockerfile
+    container_name: wydad-communication-service
+    expose:
+      - "8090"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/communication_db
+      - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER:-wydad}
+      - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD:-wydad2024}
+      # Secret interne : API roster sports-service + notifications in-app
+      - WYDAD_INTERNAL_SECRET=${INTERNAL_SECRET:?INTERNAL_SECRET manquant dans .env}
+      # Validation du JWT à la frame STOMP CONNECT (chat de groupe)
+      - JWT_SECRET=${JWT_SECRET:?JWT_SECRET doit être défini dans le fichier .env}
+      - SPORTS_SERVICE_URI=http://sports-service:8087
+      - NOTIFICATION_SERVICE_URI=http://notification-service:8086
+    depends_on:
+      postgres:
+        condition: service_healthy
+      sports-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -S -O /dev/null http://localhost:8090/actuator/health 2>&1 | grep -q 'HTTP/' || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+
 volumes:
   postgres_data:
 
 networks:
   default:
+    name: wydad-network
     name: wydad-network

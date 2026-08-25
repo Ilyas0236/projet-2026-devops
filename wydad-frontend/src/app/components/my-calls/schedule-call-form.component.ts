@@ -33,7 +33,6 @@ import { ToastService } from '../../services/toast.service';
           <select [(ngModel)]="target"
                   class="w-full px-4 py-2.5 rounded-xl border border-paper-3 bg-white text-sm text-ink-primary focus:outline-none focus:border-wydad-red/60">
             <option value="PREMIUM">Adhérents PREMIUM</option>
-            <option value="EQUIPE">Équipe (via entraîneur — délégué)</option>
           </select>
           <p class="text-ink-tertiary text-[11px] mt-1">Pour un joueur précis ou un staff, passez par l'entraîneur concerné.</p>
         </div>
@@ -85,7 +84,7 @@ export class ScheduleCallFormComponent implements OnInit {
   categoryLabel = '';
 
   title = '';
-  target: 'PREMIUM' | 'EQUIPE' = 'PREMIUM';
+  target: 'PREMIUM' = 'PREMIUM';
   scheduledAt = '';
   durationMinutes = 30;
   submitting = false;
@@ -116,7 +115,8 @@ export class ScheduleCallFormComponent implements OnInit {
     const body: any = {
       title: this.title.trim(),
       durationMinutes: this.durationMinutes,
-      targetType: this.isCoach ? 'CATEGORIE_EQUIPE' : (this.target === 'PREMIUM' ? 'PREMIUM' : 'UTILISATEURS'),
+      // Contrat backend (TargetType) : le champ s'appelle `target`, pas `targetType`.
+      target: this.isCoach ? 'CATEGORIE_EQUIPE' : 'PREMIUM',
     };
     if (this.scheduledAt) body.scheduledAt = new Date(this.scheduledAt).toISOString();
 

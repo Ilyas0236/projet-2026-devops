@@ -111,9 +111,10 @@ export class AdminDemandesComponent implements OnInit {
   confirmRefuse() {
     if (!this.motif.trim()) return;
     this.refusing = true;
+    // Corps typé {motif} (contrat API) — une chaîne JSON brute ne passe plus
+    // la validation @Valid côté backend.
     this.http.patch(`${environment.apiBaseUrl}/auth/admin/accounts/${this.refuseTarget.id}/refuse`,
-        JSON.stringify(this.motif.trim()),
-        { headers: { 'Content-Type': 'application/json' }, responseType: 'text' as 'json' })
+        { motif: this.motif.trim() })
       .subscribe({
         next: () => {
           this.toast.info(`Compte ${this.refuseTarget.email} refusé.`);

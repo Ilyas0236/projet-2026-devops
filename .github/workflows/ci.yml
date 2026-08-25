@@ -54,6 +54,12 @@ jobs:
       - name: Build & Test Gamification Service
         run: mvn -B clean package --file gamification-service/pom.xml
 
+      - name: Build & Test Election Service
+        run: mvn -B clean package --file election-service/pom.xml
+
+      - name: Build & Test Communication Service
+        run: mvn -B clean package --file communication-service/pom.xml
+
       - name: Upload Auth Service JAR
         uses: actions/upload-artifact@v4
         with:
@@ -107,6 +113,18 @@ jobs:
         with:
           name: gamification-service-jar
           path: gamification-service/target/gamification-service-*.jar
+
+      - name: Upload Election Service JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: election-service-jar
+          path: election-service/target/election-service-*.jar
+
+      - name: Upload Communication Service JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: communication-service-jar
+          path: communication-service/target/communication-service-*.jar
 
   docker-auth:
     needs: build-and-test
@@ -423,6 +441,75 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+  docker-election:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download Election JAR
+        uses: actions/download-artifact@v4
+        with:
+          name: election-service-jar
+          path: election-service/target/
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build & Push Election Service
+        uses: docker/build-push-action@v5
+        with:
+          context: ./election-service
+          file: ./election-service/Dockerfile
+          push: true
+          tags: |
+            ${{ env.IMAGE_PREFIX }}-election:latest
+            ${{ env.IMAGE_PREFIX }}-election:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  docker-communication:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download Communication JAR
+        uses: actions/download-artifact@v4
+        with:
+          name: communication-service-jar
+          path: communication-service/target/
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build & Push Communication Service
+        uses: docker/build-push-action@v5
+        with:
+          context: ./communication-service
+          file: ./communication-service/Dockerfile
+          push: true
+          tags: |
+            ${{ env.IMAGE_PREFIX }}-communication:latest
+            ${{ env.IMAGE_PREFIX }}-communication:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
   frontend-build:
     runs-on: ubuntu-latest

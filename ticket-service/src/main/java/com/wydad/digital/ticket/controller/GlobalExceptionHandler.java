@@ -54,6 +54,36 @@ public class GlobalExceptionHandler {
         ));
     }
 
+    /**
+     * Corps invalide (@Valid sur les DTOs : qrCodeData vide, etc.) -> 400 avec
+     * un message lisible, sinon tomberait dans le handler generique (500).
+     */
+    @ExceptionHandler(org.springframework.web.bind.MethodArgumentNotValidException.class)
+    public ResponseEntity<Map<String, Object>> handleValidation(
+            org.springframework.web.bind.MethodArgumentNotValidException ex) {
+        String details = ex.getBindingResult().getFieldErrors().stream()
+                .map(f -> f.getField() + ": " + f.getDefaultMessage())
+                .collect(java.util.stream.Collectors.joining("; "));
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of(
+                "error", "BAD_REQUEST",
+                "message", details,
+                "timestamp", LocalDateTime.now().toString()
+        ));
+    }
+
+    /**
+     * JSON malforme ou type inattendu dans le corps : 400 (faute du client),
+     * pas une erreur serveur.
+     */
+    @ExceptionHandler(org.springframework.http.converter.HttpMessageNotReadableException.class)
+    public ResponseEntity<Map<String, Object>> handleUnreadable(Exception ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of(
+                "error", "BAD_REQUEST",
+                "message", "Corps de requête illisible ou mal formé",
+                "timestamp", LocalDateTime.now().toString()
+        ));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> handleGeneral(Exception ex) {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(

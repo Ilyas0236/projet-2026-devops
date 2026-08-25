@@ -91,7 +91,7 @@ docker compose up -d --build
 | Frontend (dev) | http://158.158.74.169 |
 | API Gateway (dev) | http://158.158.74.169:8080 |
 | Admin seed login | `admin@wac.ma` |
-| Admin seed password | `fAkUw4gJhfy6kU5VCscY7MrbwHO76yqU` — **à changer après la 1re connexion** ⚠️ |
+| Admin seed password | dans le `.env` serveur (chmod 600) et ton gestionnaire de mots de passe — **jamais dans git** ; à changer avant l'ouverture publique ⚠️ |
 | `.env` serveur | `/home/azureuser/wydad-digital-parent/.env` (chmod 600) |
 
 > Règle absolue : les secrets vivent uniquement sur le serveur et dans ton gestionnaire de mots de passe — jamais dans git ni dans un chat.

@@ -27,6 +27,10 @@ logging:
   level:
     com.wydad.digital.sports: DEBUG
 
+# Secret partagé des appels internes (notifications, auth, API roster).
+wydad:
+  internal-secret: ${INTERNAL_SECRET:}
+
 # Phase 3 — médias tactiques (vidéo/photo/PDF) stockés sur Cloudinary.
 # Sans clés, MediaStorageService bascule en mode dégradé (référence locale).
 cloudinary:

@@ -1,5 +1,6 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
 import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../services/api.service';
@@ -24,6 +25,7 @@ import { MyCallsComponent } from '../../../components/my-calls/my-calls.componen
 export class DashboardJoueurComponent implements OnInit {
   api = inject(ApiService);
   auth = inject(AuthService);
+  private router = inject(Router);
   toast = inject(ToastService);
 
   player: any = null;
@@ -198,6 +200,16 @@ export class DashboardJoueurComponent implements OnInit {
       },
       error: () => { this.markingNotificationId = null; }
     });
+  }
+
+  /**
+   * Phase 5 — suit le lien profond d'une notification (targetUrl émis par les
+   * services : /joueur/dashboard, /staff/dashboard…). Sans lien : simple « Lu ».
+   */
+  openNotification(n: any) {
+    if (n.status !== 'READ') { this.markNotificationRead(n); }
+    const url = n.targetUrl as string | undefined;
+    if (url && url.startsWith('/')) { this.router.navigateByUrl(url); }
   }
 
   /** Libellé court selon le type serveur (IN_APP, EMAIL…). */

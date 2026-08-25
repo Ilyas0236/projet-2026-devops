@@ -233,7 +233,9 @@
 
             <div class="space-y-3">
               <div *ngFor="let n of notifications"
-                   class="flex items-start justify-between gap-3 rounded-2xl p-4 border transition-all"
+                   (click)="openNotification(n)"
+                   [class.cursor-pointer]="n.targetUrl"
+                   class="flex items-start justify-between gap-3 rounded-2xl p-4 border transition-all hover:border-wydad-red/40"
                    [ngClass]="n.status === 'READ'
                      ? {'bg-paper-1': true, 'border-paper-3': true, 'opacity-70': true}
                      : {'bg-white': true, 'border-wydad-red/40': true}">

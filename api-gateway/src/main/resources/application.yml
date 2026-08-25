@@ -107,21 +107,35 @@ spring:
           uri: ${TICKET_SERVICE_URI:http://localhost:8085}
           predicates:
             - Path=/api/ticket/**
+        # Messagerie privée et chat de groupe : migrés de sports-service vers
+        # communication-service (audit thématique). Les chemins historiques
+        # /api/sports/messaging|team-chat sont conservés pour compatibilité
+        # frontend — ces routes DOIVENT précéder la route générique
+        # sports-service ci-dessous (première matchante gagne).
+        - id: communication-messaging
+          uri: ${COMMUNICATION_SERVICE_URI:http://localhost:8090}
+          predicates:
+            - Path=/api/sports/messaging/**
+        - id: communication-team-chat
+          uri: ${COMMUNICATION_SERVICE_URI:http://localhost:8090}
+          predicates:
+            - Path=/api/sports/team-chat/**
+        # Chat de groupe : upgrade WebSocket/STOMP (SockJS inclus) vers
+        # communication-service. L'identité est exigée par frame STOMP
+        # CONNECT (JWT validé par le service) ; l'adhésion est revérifiée
+        # à chaque envoi.
+        - id: communication-websocket
+          uri: ${COMMUNICATION_SERVICE_URI:http://localhost:8090}
+          predicates:
+            - Path=/ws/team-chat/**
+        - id: communication-websocket-root
+          uri: ${COMMUNICATION_SERVICE_URI:http://localhost:8090}
+          predicates:
+            - Path=/ws/team-chat
         - id: sports-service
           uri: ${SPORTS_SERVICE_URI:http://localhost:8087}
           predicates:
             - Path=/api/sports/**
-        # Phase 4 — chat de groupe : upgrade WebSocket/STOMP (SockJS inclus)
-        # route vers sports-service. Le JWT est exige par le filtre global
-        # ci-dessus ; l'identite X-User-* est retransmise au service.
-        - id: sports-websocket
-          uri: ${SPORTS_SERVICE_URI:http://localhost:8087}
-          predicates:
-            - Path=/ws/team-chat/**
-        - id: sports-websocket-root
-          uri: ${SPORTS_SERVICE_URI:http://localhost:8087}
-          predicates:
-            - Path=/ws/team-chat
         - id: gamification-service
           uri: ${GAMIFICATION_SERVICE_URI:http://localhost:8088}
           predicates:
@@ -137,6 +151,20 @@ spring:
           uri: ${ELECTION_SERVICE_URI:http://localhost:8089}
           predicates:
             - Path=/api/elections/**,/api/polls/**
+        # Defense en profondeur : communication-service n'expose aucun endpoint
+        # /internal ; tout futur endpoint de ce type doit etre bloque ici.
+        - id: block-communication-internal
+          uri: no://op
+          predicates:
+            - Path=/api/communication/internal/**
+          filters:
+            - name: SetStatus
+              args:
+                status: FORBIDDEN
+        - id: communication-service
+          uri: ${COMMUNICATION_SERVICE_URI:http://localhost:8090}
+          predicates:
+            - Path=/api/communication/**
 
 logging:
   level:

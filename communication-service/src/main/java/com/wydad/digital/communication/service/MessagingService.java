@@ -1,0 +1,212 @@
+package com.wydad.digital.communication.service;
+
+import com.wydad.digital.communication.client.NotificationClient;
+import com.wydad.digital.communication.client.RosterClient;
+import com.wydad.digital.communication.filter.UserContext;
+import com.wydad.digital.communication.model.Announcement;
+import com.wydad.digital.communication.model.Message;
+import com.wydad.digital.communication.repository.AnnouncementRepository;
+import com.wydad.digital.communication.repository.MessageRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+
+/**
+ * Messagerie joueur ↔ staff et annonces du club (B.5).
+ *
+ * Règles serveur :
+ * <ul>
+ *   <li>un JOUEUR n'écrit qu'au staff encadrant SA catégorie ;</li>
+ *   <li>un STAFF n'écrit qu'aux joueurs de SA catégorie ;</li>
+ *   <li>l'ADMIN écrit à tout le monde ;</li>
+ *   <li>une conversation n'est lisible que par ses deux participants.</li>
+ * </ul>
+ *
+ * L'appartenance sport/catégorie n'est pas stockée ici : elle est
+ * interrogée sur sports-service via {@link RosterClient} (API interne) —
+ * communication-service ne connaît pas les tables players/staff.
+ */
+@Service
+@RequiredArgsConstructor
+public class MessagingService {
+
+    private final MessageRepository messageRepository;
+    private final AnnouncementRepository announcementRepository;
+    private final RosterClient rosterClient;
+    private final NotificationClient notificationClient;
+
+    // ─────────────────────────── MESSAGERIE ───────────────────────────
+
+    /**
+     * Envoi d'un message. L'appariement autorisé est vérifié ici
+     * (jamais côté client) selon le rôle de l'expéditeur.
+     */
+    @Transactional
+    public Message sendToStaffOrPlayer(Long recipientUserId, String content) {
+        Long me = requireCurrentUserId();
+        String myRole = UserContext.getCurrentUserRole();
+        if (content == null || content.isBlank()) {
+            throw new IllegalArgumentException("Le message ne peut pas être vide");
+        }
+        if (recipientUserId.equals(me)) {
+            throw new IllegalArgumentException("Impossible de s'écrire à soi-même");
+        }
+
+        RosterClient.MembershipInfo mine = rosterClient.findMembership(me);
+        if ("JOUEUR".equals(myRole)) {
+            // Le destinataire doit être un staff encadrant MA catégorie.
+            if (mine == null) {
+                throw new AccessDeniedException("Aucune fiche sportive liée à votre compte");
+            }
+            RosterClient.MembershipInfo theirs = rosterClient.findMembership(recipientUserId);
+            boolean recipientIsStaff = theirs != null && "STAFF".equals(theirs.rosterRole());
+            if (!recipientIsStaff || !sameGroup(mine, theirs)) {
+                throw new AccessDeniedException(
+                        "Vous ne pouvez écrire qu'au staff encadrant votre catégorie");
+            }
+        } else if ("STAFF".equals(myRole)) {
+            // Le destinataire doit être un joueur de MA catégorie.
+            if (mine == null || !"STAFF".equals(mine.rosterRole())) {
+                throw new AccessDeniedException("Aucun profil staff lié à votre compte");
+            }
+            RosterClient.MembershipInfo theirs = rosterClient.findMembership(recipientUserId);
+            boolean recipientIsPlayer = theirs != null && "JOUEUR".equals(theirs.rosterRole());
+            if (!recipientIsPlayer || !sameGroup(mine, theirs)) {
+                throw new AccessDeniedException(
+                        "Vous ne pouvez écrire qu'aux joueurs de votre catégorie");
+            }
+        } else if (!"ADMIN".equals(myRole)) {
+            throw new AccessDeniedException("Rôle non autorisé pour la messagerie");
+        }
+        // ADMIN : libre d'écrire à tout le monde.
+
+        Message saved = messageRepository.save(Message.builder()
+                .senderUserId(me)
+                .senderName(resolveName(me, myRole, mine))
+                .senderRole(myRole)
+                .recipientUserId(recipientUserId)
+                .content(content.trim())
+                .build());
+
+        notifyRecipient(saved);
+        return saved;
+    }
+
+    /** Conversation entre l'utilisateur courant et une autre personne. */
+    public List<Message> getConversationWith(Long otherUserId) {
+        Long me = requireCurrentUserId();
+        return messageRepository
+                .findBySenderUserIdAndRecipientUserIdOrRecipientUserIdAndSenderUserIdOrderByCreatedAtAsc(
+                        me, otherUserId, me, otherUserId);
+    }
+
+    /** Boîte de réception : uniquement MES messages reçus. */
+    public List<Message> getMyInbox() {
+        Long me = requireCurrentUserId();
+        return messageRepository.findByRecipientUserIdOrderByCreatedAtDesc(me);
+    }
+
+    // ──────────────────────────── ANNONCES ────────────────────────────
+
+    /**
+     * Publication d'une annonce (staff/admin). Ciblage optionnel :
+     * sans sport/catégorie l'annonce vaut pour tout le club. Un STAFF ne
+     * peut cibler que SA propre catégorie — jamais celle d'un autre.
+     */
+    @Transactional
+    public Announcement publish(String title, String body,
+                                String sportType, String category) {
+        Long me = requireCurrentUserId();
+        String myRole = UserContext.getCurrentUserRole();
+        if (!"ADMIN".equals(myRole) && !"STAFF".equals(myRole)) {
+            throw new AccessDeniedException("Seul le staff ou l'admin peut publier une annonce");
+        }
+        if (title == null || title.isBlank() || body == null || body.isBlank()) {
+            throw new IllegalArgumentException("Titre et contenu obligatoires");
+        }
+
+        String targetSport = sportType;
+        String targetCategory = category;
+        RosterClient.MembershipInfo mine = rosterClient.findMembership(me);
+        if ("STAFF".equals(myRole)) {
+            // Ciblage imposé : le staff publie pour SON groupe uniquement.
+            if (mine == null || !"STAFF".equals(mine.rosterRole())) {
+                throw new AccessDeniedException("Aucun profil staff lié à votre compte");
+            }
+            if ((sportType != null && !sportType.equalsIgnoreCase(mine.sportType()))
+                    || (category != null && !category.equalsIgnoreCase(mine.category()))) {
+                throw new AccessDeniedException(
+                        "Vous ne pouvez publier que pour votre propre catégorie");
+            }
+            targetSport = mine.sportType();
+            targetCategory = mine.category();
+        }
+
+        return announcementRepository.save(Announcement.builder()
+                .title(title.trim())
+                .body(body.trim())
+                .sportType(targetSport)
+                .category(targetCategory)
+                .createdByStaffId(me)
+                .createdByName(resolveName(me, myRole, mine))
+                .build());
+    }
+
+    /**
+     * Annonces visibles par le connecté : club entier + celles de SA
+     * catégorie (déduite du roster). L'ADMIN voit les annonces club ; un
+     * utilisateur sans fiche roster ne voit que les annonces club.
+     */
+    public List<Announcement> getVisibleAnnouncements() {
+        Long me = requireCurrentUserId();
+
+        List<Announcement> all = new java.util.ArrayList<>(
+                announcementRepository.findBySportTypeIsNullOrderByCreatedAtDesc());
+
+        RosterClient.MembershipInfo mine = rosterClient.findMembership(me);
+        if (mine != null && mine.sportType() != null && mine.category() != null) {
+            all.addAll(announcementRepository.findBySportTypeAndCategoryOrderByCreatedAtDesc(
+                    mine.sportType(), mine.category()));
+        }
+        all.sort(java.util.Comparator.comparing(Announcement::getCreatedAt).reversed());
+        return all;
+    }
+
+    // ───────────────────────────── HELPERS ─────────────────────────────
+
+    /** Même sport/catégorie (comparaison insensible à la casse — STRING). */
+    private boolean sameGroup(RosterClient.MembershipInfo a, RosterClient.MembershipInfo b) {
+        return a.sportType() != null && b.sportType() != null
+                && a.category() != null && b.category() != null
+                && a.sportType().equalsIgnoreCase(b.sportType())
+                && a.category().equalsIgnoreCase(b.category());
+    }
+
+    /** Nom d'affichage : fiche roster si disponible, sinon fallback rôle. */
+    private String resolveName(Long userId, String role, RosterClient.MembershipInfo info) {
+        if (info != null && info.fullName() != null && !info.fullName().isBlank()) {
+            return info.fullName();
+        }
+        return "ADMIN".equals(role) ? "Administration" : "Membre";
+    }
+
+    private void notifyRecipient(Message m) {
+        String preview = m.getContent().length() > 80
+                ? m.getContent().substring(0, 80) + "…" : m.getContent();
+        notificationClient.notifyUser(m.getRecipientUserId(), null,
+                "Nouveau message de " + m.getSenderName(),
+                preview,
+                "/joueur/dashboard");
+    }
+
+    private Long requireCurrentUserId() {
+        Long id = UserContext.getCurrentUserId();
+        if (id == null) {
+            throw new AccessDeniedException("Identité introuvable dans le contexte de sécurité");
+        }
+        return id;
+    }
+}
