@@ -20,6 +20,13 @@ public class SecurityConfig {
         http.csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        // La route roster interne est protégée par le secret partagé
+                        // X-Internal-Secret validé DANS InternalRosterController (pas
+                        // par Spring Security) : un appel service-à-service n'a pas
+                        // d'en-têtes X-User-* et serait sinon rejeté à tort en 403.
+                        // La gateway bloque de toute façon /api/sports/internal/**
+                        // depuis l'extérieur.
+                        .requestMatchers("/api/sports/internal/**").permitAll()
                         // Toute la surface HTTP exige une identité propagée par la
                         // gateway. Les sondages (→ election-service) et le chat WS
                         // (→ communication-service) ont quitté ce service.

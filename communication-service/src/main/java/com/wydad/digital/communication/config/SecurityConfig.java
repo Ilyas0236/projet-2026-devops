@@ -20,6 +20,12 @@ public class SecurityConfig {
         http.csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        // Handshake SockJS/STOMP du chat de groupe : un upgrade
+                        // WebSocket ne peut pas porter de header Authorization,
+                        // le JWT est validé à la frame CONNECT par l'interceptor
+                        // STOMP (TeamChatAuthInterceptor). La gateway laisse déjà
+                        // passer /ws/team-chat* sans JWT (Phase 4).
+                        .requestMatchers("/ws/team-chat", "/ws/team-chat/**").permitAll()
                         // Toute la messagerie est personnelle : aucune route HTTP
                         // publique. L'identité vient des en-têtes X-User-* posés par
                         // la gateway depuis un JWT validé.
