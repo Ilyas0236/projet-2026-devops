@@ -8,3 +8,6 @@ CREATE DATABASE ticket_db;
 CREATE DATABASE notification_db;
 CREATE DATABASE sports_db;
 CREATE DATABASE wydad_gamification;
+-- Audit thematique : gouvernance (sondages + elections) et communication
+CREATE DATABASE elections_db;
+CREATE DATABASE communication_db;
