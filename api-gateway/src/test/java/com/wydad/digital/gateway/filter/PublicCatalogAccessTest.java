@@ -56,6 +56,29 @@ class PublicCatalogAccessTest {
                 .expectStatus().isEqualTo(HttpStatus.UNAUTHORIZED);
     }
 
+    @Test
+    void newsletterAnonymePasseLaGatewayMaisPasLesAutresNotifications() {
+        // Inscription newsletter depuis le footer public : POST sans JWT doit
+        // franchir le filtre (le service revalide via permitAll). Sans backend
+        // demarre, un passage reussi se traduit par une erreur de proxy (5xx),
+        // jamais 401. A contrario, /api/notification/** hors newsletter
+        // (ex. broadcast) reste bloque des la gateway.
+        webTestClient.post()
+                .uri("/api/notification/newsletter/subscribe")
+                .header("Content-Type", "application/json")
+                .bodyValue("{\"email\":\"visiteur@example.com\"}")
+                .exchange()
+                .expectStatus().value(status ->
+                        assertTrue(status != HttpStatus.UNAUTHORIZED.value(),
+                                "newsletter/subscribe doit passer sans JWT, recu 401"));
+        webTestClient.post()
+                .uri("/api/notification/broadcast")
+                .header("Content-Type", "application/json")
+                .bodyValue("{}")
+                .exchange()
+                .expectStatus().isEqualTo(HttpStatus.UNAUTHORIZED);
+    }
+
     private static void assertTrue(boolean condition, String message) {
         org.junit.jupiter.api.Assertions.assertTrue(condition, message);
     }

@@ -112,6 +112,15 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
             return chain.filter(exchange);
         }
 
+        // Newsletter : inscription anonyme depuis le footer public du site.
+        // Le service revalide deja via permitAll + validation serveur du format
+        // email et de l'unicite (NewsletterSecurityTest) — la gateway ne doit
+        // pas exiger de JWT pour ce POST, sinon le pied de page est casse pour
+        // tout visiteur non connecte.
+        if (path.startsWith("/api/notification/newsletter/")) {
+            return chain.filter(exchange);
+        }
+
         // For all other routes, enforce JWT (this covers /api/auth/me, /api/auth/admin/**, and all other services)
         return validateAndForward(exchange, chain);
 
