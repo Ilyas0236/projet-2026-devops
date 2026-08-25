@@ -454,22 +454,22 @@ export class ApiService {
   }
 
   // ==========================================
-  // SONDAGES (B.2)
+  // SONDAGES (B.2) — servis par election-service (migration audit thématique)
   // ==========================================
   getActivePolls(): Observable<any[]> {
-    return this.http.get<any[]>(`${this.baseUrl}/sports/polls/active`);
+    return this.http.get<any[]>(`${this.baseUrl}/polls/active`);
   }
 
   votePoll(pollId: number, optionIndex: number): Observable<any> {
-    return this.http.post<any>(`${this.baseUrl}/sports/polls/${pollId}/vote?optionIndex=${optionIndex}`, {});
+    return this.http.post<any>(`${this.baseUrl}/polls/${pollId}/vote?optionIndex=${optionIndex}`, {});
   }
 
   createPoll(question: string, options: string[]): Observable<any> {
-    return this.http.post<any>(`${this.baseUrl}/sports/polls`, { question, options });
+    return this.http.post<any>(`${this.baseUrl}/polls`, { question, options });
   }
 
   closePoll(pollId: number): Observable<any> {
-    return this.http.post<any>(`${this.baseUrl}/sports/polls/${pollId}/close`, {});
+    return this.http.post<any>(`${this.baseUrl}/polls/${pollId}/close`, {});
   }
 
   // ==========================================
