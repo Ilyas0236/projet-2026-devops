@@ -1,6 +1,5 @@
 package com.wydad.digital.sports.controller;
 
-import com.wydad.digital.sports.model.ScheduledCall;
 import com.wydad.digital.sports.service.ScheduledCallService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -15,6 +14,8 @@ import java.util.Map;
  * Phase 5 — appels vidéo/vocaux programmés.
  * Création : ENTRAINEUR / PRESIDENT / ADMIN uniquement (re-vérifié dans le
  * service). Lecture/jeton : organisateur ou participant (liste fermée).
+ * Sorties via CallView : jamais l'entité brute (participantUserIds/roomName
+ * ne fuient pas aux clients).
  */
 @RestController
 @RequestMapping("/api/sports/calls")
@@ -25,13 +26,15 @@ public class ScheduledCallController {
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ENTRAINEUR','PRESIDENT','ADMIN')")
-    public ResponseEntity<ScheduledCall> create(@RequestBody ScheduledCallService.CreateCallRequest req) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(callService.createCall(req));
+    public ResponseEntity<ScheduledCallService.CallView> create(@RequestBody ScheduledCallService.CreateCallRequest req) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ScheduledCallService.CallView.from(callService.createCall(req)));
     }
 
     @GetMapping("/mine")
-    public ResponseEntity<List<ScheduledCall>> mine() {
-        return ResponseEntity.ok(callService.getMyCalls());
+    public ResponseEntity<List<ScheduledCallService.CallView>> mine() {
+        return ResponseEntity.ok(
+                callService.getMyCalls().stream().map(ScheduledCallService.CallView::from).toList());
     }
 
     /** Jeton de connexion média — organisateur ou participant uniquement. */
@@ -42,8 +45,9 @@ public class ScheduledCallController {
 
     @PostMapping("/{id}/cancel")
     @PreAuthorize("hasAnyRole('ENTRAINEUR','PRESIDENT','ADMIN')")
-    public ResponseEntity<ScheduledCall> cancel(@PathVariable Long id) {
-        return ResponseEntity.ok(callService.cancelCall(id));
+    public ResponseEntity<ScheduledCallService.CallView> cancel(@PathVariable Long id) {
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(ScheduledCallService.CallView.from(callService.cancelCall(id)));
     }
 
     /** Indique si le média LiveKit est configuré (affichage frontend). */

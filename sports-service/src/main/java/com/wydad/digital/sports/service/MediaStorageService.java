@@ -47,6 +47,9 @@ public class MediaStorageService {
     /** Résultat d'un upload : identifiant public + URL sécurisée. */
     public record UploadResult(String publicId, String secureUrl, boolean cloud) {}
 
+    /** Limite applicative des médias tactiques (25 Mo), doublant la limite servlet. */
+    public static final long MAX_MEDIA_SIZE_BYTES = 25L * 1024 * 1024;
+
     /**
      * Upload d'un média tactique (vidéo/photo/PDF, max 25 Mo pour laisser
      * la place aux vidéos courtes d'analyse).
@@ -57,8 +60,11 @@ public class MediaStorageService {
             throw new IllegalArgumentException("Fichier vide.");
         }
         byte[] data = file.getBytes();
-        if (data.length > 25 * 1024 * 1024) {
-            throw new IllegalArgumentException("Fichier trop volumineux (max. 25 Mo).");
+        if (data.length > MAX_MEDIA_SIZE_BYTES) {
+            // MaxUploadSizeExceededException -> handler dédié -> 413
+            // PAYLOAD_TOO_LARGE (un dépassement n'est pas une faute de saisie).
+            throw new org.springframework.web.multipart.MaxUploadSizeExceededException(
+                    MAX_MEDIA_SIZE_BYTES, new IllegalArgumentException("Fichier trop volumineux (max. 25 Mo)."));
         }
 
         // Mode dégradé sans clés (dev local) : référence locale, circuit inchangé.

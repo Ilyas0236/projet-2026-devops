@@ -1,4 +1,4 @@
-package com.wydad.digital.sports.model;
+package com.wydad.digital.election.model;
 
 import jakarta.persistence.*;
 import lombok.*;
@@ -8,8 +8,9 @@ import java.time.LocalDateTime;
 
 /**
  * B.2 — Vote d'un membre sur un sondage. La contrainte d'unicité
- * (poll_id, user_id) garantit au niveau BASE DE DONNEES qu'un utilisateur
+ * (poll_id, user_id) garantit au niveau BASE DE DONNÉES qu'un utilisateur
  * ne peut voter qu'une fois par sondage — pas seulement côté code.
+ * Même rempart que ElectionVote pour l'élection présidentielle.
  */
 @Entity
 @Table(name = "poll_votes",

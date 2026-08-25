@@ -77,6 +77,16 @@ spring:
             - name: SetStatus
               args:
                 status: FORBIDDEN
+        # Defense en profondeur : election-service n'expose aucun endpoint
+        # /internal ; tout futur endpoint de ce type doit etre bloque ici.
+        - id: block-election-internal
+          uri: no://op
+          predicates:
+            - Path=/api/elections/internal/**
+          filters:
+            - name: SetStatus
+              args:
+                status: FORBIDDEN
         - id: auth-service
           uri: ${AUTH_SERVICE_URI:http://localhost:8081}
           predicates:
@@ -120,6 +130,13 @@ spring:
           uri: ${NOTIFICATION_SERVICE_URI:http://localhost:8086}
           predicates:
             - Path=/api/notification/**
+        # Gouvernance du club : élections du président + sondages (migration
+        # depuis sports-service — audit thématique). Résultats publiés publics,
+        # vote et administration authentifiés (côté service).
+        - id: election-service
+          uri: ${ELECTION_SERVICE_URI:http://localhost:8089}
+          predicates:
+            - Path=/api/elections/**,/api/polls/**
 
 logging:
   level:

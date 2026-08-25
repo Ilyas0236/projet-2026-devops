@@ -141,7 +141,10 @@ public class ScheduledCallService {
                     throw new AccessDeniedException("Cible réservée au président");
                 }
                 for (AuthClient.UserProfile u : authClient.getAllActiveUsers()) {
-                    if (u.isValide() && "ADHERENT".equals(u.role()) && "PREMIUM".equals(u.membershipLevel())) {
+                    // « Premium » = niveaux d'abonnement haut de gamme réels du club
+                    // (grille 2026/2027 : DIAMANT ≈ offre Premium, LEGENDE ≈ VIP/VVIP).
+                    if (u.isValide() && "ADHERENT".equals(u.role())
+                            && PREMIUM_MEMBERSHIP_LEVELS.contains(u.membershipLevel())) {
                         ids.add(u.id());
                     }
                 }
@@ -250,7 +253,7 @@ public class ScheduledCallService {
                 notificationClient.notifyUser(userId, null,
                         "Appel programmé : " + call.getTitle(),
                         "Par " + call.getOrganizerName() + " · " + quand,
-                        isPlayer ? "/joueur/dashboard" : "/espace-staff/dashboard");
+                        isPlayer ? "/joueur/dashboard" : "/staff/dashboard");
             }
         } catch (Exception e) {
             log.warn("Notifications d'appel non envoyées: {}", e.getMessage());
@@ -287,6 +290,14 @@ public class ScheduledCallService {
 
     // ───────────────────────────── DTO ─────────────────────────────
 
+    /**
+     * Niveaux d'abonnement considérés « premium » pour la cible PREMIUM.
+     * Grille réelle du club (abonnement 2026/2027, couvre tous les matchs de
+     * Botola Pro à domicile) : Premium ≈ DIAMANT, VIP/VVIP ≈ LEGENDE.
+     * ROUGE/OR/JUNIOR = offres pelouse/tribune → exclus.
+     */
+    static final Set<String> PREMIUM_MEMBERSHIP_LEVELS = Set.of("DIAMANT", "LEGENDE");
+
     /** Cible de l'appel. */
     public enum TargetType { CATEGORIE_JOUEURS, CATEGORIE_EQUIPE, PREMIUM, UTILISATEURS }
 
@@ -302,5 +313,33 @@ public class ScheduledCallService {
 
     /** Réponse « rejoindre » : tout ce que le SDK LiveKit client nécessite. */
     public record CallToken(Long callId, String roomName, String token, String url, boolean organizer) {
+    }
+
+    /**
+     * Vue de sortie d'un appel : sans {@code participantUserIds} ni
+     * {@code roomName} (l'entité brute ne doit pas être sérialisée aux
+     * participants — liste fermée des conviés et room interne).
+     */
+    @lombok.Builder
+    public record CallView(Long id, String title, String sportType, String category,
+                           Long organizerUserId, String organizerName, String organizerRole,
+                           java.time.LocalDateTime scheduledAt, Integer durationMinutes,
+                           String status, java.time.LocalDateTime createdAt) {
+
+        public static CallView from(ScheduledCall c) {
+            return CallView.builder()
+                    .id(c.getId())
+                    .title(c.getTitle())
+                    .sportType(c.getSportType() == null ? null : c.getSportType().name())
+                    .category(c.getCategory() == null ? null : c.getCategory().name())
+                    .organizerUserId(c.getOrganizerUserId())
+                    .organizerName(c.getOrganizerName())
+                    .organizerRole(c.getOrganizerRole())
+                    .scheduledAt(c.getScheduledAt())
+                    .durationMinutes(c.getDurationMinutes())
+                    .status(c.getStatus() == null ? null : c.getStatus().name())
+                    .createdAt(c.getCreatedAt())
+                    .build();
+        }
     }
 }

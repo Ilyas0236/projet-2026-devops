@@ -1,4 +1,4 @@
-package com.wydad.digital.sports.controller;
+package com.wydad.digital.election;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -16,17 +16,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /**
  * C1 — Décorticage front ↔ back : la page publique /sondages appelle
- * GET /api/sports/polls/active dès l'arrivée du visiteur, mais sports-service
- * était derrière anyRequest().authenticated() -> 403 pour le fan non
- * connecté (même pattern que boutique/billetterie corrigé avant).
- *
- * Correction : consultation des sondages ACTIFS en lecture publique
- * (donnée non personnelle). Le VOTE et l'administration restent réservés.
+ * GET /api/polls/active dès l'arrivée du visiteur ; la consultation des
+ * sondages ACTIFS est en lecture publique (donnée non personnelle).
+ * Le VOTE et l'administration restent réservés.
  * Table de décision ISTQB (rôle × route) :
  *
  *   Rôle \ Route | GET /polls/active | POST /polls/{id}/vote | POST /polls
  *   -------------|-------------------|-----------------------|-------------
- *   Anonyme      | 200 (NOUVEAU)     |         403           |    403
+ *   Anonyme      | 200 (public)      |         403           |    403
  *   ADHERENT     | 200               |         200           |    403
  *   ADMIN        | 200               |         200           |    201
  */
@@ -42,7 +39,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Transactional
 class PollPublicAccessTest {
 
-    private static final String BASE = "/api/sports/polls";
+    private static final String BASE = "/api/polls";
 
     @Autowired
     private MockMvc mockMvc;

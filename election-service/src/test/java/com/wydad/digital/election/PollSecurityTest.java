@@ -1,9 +1,9 @@
-package com.wydad.digital.sports.controller;
+package com.wydad.digital.election;
 
-import com.wydad.digital.sports.dto.PollDtos.CreatePollRequest;
-import com.wydad.digital.sports.dto.PollDtos.PollResponse;
-import com.wydad.digital.sports.filter.SportsUserContext;
-import com.wydad.digital.sports.service.PollService;
+import com.wydad.digital.election.dto.PollDtos.CreatePollRequest;
+import com.wydad.digital.election.dto.PollDtos.PollResponse;
+import com.wydad.digital.election.filter.UserContext;
+import com.wydad.digital.election.service.PollService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -20,22 +20,20 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * B.2 — Sondages : regles de securite et metier prouvees cote serveur.
+ * B.2 — Sondages : règles de sécurité et métier prouvées côté serveur.
  *
- * 1. seul l'ADMIN peut creer un sondage (403 pour ADHERENT) ;
+ * 1. seul l'ADMIN peut créer un sondage (403 pour ADHERENT) ;
  * 2. un membre vote, son userId vient du contexte JWT (jamais du body) ;
- * 3. le double vote est rejete (code + contrainte d'unicite en base) ;
- * 4. deux utilisateurs votent pour des options differentes : les resultats
+ * 3. le double vote est rejeté (code + contrainte d'unicité en base) ;
+ * 4. deux utilisateurs votent pour des options différentes : les résultats
  *    agrégés sont exacts ;
  * 5. un sondage clos refuse tout nouveau vote.
  *
- * H2 MODE=PostgreSQL (contrainte d'unicite SQL) ; a revalider aussi contre
- * le PostgreSQL reel (docker-compose).
+ * H2 MODE=PostgreSQL (contrainte d'unicité SQL).
  */
 @SpringBootTest(properties = {
         "spring.datasource.url=jdbc:h2:mem:polltest;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1",
@@ -58,7 +56,7 @@ class PollSecurityTest {
 
     @BeforeEach
     void seedPoll() {
-        SportsUserContext.clear();
+        UserContext.clear();
         PollResponse poll = pollService.createPoll(
                 new CreatePollRequest("Meilleur joueur du mois ?",
                         List.of("Zerrouki", "Bakkali", "El Amrani"), null),
@@ -68,35 +66,35 @@ class PollSecurityTest {
 
     @AfterEach
     void clearContext() {
-        SportsUserContext.clear();
+        UserContext.clear();
     }
 
-    /** Seul l'ADMIN peut creer un sondage — prouve au niveau HTTP. */
+    /** Seul l'ADMIN peut créer un sondage — prouvé au niveau HTTP. */
     @Test
     void creationReserveeALAdmin() throws Exception {
         String body = """
                 {"question":"Test ?","options":["Oui","Non"]}
                 """;
-        // Un ADHERENT est rejete 403 AVANT d'atteindre le service.
-        mockMvc.perform(post("/api/sports/polls")
+        // Un ADHERENT est rejeté 403 AVANT d'atteindre le service.
+        mockMvc.perform(post("/api/polls")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body)
                         .with(user("membre@wydad.ma").roles("ADHERENT")))
                 .andExpect(status().isForbidden());
         // L'ADMIN passe.
-        mockMvc.perform(post("/api/sports/polls")
+        mockMvc.perform(post("/api/polls")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body)
                         .with(user("admin@wac.ma").roles("ADMIN")))
                 .andExpect(status().isCreated());
     }
 
-    /** L'identite du votant = contexte JWT ; le double vote est rejete. */
+    /** L'identité du votant = contexte JWT ; le double vote est rejeté. */
     @Test
     void unMembreVoteUneSeuleFois() {
-        SportsUserContext.setCurrentUserId(101L);
-        SportsUserContext.setCurrentUserEmail("fan1@wydad.ma");
-        SportsUserContext.setCurrentUserRole("ADHERENT");
+        UserContext.setCurrentUserId(101L);
+        UserContext.setCurrentUserEmail("fan1@wydad.ma");
+        UserContext.setCurrentUserRole("ADHERENT");
 
         PollResponse apresPremierVote = pollService.vote(pollId, 0);
         assertEquals(1L, apresPremierVote.totalVotes());
@@ -104,24 +102,24 @@ class PollSecurityTest {
         IllegalStateException ex = assertThrows(IllegalStateException.class,
                 () -> pollService.vote(pollId, 1));
         assertTrue(ex.getMessage().contains("déjà voté"),
-                "Le second vote du MEME utilisateur doit etre rejete");
+                "Le second vote du MÊME utilisateur doit être rejeté");
 
-        // Le premier choix n'a pas ete ecrase par la tentative de re-vote.
+        // Le premier choix n'a pas été écrasé par la tentative de revote.
         assertEquals(0L, pollService.getActivePolls().get(0).resultsPerOption().get(1));
     }
 
     /**
-     * Deux membres, votes differents : total = 2 et repartition exacte.
-     * Preuve que les resultats sont calcules serveur depuis les votes reels.
+     * Deux membres, votes différents : total = 2 et répartition exacte.
+     * Preuve que les résultats sont calculés serveur depuis les votes réels.
      */
     @Test
     void resultatsAgregesExactement() {
-        SportsUserContext.setCurrentUserId(201L);
-        SportsUserContext.setCurrentUserRole("ADHERENT");
+        UserContext.setCurrentUserId(201L);
+        UserContext.setCurrentUserRole("ADHERENT");
         pollService.vote(pollId, 0);
 
-        SportsUserContext.setCurrentUserId(202L);
-        SportsUserContext.setCurrentUserRole("PARENT");
+        UserContext.setCurrentUserId(202L);
+        UserContext.setCurrentUserRole("PARENT");
         pollService.vote(pollId, 2);
 
         List<Long> results = pollService.getActivePolls().get(0).resultsPerOption();
@@ -134,8 +132,8 @@ class PollSecurityTest {
     void sondageClosRefuseLeVote() {
         pollService.closePoll(pollId);
 
-        SportsUserContext.setCurrentUserId(301L);
-        SportsUserContext.setCurrentUserRole("ADHERENT");
+        UserContext.setCurrentUserId(301L);
+        UserContext.setCurrentUserRole("ADHERENT");
         IllegalStateException ex = assertThrows(IllegalStateException.class,
                 () -> pollService.vote(pollId, 0));
         assertTrue(ex.getMessage().contains("clôturé"));

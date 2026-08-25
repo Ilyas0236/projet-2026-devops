@@ -1,0 +1,35 @@
+server:
+  port: ${SERVER_PORT:8089}
+
+spring:
+  application:
+    name: election-service
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5433/elections_db}
+    username: ${SPRING_DATASOURCE_USERNAME:wydad}
+    password: ${SPRING_DATASOURCE_PASSWORD:wydad2024}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+wydad:
+  internal-secret: ${WYDAD_INTERNAL_SECRET:}
+  notification-service-uri: ${NOTIFICATION_SERVICE_URI:http://localhost:8086}
+
+logging:
+  level:
+    com.wydad.digital.election: DEBUG
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always

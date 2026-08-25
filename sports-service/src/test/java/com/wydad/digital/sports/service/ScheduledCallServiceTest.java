@@ -135,16 +135,20 @@ class ScheduledCallServiceTest {
         as(PRESIDENT, "PRESIDENT");
         org.mockito.Mockito.when(authClient.getAllActiveUsers()).thenReturn(List.of(
                 new AuthClient.UserProfile(JOUEUR_A, "a@x.ma", "A", "One", "JOUEUR", "ROUGE", "VALIDE", true),
-                new AuthClient.UserProfile(50L, "p@x.ma", "P", "Two", "ADHERENT", "PREMIUM", "VALIDE", true),
-                new AuthClient.UserProfile(51L, "s@x.ma", "S", "Three", "ADHERENT", "ROUGE", "VALIDE", true),
+                // « Premium » = DIAMANT/LEGENDE (grille réelle 2026/2027)
+                new AuthClient.UserProfile(50L, "p@x.ma", "P", "Two", "ADHERENT", "DIAMANT", "VALIDE", true),
+                new AuthClient.UserProfile(51L, "s@x.ma", "S", "Three", "ADHERENT", "LEGENDE", "VALIDE", true),
+                // offres pelouse/tribune : jamais conviés via la cible PREMIUM
+                new AuthClient.UserProfile(53L, "r@x.ma", "R", "Five", "ADHERENT", "ROUGE", "VALIDE", true),
+                new AuthClient.UserProfile(54L, "o@x.ma", "O", "Six", "ADHERENT", "OR", "VALIDE", true),
                 // invalide / refusé : jamais convié
-                new AuthClient.UserProfile(52L, "x@x.ma", "X", "Four", "ADHERENT", "PREMIUM", "REFUSE", true)));
+                new AuthClient.UserProfile(52L, "x@x.ma", "X", "Four", "ADHERENT", "DIAMANT", "REFUSE", true)));
 
         ScheduledCall call = callService.createCall(new CreateCallRequest(
                 "Réunion premium", null, null, LocalDateTime.now().plusHours(1), 45,
                 TargetType.PREMIUM, null));
 
-        assertThat(call.getParticipantUserIds()).containsExactly(50L, PRESIDENT);
+        assertThat(call.getParticipantUserIds()).containsExactlyInAnyOrder(50L, 51L, PRESIDENT);
     }
 
     @Test

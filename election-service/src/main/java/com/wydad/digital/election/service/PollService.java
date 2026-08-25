@@ -1,12 +1,12 @@
-package com.wydad.digital.sports.service;
+package com.wydad.digital.election.service;
 
-import com.wydad.digital.sports.dto.PollDtos.CreatePollRequest;
-import com.wydad.digital.sports.dto.PollDtos.PollResponse;
-import com.wydad.digital.sports.filter.SportsUserContext;
-import com.wydad.digital.sports.model.Poll;
-import com.wydad.digital.sports.model.PollVote;
-import com.wydad.digital.sports.repository.PollRepository;
-import com.wydad.digital.sports.repository.PollVoteRepository;
+import com.wydad.digital.election.dto.PollDtos.CreatePollRequest;
+import com.wydad.digital.election.dto.PollDtos.PollResponse;
+import com.wydad.digital.election.filter.UserContext;
+import com.wydad.digital.election.model.Poll;
+import com.wydad.digital.election.model.PollVote;
+import com.wydad.digital.election.repository.PollRepository;
+import com.wydad.digital.election.repository.PollVoteRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,6 +15,11 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Logique métier des sondages. Identité du votant = contexte JWT
+ * (X-User-Id transmis par la passerelle), JAMAIS le body de la requête.
+ * Mêmes règles de vote unique que l'élection présidentielle.
+ */
 @Service
 @RequiredArgsConstructor
 public class PollService {
@@ -47,10 +52,14 @@ public class PollService {
         return toResponse(poll, null);
     }
 
-    /** Sondages actifs, avec le vote de l'utilisateur courant s'il existe. */
+    /**
+     * Sondages actifs. Lecture publique (page /sondages du site officiel,
+     * visiteur non connecté inclus) ; l'identité n'est utilisée que pour
+     * enrichir la réponse avec le vote de l'utilisateur courant.
+     */
     @Transactional(readOnly = true)
     public List<PollResponse> getActivePolls() {
-        Long userId = SportsUserContext.getCurrentUserId();
+        Long userId = UserContext.getCurrentUserId();
         return pollRepository.findByActiveTrueOrderByCreatedAtDesc().stream()
                 .map(poll -> toResponse(poll,
                         userId == null ? null
@@ -60,14 +69,13 @@ public class PollService {
     }
 
     /**
-     * Vote de l'utilisateur courant. L'identifiant vient du contexte JWT —
-     * un utilisateur ne peut jamais voter au nom d'un autre. La contrainte
-     * d'unicité en base (poll_id, user_id) est le dernier rempart contre le
-     * double vote même en concurrence.
+     * Vote de l'utilisateur courant. La contrainte d'unicité en base
+     * (poll_id, user_id) est le dernier rempart contre le double vote
+     * même en concurrence.
      */
     @Transactional
     public PollResponse vote(Long pollId, int optionIndex) {
-        Long userId = SportsUserContext.getCurrentUserId();
+        Long userId = UserContext.getCurrentUserId();
         if (userId == null) {
             throw new IllegalStateException("Utilisateur non authentifié");
         }

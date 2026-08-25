@@ -1,4 +1,4 @@
-package com.wydad.digital.sports.model;
+package com.wydad.digital.election.model;
 
 import jakarta.persistence.*;
 import lombok.*;
@@ -9,7 +9,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * B.2 — Sondage administrable par l'ADMIN, votable par les membres.
+ * B.2 — Sondage : second pilier du domaine GOUVERNANCE/PARTICIPATION
+ * (avec l'élection du président). Mêmes règles de vote unique qu'une
+ * élection — un seul moteur conceptuel « question -> choix -> vote ».
  * Les options sont stockées dans l'ordre (option_index) ; les résultats
  * sont TOUJOURS calculés côté serveur à partir des votes enregistrés.
  */

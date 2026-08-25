@@ -1,11 +1,11 @@
-package com.wydad.digital.sports.dto;
+package com.wydad.digital.election.dto;
 
 import lombok.Builder;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
-/** DTOs du module sondages (B.2). */
+/** DTOs du module sondages (B.2) — même famille métier que les élections. */
 public final class PollDtos {
 
     private PollDtos() {

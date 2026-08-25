@@ -1,6 +1,6 @@
-package com.wydad.digital.sports.repository;
+package com.wydad.digital.election.repository;
 
-import com.wydad.digital.sports.model.Poll;
+import com.wydad.digital.election.model.Poll;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;

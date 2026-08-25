@@ -1,8 +1,9 @@
-package com.wydad.digital.sports.controller;
+package com.wydad.digital.election.controller;
 
-import com.wydad.digital.sports.dto.PollDtos.CreatePollRequest;
-import com.wydad.digital.sports.dto.PollDtos.PollResponse;
-import com.wydad.digital.sports.service.PollService;
+import com.wydad.digital.election.dto.PollDtos.CreatePollRequest;
+import com.wydad.digital.election.dto.PollDtos.PollResponse;
+import com.wydad.digital.election.filter.UserContext;
+import com.wydad.digital.election.service.PollService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -15,9 +16,12 @@ import java.util.List;
  * B.2 — Sondages : création/clôture réservées ADMIN, vote ouvert aux
  * membres authentifiés (ADHERENT minimum). L'identité du votant vient
  * TOUJOURS du contexte JWT transmis par la passerelle.
+ *
+ * Migration depuis sports-service (audit thématique) : un sondage est de la
+ * GOUVERNANCE/PARTICIPATION, même famille que l'élection présidentielle.
  */
 @RestController
-@RequestMapping("/api/sports/polls")
+@RequestMapping("/api/polls")
 @RequiredArgsConstructor
 public class PollController {
 
@@ -38,7 +42,7 @@ public class PollController {
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<PollResponse> createPoll(@RequestBody CreatePollRequest request) {
-        String email = com.wydad.digital.sports.filter.SportsUserContext.getCurrentUserEmail();
+        String email = UserContext.getCurrentUserEmail();
         return ResponseEntity.status(HttpStatus.CREATED).body(pollService.createPoll(request, email));
     }
 
