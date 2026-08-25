@@ -222,6 +222,11 @@ api/sports/messaging/inbox       401   (JWT requis)
 ```
 Tests gateway : 5/5 verts local (`InternalRoutesBlockedTest` 3 + `PublicCatalogAccessTest` 2).
 
-### Reste à faire côté serveur
-- [ ] Installer le cron de sauvegarde : `bash scripts/install-backup-cron.sh`
-- [ ] Avant ouverture publique : changer mot de passe seed admin, régénérer secret LiveKit + clé Cloudinary
+### Sauvegardes (installées et prouvées le jour même)
+- Cron quotidien 04h17 installé (`install-backup-cron.sh` ; fix : tolérer un crontab vide).
+- Test manuel du script : dump gzip de **1,3 Mo** produit dans `~/backups/`.
+- Correctif connexe : pools Hikari 10 services × max 5 (`HIKARI_MAX_POOL`) — le défaut (×10) saturait `max_connections=100`, ce qui faisait échouer `pg_dumpall` (« too many clients »). Vérifié après redéploiement : 26 connexions JDBC, 15 conteneurs healthy.
+
+### Reste à faire avant ouverture publique
+- [ ] Changer le mot de passe seed admin
+- [ ] Régénérer secret LiveKit + clé API Cloudinary (exposés par le passé)
