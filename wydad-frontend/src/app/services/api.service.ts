@@ -771,4 +771,40 @@ export class ApiService {
     if (relativeUrl.startsWith('http')) return relativeUrl;
     return `${environment.mediaBaseUrl}${relativeUrl}`;
   }
+
+  // ==========================================
+  // PHASE 5 — APPELS VIDÉO/VOCaux PROGRAMMÉS
+  // ==========================================
+  /** Appels où je suis organisateur ou participant (mon agenda). */
+  getMyCalls(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/sports/calls/mine`);
+  }
+
+  /** Programme un appel (ENTRAINEUR / PRESIDENT / ADMIN — contrôlé serveur). */
+  createCall(body: {
+    title: string;
+    sportType?: string;
+    category?: string;
+    scheduledAt?: string | null;
+    durationMinutes?: number;
+    target: 'CATEGORIE_JOUEURS' | 'CATEGORIE_EQUIPE' | 'PREMIUM' | 'UTILISATEURS';
+    targetUserIds?: number[];
+  }): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/sports/calls`, body);
+  }
+
+  /** Jeton média LiveKit (organisateur ou participant uniquement). */
+  getCallToken(callId: number): Observable<{ callId: number; roomName: string; token: string; url: string; organizer: boolean }> {
+    return this.http.post<any>(`${this.baseUrl}/sports/calls/${callId}/token`, {});
+  }
+
+  /** Annule un appel (organisateur seul — contrôlé serveur). */
+  cancelCall(callId: number): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/sports/calls/${callId}/cancel`, {});
+  }
+
+  /** Le média LiveKit est-il configuré côté serveur ? */
+  getMediaStatus(): Observable<{ configured: boolean }> {
+    return this.http.get<{ configured: boolean }>(`${this.baseUrl}/sports/calls/media-status`);
+  }
 }

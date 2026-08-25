@@ -605,6 +605,10 @@
           <div *ngIf="staff.sportType && (staff.assignedCategory || staff.category)" class="animate-fade-in-up">
             <app-team-chat [sportType]="staff.sportType" [category]="staff.assignedCategory || staff.category"></app-team-chat>
           </div>
+
+          <!-- APPELS VIDÉO/VOCaux programmés (Phase 5) — programmation + agenda -->
+          <app-schedule-call-form (created)="onCallCreated()"></app-schedule-call-form>
+          <app-my-calls></app-my-calls>
         </div>
       </div>
     </div>

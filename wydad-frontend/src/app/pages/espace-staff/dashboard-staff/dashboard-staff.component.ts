@@ -6,11 +6,13 @@ import { ApiService } from '../../../services/api.service';
 import { AuthService } from '../../../services/auth.service';
 import { ToastService } from '../../../services/toast.service';
 import { TeamChatComponent } from '../../../components/team-chat/team-chat.component';
+import { MyCallsComponent } from '../../../components/my-calls/my-calls.component';
+import { ScheduleCallFormComponent } from '../../../components/my-calls/schedule-call-form.component';
 
 @Component({
   selector: 'app-dashboard-staff',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FormsModule, RouterModule, TeamChatComponent],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, RouterModule, TeamChatComponent, MyCallsComponent, ScheduleCallFormComponent],
   templateUrl: './dashboard-staff.component.html'
 })
 export class DashboardStaffComponent implements OnInit {
@@ -24,6 +26,11 @@ export class DashboardStaffComponent implements OnInit {
   sessions: any[] = [];
   loading = true;
   staffNotFound = false;
+
+  /** Phase 5 — rafraîchit l'agenda des appels après une programmation. */
+  onCallCreated() {
+    // Le composant enfant recharge lui-même ses données ; hook laissé pour un futur badge.
+  }
 
   sessionForm!: FormGroup;
   isSubmitting = false;
