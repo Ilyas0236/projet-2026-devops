@@ -469,6 +469,47 @@ export class ApiService {
   }
 
   // ==========================================
+  // ÉLECTIONS DU PRÉSIDENT (B.8) — servis par election-service
+  // ==========================================
+  /** Site public : résultats publiés, visibles sans connexion. */
+  getPublishedElections(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/elections/published`);
+  }
+
+  getLatestPublishedElection(): Observable<any> {
+    return this.http.get<any>(`${this.baseUrl}/elections/published/latest`);
+  }
+
+  /** Espace adhérent : élections ouvertes + état de vote de l'utilisateur. */
+  getOpenElections(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/elections/open`);
+  }
+
+  voteElection(electionId: number, candidateId: number): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/elections/${electionId}/vote`, { candidateId });
+  }
+
+  createElection(title: string, startsAt: string, endsAt: string): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/elections`, { title, startsAt, endsAt });
+  }
+
+  addElectionCandidate(electionId: number, fullName: string, presentation?: string,
+                       photoUrl?: string): Observable<any> {
+    const body: any = { fullName };
+    if (presentation) { body.presentation = presentation; }
+    if (photoUrl) { body.photoUrl = photoUrl; }
+    return this.http.post<any>(`${this.baseUrl}/elections/${electionId}/candidates`, body);
+  }
+
+  removeElectionCandidate(electionId: number, candidateId: number): Observable<any> {
+    return this.http.delete<any>(`${this.baseUrl}/elections/${electionId}/candidates/${candidateId}`);
+  }
+
+  closeElection(electionId: number): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/elections/${electionId}/close`, {});
+  }
+
+  // ==========================================
   // ESPACE JOUEUR (B.3 / B.3.a)
   // ==========================================
   getMyConvocations(): Observable<any[]> {

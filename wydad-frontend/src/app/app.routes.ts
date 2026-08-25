@@ -49,6 +49,9 @@ import { DashboardStaffComponent } from './pages/espace-staff/dashboard-staff/da
 import { EspaceFanComponent } from './pages/espace-fan/espace-fan.component';
 import { SondagesComponent } from './pages/sondages/sondages.component';
 import { AdminSondagesComponent } from './pages/admin/admin-sondages/admin-sondages.component';
+import { ElectionsComponent } from './pages/elections/elections.component';
+import { MesElectionsComponent } from './pages/mes-elections/mes-elections.component';
+import { AdminElectionsComponent } from './pages/admin/admin-elections/admin-elections.component';
 import { AdminCommandesComponent } from './pages/admin/admin-commandes/admin-commandes.component';
 import { AdminBadgesComponent } from './pages/admin/admin-badges/admin-badges.component';
 import { AdminSeancesComponent } from './pages/admin/admin-seances/admin-seances.component';
@@ -88,6 +91,7 @@ export const routes: Routes = [
       { path: 'notifications', component: AdminNotificationsComponent },
       { path: 'reclamations', component: AdminReclamationsComponent },
       { path: 'sondages', component: AdminSondagesComponent },
+      { path: 'elections', component: AdminElectionsComponent },
       { path: 'badges', component: AdminBadgesComponent },
       { path: 'parametres', component: AdminSettingsComponent }
     ]
@@ -115,6 +119,8 @@ export const routes: Routes = [
       { path: 'transparence', component: TransparenceComponent },
       { path: 'espace-fan', component: EspaceFanComponent, canActivate: [authGuard] },
       { path: 'sondages', component: SondagesComponent },
+      { path: 'elections', component: ElectionsComponent },
+      { path: 'mes-elections', component: MesElectionsComponent, canActivate: [authGuard] },
       { path: 'panier', component: CartComponent, canActivate: [authGuard] },
       { path: 'profil', component: ProfilComponent, canActivate: [authGuard] },
       { path: 'profil/carte', component: CarteMembreComponent, canActivate: [authGuard] },

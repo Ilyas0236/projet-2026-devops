@@ -1,0 +1,116 @@
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- WYDAD DIGITAL — MES ÉLECTIONS (B.8) — vote adhérent         -->
+<!-- Élections ouvertes + mon état de vote ; 1 vote / membre,    -->
+<!-- identité dérivée du JWT côté serveur.                       -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="min-h-screen bg-paper-1 light-page pt-28 pb-24">
+
+  <div class="container-wydad mb-12 text-center">
+    <span class="text-wydad-red font-bold tracking-[0.3em] uppercase text-xs mb-3 block">Espace adhérent</span>
+    <h1 class="font-display font-black text-hero uppercase tracking-tighter text-ink-primary">
+      Élections <span class="text-wydad-red">en cours</span>
+    </h1>
+    <p class="text-ink-secondary mt-4 max-w-2xl mx-auto">
+      Choisissez la présidence du club. Le vote est définitif et secret : un seul bulletin par adhérent.
+    </p>
+  </div>
+
+  <div class="container-wydad max-w-3xl">
+
+    <app-error-banner *ngIf="loadError && !loading"
+                      message="Impossible de charger les élections."
+                      detail="Vérifiez votre connexion et réessayez."
+                      (retry)="retry()" />
+
+    <div *ngIf="loading" class="space-y-6" role="status" aria-label="Chargement des élections">
+      <div *ngFor="let s of [1,2]" class="rounded-2xl border border-paper-3 bg-paper-0 shadow-paper-card p-8">
+        <div class="h-5 w-2/3 mb-6 rounded" style="background: linear-gradient(90deg, #EFEFF1 25%, #E5E5E8 50%, #EFEFF1 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite;"></div>
+        <div class="h-20 w-full rounded" style="background: linear-gradient(90deg, #EFEFF1 25%, #E5E5E8 50%, #EFEFF1 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite;"></div>
+      </div>
+    </div>
+
+    <div *ngIf="!loading" class="space-y-10">
+
+      <div *ngIf="elections.length === 0" class="text-center py-20">
+        <div class="paper-card rounded-2xl p-12 max-w-md mx-auto">
+          <svg class="w-16 h-16 text-ink-tertiary mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          <p class="text-ink-secondary font-display text-lg uppercase tracking-wider">Aucune élection en cours</p>
+          <p class="text-ink-tertiary text-sm mt-2">
+            Vous serez notifié dès l'ouverture d'une nouvelle élection.
+          </p>
+          <a routerLink="/elections" class="inline-block mt-6 text-sm font-bold text-wydad-red hover:underline">
+            Voir les résultats des élections passées →
+          </a>
+        </div>
+      </div>
+
+      <article *ngFor="let e of elections" class="paper-card rounded-2xl p-8">
+
+        <header class="mb-6">
+          <h2 class="font-display font-bold text-xl text-ink-primary leading-snug">{{ e.title }}</h2>
+          <p class="text-xs text-ink-tertiary mt-2 uppercase tracking-wider">
+            Ouverte jusqu'au {{ e.endsAt | date:'d MMM y à HH:mm' }}
+            · {{ e.totalVotes }} vote{{ e.totalVotes > 1 ? 's' : '' }} exprimé{{ e.totalVotes > 1 ? 's' : '' }}
+          </p>
+        </header>
+
+        <!-- Candidats -->
+        <div class="space-y-4" role="group" [attr.aria-label]="'Candidats : ' + e.title">
+          <button *ngFor="let c of e.candidates; let i = index"
+                  type="button"
+                  (click)="vote(e, c.id)"
+                  [disabled]="votingElectionId === e.id || e.myVoteIndex !== null || !e.canVote"
+                  class="w-full text-left rounded-xl border p-4 flex items-start gap-4 transition-colors bg-paper-0 group"
+                  [ngClass]="{
+                    'border-wydad-red bg-wydad-red/[0.06]': e.myVoteIndex === i,
+                    'border-paper-3 hover:border-wydad-red/50 hover:bg-paper-1': e.myVoteIndex !== i,
+                    'cursor-default opacity-80': e.myVoteIndex !== null || !e.canVote
+                  }">
+
+            <!-- Photo ou initiales -->
+            <img *ngIf="c.photoUrl; else initials"
+                 [src]="c.photoUrl" [alt]="'Photo de ' + c.fullName"
+                 class="w-14 h-14 rounded-full object-cover border border-paper-3 flex-shrink-0">
+            <ng-template #initials>
+              <div class="w-14 h-14 rounded-full bg-paper-2 border border-paper-3 flex items-center justify-center flex-shrink-0 font-display font-black text-ink-secondary text-lg">
+                {{ c.fullName.charAt(0) }}
+              </div>
+            </ng-template>
+
+            <div class="min-w-0 flex-1">
+              <p class="font-display font-bold text-ink-primary flex items-center gap-2">
+                {{ c.fullName }}
+                <svg *ngIf="e.myVoteIndex === i" class="w-4 h-4 text-wydad-red flex-shrink-0"
+                     fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                  <path fill-rule="evenodd"
+                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/>
+                </svg>
+                <span *ngIf="e.myVoteIndex === i" class="text-[10px] font-sans font-normal text-wydad-red uppercase tracking-wider">
+                  Votre vote
+                </span>
+              </p>
+              <p *ngIf="c.presentation" class="text-xs text-ink-secondary mt-1 leading-relaxed">{{ c.presentation }}</p>
+            </div>
+
+            <span *ngIf="e.myVoteIndex === null && e.canVote && votingElectionId !== e.id"
+                  class="flex-shrink-0 text-[11px] font-bold uppercase tracking-wider text-wydad-red border border-wydad-red/40 rounded-full px-3 py-1.5 group-hover:bg-wydad-red group-hover:text-white transition-colors">
+              Voter
+            </span>
+            <span *ngIf="votingElectionId === e.id"
+                  class="flex-shrink-0 animate-spin rounded-full h-5 w-5 border-b-2 border-wydad-red self-center"></span>
+          </button>
+        </div>
+
+        <!-- Confirmation après vote -->
+        <p *ngIf="e.myVoteIndex !== null" role="status"
+           class="mt-5 rounded-lg bg-green-50 border border-green-200 px-4 py-3 text-xs text-green-800">
+          ✓ Votre vote est enregistré. Les résultats seront publiés sur
+          <a routerLink="/elections" class="font-semibold underline">la page publique</a> dès la clôture.
+        </p>
+      </article>
+    </div>
+  </div>
+</div>
