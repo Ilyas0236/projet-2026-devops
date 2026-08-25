@@ -62,11 +62,12 @@ Le Président a sa propre interface (rôle `PRESIDENT` existe déjà depuis la P
 - [x] Entraîneur : envoyer médias (vidéo/photo Cloudinary, PDF tactique, message) → UN joueur ou TOUTE l'équipe (réutiliser CloudinaryService comme modèle auth-service)
 - [x] Joueur : boîte de réception unifiée (convocations, médias, messages) + réponses (lu/non lu côté entraîneur)
 
-### Phase 4 — Messagerie groupe joueurs (« WhatsApp »)
-- [ ] WebSocket + STOMP natif Spring Boot exposé via api-gateway
-- [ ] Groupe « Équipe pro » (joueurs + entraîneur), texte uniquement
-- [ ] Frontend Angular : chat temps réel + indicateur connexion
-- [ ] Historique persisté ; notifications si hors ligne
+### Phase 4 — Messagerie groupe joueurs (« WhatsApp ») ✅ *terminée 2026-08-25*
+- [x] WebSocket + STOMP natif Spring Boot exposé via api-gateway (JWT en en-tête natif CONNECT, validé par le service lui-même)
+- [x] Groupe « Équipe » par sport+catégorie (joueurs + staff), texte uniquement (500 chars)
+- [x] Frontend Angular : chat temps réel + indicateur connexion (OPEN/CONNECTING/CLOSED)
+- [x] Historique persisté ; notifications in-app si hors ligne
+- [x] E2E prod prouvé : CONNECT JWT → SUBSCRIBE → SEND → diffusion temps réel + persistance (56/56 tests verts, bug identité ThreadLocal corrigé et couvert par test)
 - ⚠️ Texte seulement (médias = Phase 3 entraîneur)
 
 ### Phase 5 — Appels vidéo/vocaux programmés *(entraîneur + président)*
