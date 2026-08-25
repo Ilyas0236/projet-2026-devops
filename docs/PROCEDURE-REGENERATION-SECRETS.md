@@ -1,6 +1,7 @@
 # 🔐 Procédure de régénération des secrets exposés
 
-> **Contexte** : le secret LiveKit et la clé API Cloudinary ont été exposés dans le passé (collés dans un chat). À régénérer **avant l'ouverture publique**. Cette procédure est à faire par le titulaire des comptes — les tableaux de bord sont externes, Claude ne peut pas y accéder.
+> **Décision du 25/08/2026** : les clés LiveKit et Cloudinary actuelles sont **conservées** (choix du propriétaire) — la régénération n'est plus un prérequis d'ouverture publique.
+> Cette procédure est conservée au cas où une rotation deviendrait nécessaire un jour (exposition avérée, changement de prestataire…). Elle est à faire par le titulaire des comptes — les tableaux de bord sont externes, Claude ne peut pas y accéder.
 
 ## 1. LiveKit (appels vidéo/vocaux Phase 5)
 

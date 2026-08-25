@@ -124,7 +124,7 @@ Déploiement : boucle `git pull && mvn package && docker compose up -d --build` 
 Sauvegardes : `scripts/backup-db.sh` (pg_dump gzip, rétention 7 jours, `~/backups`) + `scripts/install-backup-cron.sh` (cron quotidien 04h17).
 
 Secrets : uniquement `.env` serveur (chmod 600) + gestionnaire de mots de passe. Jamais dans git ni le chat.
-À faire avant ouverture publique : changer le mot de passe seed admin, régénérer secret LiveKit et clé API Cloudinary (exposés par le passé).
+Mot de passe seed admin changé le 25/08 (preuve en prod). Clés LiveKit/Cloudinary conservées (décision propriétaire) — procédure de rotation dans `docs/PROCEDURE-REGENERATION-SECRETS.md`.
 
 ---
 

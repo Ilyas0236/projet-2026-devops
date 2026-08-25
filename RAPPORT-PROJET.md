@@ -180,9 +180,9 @@ Re-test de toutes les fonctionnalités sur la VM, comme exigé. **33 vérificati
 ## 7. Reste à faire
 
 **Avant ouverture publique (bloquant)** :
-- [ ] Changer le mot de passe seed admin
-- [ ] Régénérer le secret LiveKit + la clé API Cloudinary (exposés par le passé)
-- [ ] Nettoyer les comptes test résiduels (auth_db ids 5, 8, 9, 10)
+- [x] Changer le mot de passe seed admin (fait le 25/08 : ancien rejeté 401 prouvé en prod)
+- [x] Nettoyer les comptes test résiduels (fait le 25/08 : ids 5→10 supprimés avec données liées — il ne reste que admin@wac.ma)
+- ~~Régénérer secret LiveKit + clé Cloudinary~~ — **clés conservées** (décision propriétaire 25/08) ; procédure de rotation documentée dans `docs/PROCEDURE-REGENERATION-SECRETS.md`
 
 **Qualité** :
 - [ ] JaCoCo ≥70 % sur le parent pom (seuils renforcés auth/sports)

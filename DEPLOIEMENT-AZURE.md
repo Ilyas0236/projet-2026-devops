@@ -247,5 +247,5 @@ Tests gateway : 5/5 verts local (`InternalRoutesBlockedTest` 3 + `PublicCatalogA
 - Données de test supprimées après preuve (elections_db + auth_db), mot de passe jetable effacé du serveur.
 
 ### Reste à faire avant ouverture publique
-- [ ] Changer le mot de passe seed admin
-- [ ] Régénérer secret LiveKit + clé API Cloudinary (exposés par le passé)
+- [x] Changer le mot de passe seed admin (fait le 25/08 — ancien rejeté 401, preuve en prod ; comptes test ids 5→10 également supprimés, il ne reste que admin@wac.ma)
+- ~~Régénérer secret LiveKit + clé API Cloudinary~~ — **clés conservées** (décision du propriétaire du 25/08) ; procédure de rotation documentée dans `docs/PROCEDURE-REGENERATION-SECRETS.md` si besoin un jour
