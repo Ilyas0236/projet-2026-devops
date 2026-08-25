@@ -8,6 +8,10 @@ spring:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5433/elections_db}
     username: ${SPRING_DATASOURCE_USERNAME:wydad}
     password: ${SPRING_DATASOURCE_PASSWORD:wydad2024}
+    hikari:
+      # VM 1 Go RAM : 10 services x pool par defaut (10) sature max_connections=100
+      maximum-pool-size: ${HIKARI_MAX_POOL:5}
+      minimum-idle: ${HIKARI_MIN_IDLE:2}
   jpa:
     hibernate:
       ddl-auto: update
