@@ -25,12 +25,15 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * Phase 1 ter (Phase F) — demande d'accréditation presse à l'inscription.
+ * Inscription multi-statuts — demande de rôle à l'inscription.
  * Partitions ISTQB :
- *  - demandeRole = JOURNALISTE → compte JOURNALISTE en EN_ATTENTE (file admin) ;
- *  - demandeRole = ENTRAINEUR / PRESIDENT (rôles non sollicitables) → ignoré,
- *    compte ADHERENT VALIDE classique ;
- *  - demandeRole absent/null → inscription ADHERENT inchangée.
+ *  - demandeRole = JOURNALISTE → EN_ATTENTE + organismePresse obligatoire ;
+ *  - demandeRole = JOUEUR / ENTRAINEUR / STAFF → EN_ATTENTE + catégorie
+ *    obligatoire parmi U15/U17/U18/U20/SENIOR (casse insensible) ;
+ *  - catégorie manquante / invalide → IllegalArgumentException ;
+ *  - organisme presse manquant → IllegalArgumentException ;
+ *  - rôle non sollicitable (PRESIDENT, ADMIN...) → IllegalArgumentException ;
+ *  - demandeRole absent/null → inscription ADHERENT VALIDE inchangée.
  */
 @ExtendWith(MockitoExtension.class)
 class AuthAccreditationTest {
@@ -51,80 +54,141 @@ class AuthAccreditationTest {
                 null, null, null, null, notificationClient);
     }
 
-    private RegisterRequest demande(String role) {
+    /** Fabrique une demande complète ; les champs conditionnels sont null par défaut. */
+    private RegisterRequest demande(String role, String categorie,
+                                    String organismePresse, String matchSouhaite) {
         return new RegisterRequest("presse@test.ma", "0612345678", "secret123",
-                "Nadia", "Berrada", null, role);
+                "Nadia", "Berrada", null, role, categorie, organismePresse, matchSouhaite);
     }
+
+    /** Stub des mocks communs à tout register() qui aboutit. */
+    private void stubRegisterOk() {
+        when(userRepository.existsByEmail(any())).thenReturn(false);
+        when(userRepository.existsByPhone(any())).thenReturn(false);
+        when(passwordEncoder.encode(any())).thenReturn("hashed");
+        when(jwtUtils.generateAccessToken(any(), any(), any())).thenReturn("tok");
+        when(jwtUtils.generateRefreshToken(org.mockito.ArgumentMatchers.nullable(Long.class), any(String.class))).thenReturn("ref");
+    }
+
+    private User savedUser() {
+        ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(captor.capture());
+        return captor.getValue();
+    }
+
+    // ---------- JOURNALISTE ----------
 
     @Test
     @DisplayName("demandeRole=JOURNALISTE crée un compte JOURNALISTE en EN_ATTENTE")
     void journaliste_enAttente() {
-        when(userRepository.existsByEmail(any())).thenReturn(false);
-        when(userRepository.existsByPhone(any())).thenReturn(false);
-        when(passwordEncoder.encode(any())).thenReturn("hashed");
-        when(jwtUtils.generateAccessToken(any(), any(), any())).thenReturn("tok");
-        when(jwtUtils.generateRefreshToken(org.mockito.ArgumentMatchers.nullable(Long.class), any(String.class))).thenReturn("ref");
+        stubRegisterOk();
 
-        authService.register(demande("journaliste")); // casse insensible
+        authService.register(demande("journaliste", null, "SportsDZ.ma", "WAC vs RCA")); // casse insensible
 
-        ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
-        verify(userRepository).save(captor.capture());
-        User saved = captor.getValue();
+        User saved = savedUser();
         assertEquals(Role.JOURNALISTE, saved.getRole());
         assertEquals(StatutCompte.EN_ATTENTE, saved.getStatutCompte());
+        assertEquals("SportsDZ.ma", saved.getOrganismePresse());
+        assertEquals("WAC vs RCA", saved.getMatchSouhaite());
         assertNull(saved.getMotifRefus());
+        assertNull(saved.getCategorieDemandee()); // pas de catégorie pour la presse
     }
 
     @Test
-    @DisplayName("demandeRole=ENTRAINEUR est ignoré : compte ADHERENT VALIDE")
-    void entraineurDemande_ignoree() {
-        when(userRepository.existsByEmail(any())).thenReturn(false);
-        when(userRepository.existsByPhone(any())).thenReturn(false);
-        when(passwordEncoder.encode(any())).thenReturn("hashed");
-        when(jwtUtils.generateAccessToken(any(), any(), any())).thenReturn("tok");
-        when(jwtUtils.generateRefreshToken(org.mockito.ArgumentMatchers.nullable(Long.class), any(String.class))).thenReturn("ref");
+    @DisplayName("JOURNALISTE sans organe de presse → refusé")
+    void journaliste_sansOrganisme_ko() {
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> authService.register(demande("JOURNALISTE", null, null, null)));
+        assertTrue(ex.getMessage().contains("organe de presse"));
+    }
 
-        authService.register(demande("ENTRAINEUR"));
+    // ---------- Rôles sportifs : catégorie obligatoire ----------
 
-        ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
-        verify(userRepository).save(captor.capture());
-        assertEquals(Role.ADHERENT, captor.getValue().getRole());
-        assertEquals(StatutCompte.VALIDE, captor.getValue().getStatutCompte());
+    @Test
+    @DisplayName("demandeRole=JOUEUR + SENIOR → JOUEUR EN_ATTENTE avec catégorie")
+    void joueur_avecCategorie_enAttente() {
+        stubRegisterOk();
+        authService.register(demande("JOUEUR", "senior", null, null));
+
+        User saved = savedUser();
+        assertEquals(Role.JOUEUR, saved.getRole());
+        assertEquals(StatutCompte.EN_ATTENTE, saved.getStatutCompte());
+        assertEquals("SENIOR", saved.getCategorieDemandee());
+        assertNull(saved.getOrganismePresse());
     }
 
     @Test
-    @DisplayName("demandeRole=PRESIDENT est ignoré : jamais auto-attribué")
-    void presidentDemande_ignoree() {
-        when(userRepository.existsByEmail(any())).thenReturn(false);
-        when(userRepository.existsByPhone(any())).thenReturn(false);
-        when(passwordEncoder.encode(any())).thenReturn("hashed");
-        when(jwtUtils.generateAccessToken(any(), any(), any())).thenReturn("tok");
-        when(jwtUtils.generateRefreshToken(org.mockito.ArgumentMatchers.nullable(Long.class), any(String.class))).thenReturn("ref");
+    @DisplayName("demandeRole=ENTRAINEUR + U17 → plus ignoré : EN_ATTENTE avec catégorie")
+    void entraineurDemande_enAttente() {
+        stubRegisterOk();
+        authService.register(demande("ENTRAINEUR", "U17", null, null));
 
-        authService.register(demande("PRESIDENT"));
-
-        ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
-        verify(userRepository).save(captor.capture());
-        assertEquals(Role.ADHERENT, captor.getValue().getRole());
-        assertEquals(StatutCompte.VALIDE, captor.getValue().getStatutCompte());
+        User saved = savedUser();
+        assertEquals(Role.ENTRAINEUR, saved.getRole());
+        assertEquals(StatutCompte.EN_ATTENTE, saved.getStatutCompte());
+        assertEquals("U17", saved.getCategorieDemandee());
     }
+
+    @Test
+    @DisplayName("demandeRole=STAFF + U15 → STAFF EN_ATTENTE avec catégorie")
+    void staffDemande_enAttente() {
+        stubRegisterOk();
+        authService.register(demande("STAFF", "U15", null, null));
+
+        User saved = savedUser();
+        assertEquals(Role.STAFF, saved.getRole());
+        assertEquals("U15", saved.getCategorieDemandee());
+        assertEquals(StatutCompte.EN_ATTENTE, saved.getStatutCompte());
+    }
+
+    @Test
+    @DisplayName("JOUEUR sans catégorie → refusé")
+    void joueur_sansCategorie_ko() {
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> authService.register(demande("JOUEUR", null, null, null)));
+        assertTrue(ex.getMessage().contains("catégorie"));
+    }
+
+    @Test
+    @DisplayName("ENTRAINEUR avec catégorie invalide (PRO) → refusé")
+    void entraineur_categorieInvalide_ko() {
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> authService.register(demande("ENTRAINEUR", "PRO", null, null)));
+        assertTrue(ex.getMessage().contains("Catégorie invalide"));
+    }
+
+    // ---------- Rôle non sollicitable ----------
+
+    @Test
+    @DisplayName("demandeRole=PRESIDENT → jamais auto-attribué, rejeté explicitement")
+    void presidentDemande_rejete() {
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> authService.register(demande("PRESIDENT", null, null, null)));
+        assertTrue(ex.getMessage().contains("non sollicitable"));
+        verify(userRepository, org.mockito.Mockito.never()).save(any());
+    }
+
+    @Test
+    @DisplayName("demandeRole=ADMIN → rejeté explicitement")
+    void adminDemande_rejete() {
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> authService.register(demande("ADMIN", null, null, null)));
+        assertTrue(ex.getMessage().contains("non sollicitable"));
+        verify(userRepository, org.mockito.Mockito.never()).save(any());
+    }
+
+    // ---------- Flux historique ----------
 
     @Test
     @DisplayName("sans demandeRole : flux ADHERENT historique inchangé")
     void sansDemande_fluxHistorique() {
-        when(userRepository.existsByEmail(any())).thenReturn(false);
-        when(userRepository.existsByPhone(any())).thenReturn(false);
-        when(passwordEncoder.encode(any())).thenReturn("hashed");
-        when(jwtUtils.generateAccessToken(any(), any(), any())).thenReturn("tok");
-        when(jwtUtils.generateRefreshToken(org.mockito.ArgumentMatchers.nullable(Long.class), any(String.class))).thenReturn("ref");
+        stubRegisterOk();
+        authService.register(demande(null, null, null, null));
 
-        authService.register(demande(null));
-
-        ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
-        verify(userRepository).save(captor.capture());
-        User saved = captor.getValue();
+        User saved = savedUser();
         assertEquals(Role.ADHERENT, saved.getRole());
         assertEquals(StatutCompte.VALIDE, saved.getStatutCompte());
         assertEquals(MembershipLevel.ROUGE, saved.getMembershipLevel());
+        assertNull(saved.getCategorieDemandee());
     }
 }

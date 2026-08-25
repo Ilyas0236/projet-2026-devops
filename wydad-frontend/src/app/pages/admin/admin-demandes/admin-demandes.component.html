@@ -6,7 +6,7 @@
     <div>
       <h1 class="text-2xl font-display font-bold text-text-primary uppercase tracking-wider">Demandes de comptes</h1>
       <p class="text-text-secondary text-sm mt-1">
-        Comptes à rôle privilégié (entraîneur, journaliste, président) en attente de validation.
+        Comptes à rôle privilégié (journaliste, joueur, entraîneur, staff, président) en attente de validation.
       </p>
     </div>
     <button type="button" (click)="loadDemandes()"
@@ -68,6 +68,21 @@
             </span>
           </div>
           <p class="text-text-secondary text-sm truncate">{{ d.email }}</p>
+          <!-- Inscription multi-statuts : détails de la demande -->
+          <div *ngIf="d.categorieDemandee || d.organismePresse || d.matchSouhaite" class="mt-2 flex flex-wrap gap-2">
+            <span *ngIf="d.categorieDemandee"
+                  class="px-2.5 py-0.5 rounded-full bg-blue-500/15 text-blue-300 text-[10px] font-bold uppercase tracking-widest">
+              Catégorie : {{ d.categorieDemandee }}
+            </span>
+            <span *ngIf="d.organismePresse"
+                  class="px-2.5 py-0.5 rounded-full bg-purple-500/15 text-purple-300 text-[10px] font-bold uppercase tracking-widest">
+              {{ d.organismePresse }}
+            </span>
+            <span *ngIf="d.matchSouhaite"
+                  class="px-2.5 py-0.5 rounded-full bg-surface-3 text-text-secondary text-[10px] font-bold uppercase tracking-widest">
+              Match : {{ d.matchSouhaite }}
+            </span>
+          </div>
           <p class="text-text-tertiary text-xs mt-1">
             Demande créée le {{ d.createdAt | date:'dd/MM/yyyy à HH:mm' }} ·
             <!-- Phase 1 ter — statut KYC visible directement dans la liste -->

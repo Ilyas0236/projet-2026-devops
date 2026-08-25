@@ -68,6 +68,16 @@ public class User {
     private String timezone = "Africa/Casablanca";
     private String bio;
 
+    /** Catégorie sportive sollicitée (U15/U17/U18/U20/SENIOR) pour JOUEUR,
+     * ENTRAINEUR ou STAFF — renseignée à l'inscription, confirmée par l'admin. */
+    private String categorieDemandee;
+
+    /** Accréditation presse (JOURNALISTE) : organe/site de travail déclaré. */
+    private String organismePresse;
+
+    /** Accréditation presse : match pour lequel l'accès est sollicité. */
+    private String matchSouhaite;
+
     private boolean kycVerified = false;
 
     private boolean active = true;

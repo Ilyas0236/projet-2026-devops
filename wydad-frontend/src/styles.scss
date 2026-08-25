@@ -841,18 +841,18 @@ select.admin-input {
 
 // ─── Logo 3D Effect ──────────────────────────────────────────
 .wac-logo-3d {
-  width: 95px; /* Taille optimale pour la navbar */
+  /* Contenu dans la navbar h-20 : plus de débordement sur les liens (bug chevauchement ACCUEIL) */
+  width: 58px;
   height: auto;
-  filter: drop-shadow(0px 8px 12px rgba(0, 0, 0, 0.4)) contrast(1.05) saturate(1.1);
+  max-height: 56px;
+  filter: drop-shadow(0px 4px 8px rgba(0, 0, 0, 0.25)) contrast(1.05) saturate(1.1);
   transition: transform 0.3s ease, filter 0.3s ease;
-  transform: translateY(12px); /* DESCEND LE LOGO */
   position: relative;
-  z-index: 60;
 }
 
 .wac-logo-3d:hover {
-  transform: translateY(8px) scale(1.05); /* Reste descendu, mais s'agrandit */
-  filter: drop-shadow(0px 12px 18px rgba(227, 6, 19, 0.35));
+  transform: scale(1.06);
+  filter: drop-shadow(0px 6px 14px rgba(220, 20, 60, 0.35));
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -1127,6 +1127,35 @@ button.paper-card {
   color: var(--color-wydad-gold-dark, #A68B2A);
   background: rgba(212, 175, 55, 0.12);
   border: 1px solid rgba(212, 175, 55, 0.35);
+}
+
+// ─── Lien navbar publique : compact (10 liens dans la barre), souligné rouge animé
+.nav-link {
+  color: var(--color-ink-secondary, #4B4B52);
+  transition: color var(--transition-base, 0.25s ease);
+  position: relative;
+
+  &::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: -6px;
+    height: 2px;
+    width: 100%;
+    background: var(--color-wydad-red, #DC143C);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform var(--transition-base, 0.25s ease);
+  }
+
+  &:hover,
+  &.active {
+    color: var(--color-wydad-red, #DC143C);
+
+    &::after {
+      transform: scaleX(1);
+    }
+  }
 }
 
 // ─── Carte « Club » : blanche, liseré rouge au survol + coin coupé

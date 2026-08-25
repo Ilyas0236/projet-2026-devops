@@ -115,7 +115,11 @@ public class AuthController {
                 user.getReferralCode(),
                 user.isActive(),
                 user.isKycVerified(),
-                user.getCreatedAt()
+                user.getCreatedAt(),
+                user.getCategorieDemandee(),
+                user.getOrganismePresse(),
+                user.getMatchSouhaite(),
+                user.getMotifRefus()
         );
         return ResponseEntity.ok(response);
     }

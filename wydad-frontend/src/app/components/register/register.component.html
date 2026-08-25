@@ -4,8 +4,15 @@
     <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/40 to-black/60 z-0"></div>
     <div class="relative z-10 text-center px-12 animate-fade-in-up" style="transform: scaleX(-1);">
       <h1 class="text-9xl font-display text-white font-bold mb-4 opacity-90 drop-shadow-xl">WAC</h1>
-      <h2 class="text-3xl font-display text-white uppercase tracking-widest mb-6">Devenez Membre</h2>
-      <p class="text-white/80 text-lg max-w-md mx-auto">Inscrivez-vous et soutenez votre club de cœur.</p>
+      <h2 class="text-3xl font-display text-white uppercase tracking-widest mb-6">Rejoignez le Club</h2>
+      <p class="text-white/80 text-lg max-w-md mx-auto">Supporter, journaliste, joueur, entraîneur ou staff — choisissez votre statut, le club valide votre dossier.</p>
+    </div>
+
+    <!-- Étapes du circuit de validation -->
+    <div class="absolute bottom-10 left-0 right-0 z-10 flex justify-center gap-6 text-white/70 text-xs uppercase tracking-widest" style="transform: scaleX(-1);">
+      <span>1. Inscription</span><span class="text-wydad-red">→</span>
+      <span>2. Vérification par le club</span><span class="text-wydad-red">→</span>
+      <span>3. Accès à votre espace</span>
     </div>
   </div>
 
@@ -15,39 +22,114 @@
 
       <div class="text-center mb-8">
         <h2 class="text-3xl sm:text-4xl font-display text-ink-primary uppercase tracking-wide mb-2">Inscription</h2>
-        <p class="text-ink-secondary">Supporter Wydad Athletic Club</p>
+        <p class="text-ink-secondary">Wydad Athletic Club — créez votre compte</p>
       </div>
 
       <div class="paper-card p-6 sm:p-8 rounded-2xl">
 
-        <h3 class="text-ink-primary font-display uppercase tracking-wider mb-4 border-b border-paper-3 pb-2 text-lg">Informations Personnelles</h3>
+        <!-- ======== ÉTAPE 1 : CHOIX DU STATUT ======== -->
+        <h3 class="text-ink-primary font-display uppercase tracking-wider mb-1 border-b border-paper-3 pb-2 text-lg">
+          <span class="text-wydad-red mr-2">1.</span>Votre statut
+        </h3>
+        <p class="text-ink-tertiary text-xs mb-4 mt-2">Les statuts sportifs et presse sont soumis à validation par le club.</p>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-8" role="radiogroup" aria-label="Choix du statut">
+          <button type="button" *ngFor="let opt of options"
+                  (click)="choisirStatut(opt.valeur)"
+                  role="radio" [attr.aria-checked]="statut === opt.valeur"
+                  class="text-left rounded-xl border p-4 transition-all duration-200 group"
+                  [ngClass]="statut === opt.valeur
+                    ? 'border-wydad-red bg-wydad-red/5 shadow-sm'
+                    : 'border-paper-3 hover:border-wydad-red/50'">
+            <div class="flex items-start gap-3">
+              <span class="text-xl leading-none mt-0.5">{{ opt.icone }}</span>
+              <span>
+                <span class="block font-display text-sm uppercase tracking-wider font-semibold"
+                      [class.text-wydad-red]="statut === opt.valeur"
+                      [class.text-ink-primary]="statut !== opt.valeur">{{ opt.titre }}</span>
+                <span class="block text-xs text-ink-secondary mt-1 leading-snug">{{ opt.description }}</span>
+              </span>
+              <!-- Pastille de sélection -->
+              <span class="ml-auto shrink-0 w-4 h-4 rounded-full border-2 mt-1 transition-colors"
+                    [class.bg-wydad-red]="statut === opt.valeur"
+                    [class.border-wydad-red]="statut === opt.valeur"
+                    [class.border-paper-3]="statut !== opt.valeur"></span>
+            </div>
+          </button>
+        </div>
+
+        <!-- ======== ÉTAPE 2 : INFORMATIONS PERSONNELLES ======== -->
+        <h3 class="text-ink-primary font-display uppercase tracking-wider mb-4 border-b border-paper-3 pb-2 text-lg">
+          <span class="text-wydad-red mr-2">2.</span>Vos informations
+        </h3>
         <div class="flex flex-col sm:flex-row gap-4 mb-4">
           <div class="form-group flex-1">
-            <label for="reg-firstname" class="block mb-1 text-ink-secondary text-xs uppercase tracking-wider font-semibold">Prénom</label>
-            <input id="reg-firstname" type="text" class="paper-input w-full rounded-lg px-4 py-2.5" [(ngModel)]="firstName" placeholder="Prénom" autocomplete="given-name">
+            <label for="reg-firstname" class="block mb-1 text-ink-secondary text-xs uppercase tracking-wider font-semibold">Prénom *</label>
+            <input id="reg-firstname" type="text" class="paper-input w-full rounded-lg px-4 py-2.5" [(ngModel)]="firstName" name="firstName" placeholder="Prénom" autocomplete="given-name">
           </div>
           <div class="form-group flex-1">
-            <label for="reg-lastname" class="block mb-1 text-ink-secondary text-xs uppercase tracking-wider font-semibold">Nom</label>
-            <input id="reg-lastname" type="text" class="paper-input w-full rounded-lg px-4 py-2.5" [(ngModel)]="lastName" placeholder="Nom" autocomplete="family-name">
+            <label for="reg-lastname" class="block mb-1 text-ink-secondary text-xs uppercase tracking-wider font-semibold">Nom *</label>
+            <input id="reg-lastname" type="text" class="paper-input w-full rounded-lg px-4 py-2.5" [(ngModel)]="lastName" name="lastName" placeholder="Nom" autocomplete="family-name">
           </div>
         </div>
 
         <div class="form-group mb-4">
-          <label for="reg-email" class="block mb-1 text-ink-secondary text-xs uppercase tracking-wider font-semibold">Email</label>
-          <input id="reg-email" type="email" class="paper-input w-full rounded-lg px-4 py-2.5" [(ngModel)]="email" placeholder="exemple@wydad.ma" autocomplete="email">
+          <label for="reg-email" class="block mb-1 text-ink-secondary text-xs uppercase tracking-wider font-semibold">Email *</label>
+          <input id="reg-email" type="email" class="paper-input w-full rounded-lg px-4 py-2.5" [(ngModel)]="email" name="email" placeholder="exemple@wydad.ma" autocomplete="email">
         </div>
 
-        <div class="form-group mb-4">
-          <label for="reg-phone" class="block mb-1 text-ink-secondary text-xs uppercase tracking-wider font-semibold">Téléphone</label>
-          <input id="reg-phone" type="tel" class="paper-input w-full rounded-lg px-4 py-2.5" [(ngModel)]="phone" placeholder="+212 600-000000" autocomplete="tel">
+        <div class="flex flex-col sm:flex-row gap-4 mb-4">
+          <div class="form-group flex-1">
+            <label for="reg-phone" class="block mb-1 text-ink-secondary text-xs uppercase tracking-wider font-semibold">Téléphone *</label>
+            <input id="reg-phone" type="tel" class="paper-input w-full rounded-lg px-4 py-2.5" [(ngModel)]="phone" name="phone" placeholder="+212 600-000000" autocomplete="tel">
+          </div>
+          <div class="form-group flex-1">
+            <label for="reg-password" class="block mb-1 text-ink-secondary text-xs uppercase tracking-wider font-semibold">Mot de passe *</label>
+            <input id="reg-password" type="password" class="paper-input w-full rounded-lg px-4 py-2.5" [(ngModel)]="password" name="password" placeholder="Minimum 6 caractères" autocomplete="new-password">
+          </div>
         </div>
 
-        <div class="form-group mb-8">
-          <label for="reg-password" class="block mb-1 text-ink-secondary text-xs uppercase tracking-wider font-semibold">Mot de passe</label>
-          <input id="reg-password" type="password" class="paper-input w-full rounded-lg px-4 py-2.5" [(ngModel)]="password" placeholder="Minimum 6 caractères" autocomplete="new-password">
+        <!-- ======== CHAMPS CONDITIONNELS SELON LE STATUT ======== -->
+
+        <!-- Rôles sportifs : catégorie -->
+        <div *ngIf="estSportif" class="mb-6 p-4 rounded-xl bg-paper-1 border border-paper-3 animate-fade-in">
+          <label class="block mb-2 text-ink-primary text-xs uppercase tracking-wider font-semibold">
+            Catégorie souhaitée *
+            <span class="normal-case text-ink-tertiary font-normal">— {{ statut === 'JOUEUR' ? 'votre catégorie d\'âge' : 'catégorie que vous encadrerez' }}</span>
+          </label>
+          <div class="grid grid-cols-5 gap-2" role="radiogroup" aria-label="Catégorie sportive">
+            <button type="button" *ngFor="let cat of categories"
+                    (click)="categorieDemandee = cat"
+                    role="radio" [attr.aria-checked]="categorieDemandee === cat"
+                    class="py-2.5 rounded-lg border font-display text-sm tracking-wider transition-all duration-150"
+                    [ngClass]="categorieDemandee === cat
+                      ? 'bg-wydad-red text-white border-wydad-red'
+                      : 'border-paper-3 text-ink-secondary hover:border-wydad-red/60'">
+              {{ cat }}
+            </button>
+          </div>
         </div>
 
-        <h3 class="text-ink-primary font-display uppercase tracking-wider mb-4 border-b border-paper-3 pb-2 text-lg">Adhésion</h3>
+        <!-- Journaliste : accréditation presse -->
+        <div *ngIf="statut === 'JOURNALISTE'" class="mb-6 p-4 rounded-xl bg-paper-1 border border-paper-3 animate-fade-in space-y-4">
+          <p class="text-ink-secondary text-xs leading-relaxed">
+            <strong class="text-ink-primary">Accréditation presse.</strong> Après validation par le club, un badge officiel
+            avec QR code sera généré à votre nom.
+          </p>
+          <div class="form-group">
+            <label for="reg-organe" class="block mb-1 text-ink-secondary text-xs uppercase tracking-wider font-semibold">Organe / site de presse *</label>
+            <input id="reg-organe" type="text" class="paper-input w-full rounded-lg px-4 py-2.5" [(ngModel)]="organismePresse" name="organismePresse" placeholder="Ex : Le Matin, SportsDZ.ma...">
+          </div>
+          <div class="form-group !mb-0">
+            <label for="reg-match" class="block mb-1 text-ink-secondary text-xs uppercase tracking-wider font-semibold">Match à couvrir (optionnel)</label>
+            <input id="reg-match" type="text" class="paper-input w-full rounded-lg px-4 py-2.5" [(ngModel)]="matchSouhaite" name="matchSouhaite" placeholder="Ex : Wydad vs Raja — Botola Pro">
+          </div>
+        </div>
+
+        <!-- ======== ADHÉSION (paliers, vitrine informative) ======== -->
+        <h3 class="text-ink-primary font-display uppercase tracking-wider mb-4 border-b border-paper-3 pb-2 text-lg">
+          <span class="text-wydad-red mr-2">3.</span>Adhésion
+        </h3>
         <!-- S3 : le niveau n'est plus choisi à l'inscription (le serveur force ROUGE).
              Vitrine informative des paliers — la montée se fait après paiement. -->
         <div class="form-group mb-4" *ngIf="selectedTier; else tiersInfo">
@@ -59,7 +141,6 @@
         </div>
         <ng-template #tiersInfo>
           <div class="form-group mb-4">
-            <label class="block mb-1 text-ink-secondary text-xs uppercase tracking-wider font-semibold">Niveaux d'adhésion</label>
             <ul class="w-full bg-paper-1 border border-paper-3 text-ink-primary rounded-lg px-4 py-2.5 text-sm space-y-1">
               <li *ngFor="let t of tiers" class="flex justify-between"><span>{{ t.name }}</span><span class="text-ink-tertiary">{{ t.price }} DH/an</span></li>
             </ul>
@@ -68,20 +149,28 @@
         </ng-template>
 
         <div class="form-group mb-8">
-          <label for="reg-referral" class="block mb-1 text-ink-secondary text-xs uppercase tracking-wider font-semibold">Code de parrainage (Optionnel)</label>
-          <input id="reg-referral" type="text" class="paper-input w-full rounded-lg px-4 py-2.5" [(ngModel)]="referralCode" placeholder="Ex: WAC-REF-123">
+          <label for="reg-referral" class="block mb-1 text-ink-secondary text-xs uppercase tracking-wider font-semibold">Code de parrainage (optionnel)</label>
+          <input id="reg-referral" type="text" class="paper-input w-full rounded-lg px-4 py-2.5" [(ngModel)]="referralCode" name="referralCode" placeholder="Ex : WAC-REF-123">
         </div>
 
+        <!-- Bandeau d'attente pour les statuts validés par le club -->
+        <p *ngIf="statut !== 'ADHERENT'" class="text-ink-secondary text-xs mb-4 flex items-start gap-2">
+          <span class="text-wydad-red mt-0.5">⏳</span>
+          Votre demande sera examinée par le club. Vous recevrez une notification dès la décision —
+          la connexion est possible après validation.
+        </p>
+
         <button type="button" (click)="register()" [disabled]="loading || !isValidForm()"
-                class="paper-btn-primary w-full py-4 text-lg">
-          {{ loading ? 'Création du compte...' : 'Créer mon compte' }}
+                class="paper-btn-primary w-full py-4 text-lg disabled:opacity-50 disabled:cursor-not-allowed">
+          {{ loading ? 'Création du compte...' : (statut === 'ADHERENT' ? 'Créer mon compte' : 'Envoyer ma demande') }}
         </button>
 
         <div *ngIf="error" role="alert" class="mt-4 p-3 bg-wydad-red/[0.07] border border-wydad-red/30 text-wydad-red rounded-lg text-center text-sm font-medium animate-fade-in">
           {{ error }}
         </div>
         <div *ngIf="success" role="status" class="mt-4 p-3 bg-success/10 border border-success/25 text-success rounded-lg text-center text-sm font-medium animate-fade-in">
-          Compte créé avec succès ! Redirection vers la page de connexion...
+          {{ statut === 'ADHERENT' ? 'Compte créé avec succès !' : 'Demande envoyée ! Le club va l\'examiner.' }}
+          Redirection vers la page de connexion...
         </div>
 
         <div class="relative flex items-center justify-center mt-8 mb-6">

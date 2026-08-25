@@ -6,11 +6,12 @@ import jakarta.validation.constraints.*;
 // client à l'inscription. Le serveur attribue le niveau de départ (ROUGE) ;
 // la montée passe par POST /api/auth/upgrade après paiement.
 //
-// Phase 1 ter (Phase F roadmap) : demandeRole permet à un journaliste de
-// solliciter une accréditation presse dès l'inscription. Seule valeur
-// acceptée côté serveur : "JOURNALISTE" (tout autre rôle reste refusé —
-// un client ne choisit jamais son rôle privilégié). Le compte est alors
-// créé en EN_ATTENTE, dans la file de validation admin.
+// Choix du statut à l'inscription : demandeRole ∈ {JOURNALISTE, JOUEUR,
+// ENTRAINEUR, STAFF}. Toute demande crée le compte EN_ATTENTE dans la file
+// admin — un client sollicite un statut, il ne l'obtient qu'après validation.
+//   - JOUEUR / ENTRAINEUR / STAFF : categorieDemandee obligatoire
+//     (U15/U17/U18/U20/SENIOR — SENIOR est la catégorie sénior pro) ;
+//   - JOURNALISTE : organismePresse (site/média) + matchSouhaite obligatoires.
 public record RegisterRequest(
         @NotBlank @Email String email,
         @NotBlank String phone,
@@ -18,5 +19,8 @@ public record RegisterRequest(
         @NotBlank String firstName,
         @NotBlank String lastName,
         String referralCode,
-        String demandeRole
+        String demandeRole,
+        String categorieDemandee,
+        String organismePresse,
+        String matchSouhaite
 ) {}

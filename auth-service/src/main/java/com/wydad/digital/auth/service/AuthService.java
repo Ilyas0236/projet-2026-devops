@@ -44,6 +44,20 @@ public class AuthService {
     /** Niveau attribué à l'inscription : le plus bas payant (S3). */
     private static final MembershipLevel NIVEAU_INSCRIPTION = MembershipLevel.ROUGE;
 
+    /** Catégories sportives sollicitables à l'inscription (joueur/staff). */
+    private static final java.util.Set<String> CATEGORIES_VALIDES =
+            java.util.Set.of("U15", "U17", "U18", "U20", "SENIOR");
+
+    /** Rôles que le public peut solliciter à l'inscription. */
+    private static final java.util.Set<String> ROLES_SOLICITABLES =
+            java.util.Set.of("JOURNALISTE", "JOUEUR", "ENTRAINEUR", "STAFF");
+
+    /**
+     * Choix du statut à l'inscription : JOURNALISTE, JOUEUR, ENTRAINEUR ou
+     * STAFF → compte EN_ATTENTE dans la file de validation admin (avec
+     * catégorie sportive pour les rôles sportifs, organe + match souhaité
+     * pour la presse). Sans demande : ADHERENT VALIDE historique.
+     */
     public AuthResponse register(RegisterRequest request) {
         if (userRepository.existsByEmail(request.email())) {
             throw new EmailAlreadyExistsException(request.email());
@@ -52,11 +66,35 @@ public class AuthService {
             throw new EmailAlreadyExistsException(request.phone());
         }
 
-        // Phase 1 ter — seule demande de rôle acceptée du public : JOURNALISTE
-        // (accréditation presse). Tout autre rôle privilégié reste une décision
-        // admin exclusive ; un client ne choisit jamais ENTRAINEUR/PRESIDENT.
-        boolean demandeAccreditation =
-                "JOURNALISTE".equalsIgnoreCase(request.demandeRole());
+        Role roleDemande = Role.ADHERENT;
+        String categorie = null;
+        String organisme = null;
+        String match = null;
+        if (request.demandeRole() != null && !request.demandeRole().isBlank()) {
+            String demande = request.demandeRole().trim().toUpperCase();
+            if (!ROLES_SOLICITABLES.contains(demande)) {
+                throw new IllegalArgumentException(
+                        "Statut non sollicitable. Choisissez : adhérent, journaliste, joueur, entraîneur ou staff.");
+            }
+            roleDemande = Role.valueOf(demande);
+            if ("JOURNALISTE".equals(demande)) {
+                if (request.organismePresse() == null || request.organismePresse().isBlank()) {
+                    throw new IllegalArgumentException("L'organe de presse (site/média) est obligatoire");
+                }
+                organisme = request.organismePresse().trim();
+                match = request.matchSouhaite() != null && !request.matchSouhaite().isBlank()
+                        ? request.matchSouhaite().trim() : null;
+            } else {
+                // Rôle sportif : catégorie obligatoire et normalisée.
+                if (request.categorieDemandee() == null || request.categorieDemandee().isBlank()) {
+                    throw new IllegalArgumentException("La catégorie est obligatoire (U15/U17/U18/U20/SENIOR)");
+                }
+                categorie = request.categorieDemandee().trim().toUpperCase();
+                if (!CATEGORIES_VALIDES.contains(categorie)) {
+                    throw new IllegalArgumentException("Catégorie invalide — valeurs acceptées : U15, U17, U18, U20, SENIOR");
+                }
+            }
+        }
 
         User user = User.builder()
                 .email(request.email())
@@ -65,9 +103,12 @@ public class AuthService {
                 .firstName(request.firstName())
                 .lastName(request.lastName())
                 .membershipLevel(NIVEAU_INSCRIPTION)
-                .role(demandeAccreditation ? Role.JOURNALISTE : Role.ADHERENT)
-                // Un journaliste en attente d'accréditation passe par la file admin.
-                .statutCompte(demandeAccreditation ? StatutCompte.EN_ATTENTE : StatutCompte.VALIDE)
+                .role(roleDemande)
+                // Toute demande de statut passe par la file admin.
+                .statutCompte(roleDemande == Role.ADHERENT ? StatutCompte.VALIDE : StatutCompte.EN_ATTENTE)
+                .categorieDemandee(categorie)
+                .organismePresse(organisme)
+                .matchSouhaite(match)
                 .membershipExpiresAt(LocalDateTime.now().plusYears(1))
                 .referralCode(UUID.randomUUID().toString().substring(0, 8).toUpperCase())
                 .referredBy(request.referralCode())
@@ -546,7 +587,11 @@ public class AuthService {
                 user.getReferralCode(),
                 user.isActive(),
                 user.isKycVerified(),
-                user.getCreatedAt()
+                user.getCreatedAt(),
+                user.getCategorieDemandee(),
+                user.getOrganismePresse(),
+                user.getMatchSouhaite(),
+                user.getMotifRefus()
         );
     }
 
@@ -567,7 +612,8 @@ public class AuthService {
         // validation de l'admin (vérification des justificatifs) — même si le
         // compte était VALIDE en tant qu'adhérent. Un compte déjà REFUSE est
         // ré-examiné.
-        if (newRole == Role.ENTRAINEUR || newRole == Role.JOURNALISTE || newRole == Role.PRESIDENT) {
+        if (newRole == Role.ENTRAINEUR || newRole == Role.JOURNALISTE || newRole == Role.PRESIDENT
+                || newRole == Role.JOUEUR || newRole == Role.STAFF) {
             user.setStatutCompte(StatutCompte.EN_ATTENTE);
             user.setMotifRefus(null);
         }
@@ -591,9 +637,16 @@ public class AuthService {
         if (user.getStatutCompte() == StatutCompte.VALIDE) {
             throw new RuntimeException("Ce compte est déjà validé");
         }
-        if (user.getRole() != Role.ADMIN
-                && !(user.getRole() == Role.ENTRAINEUR || user.getRole() == Role.JOURNALISTE || user.getRole() == Role.PRESIDENT)) {
-            throw new RuntimeException("Seuls les comptes à rôle privilégié nécessitent une validation");
+        // Tout compte sollicité à l'inscription passe par la validation admin :
+        // JOURNALISTE, JOUEUR, ENTRAINEUR, STAFF (+ PRESIDENT via changement de
+        // rôle par l'admin). Un ADHERENT classique reste VALIDE d'office.
+        if (user.getRole() != Role.ADMIN && user.getRole() != Role.ADHERENT) {
+            boolean sollicitable = user.getRole() == Role.JOURNALISTE || user.getRole() == Role.JOUEUR
+                    || user.getRole() == Role.ENTRAINEUR || user.getRole() == Role.STAFF
+                    || user.getRole() == Role.PRESIDENT;
+            if (!sollicitable) {
+                throw new RuntimeException("Ce rôle ne nécessite pas de validation");
+            }
         }
         user.setStatutCompte(StatutCompte.VALIDE);
         user.setMotifRefus(null);
@@ -676,7 +729,11 @@ public class AuthService {
                 user.getReferralCode(),
                 user.isActive(),
                 user.isKycVerified(),
-                user.getCreatedAt()
+                user.getCreatedAt(),
+                user.getCategorieDemandee(),
+                user.getOrganismePresse(),
+                user.getMatchSouhaite(),
+                user.getMotifRefus()
         );
     }
 }

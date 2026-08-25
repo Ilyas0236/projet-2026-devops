@@ -15,30 +15,30 @@
         </div>
       </a>
 
-      <!-- Center: Navigation -->
-      <nav class="hidden lg:flex items-center gap-6 font-display text-xs font-medium tracking-widest uppercase">
-        <a routerLink="/" class="text-ink-secondary hover:text-wydad-red transition-colors duration-300 relative after:absolute after:left-0 after:-bottom-1.5 after:h-0.5 after:w-full after:bg-wydad-red after:scale-x-0 hover:after:scale-x-100 after:transition-transform after:origin-left" routerLinkActive="text-wydad-red after:scale-x-100" [routerLinkActiveOptions]="{exact: true}">Accueil</a>
-        <a routerLink="/actualites" class="text-ink-secondary hover:text-wydad-red transition-colors duration-300 relative after:absolute after:left-0 after:-bottom-1.5 after:h-0.5 after:w-full after:bg-wydad-red after:scale-x-0 hover:after:scale-x-100 after:transition-transform after:origin-left" routerLinkActive="text-wydad-red after:scale-x-100">Actualités</a>
-        <a routerLink="/matchs" class="text-ink-secondary hover:text-wydad-red transition-colors duration-300 relative after:absolute after:left-0 after:-bottom-1.5 after:h-0.5 after:w-full after:bg-wydad-red after:scale-x-0 hover:after:scale-x-100 after:transition-transform after:origin-left" routerLinkActive="text-wydad-red after:scale-x-100">Matchs</a>
-        <a routerLink="/effectif" class="text-ink-secondary hover:text-wydad-red transition-colors duration-300 relative after:absolute after:left-0 after:-bottom-1.5 after:h-0.5 after:w-full after:bg-wydad-red after:scale-x-0 hover:after:scale-x-100 after:transition-transform after:origin-left" routerLinkActive="text-wydad-red after:scale-x-100">Effectif</a>
-        <a routerLink="/palmares" class="text-ink-secondary hover:text-wydad-red transition-colors duration-300 relative after:absolute after:left-0 after:-bottom-1.5 after:h-0.5 after:w-full after:bg-wydad-red after:scale-x-0 hover:after:scale-x-100 after:transition-transform after:origin-left" routerLinkActive="text-wydad-red after:scale-x-100">Palmarès</a>
-        <a routerLink="/stade" class="text-ink-secondary hover:text-wydad-red transition-colors duration-300 relative after:absolute after:left-0 after:-bottom-1.5 after:h-0.5 after:w-full after:bg-wydad-red after:scale-x-0 hover:after:scale-x-100 after:transition-transform after:origin-left" routerLinkActive="text-wydad-red after:scale-x-100">Stade</a>
-        <a routerLink="/billetterie" class="text-ink-secondary hover:text-wydad-red transition-colors duration-300 relative after:absolute after:left-0 after:-bottom-1.5 after:h-0.5 after:w-full after:bg-wydad-red after:scale-x-0 hover:after:scale-x-100 after:transition-transform after:origin-left" routerLinkActive="text-wydad-red after:scale-x-100">Billetterie</a>
-        <a routerLink="/boutique" class="text-ink-secondary hover:text-wydad-red transition-colors duration-300 relative after:absolute after:left-0 after:-bottom-1.5 after:h-0.5 after:w-full after:bg-wydad-red after:scale-x-0 hover:after:scale-x-100 after:transition-transform after:origin-left" routerLinkActive="text-wydad-red after:scale-x-100">Boutique</a>
-        <a routerLink="/sondages" class="text-ink-secondary hover:text-wydad-red transition-colors duration-300 relative after:absolute after:left-0 after:-bottom-1.5 after:h-0.5 after:w-full after:bg-wydad-red after:scale-x-0 hover:after:scale-x-100 after:transition-transform after:origin-left" routerLinkActive="text-wydad-red after:scale-x-100">Sondages</a>
-        <a routerLink="/elections" class="text-ink-secondary hover:text-wydad-red transition-colors duration-300 relative after:absolute after:left-0 after:-bottom-1.5 after:h-0.5 after:w-full after:bg-wydad-red after:scale-x-0 hover:after:scale-x-100 after:transition-transform after:origin-left" routerLinkActive="text-wydad-red after:scale-x-100">Élections</a>
-        <a routerLink="/transparence" class="text-ink-secondary hover:text-wydad-red transition-colors duration-300 relative after:absolute after:left-0 after:-bottom-1.5 after:h-0.5 after:w-full after:bg-wydad-red after:scale-x-0 hover:after:scale-x-100 after:transition-transform after:origin-left" routerLinkActive="text-wydad-red after:scale-x-100">Transparence</a>
+      <!-- Center: Navigation (xl pour éviter le chevauchement TRANSPARENCE/CONNEXION à 1024px) -->
+      <nav class="hidden xl:flex items-center gap-4 2xl:gap-6 font-display text-[11px] font-medium tracking-wider xl:tracking-widest uppercase whitespace-nowrap">
+        <a routerLink="/" class="nav-link" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">Accueil</a>
+        <a routerLink="/actualites" class="nav-link" routerLinkActive="active">Actualités</a>
+        <a routerLink="/matchs" class="nav-link" routerLinkActive="active">Matchs</a>
+        <a routerLink="/effectif" class="nav-link" routerLinkActive="active">Effectif</a>
+        <a routerLink="/palmares" class="nav-link" routerLinkActive="active">Palmarès</a>
+        <a routerLink="/stade" class="nav-link" routerLinkActive="active">Stade</a>
+        <a routerLink="/billetterie" class="nav-link" routerLinkActive="active">Billetterie</a>
+        <a routerLink="/boutique" class="nav-link" routerLinkActive="active">Boutique</a>
+        <a routerLink="/sondages" class="nav-link" routerLinkActive="active">Sondages</a>
+        <a routerLink="/elections" class="nav-link" routerLinkActive="active">Élections</a>
+        <a routerLink="/transparence" class="nav-link" routerLinkActive="active">Transparence</a>
       </nav>
 
       <!-- Actions -->
-      <div class="flex items-center gap-4">
-        <a routerLink="/login" class="hidden md:inline-block text-ink-secondary hover:text-wydad-red font-display text-xs uppercase tracking-widest transition-colors">Connexion</a>
+      <div class="flex items-center gap-4 shrink-0">
+        <a routerLink="/login" class="hidden xl:inline-block text-ink-secondary hover:text-wydad-red font-display text-xs uppercase tracking-widest transition-colors">Connexion</a>
         <a routerLink="/register" class="hidden md:flex wydad-btn-primary items-center justify-center font-display text-xs tracking-widest uppercase px-6 py-2 skew-x-[-10deg]">
           <span class="skew-x-[10deg]">Inscription</span>
         </a>
 
         <!-- Mobile Menu Btn -->
-        <button class="lg:hidden w-10 h-10 flex flex-col justify-center gap-1.5 items-center text-ink-primary z-50 relative" (click)="toggleMobileMenu()" aria-label="Menu">
+        <button class="xl:hidden w-10 h-10 flex flex-col justify-center gap-1.5 items-center text-ink-primary z-50 relative" (click)="toggleMobileMenu()" aria-label="Menu">
           <span class="w-6 h-0.5 bg-current rounded transition-all" [class.rotate-45]="isMobileMenuOpen" [class.translate-y-2]="isMobileMenuOpen"></span>
           <span class="w-6 h-0.5 bg-current rounded transition-all" [class.opacity-0]="isMobileMenuOpen"></span>
           <span class="w-6 h-0.5 bg-current rounded transition-all self-end" [class.w-6]="isMobileMenuOpen" [class.-rotate-45]="isMobileMenuOpen" [class.-translate-y-2]="isMobileMenuOpen"></span>
@@ -49,14 +49,16 @@
   </header>
 
   <!-- Mobile Menu Overlay -->
-  <div *ngIf="isMobileMenuOpen" class="fixed inset-0 z-40 bg-white flex flex-col pt-24 px-6 pb-6 animate-fade-in lg:hidden">
-    <nav class="flex flex-col gap-6 font-display text-xl tracking-widest uppercase mt-8">
+  <div *ngIf="isMobileMenuOpen" class="fixed inset-0 z-40 bg-white flex flex-col pt-24 px-6 pb-6 animate-fade-in xl:hidden overflow-y-auto">
+    <nav class="flex flex-col gap-5 font-display text-xl tracking-widest uppercase mt-8">
       <a routerLink="/" (click)="toggleMobileMenu()" class="text-ink-secondary hover:text-wydad-red" routerLinkActive="text-wydad-red" [routerLinkActiveOptions]="{exact: true}">Accueil</a>
       <a routerLink="/actualites" (click)="toggleMobileMenu()" class="text-ink-secondary hover:text-wydad-red" routerLinkActive="text-wydad-red">Actualités</a>
       <a routerLink="/matchs" (click)="toggleMobileMenu()" class="text-ink-secondary hover:text-wydad-red" routerLinkActive="text-wydad-red">Matchs</a>
       <a routerLink="/effectif" (click)="toggleMobileMenu()" class="text-ink-secondary hover:text-wydad-red" routerLinkActive="text-wydad-red">Effectif</a>
       <a routerLink="/palmares" (click)="toggleMobileMenu()" class="text-ink-secondary hover:text-wydad-red" routerLinkActive="text-wydad-red">Palmarès</a>
       <a routerLink="/stade" (click)="toggleMobileMenu()" class="text-ink-secondary hover:text-wydad-red" routerLinkActive="text-wydad-red">Stade</a>
+      <a routerLink="/sondages" (click)="toggleMobileMenu()" class="text-ink-secondary hover:text-wydad-red" routerLinkActive="text-wydad-red">Sondages</a>
+      <a routerLink="/elections" (click)="toggleMobileMenu()" class="text-ink-secondary hover:text-wydad-red" routerLinkActive="text-wydad-red">Élections</a>
       <a routerLink="/legendes" (click)="toggleMobileMenu()" class="text-ink-secondary hover:text-wydad-red" routerLinkActive="text-wydad-red">Légendes</a>
       <a routerLink="/billetterie" (click)="toggleMobileMenu()" class="text-ink-secondary hover:text-wydad-red" routerLinkActive="text-wydad-red">Billetterie</a>
       <a routerLink="/boutique" (click)="toggleMobileMenu()" class="text-ink-secondary hover:text-wydad-red" routerLinkActive="text-wydad-red">Boutique</a>
