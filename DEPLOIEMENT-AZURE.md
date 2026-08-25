@@ -198,3 +198,30 @@ Le portail affiche directement **« Solde restant »** sur la page du sponsoring
 ---
 
 *Généré le 2026-08-24 — Wydad Digital · déploiement initial Azure*
+
+---
+
+## 6. Journal — 25/08/2026 : audit thématique + correctifs de routage public
+
+### Ce qui a été déployé
+- **Nouveaux services en prod** : `election-service` (:8089, élections président + sondages) et `communication-service` (:8090, messagerie privée + annonces staff + chat de groupe STOMP) → **15 conteneurs healthy**.
+- **Migrations thématiques** : sondages sortis de sports-service → election-service ; messaging/team-chat sortis de sports-service → communication-service (routes gateway `/api/sports/messaging|team-chat` conservées pour compatibilité front).
+- **Correctifs du jour** :
+  1. Surefire épinglé 3.2.5 + compiler 3.13.0 dans le parent pom — Maven ≤3.8 exécutait silencieusement **0 test** sur la VM.
+  2. `elections_db` / `communication_db` créées manuellement via psql (volume Postgres antérieur aux init-scripts) ; init-script mis à jour pour les futurs environnements.
+  3. Clé compose dupliquée (`networks.name`) supprimée.
+  4. Gateway : lecture publique `/api/polls/active` + `/api/elections/published/**` (exigence B.8) puis `/api/shop/products*` + `/api/ticket/events*` (commit 5d69380) — les services avaient déjà `permitAll`, c'est le filtre JWT global qui bloquait.
+
+### Preuves sur la VM (après rebuild gateway)
+```
+api/polls/active                 200   (public)
+api/elections/published/latest   204   (public, vide)
+api/shop/products                200   (public)
+api/ticket/events                200   (public)
+api/sports/messaging/inbox       401   (JWT requis)
+```
+Tests gateway : 5/5 verts local (`InternalRoutesBlockedTest` 3 + `PublicCatalogAccessTest` 2).
+
+### Reste à faire côté serveur
+- [ ] Installer le cron de sauvegarde : `bash scripts/install-backup-cron.sh`
+- [ ] Avant ouverture publique : changer mot de passe seed admin, régénérer secret LiveKit + clé Cloudinary
