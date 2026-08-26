@@ -43,6 +43,19 @@ public class GlobalExceptionHandler {
         ));
     }
 
+    /**
+     * Argument métier invalide (ex. e-cash refusé pour un visiteur) -> 400
+     * et non 500, pour que le front puisse afficher le message d'erreur.
+     */
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<Map<String, Object>> handleBadArgument(IllegalArgumentException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of(
+                "error", "BAD_REQUEST",
+                "message", ex.getMessage(),
+                "timestamp", LocalDateTime.now().toString()
+        ));
+    }
+
     /** Verrou non acquis (timeout 3s) ou conflit de version : conflit, pas une erreur serveur. */
     @ExceptionHandler({org.springframework.dao.CannotAcquireLockException.class,
                        org.springframework.orm.ObjectOptimisticLockingFailureException.class})
