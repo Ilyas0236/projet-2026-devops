@@ -46,6 +46,7 @@ class AuthAccreditationTest {
     @Mock JwtUtils jwtUtils;
     @Mock NotificationClient notificationClient;
     @Mock ContentClient contentClient;
+    @Mock com.wydad.digital.auth.client.SportsClient sportsClient;
 
     private AuthService authService;
 
@@ -53,7 +54,7 @@ class AuthAccreditationTest {
     void setUp() {
         authService = new AuthService(userRepository, kycDocumentRepository,
                 activeSessionRepository, passwordEncoder, jwtUtils,
-                null, null, null, null, notificationClient, contentClient);
+                null, null, null, null, notificationClient, contentClient, sportsClient);
     }
 
     /** Fabrique une demande complète ; les champs conditionnels sont null par défaut. */
