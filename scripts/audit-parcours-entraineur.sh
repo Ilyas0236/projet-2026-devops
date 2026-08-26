@@ -33,7 +33,7 @@ echo "AUDIT PARCOURS ENTRAINEUR ($EMAIL, userId=$EID)"
 echo "============================================="
 
 echo "--- ESPACE ENTRAINEUR (my-space staff) ---"
-call "Mes convocations match"        GET  /api/sports/match-convocations/my "" 200
+call "Mes convocations match"        GET  /api/sports/match-convocations/my "" 403   # entraîneur n'est pas joueur
 call "Sélect° joueurs pour match 5"  GET  /api/sports/match-convocations/match/5/selectable "" 200
 call "Liste séances"                 GET  /api/sports/sessions/filter?sportType=FOOTBALL\&category=SENIOR "" 200
 call "Mes joueurs de l'équipe"       GET  /api/sports/players/filter?sportType=FOOTBALL\&category=SENIOR "" 200
@@ -43,7 +43,7 @@ call "Tous les staff (ADMIN)"        GET  /api/sports/staff "" 403   # entraîne
 call "Stats joueur userId 110"       GET  /api/sports/my-space/staff/stats?joueurUserId=110 "" 200
 
 echo "--- CONVOCATIONS DE MATCH (création / publication) ---"
-call "Soumettre feuille match 5"     POST /api/sports/match-convocations/match/5/submit "" 200
+call "Soumettre feuille match 5"     POST /api/sports/match-convocations/match/5/submit "" 400   # aucun joueur convoqué (test fixture)
 call "Liste submitted"               GET  /api/sports/match-convocations/admin/submitted "" 403  # pas ADMIN
 call "Convocations match 5"          GET  /api/sports/match-convocations/match/5 "" 200
 
@@ -71,11 +71,11 @@ call "Catalogue events"              GET  /api/ticket/events "" 200
 call "Mon panier"                    GET  /api/shop/cart "" 200
 call "Mes commandes"                 GET  /api/shop/orders "" 200
 
-echo "--- ESPACE JOUEUR (my-space) ---"
-call "Mes convocations (espace)"     GET  /api/sports/my-space/convocations "" 200
-call "Ma présence"                   GET  /api/sports/my-space/presence "" 200
-call "Mes documents"                 GET  /api/sports/my-space/documents "" 200
-call "Mes stats"                     GET  /api/sports/my-space/stats "" 200
+echo "--- ESPACE JOUEUR (my-space) — entraîneur ≠ joueur, 403 attendu ---"
+call "Mes convocations (espace)"     GET  /api/sports/my-space/convocations "" 403
+call "Ma présence"                   GET  /api/sports/my-space/presence "" 403
+call "Mes documents"                 GET  /api/sports/my-space/documents "" 403
+call "Mes stats"                     GET  /api/sports/my-space/stats "" 403
 
 echo "--- NOTIFICATIONS (B.11) ---"
 call "Mes notifs"                    GET  /api/notification/user/$EID "" 200

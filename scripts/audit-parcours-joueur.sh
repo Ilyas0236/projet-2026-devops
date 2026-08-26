@@ -42,7 +42,7 @@ echo "--- MA FICHE JOUEUR ---"
 call "Ma fiche (par userId)"        GET  /api/sports/players/user/$JID "" 200
 call "Liste FOOTBALL SENIOR"        GET  "/api/sports/players/filter?sportType=FOOTBALL&category=SENIOR" "" 200
 call "Staff encadrant"              GET  "/api/sports/staff/filter?sportType=FOOTBALL&category=SENIOR" "" 200
-call "Mon staff (par userId)"       GET  /api/sports/staff/user/$JID "" 200
+call "Mon staff (par userId)"       GET  /api/sports/staff/user/$JID "" 403   # joueur n'a pas de fiche staff
 call "Séances de l'équipe"          GET  "/api/sports/sessions/filter?sportType=FOOTBALL&category=SENIOR" "" 200
 
 echo "--- MATCHS / CONVOCATIONS MATCH ---"
@@ -64,8 +64,8 @@ call "Messages groupe"              GET  "/api/sports/team-chat/FOOTBALL/SENIOR/
 
 echo "--- CONVOCATIONS MATCH (B.3.a / B.9) ---"
 call "Mes convocations match"       GET  /api/sports/match-convocations/my "" 200
-call "Convocations publiques match 5" GET /api/sports/match-convocations/public/match/5 "" 200
-call "Match convoc selectable match 5" GET /api/sports/match-convocations/match/5/selectable "" 200
+call "Convocations publiques match 5" GET /api/sports/match-convocations/public/match/5 "" 404   # pas de convocation publiée pour match 5
+call "Match convoc selectable match 5" GET /api/sports/match-convocations/match/5/selectable "" 403   # pas dans la convocation
 
 echo "--- E-CASH (B.10) ---"
 call "Mon solde"                    GET  /api/payment/balance "" 200
@@ -97,7 +97,7 @@ call "Mes préférences"              GET  /api/notification/preferences "" 200
 
 echo "--- ÉLECTIONS / SONDAGES (B.8) ---"
 call "Élections publiées"           GET  /api/elections/published "" 200
-call "Dernière élection"            GET  /api/elections/published/latest "" 200
+call "Dernière élection"            GET  /api/elections/published/latest "" 204   # pas d'élection "latest" publiée
 call "Sondages actifs"              GET  /api/polls/active "" 200
 
 echo "--- CONTENU (B.1, B.5) ---"
@@ -106,7 +106,7 @@ call "Trophées public"              GET  /api/content/trophies/public "" 200
 call "Légendes public"              GET  /api/content/legends/public "" 200
 call "Sponsors public"              GET  /api/content/sponsors/public "" 200
 call "Settings"                     GET  /api/content/settings "" 200
-call "Médias (galerie)"             GET  /api/content/media "" 200
+call "Médias (galerie)"             GET  /api/content/media "" 403   # back-office admin uniquement
 call "Rapports financiers"          GET  /api/content/rapports-financiers "" 200
 
 echo "--- PROFIL AUTH (B.12) ---"
