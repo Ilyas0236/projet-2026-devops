@@ -112,6 +112,17 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
             return chain.filter(exchange);
         }
 
+        // Gamification : leaderboard consultable sans compte — le service fait
+        // déjà permitAll sur ce GET (SecurityConfig gamification) ; la gateway
+        // doit laisser passer l'anonyme, sinon incohérence 401 côté visiteur.
+        if ("GET".equals(method) && path.equals("/api/gamification/leaderboard")) {
+            String gamAuthHeader = request.getHeaders().getFirst("Authorization");
+            if (gamAuthHeader != null && gamAuthHeader.startsWith("Bearer ")) {
+                return validateAndForward(exchange, chain);
+            }
+            return chain.filter(exchange);
+        }
+
         // Newsletter : inscription anonyme depuis le footer public du site.
         // Le service revalide deja via permitAll + validation serveur du format
         // email et de l'unicite (NewsletterSecurityTest) — la gateway ne doit
