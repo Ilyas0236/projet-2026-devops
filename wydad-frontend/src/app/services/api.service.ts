@@ -639,6 +639,53 @@ export class ApiService {
   }
 
   // ==========================================
+  // CONVOCATIONS DE MATCH (§8/§9) — feuille entraîneur → Admin → public
+  // ==========================================
+  /** Joueurs sélectionnables pour un match (groupe du match uniquement). */
+  getSelectablePlayers(matchId: number): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/sports/match-convocations/match/${matchId}/selectable`);
+  }
+
+  /** Convocation groupée d'un match : liste {joueurUserId, playerRole}. */
+  convocateBatchForMatch(matchId: number, players: { joueurUserId: number; playerRole: string }[]): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/sports/match-convocations/match/${matchId}`, { players });
+  }
+
+  /** Feuille de match (vue encadrement). */
+  getMatchSheet(matchId: number): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/sports/match-convocations/match/${matchId}`);
+  }
+
+  /** Soumission de la feuille à l'ADMIN. */
+  submitMatchSheet(matchId: number): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/sports/match-convocations/match/${matchId}/submit`, {});
+  }
+
+  /** Convocations de match du joueur connecté. */
+  getMyMatchConvocations(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/sports/match-convocations/my`);
+  }
+
+  /** §9 — vue publique anonyme des convocations PUBLIÉES d'un match. */
+  getPublicConvocations(matchId: number): Observable<any> {
+    return this.http.get(`${this.baseUrl}/sports/match-convocations/public/match/${matchId}`);
+  }
+
+  /** Feuilles soumises en attente de décision ADMIN. */
+  getSubmittedSheets(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/sports/match-convocations/admin/submitted`);
+  }
+
+  publishMatchSheet(matchId: number): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/sports/match-convocations/admin/match/${matchId}/publish`, {});
+  }
+
+  rejectMatchSheet(matchId: number, reason: string): Observable<any> {
+    return this.http.post<any>(
+      `${this.baseUrl}/sports/match-convocations/admin/match/${matchId}/reject`, { reason });
+  }
+
+  // ==========================================
   // PHASE 4 — CHAT DE GROUPE (WebSocket + repli REST)
   // ==========================================
   /** Historique persisté des 100 derniers messages du groupe. */

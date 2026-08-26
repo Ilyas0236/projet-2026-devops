@@ -65,6 +65,22 @@ public class ContentController {
         return ResponseEntity.ok(contentService.getMatchesByStatut(statut));
     }
 
+    /**
+     * Matchs du groupe de l'utilisateur connecté (joueur/staff) — le groupe
+     * est résolu côté serveur depuis sa fiche roster (§16/§26). Les
+     * visiteurs obtiennent une liste vide (pas d'erreur).
+     */
+    @GetMapping("/matches/mine")
+    public ResponseEntity<List<MatchResponse>> getMyMatches(
+            @RequestHeader(value = "X-User-Id", required = false) Long userId,
+            @RequestHeader(value = "X-User-Role", required = false) String role) {
+        boolean adminOrPresident = "ADMIN".equals(role) || "PRESIDENT".equals(role);
+        if (userId == null || userId <= 0 || (role == null)) {
+            return ResponseEntity.ok(List.of());
+        }
+        return ResponseEntity.ok(contentService.getMatchesForCurrentUser(userId, adminOrPresident));
+    }
+
     @PostMapping("/matches")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<MatchResponse> createMatch(@Valid @RequestBody MatchRequest request) {

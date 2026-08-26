@@ -171,8 +171,16 @@ export class DashboardJoueurComponent implements OnInit {
     this.api.getMyStats().subscribe({ next: d => this.matchStats = d, error: () => {} });
     this.api.getInbox().subscribe({ next: d => this.inbox = d, error: () => {} });
     this.api.getVisibleAnnouncements().subscribe({ next: d => this.announcements = d, error: () => {} });
+    // §8 — MES convocations de MATCH (titulaire/remplaçant), ownership serveur.
+    this.api.getMyMatchConvocations().subscribe({
+      next: d => this.matchConvocations = Array.isArray(d) ? d : [],
+      error: () => {}
+    });
     this.loadNotifications();
   }
+
+  /** §8 — convocations de match du joueur (distinctes des convocations de séance). */
+  matchConvocations: any[] = [];
 
   /** B.11 : charge l'inbox de notifications du membre connecté. */
   loadNotifications() {

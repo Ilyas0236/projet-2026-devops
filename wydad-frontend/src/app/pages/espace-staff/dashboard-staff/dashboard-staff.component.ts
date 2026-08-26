@@ -89,6 +89,19 @@ export class DashboardStaffComponent implements OnInit {
   isMedicalStaff = false;
   medicalPlayer: any = null;
 
+  // §8/§9 — feuille de match : convocations liées à un match RÉEL avec
+  // titulaire/remplaçant, soumises à l'Admin pour publication publique.
+  showMatchSheetForm = false;
+  programmeMatches: any[] = [];       // matchs PROGRAMME de SA discipline+catégorie
+  selectedMatchId: number | null = null;
+  selectableMatchPlayers: any[] = [];
+  /** userId → 'TITULAIRE' | 'REMPLACANT' */
+  matchRoles = new Map<number, string>();
+  existingSheet: any[] = [];          // feuille déjà enregistrée pour ce match
+  isLoadingMatchPlayers = false;
+  isSubmittingMatchSheet = false;
+  matchSheetMessage = '';
+
   // Transparence financière — rapports publiés par le club
   rapportsFinanciers: any[] = [];
 
@@ -181,6 +194,121 @@ export class DashboardStaffComponent implements OnInit {
     this.api.getSentMedia().subscribe({
       next: d => this.sentMedia = d,
       error: () => {}
+    });
+
+    // §8 — matchs PROGRAMME de SA discipline + catégorie (source content-service).
+    // Le filtrage local n'est qu'un confort : le serveur revalide de toute façon (403 sinon).
+    this.api.getMatchesByStatut('PROGRAMME').subscribe({
+      next: (list) => {
+        this.programmeMatches = (Array.isArray(list) ? list : []).filter(m =>
+          (!m.sport || m.sport === sport) && (!m.categorie || m.categorie === category));
+      },
+      error: () => {}
+    });
+  }
+
+  // ─────────────── §8/§9 — Feuille de match (convocations liées à un match) ───────────────
+
+  toggleMatchSheetForm() {
+    this.showMatchSheetForm = !this.showMatchSheetForm;
+    if (!this.showMatchSheetForm) { return; }
+    this.selectedMatchId = null;
+    this.selectableMatchPlayers = [];
+    this.matchRoles.clear();
+    this.existingSheet = [];
+    this.matchSheetMessage = '';
+  }
+
+  /** Sélection d'un match : charge les joueurs du groupe + la feuille existante. */
+  onMatchSelected() {
+    if (!this.selectedMatchId) { return; }
+    const matchId = Number(this.selectedMatchId);
+    this.isLoadingMatchPlayers = true;
+    this.matchRoles.clear();
+    this.existingSheet = [];
+    this.matchSheetMessage = '';
+
+    this.api.getSelectablePlayers(matchId).subscribe({
+      next: (players) => {
+        this.selectableMatchPlayers = players;
+        this.isLoadingMatchPlayers = false;
+      },
+      error: (err) => {
+        console.error(err);
+        this.isLoadingMatchPlayers = false;
+        this.toast.error(err?.error?.message || 'Chargement des joueurs impossible');
+      }
+    });
+
+    // Feuille déjà créée pour ce match (DRAFT/SOUMISE/PUBLIEE) → pré-remplissage.
+    this.api.getMatchSheet(matchId).subscribe({
+      next: (sheet) => {
+        this.existingSheet = sheet;
+        sheet.forEach((c: any) => {
+          this.matchRoles.set(c.joueurUserId, c.playerRole);
+        });
+        const status = sheet[0]?.status;
+        if (status === 'SOUMISE') {
+          this.matchSheetMessage = 'Feuille déjà soumise à l\'Admin — en attente de validation.';
+        } else if (status === 'PUBLIEE') {
+          this.matchSheetMessage = 'Feuille PUBLIÉE sur le site public.';
+        } else if (status === 'REFUSEE') {
+          this.matchSheetMessage = 'Feuille REFUSÉE par l\'Admin — corrigez-la puis resoumettez.';
+        }
+      },
+      error: () => {} // pas encore de feuille pour ce match
+    });
+  }
+
+  toggleMatchPlayer(userId: number) {
+    if (this.matchRoles.has(userId)) {
+      this.matchRoles.delete(userId);
+    } else {
+      this.matchRoles.set(userId, 'TITULAIRE');
+    }
+  }
+
+  setMatchRole(userId: number, role: string) {
+    this.matchRoles.set(userId, role);
+  }
+
+  get selectedMatch(): any | null {
+    return this.programmeMatches.find(m => m.id === Number(this.selectedMatchId)) ?? null;
+  }
+
+  submitMatchSheet() {
+    const matchId = this.selectedMatchId ? Number(this.selectedMatchId) : null;
+    if (!matchId || this.matchRoles.size === 0) { return; }
+    this.isSubmittingMatchSheet = true;
+    const players = [...this.matchRoles.entries()].map(([joueurUserId, playerRole]) =>
+      ({ joueurUserId, playerRole }));
+
+    this.api.convocateBatchForMatch(matchId, players).subscribe({
+      next: (res) => {
+        // Soumission immédiate à l'Admin (workflow §9 complet en un geste).
+        this.api.submitMatchSheet(matchId).subscribe({
+          next: () => {
+            this.isSubmittingMatchSheet = false;
+            const rejectedCount = res?.rejected?.length ?? 0;
+            if (rejectedCount > 0) {
+              this.toast.error(`${res.created} convocation(s), ${rejectedCount} rejetée(s) — ` +
+                res.rejected.map((r: any) => r.reason).join(' · '));
+            } else {
+              this.toast.success('Feuille de match enregistrée et soumise à l\'Admin');
+            }
+            this.onMatchSelected(); // recharge l'état (SOUMISE)
+          },
+          error: (err) => {
+            this.isSubmittingMatchSheet = false;
+            this.toast.error(err?.error?.message || 'Soumission à l\'Admin impossible');
+          }
+        });
+      },
+      error: (err) => {
+        console.error(err);
+        this.isSubmittingMatchSheet = false;
+        this.toast.error(err?.error?.message || 'Enregistrement de la feuille impossible');
+      }
     });
   }
 

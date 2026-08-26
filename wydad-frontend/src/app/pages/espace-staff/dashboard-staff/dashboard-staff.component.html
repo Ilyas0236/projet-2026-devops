@@ -61,6 +61,13 @@
           Convoquer
         </button>
 
+        <!-- §8 — feuille de match (convocations liées à un match réel) -->
+        <button *ngIf="programmeMatches.length > 0" (click)="toggleMatchSheetForm()"
+                class="paper-btn-primary py-3 px-6 shrink-0 flex items-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+          Feuille de match
+        </button>
+
         <button (click)="showAnnouncementForm = !showAnnouncementForm"
                 class="bg-white hover:bg-paper-2 text-ink-primary border border-paper-3 hover:border-wydad-red/40 rounded-xl py-3 px-6 text-xs font-bold uppercase tracking-widest transition-colors shrink-0 flex items-center gap-2 shadow-sm">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"/></svg>
@@ -199,6 +206,85 @@
           <button (click)="submitBatchConvocation()" [disabled]="!convoSessionId || selectedPlayerIds.size === 0 || isSubmittingBatch"
                   class="paper-btn-primary px-10 py-3 disabled:opacity-50">
             {{ isSubmittingBatch ? 'Envoi en cours…' : `Convoquer ${selectedPlayerIds.size} joueur(s)` }}
+          </button>
+        </div>
+      </div>
+
+      <!-- §8 — FORMULAIRE FEUILLE DE MATCH (match réel + titulaire/remplaçant) -->
+      <div *ngIf="showMatchSheetForm" class="paper-card rounded-[2rem] p-8 md:p-10 mb-12 animate-fade-in relative overflow-hidden">
+        <div class="absolute -right-20 -top-20 w-64 h-64 bg-wydad-red/5 rounded-full blur-3xl pointer-events-none"></div>
+        <div class="flex justify-between items-center mb-6 relative z-10">
+          <h2 class="section-title-light font-display text-xl font-bold uppercase tracking-wider">Feuille de match</h2>
+          <button (click)="toggleMatchSheetForm()" aria-label="Fermer la feuille de match"
+                  class="w-10 h-10 rounded-full bg-paper-1 hover:bg-paper-2 border border-paper-3 flex items-center justify-center text-ink-secondary transition-colors">
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+
+        <!-- Sélection du match (uniquement les matchs PROGRAMME de sa discipline+catégorie) -->
+        <label class="block text-[11px] font-bold uppercase tracking-widest text-ink-secondary mb-2" for="sheet-match">Match concerné *</label>
+        <select id="sheet-match" [(ngModel)]="selectedMatchId" (change)="onMatchSelected()" class="paper-input py-3 mb-4">
+          <option [ngValue]="null" disabled>Sélectionnez un match programmé…</option>
+          <option *ngFor="let m of programmeMatches" [ngValue]="m.id">
+            WAC vs {{ m.adversaire }} — {{ m.categorie }} · {{ m.date | date:'dd/MM/yyyy' }} {{ m.heure }} · {{ m.lieu }}
+          </option>
+        </select>
+
+        <!-- Message d'état (feuille déjà soumise / publiée / refusée) -->
+        <div *ngIf="matchSheetMessage" class="mb-6 p-4 rounded-2xl bg-wydad-red/5 border border-wydad-red/30 text-xs font-bold uppercase tracking-widest text-wydad-red">
+          {{ matchSheetMessage }}
+        </div>
+
+        <p *ngIf="isLoadingMatchPlayers" class="text-[10px] uppercase tracking-widest text-ink-tertiary mb-6">Chargement des joueurs…</p>
+
+        <div *ngIf="!isLoadingMatchPlayers && selectedMatchId && selectableMatchPlayers.length > 0"
+             class="relative z-10 mb-8">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-[11px] font-bold uppercase tracking-widest text-ink-secondary">
+              Joueurs convoqués ({{ matchRoles.size }}/{{ selectableMatchPlayers.length }})
+            </span>
+            <span class="text-[10px] uppercase tracking-widest text-ink-tertiary">Titulaire ou remplaçant (§8)</span>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 max-h-80 overflow-y-auto pr-1">
+            <label *ngFor="let p of selectableMatchPlayers"
+                   class="flex items-center gap-3 p-4 rounded-2xl border cursor-pointer transition-colors"
+                   [ngClass]="matchRoles.has(p.userId)
+                     ? 'bg-wydad-red/5 border-wydad-red/50'
+                     : 'bg-paper-1 border-paper-3 hover:border-wydad-red/30'">
+              <input type="checkbox" [checked]="matchRoles.has(p.userId)" (change)="toggleMatchPlayer(p.userId)"
+                     class="w-4 h-4 accent-red-600 shrink-0">
+              <span class="min-w-0 flex-1">
+                <span class="block font-bold text-sm text-ink-primary uppercase tracking-wide truncate">{{ p.fullName }}</span>
+                <span *ngIf="matchRoles.has(p.userId)" class="mt-1 flex gap-1">
+                  <button type="button" (click)="setMatchRole(p.userId, 'TITULAIRE'); $event.preventDefault()"
+                          class="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-widest transition-colors"
+                          [ngClass]="matchRoles.get(p.userId) === 'TITULAIRE'
+                            ? 'bg-wydad-red text-white' : 'bg-white text-ink-secondary border border-paper-3 hover:border-wydad-red/50'">
+                    Titulaire
+                  </button>
+                  <button type="button" (click)="setMatchRole(p.userId, 'REMPLACANT'); $event.preventDefault()"
+                          class="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-widest transition-colors"
+                          [ngClass]="matchRoles.get(p.userId) === 'REMPLACANT'
+                            ? 'bg-ink-primary text-white' : 'bg-white text-ink-secondary border border-paper-3 hover:border-wydad-red/50'">
+                    Remplaçant
+                  </button>
+                </span>
+              </span>
+              <span class="font-display font-black text-lg text-ink-tertiary">{{ p.jerseyNumber || '-' }}</span>
+            </label>
+          </div>
+        </div>
+
+        <div *ngIf="!isLoadingMatchPlayers && selectedMatchId && selectableMatchPlayers.length === 0 && existingSheet.length === 0"
+             class="text-xs uppercase tracking-widest text-ink-tertiary mb-6">
+          Aucun joueur dans votre groupe pour ce match.
+        </div>
+
+        <div class="flex justify-end relative z-10">
+          <button (click)="submitMatchSheet()"
+                  [disabled]="!selectedMatchId || matchRoles.size === 0 || isSubmittingMatchSheet"
+                  class="paper-btn-primary px-10 py-3 disabled:opacity-50">
+            {{ isSubmittingMatchSheet ? 'Soumission…' : `Enregistrer et soumettre à l'Admin (${matchRoles.size})` }}
           </button>
         </div>
       </div>

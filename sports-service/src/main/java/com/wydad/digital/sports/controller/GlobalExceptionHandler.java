@@ -72,6 +72,20 @@ public class GlobalExceptionHandler {
         ));
     }
 
+    /**
+     * ResponseStatusException (400/404 métier des convocations §8/§9) :
+     * sans ce handler, elle tombait dans le catch-all Exception en 500.
+     */
+    @ExceptionHandler(org.springframework.web.server.ResponseStatusException.class)
+    public ResponseEntity<Map<String, Object>> handleResponseStatus(
+            org.springframework.web.server.ResponseStatusException ex) {
+        return ResponseEntity.status(ex.getStatusCode()).body(Map.of(
+                "error", ex.getStatusCode().toString(),
+                "message", ex.getReason() != null ? ex.getReason() : "Erreur",
+                "timestamp", LocalDateTime.now().toString()
+        ));
+    }
+
     /** Erreurs de validation @Valid : 400 avec le détail des champs fautifs. */
     @ExceptionHandler(org.springframework.web.bind.MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, Object>> handleValidation(

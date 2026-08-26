@@ -27,6 +27,15 @@ export const roleGuard = (...allowedRoles: string[]): CanActivateFn => (route, s
 /** Espace joueur : réservé au rôle JOUEUR (valeur backend, enum Role.java). */
 export const joueurGuard: CanActivateFn = roleGuard('JOUEUR');
 
+/** Espace entraîneur : réservé au rôle ENTRAINEUR. */
+export const entraineurGuard: CanActivateFn = roleGuard('ENTRAINEUR');
+
+/** Espace journaliste : réservé au rôle JOURNALISTE. */
+export const journalisteGuard: CanActivateFn = roleGuard('JOURNALISTE');
+
+/** Espace président : réservé au rôle PRESIDENT. */
+export const presidentGuard: CanActivateFn = roleGuard('PRESIDENT');
+
 /**
  * Espace staff : STAFF, ENTRAINEUR et PRESIDENT (Phase 5 — le président et
  * l'entraîneur programment des appels depuis ce dashboard ; le serveur

@@ -39,9 +39,10 @@ import { ConfirmService } from '../../../services/confirm.service';
           <tbody class="divide-y divide-white/5">
             <tr *ngFor="let item of matchs" class="hover:bg-white/5 transition-colors">
               <td class="py-3 px-4 text-sm text-white font-bold flex items-center gap-2">
-                <img *ngIf="item.imageUrl" [src]="apiService.getMediaUrl(item.imageUrl)" class="w-8 h-8 object-contain rounded" alt="logo">
+                <img *ngIf="item.adversaireLogoUrl" [src]="apiService.getMediaUrl(item.adversaireLogoUrl)" class="w-8 h-8 object-contain rounded" alt="logo">
                 WAC - {{ item.adversaire }}
                 <span *ngIf="item.sport && item.sport !== 'FOOTBALL'" class="px-2 py-1 bg-white/10 rounded text-[10px] font-normal">{{ item.sport }}</span>
+                <span *ngIf="item.categorie" class="px-2 py-1 bg-wydad-red/20 text-wydad-red rounded text-[10px] font-normal uppercase">{{ item.categorie }}</span>
               </td>
               <td class="py-3 px-4 text-xs text-gray-400">{{ item.date | date:'dd/MM/yyyy' }} {{ item.heure }}</td>
               <td class="py-3 px-4 text-xs text-gray-400">{{ item.competition }}</td>
@@ -87,6 +88,12 @@ import { ConfirmService } from '../../../services/confirm.service';
                   <option value="JUDO">Judo</option>
                   <option value="ATHLETISME">Athlétisme</option>
                   <option value="GENERAL">Général</option>
+                </select>
+              </div>
+              <div class="admin-field">
+                <label class="admin-label">Catégorie<span class="req">*</span></label>
+                <select [(ngModel)]="currentMatch.categorie" class="admin-input" required>
+                  <option *ngFor="let c of categories" [value]="c">{{ c === 'SENIOR' ? 'Seniors' : c }}</option>
                 </select>
               </div>
               <div class="admin-field">
@@ -176,6 +183,9 @@ export class AdminMatchsComponent implements OnInit {
 
   competitions: any[] = [];
 
+  /** Catégories d'âge (§26) — alignées sur l'enum MatchCategory backend. */
+  readonly categories = ['U15', 'U17', 'U18', 'U20', 'SENIOR'];
+
   constructor(public apiService: ApiService,
               private toast: ToastService,
               private confirm: ConfirmService) {}
@@ -209,9 +219,9 @@ export class AdminMatchsComponent implements OnInit {
       this.currentMatch = { ...match };
     } else {
       this.isEdit = false;
-      // MatchRequest : date, heure, adversaire, competition, lieu, statut, sport
+      // MatchRequest : date, heure, adversaire, competition, lieu, statut, sport, categorie
       const comp = this.competitions.find(c => c.sport === 'FOOTBALL');
-      this.currentMatch = { adversaire: '', date: '', heure: '', lieu: 'Stade Mohammed V', competition: comp?.name || '', statut: 'PROGRAMME', sport: 'FOOTBALL', imageUrl: '' };
+      this.currentMatch = { adversaire: '', date: '', heure: '', lieu: 'Stade Mohammed V', competition: comp?.name || '', statut: 'PROGRAMME', sport: 'FOOTBALL', categorie: 'SENIOR', adversaireLogoUrl: '' };
     }
     this.showModal = true;
   }
@@ -224,7 +234,9 @@ export class AdminMatchsComponent implements OnInit {
     this.uploading = true;
     this.apiService.uploadMedia(file).subscribe({
       next: (res) => {
-        this.currentMatch.imageUrl = res.url;
+        // Le logo adverse est désormais persisté côté backend (§16)
+        this.currentMatch.adversaireLogoUrl = res.url;
+        this.currentMatch.imageUrl = res.url; // compat affichage preview
         this.uploading = false;
       },
       error: () => {
@@ -303,16 +315,18 @@ export class AdminMatchsComponent implements OnInit {
   }
 
   private payloadForBackend() {
-    // MatchRequest : date, heure, adversaire, competition, lieu, scoreWydad, scoreAdversaire, statut, sport
+    // MatchRequest : date, heure, adversaire, competition, lieu, statut, sport, categorie, adversaireLogoUrl
     const p: any = {
       date: this.currentMatch.date,
       // l'input time renvoie "HH:mm" ; LocalTime accepte aussi HH:mm:ss
       heure: (this.currentMatch.heure || '').length === 5 ? this.currentMatch.heure + ':00' : this.currentMatch.heure,
       adversaire: this.currentMatch.adversaire,
+      adversaireLogoUrl: this.currentMatch.adversaireLogoUrl || null,
       competition: this.currentMatch.competition,
       lieu: this.currentMatch.lieu,
       statut: this.currentMatch.statut,
-      sport: this.currentMatch.sport
+      sport: this.currentMatch.sport,
+      categorie: this.currentMatch.categorie || 'SENIOR'
     };
     if (this.currentMatch.scoreWydad != null) p.scoreWydad = this.currentMatch.scoreWydad;
     if (this.currentMatch.scoreAdversaire != null) p.scoreAdversaire = this.currentMatch.scoreAdversaire;

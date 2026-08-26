@@ -27,6 +27,10 @@ public class SecurityConfig {
                         // La gateway bloque de toute façon /api/sports/internal/**
                         // depuis l'extérieur.
                         .requestMatchers("/api/sports/internal/**").permitAll()
+                        // §9 — la liste des convocations PUBLIÉES apparaît
+                        // automatiquement sur le site public : lecture anonyme,
+                        // le service ne renvoie de toute façon que du PUBLIEE.
+                        .requestMatchers("/api/sports/match-convocations/public/**").permitAll()
                         // Toute la surface HTTP exige une identité propagée par la
                         // gateway. Les sondages (→ election-service) et le chat WS
                         // (→ communication-service) ont quitté ce service.

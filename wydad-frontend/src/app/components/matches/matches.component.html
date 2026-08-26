@@ -108,6 +108,36 @@
               {{ match.lieu }}
             </div>
           </div>
+
+          <!-- §9 — Convocations publiées (site public, lecture anonyme) -->
+          <button *ngIf="publicConvocations.get(match.id)" type="button"
+                  (click)="toggleConvocations(match.id)"
+                  class="mt-4 w-full flex items-center justify-between gap-2 bg-paper-1 hover:bg-paper-2 border border-paper-3 rounded-xl px-4 py-2.5 text-[10px] font-bold uppercase tracking-widest text-wydad-red transition-colors">
+            <span>Convocations publiées</span>
+            <svg class="w-4 h-4 transition-transform" [class.rotate-180]="expandedMatchId === match.id"
+                 fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+          </button>
+          <div *ngIf="publicConvocations.get(match.id) && expandedMatchId === match.id"
+               class="mt-3 bg-paper-1 border border-paper-3 rounded-xl p-4 animate-fade-in">
+            <p class="text-[10px] font-bold uppercase tracking-widest text-green-700 mb-2">Titulaires</p>
+            <ul class="space-y-1 mb-4">
+              <li *ngFor="let p of publicConvocations.get(match.id).titulaires"
+                  class="flex items-center gap-2 text-sm text-ink-primary">
+                <span class="font-display font-black text-wydad-red w-6 text-center">{{ p.jerseyNumber ?? '-' }}</span>
+                {{ p.fullName }}
+              </li>
+              <li *ngIf="publicConvocations.get(match.id).titulaires.length === 0" class="text-xs text-ink-tertiary italic">Aucun</li>
+            </ul>
+            <p class="text-[10px] font-bold uppercase tracking-widest text-ink-secondary mb-2">Remplaçants</p>
+            <ul class="space-y-1">
+              <li *ngFor="let p of publicConvocations.get(match.id).remplacants"
+                  class="flex items-center gap-2 text-sm text-ink-secondary">
+                <span class="font-display font-black text-ink-tertiary w-6 text-center">{{ p.jerseyNumber ?? '-' }}</span>
+                {{ p.fullName }}
+              </li>
+              <li *ngIf="publicConvocations.get(match.id).remplacants.length === 0" class="text-xs text-ink-tertiary italic">Aucun</li>
+            </ul>
+          </div>
         </div>
       </div>
     </div>

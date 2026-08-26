@@ -1,5 +1,6 @@
 package com.wydad.digital.content.dto;
 
+import com.wydad.digital.content.model.MatchCategory;
 import com.wydad.digital.content.model.MatchStatut;
 import com.wydad.digital.content.model.SportSection;
 import jakarta.validation.constraints.NotBlank;
@@ -17,5 +18,9 @@ public record MatchRequest(
         Integer scoreWydad,
         Integer scoreAdversaire,
         @NotNull MatchStatut statut,
-        @NotNull SportSection sport
+        @NotNull SportSection sport,
+        /** Catégorie d'âge (§26) — optionnelle pour compatibilité, à renseigner. */
+        MatchCategory categorie,
+        /** Logo de l'équipe adverse (médiathèque), jamais alimenté jusqu'ici. */
+        String adversaireLogoUrl
 ) {}

@@ -14,6 +14,10 @@ export class MatchesComponent implements OnInit {
   selectedSport = 'ALL';
   activeTab = 'calendar';
 
+  /** §9 — convocations PUBLIÉES par match (site public, lecture anonyme). */
+  publicConvocations = new Map<number, any>();
+  expandedMatchId: number | null = null;
+
   api = inject(ApiService);
 
   ngOnInit() {
@@ -24,9 +28,21 @@ export class MatchesComponent implements OnInit {
     this.api.getMatches().subscribe({
       next: (data) => {
         this.matches = data;
+        // §9 — charge la feuille publique de chaque match à venir
+        // (404 silencieuse quand aucune feuille n'a été publiée).
+        data.filter((m: any) => m.statut !== 'TERMINE').forEach((m: any) => {
+          this.api.getPublicConvocations(m.id).subscribe({
+            next: (v) => { if (v) { this.publicConvocations.set(m.id, v); } },
+            error: () => {}
+          });
+        });
       },
       error: () => this.matches = []
     });
+  }
+
+  toggleConvocations(matchId: number) {
+    this.expandedMatchId = this.expandedMatchId === matchId ? null : matchId;
   }
 
   filterSport(sport: string) {

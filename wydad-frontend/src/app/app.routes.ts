@@ -58,6 +58,7 @@ import { AdminSeancesComponent } from './pages/admin/admin-seances/admin-seances
 import { AdminJoueursPublicComponent } from './pages/admin/admin-joueurs-public/admin-joueurs-public.component';
 import { AdminPalmaresComponent } from './pages/admin/admin-palmares/admin-palmares.component';
 import { AdminLegendesComponent } from './pages/admin/admin-legendes/admin-legendes.component';
+import { AdminConvocationsComponent } from './pages/admin/admin-convocations/admin-convocations.component';
 import { LegendesComponent } from './pages/legendes/legendes.component';
 import { StadeComponent } from './pages/stade/stade.component';
 import { TransparenceComponent } from './pages/transparence/transparence.component';
@@ -76,6 +77,7 @@ export const routes: Routes = [
       { path: 'utilisateurs', component: AdminUsersComponent },
       { path: 'actualites', component: AdminActualitesComponent },
       { path: 'matchs', component: AdminMatchsComponent },
+      { path: 'convocations', component: AdminConvocationsComponent },
       { path: 'classements', component: AdminClassementsComponent },
       { path: 'boutique', component: AdminBoutiqueComponent },
       { path: 'commandes', component: AdminCommandesComponent },

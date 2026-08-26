@@ -49,6 +49,10 @@ public class Match {
     @Column(nullable = false)
     private SportSection sport;
 
+    /** Catégorie d'âge (§26). Nullable pour les matchs créés avant la mise en place. */
+    @Enumerated(EnumType.STRING)
+    private MatchCategory categorie;
+
     @CreationTimestamp
     private java.time.LocalDateTime createdAt;
 }

@@ -37,6 +37,8 @@ logging:
 # et faisait échouer en 403 tous les appels internes roster/chat.
 wydad:
   internal-secret: ${WYDAD_INTERNAL_SECRET:}
+  # §8 — convocations de match : la fiche match fait foi (content-service)
+  content-service-uri: ${CONTENT_SERVICE_URI:http://localhost:8082}
 
 # Phase 3 — médias tactiques (vidéo/photo/PDF) stockés sur Cloudinary.
 # Sans clés, MediaStorageService bascule en mode dégradé (référence locale).

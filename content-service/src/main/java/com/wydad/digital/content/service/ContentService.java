@@ -19,6 +19,7 @@ public class ContentService {
     private final ClassementRepository classementRepository;
     private final JoueurRepository joueurRepository;
     private final com.wydad.digital.content.client.GamificationClient gamificationClient;
+    private final com.wydad.digital.content.client.SportsRosterClient rosterClient;
 
     // ==================== ARTICLES ====================
     public ArticleResponse createArticle(ArticleRequest request) {
@@ -98,12 +99,14 @@ public class ContentService {
                 .date(request.date())
                 .heure(request.heure())
                 .adversaire(request.adversaire())
+                .adversaireLogoUrl(request.adversaireLogoUrl())
                 .competition(request.competition())
                 .lieu(request.lieu())
                 .scoreWydad(request.scoreWydad())
                 .scoreAdversaire(request.scoreAdversaire())
                 .statut(request.statut())
                 .sport(request.sport())
+                .categorie(request.categorie())
                 .build();
         Match saved = matchRepository.save(match);
         return mapToMatchResponse(saved);
@@ -121,6 +124,33 @@ public class ContentService {
 
     public java.util.Optional<MatchResponse> getMatchById(Long id) {
         return matchRepository.findById(id).map(this::mapToMatchResponse);
+    }
+
+    /**
+     * Matchs du groupe de l'appelant (§16 : « lorsque le match est créé, il
+     * doit automatiquement apparaître chez les utilisateurs concernés »).
+     * Le groupe est résolu SERVEUR-SIDE depuis la fiche roster (joueur ou
+     * staff) — jamais depuis des paramètres falsifiables. ADMIN/PRESIDENT
+     * voient tout.
+     */
+    public List<MatchResponse> getMatchesForCurrentUser(Long userId, boolean isAdminOrPresident) {
+        if (isAdminOrPresident) {
+            return getAllMatches();
+        }
+        var membership = rosterClient.fetchMembership(userId);
+        if (membership == null) {
+            // Aucune fiche joueur/staff : pas de groupe -> pas de matchs de groupe.
+            return List.of();
+        }
+        try {
+            SportSection sport = SportSection.valueOf(membership.sportType());
+            MatchCategory categorie = MatchCategory.valueOf(membership.category());
+            return matchRepository.findBySportAndCategorie(sport, categorie)
+                    .stream().map(this::mapToMatchResponse).collect(Collectors.toList());
+        } catch (IllegalArgumentException e) {
+            // Valeur d'enum hors périmètre (ex. GENERAL côté sports) : liste vide.
+            return List.of();
+        }
     }
 
     public MatchResponse updateMatchResult(Long id, Integer scoreWydad, Integer scoreAdversaire) {
@@ -144,12 +174,14 @@ public class ContentService {
         match.setDate(request.date());
         match.setHeure(request.heure());
         match.setAdversaire(request.adversaire());
+        match.setAdversaireLogoUrl(request.adversaireLogoUrl());
         match.setCompetition(request.competition());
         match.setLieu(request.lieu());
         match.setScoreWydad(request.scoreWydad());
         match.setScoreAdversaire(request.scoreAdversaire());
         match.setStatut(request.statut());
         match.setSport(request.sport());
+        match.setCategorie(request.categorie());
         Match saved = matchRepository.save(match);
         return mapToMatchResponse(saved);
     }
@@ -164,12 +196,14 @@ public class ContentService {
                 match.getDate(),
                 match.getHeure(),
                 match.getAdversaire(),
+                match.getAdversaireLogoUrl(),
                 match.getCompetition(),
                 match.getLieu(),
                 match.getScoreWydad(),
                 match.getScoreAdversaire(),
                 match.getStatut(),
-                match.getSport()
+                match.getSport(),
+                match.getCategorie()
         );
     }
 
