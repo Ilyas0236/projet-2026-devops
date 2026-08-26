@@ -43,6 +43,10 @@ public final class SportsUserContext {
         return "ADMIN".equals(CURRENT_USER_ROLE.get());
     }
 
+    public static boolean isPresident() {
+        return "PRESIDENT".equals(CURRENT_USER_ROLE.get());
+    }
+
     /** À appeler en fin de requête pour éviter les fuites entre threads. */
     public static void clear() {
         CURRENT_USER_ID.remove();

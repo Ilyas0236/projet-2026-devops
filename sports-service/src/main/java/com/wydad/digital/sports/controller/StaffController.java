@@ -59,12 +59,22 @@ public class StaffController {
         return ResponseEntity.ok(staffService.getStaffByTeam(sportType, category));
     }
 
-    /** Lecture d'un profil staff par userId : réservé à l'encadrement et au
-     * back-office (anti-IDOR : un JOUEUR ne peut pas sonder les profils staff). */
+    /** Lecture d'un profil staff par userId : ADMIN/PRESIDENT voient tout,
+     * un STAFF/ENTRAINEUR ne peut voir que SON propre profil (anti-énumération). */
     @GetMapping("/user/{userId}")
-    @PreAuthorize("hasRole('ENTRAINEUR') or hasRole('STAFF') or hasRole('ADMIN') "
-            + "or hasRole('PRESIDENT')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('PRESIDENT') or hasRole('ENTRAINEUR') or hasRole('STAFF')")
     public ResponseEntity<StaffDto> getStaffByUserId(@PathVariable Long userId) {
+        // Anti-énumération : un STAFF/ENTRAINEUR ne peut consulter que son propre profil
+        // (ADMIN/PRESIDENT passent le filtre ci-dessous)
+        boolean isAdminOrPresident = com.wydad.digital.sports.filter.SportsUserContext.isAdmin()
+                || com.wydad.digital.sports.filter.SportsUserContext.isPresident();
+        if (!isAdminOrPresident) {
+            Long currentUserId = com.wydad.digital.sports.filter.SportsUserContext.getCurrentUserId();
+            if (currentUserId == null || !currentUserId.equals(userId)) {
+                throw new org.springframework.security.access.AccessDeniedException(
+                        "Vous ne pouvez consulter que votre propre profil staff");
+            }
+        }
         return ResponseEntity.ok(staffService.getStaffByUserId(userId));
     }
 
