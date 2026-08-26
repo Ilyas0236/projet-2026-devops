@@ -76,7 +76,7 @@ echo ""
 # 7. Test refus paiement E-CASH
 echo ""
 echo "=== 7. Test refus E-CASH pour visiteur ==="
-GUEST_BODY3='{"eventId":'"$EVENT_ID"',"category":"VIP","quantity":1,"guestFirstName":"X","guestLastName":"Y","guestEmail":"autre-visiteur-$(date +%s%N | cut -c1-10)@wac.ma","guestPhone":"+21260$(date +%N | cut -c1-7)","paymentMethod":"ECASH"}'
+GUEST_BODY3='{"eventId":'"$EVENT_ID"',"category":"VIP","quantity":1,"guestFirstName":"X","guestLastName":"Y","guestEmail":"ecash-'$RANDOM$ANDOM'@wac.ma","guestPhone":"+21260'$RANDOM$RANDOM'","paymentMethod":"ECASH"}'
 curl -s -X POST http://localhost:8080/api/ticket/tickets/purchase-guest \
   -H 'Content-Type: application/json' \
   -d "$GUEST_BODY3" -w '\nHTTP:%{http_code}\n' | head -c 400
