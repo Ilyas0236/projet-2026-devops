@@ -23,6 +23,11 @@ export class ApiService {
     return this.http.get(`${this.baseUrl}/auth/attestation?email=${email}`, { responseType: 'blob' });
   }
 
+  /** Badge presse PDF+QR (§17) — compte JOURNALISTE validé requis. */
+  getBadgePresse(email: string): Observable<Blob> {
+    return this.http.get(`${this.baseUrl}/auth/presse/badge?email=${encodeURIComponent(email)}`, { responseType: 'blob' });
+  }
+
   upgradeMembership(email: string, newLevel: string): Observable<any> {
     return this.http.post(`${this.baseUrl}/auth/upgrade`, { email, newLevel });
   }
@@ -771,6 +776,11 @@ export class ApiService {
 
   getAllUsers(): Observable<any[]> {
     return this.http.get<any[]>(`${this.baseUrl}/auth/admin/users`);
+  }
+
+  /** File de validation : comptes EN_ATTENTE (écran admin « demandes »). */
+  getPendingDemandes(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/auth/admin/accounts/pending`);
   }
 
   // NB : changeUserRole/toggleUserActive vivent dans AuthService (utilisées

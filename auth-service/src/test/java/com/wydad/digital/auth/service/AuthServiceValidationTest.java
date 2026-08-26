@@ -62,7 +62,7 @@ class AuthServiceValidationTest {
     void setUp() {
         authService = new AuthService(userRepository, kycDocumentRepository,
                 activeSessionRepository, passwordEncoder, jwtUtils, null, null,
-                null, null, notificationClient);
+                null, null, notificationClient, null);
     }
 
     // ---------- Login bloqué si compte non VALIDE ----------

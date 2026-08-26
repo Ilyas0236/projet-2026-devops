@@ -1,10 +1,10 @@
-<!-- dashboard.component.html -->
+<!-- dashboard.component.html — Vue d'ensemble ADMIN : 100% données réelles -->
 <div class="space-y-6 animate-fade-in">
-  
-  <div class="flex justify-between items-end">
+
+  <div class="flex justify-between items-end flex-wrap gap-4">
     <div>
       <h1 class="text-3xl font-display font-bold text-text-primary uppercase tracking-wider">Vue d'ensemble</h1>
-      <p class="text-sm text-text-secondary mt-1">Statistiques et KPIs de l'écosystème Wydad Digital.</p>
+      <p class="text-sm text-text-secondary mt-1">Statistiques en direct de l'écosystème Wydad Digital.</p>
     </div>
     <div class="flex gap-3">
       <button (click)="exportCsv()" class="px-5 py-2.5 bg-surface-3 border border-white/[0.04] rounded-lg text-sm font-medium text-text-secondary hover:text-text-primary hover:bg-surface-4 transition-colors">Exporter</button>
@@ -14,155 +14,174 @@
     </div>
   </div>
 
-  <!-- KPI Cards -->
-  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-    <div *ngFor="let kpi of kpis; let i = index" 
-         class="bg-surface-3 p-6 rounded-xl border border-white/[0.04] shadow-sm relative overflow-hidden group animate-fade-in-up"
-         [ngStyle]="{'animation-delay': (i * 0.1) + 's'}">
-      <div class="absolute top-0 right-0 w-24 h-24 bg-wydad-red/5 rounded-full blur-2xl -mr-10 -mt-10 group-hover:bg-wydad-red/10 transition-colors"></div>
-      
-      <div class="flex justify-between items-start mb-4 relative z-10">
-        <div class="p-2.5 bg-surface-2 rounded-lg text-wydad-red border border-white/[0.02]">
-          <svg *ngIf="kpi.icon === 'users'" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
-          <svg *ngIf="kpi.icon === 'dollar-sign'" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
-          <svg *ngIf="kpi.icon === 'ticket'" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-          <svg *ngIf="kpi.icon === 'shopping-bag'" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
-        </div>
-        <span class="text-[11px] font-bold px-2 py-1 rounded-md" 
-              [ngClass]="kpi.isPositive ? 'text-green-400 bg-green-400/10 border border-green-400/20' : 'text-red-400 bg-red-400/10 border border-red-400/20'">
-          {{ kpi.change }}
-        </span>
-      </div>
-      <h3 class="text-text-secondary text-xs uppercase tracking-wider font-medium mb-1 relative z-10">{{ kpi.label }}</h3>
-      <p class="stat-number font-display text-3xl font-bold text-text-primary relative z-10">{{ kpi.value }}</p>
-    </div>
+  <!-- ÉTAT DE CHARGEMENT -->
+  <div *ngIf="loading" class="flex justify-center py-24">
+    <div class="w-10 h-10 border-4 border-wydad-red border-t-transparent rounded-full animate-spin"></div>
   </div>
 
-  <!-- Second Row: Charts & Upcoming -->
-  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fade-in-up" style="animation-delay: 0.4s;">
-    <!-- Revenue Chart Placeholder -->
-    <div class="lg:col-span-2 bg-surface-3 rounded-xl border border-white/[0.04] shadow-sm p-6 flex flex-col">
-      <div class="flex justify-between items-center mb-6">
-        <h3 class="text-lg font-display font-bold text-text-primary uppercase tracking-wider">Aperçu des Revenus</h3>
-        <select class="bg-surface-2 border border-white/[0.04] text-text-secondary text-xs rounded px-2 py-1 outline-none">
-          <option>Cette Année</option>
-          <option>Année Dernière</option>
-        </select>
-      </div>
-      <!-- Répartition des utilisateurs (données réelles) -->
-      <div class="flex-1 min-h-[200px] flex items-end gap-2 mt-4" *ngIf="!loading && !loadError; else chartEmpty">
-        <div class="flex-1 flex flex-col justify-end items-center gap-2">
-          <span class="text-sm font-bold text-text-primary">{{ totalUsers }}</span>
-          <div class="w-full bg-wydad-red/60 rounded-t-sm" [ngStyle]="{'height': '100%'}"></div>
-          <span class="text-[10px] text-text-tertiary uppercase">Total</span>
+  <!-- ERREUR GLOBALE : toutes les sources ont échoué -->
+  <div *ngIf="!loading && loadError" class="bg-surface-3 border border-red-500/30 rounded-xl p-8 text-center">
+    <p class="text-text-primary font-display uppercase tracking-wider">Impossible de charger les statistiques</p>
+    <p class="text-text-secondary text-sm mt-1">Vérifiez la connexion aux services puis rechargez la page.</p>
+  </div>
+
+  <div *ngIf="!loading && !loadError">
+
+    <!-- KPI CARDS — valeurs réelles uniquement -->
+    <div class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+      <div *ngFor="let kpi of kpis; let i = index"
+           class="bg-surface-3 p-5 rounded-xl border border-white/[0.04] shadow-sm relative overflow-hidden group animate-fade-in-up"
+           [ngStyle]="{'animation-delay': (i * 0.06) + 's'}">
+        <div class="absolute top-0 right-0 w-20 h-20 bg-wydad-red/5 rounded-full blur-2xl -mr-8 -mt-8 group-hover:bg-wydad-red/10 transition-colors"></div>
+        <div class="p-2.5 bg-surface-2 rounded-lg text-wydad-red border border-white/[0.02] w-fit mb-4 relative z-10">
+          <svg *ngIf="kpi.icon === 'users'" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          <svg *ngIf="kpi.icon === 'user-check'" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><polyline points="17 11 19 13 23 9"/></svg>
+          <svg *ngIf="kpi.icon === 'clock'" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <svg *ngIf="kpi.icon === 'calendar'" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          <svg *ngIf="kpi.icon === 'shopping-bag'" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+          <svg *ngIf="kpi.icon === 'revenue'" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
         </div>
-        <div class="flex-1 flex flex-col justify-end items-center gap-2">
-          <span class="text-sm font-bold text-text-primary">{{ activeUsers }}</span>
-          <div class="w-full bg-green-500/60 rounded-t-sm" [ngStyle]="{'height': totalUsers ? (activeUsers / totalUsers * 100) + '%' : '4%'}"></div>
-          <span class="text-[10px] text-text-tertiary uppercase">Actifs</span>
-        </div>
+        <p *ngIf="isFailed(kpi.source)" class="text-[10px] text-orange-400 uppercase tracking-widest font-bold mb-1 relative z-10">
+          Service indisponible
+        </p>
+        <h3 class="text-text-secondary text-xs uppercase tracking-wider font-medium mb-1 relative z-10">{{ kpi.label }}</h3>
+        <p class="stat-number font-display text-3xl font-bold text-text-primary relative z-10">{{ kpi.value }}</p>
       </div>
-      <ng-template #chartEmpty>
-        <p class="text-text-secondary text-sm py-10 text-center">Aucune donnée disponible.</p>
-      </ng-template>
     </div>
 
-    <!-- Upcoming Matches -->
-    <div class="bg-surface-3 rounded-xl border border-white/[0.04] shadow-sm p-6">
-      <div class="flex justify-between items-center mb-6">
-        <h3 class="text-lg font-display font-bold text-text-primary uppercase tracking-wider">Prochains Matchs</h3>
-        <a routerLink="/admin/matchs" class="text-text-secondary hover:text-wydad-red text-xs transition-colors cursor-pointer">Voir tout</a>
-      </div>
-      <div class="space-y-4" *ngIf="upcomingMatches.length; else noMatches">
-        <div *ngFor="let match of upcomingMatches" class="flex items-center gap-4 p-3 rounded-lg bg-surface-2 border border-white/[0.02] hover:border-white/[0.05] transition-colors">
-          <div class="w-12 h-12 rounded-full bg-surface-1 border border-white/[0.04] flex items-center justify-center text-text-primary font-display font-bold text-lg shadow-inner">
-            {{ match.adversaire?.charAt(0) }}
-          </div>
-          <div class="flex-1">
-            <p class="text-sm font-bold text-text-primary font-display uppercase tracking-wide">WAC vs {{ match.adversaire }}</p>
-            <div class="flex items-center gap-2 mt-1">
-              <span class="text-[10px] text-wydad-red font-bold uppercase">{{ match.competition }}</span>
-              <span class="w-1 h-1 rounded-full bg-surface-4"></span>
-              <span class="text-[10px] text-text-tertiary">{{ formatMatchDate(match) }}</span>
+    <!-- RANGÉE 2 : répartition rôles + prochains matchs -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fade-in-up" style="animation-delay: 0.25s;">
+
+      <!-- Répartition des comptes par rôle (calculée sur users réel) -->
+      <div class="lg:col-span-2 bg-surface-3 rounded-xl border border-white/[0.04] shadow-sm p-6 flex flex-col">
+        <div class="flex justify-between items-center mb-6">
+          <h3 class="text-lg font-display font-bold text-text-primary uppercase tracking-wider">Répartition des Comptes par Rôle</h3>
+          <a routerLink="/admin/utilisateurs" class="text-text-secondary hover:text-wydad-red text-xs transition-colors cursor-pointer">Gérer les utilisateurs</a>
+        </div>
+
+        <div *ngIf="roleDistribution.length; else rolesEmpty" class="space-y-4 flex-1 justify-center flex flex-col">
+          <div *ngFor="let r of roleDistribution">
+            <div class="flex justify-between items-baseline mb-1.5">
+              <span class="text-xs font-bold uppercase tracking-widest text-text-secondary">{{ r.label }}</span>
+              <span class="text-sm font-bold text-text-primary">{{ r.count }}
+                <span class="text-text-tertiary text-[10px] font-medium ml-1">({{ r.pct }}%)</span>
+              </span>
+            </div>
+            <div class="h-2 w-full rounded-full bg-surface-2 overflow-hidden">
+              <div class="h-full rounded-full transition-all duration-700"
+                   [ngClass]="r.label === 'ADMIN' || r.label === 'PRESIDENT' ? 'bg-wydad-red' : 'bg-wydad-red/50'"
+                   [style.width.%]="r.pct"></div>
             </div>
           </div>
         </div>
+        <ng-template #rolesEmpty>
+          <p class="text-text-secondary text-sm py-10 text-center">
+            {{ isFailed('users') ? 'Service comptes indisponible.' : 'Aucun compte pour le moment.' }}
+          </p>
+        </ng-template>
       </div>
-      <ng-template #noMatches>
-        <p class="text-text-secondary text-sm py-6 text-center">Aucun match programmé.</p>
-      </ng-template>
-    </div>
-  </div>
 
-  <!-- Third Row: Tables & Info -->
-  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fade-in-up" style="animation-delay: 0.5s;">
-    <!-- Recent Orders Table -->
-    <div class="lg:col-span-2 bg-surface-3 rounded-xl border border-white/[0.04] shadow-sm p-6 overflow-hidden">
-      <div class="flex justify-between items-center mb-6">
-        <h3 class="text-lg font-display font-bold text-text-primary uppercase tracking-wider">Commandes Récentes</h3>
-      </div>
-      <div class="overflow-x-auto" *ngIf="recentOrders.length; else noOrders">
-        <table class="w-full text-left border-collapse wydad-table">
-          <thead>
-            <tr class="border-b border-white/[0.04] text-[10px] uppercase tracking-widest text-text-tertiary font-display">
-              <th class="pb-3 font-medium">N° Commande</th>
-              <th class="pb-3 font-medium">Articles</th>
-              <th class="pb-3 font-medium">Montant</th>
-              <th class="pb-3 font-medium">Date</th>
-              <th class="pb-3 font-medium text-right">Statut</th>
-            </tr>
-          </thead>
-          <tbody class="text-sm text-text-secondary">
-            <tr *ngFor="let order of recentOrders" class="border-b border-white/[0.02] hover:bg-white/[0.01] transition-colors">
-              <td class="py-4 font-mono text-xs text-text-tertiary">{{ order.orderNumber }}</td>
-              <td class="py-4">{{ order.items?.length || 0 }} article(s)</td>
-              <td class="py-4 font-bold text-text-primary">{{ formatOrderAmount(order) }}</td>
-              <td class="py-4">{{ order.createdAt ? (order.createdAt | date:'dd/MM/yyyy HH:mm') : '—' }}</td>
-              <td class="py-4 text-right">
-                <span class="px-2 py-1 text-[10px] font-bold uppercase rounded-md"
-                      [ngClass]="{
-                        'text-green-400 bg-green-400/10': order.status === 'COMPLETED' || order.status === 'DELIVERED',
-                        'text-blue-400 bg-blue-400/10': order.status === 'PROCESSING' || order.status === 'SHIPPED',
-                        'text-orange-400 bg-orange-400/10': order.status === 'PENDING'
-                      }">
-                  {{ order.status }}
-                </span>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- Répartition utilisateurs (données réelles) -->
-    <div class="bg-surface-3 rounded-xl border border-white/[0.04] shadow-sm p-6 flex flex-col">
-      <h3 class="text-lg font-display font-bold text-text-primary uppercase tracking-wider mb-6">Comptes Utilisateurs</h3>
-      <div class="flex-1 flex flex-col items-center justify-center gap-4">
-        <div class="w-40 h-40 rounded-full border-8 border-green-500/60 relative flex items-center justify-center">
-          <div class="absolute inset-0 rounded-full border-8 border-wydad-red/70"
-               [style.clip-path]="'inset(0 ' + (totalUsers ? 100 - (activeUsers / totalUsers * 100) : 100) + '% 0 0)'"></div>
-          <div class="text-center z-10">
-            <span class="block text-3xl font-display font-bold text-text-primary">{{ totalUsers ? (activeUsers / totalUsers * 100) : 0 | number:'1.0-0' }}%</span>
-            <span class="text-[10px] text-text-tertiary uppercase tracking-wider">Actifs</span>
+      <!-- Prochains matchs (réels, triés par date) -->
+      <div class="bg-surface-3 rounded-xl border border-white/[0.04] shadow-sm p-6">
+        <div class="flex justify-between items-center mb-6">
+          <h3 class="text-lg font-display font-bold text-text-primary uppercase tracking-wider">Prochains Matchs</h3>
+          <a routerLink="/admin/matchs" class="text-text-secondary hover:text-wydad-red text-xs transition-colors cursor-pointer">Voir tout</a>
+        </div>
+        <div class="space-y-4" *ngIf="upcomingMatches.length; else noMatches">
+          <div *ngFor="let match of upcomingMatches" class="flex items-center gap-4 p-3 rounded-lg bg-surface-2 border border-white/[0.02] hover:border-white/[0.05] transition-colors">
+            <div class="w-12 h-12 rounded-full bg-surface-1 border border-white/[0.04] flex items-center justify-center text-text-primary font-display font-bold text-lg shadow-inner overflow-hidden shrink-0">
+              <img *ngIf="match.adversaireLogoUrl; else initial" [src]="match.adversaireLogoUrl" alt="" class="w-full h-full object-cover"/>
+              <ng-template #initial>{{ match.adversaire?.charAt(0) }}</ng-template>
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-bold text-text-primary font-display uppercase tracking-wide truncate">WAC vs {{ match.adversaire }}</p>
+              <div class="flex items-center gap-2 mt-1">
+                <span class="text-[10px] text-wydad-red font-bold uppercase">{{ match.competition }}</span>
+                <span class="w-1 h-1 rounded-full bg-surface-4 shrink-0"></span>
+                <span class="text-[10px] text-text-tertiary whitespace-nowrap">{{ formatMatchDate(match) }}</span>
+              </div>
+            </div>
           </div>
         </div>
-        <p class="text-sm text-text-secondary">{{ activeUsers }} actifs sur {{ totalUsers }} comptes</p>
-      </div>
-      <div class="mt-6 flex justify-center gap-6">
-        <div class="flex items-center gap-2">
-          <span class="w-3 h-3 rounded-full bg-green-500/60"></span>
-          <span class="text-xs text-text-secondary">Actifs</span>
-        </div>
-        <div class="flex items-center gap-2">
-          <span class="w-3 h-3 rounded-full bg-wydad-red/70"></span>
-          <span class="text-xs text-text-secondary">Inactifs</span>
-        </div>
+        <ng-template #noMatches>
+          <p class="text-text-secondary text-sm py-6 text-center">
+            {{ isFailed('matchs') ? 'Service calendrier indisponible.' : 'Aucun match programmé.' }}
+          </p>
+        </ng-template>
       </div>
     </div>
+
+    <!-- RANGÉE 3 : demandes en attente + commandes -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fade-in-up" style="animation-delay: 0.35s;">
+
+      <!-- File de validation (réelle) -->
+      <div class="bg-surface-3 rounded-xl border border-white/[0.04] shadow-sm p-6">
+        <div class="flex justify-between items-center mb-6">
+          <h3 class="text-lg font-display font-bold text-text-primary uppercase tracking-wider">Demandes en Attente</h3>
+          <a routerLink="/admin/demandes" class="text-text-secondary hover:text-wydad-red text-xs transition-colors cursor-pointer">Traiter</a>
+        </div>
+        <div class="space-y-3" *ngIf="pendingAccounts.length; else noDemandes">
+          <div *ngFor="let d of pendingAccounts.slice(0, 5)" class="flex items-center gap-3 p-3 rounded-lg bg-surface-2 border border-white/[0.02]">
+            <div class="w-9 h-9 rounded-full bg-wydad-red/15 text-wydad-red flex items-center justify-center font-bold text-sm shrink-0">
+              {{ (d.firstName?.charAt(0) || '') + (d.lastName?.charAt(0) || '') }}
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-bold text-text-primary truncate">{{ d.firstName }} {{ d.lastName }}</p>
+              <p class="text-[10px] text-text-tertiary uppercase tracking-widest mt-0.5">{{ d.role }}<span *ngIf="d.categorieDemandee"> · {{ d.disciplineDemandee }} {{ d.categorieDemandee }}</span></p>
+            </div>
+          </div>
+        </div>
+        <ng-template #noDemandes>
+          <p class="text-text-secondary text-sm py-6 text-center">
+            {{ isFailed('demandes') ? 'Service comptes indisponible.' : 'Aucune demande en attente — file vide.' }}
+          </p>
+        </ng-template>
+      </div>
+
+      <!-- Commandes récentes (réelles) -->
+      <div class="lg:col-span-2 bg-surface-3 rounded-xl border border-white/[0.04] shadow-sm p-6 overflow-hidden">
+        <div class="flex justify-between items-center mb-6">
+          <h3 class="text-lg font-display font-bold text-text-primary uppercase tracking-wider">Commandes Récentes</h3>
+          <a routerLink="/admin/commandes" class="text-text-secondary hover:text-wydad-red text-xs transition-colors cursor-pointer">Voir tout</a>
+        </div>
+        <div class="overflow-x-auto" *ngIf="recentOrders.length; else noOrders">
+          <table class="w-full text-left border-collapse wydad-table">
+            <thead>
+              <tr class="border-b border-white/[0.04] text-[10px] uppercase tracking-widest text-text-tertiary font-display">
+                <th class="pb-3 font-medium">N° Commande</th>
+                <th class="pb-3 font-medium">Articles</th>
+                <th class="pb-3 font-medium">Montant</th>
+                <th class="pb-3 font-medium">Date</th>
+                <th class="pb-3 font-medium text-right">Statut</th>
+              </tr>
+            </thead>
+            <tbody class="text-sm text-text-secondary">
+              <tr *ngFor="let order of recentOrders" class="border-b border-white/[0.02] hover:bg-white/[0.01] transition-colors">
+                <td class="py-4 font-mono text-xs text-text-tertiary">{{ order.orderNumber }}</td>
+                <td class="py-4">{{ order.items?.length || 0 }} article(s)</td>
+                <td class="py-4 font-bold text-text-primary">{{ formatOrderAmount(order) }}</td>
+                <td class="py-4">{{ order.createdAt ? (order.createdAt | date:'dd/MM/yyyy HH:mm') : '—' }}</td>
+                <td class="py-4 text-right">
+                  <span class="px-2 py-1 text-[10px] font-bold uppercase rounded-md"
+                        [ngClass]="{
+                          'text-green-400 bg-green-400/10': order.status === 'COMPLETED' || order.status === 'DELIVERED',
+                          'text-blue-400 bg-blue-400/10': order.status === 'PROCESSING' || order.status === 'SHIPPED',
+                          'text-orange-400 bg-orange-400/10': order.status === 'PENDING'
+                        }">
+                    {{ order.status }}
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <ng-template #noOrders>
+          <p class="text-text-secondary text-sm py-6 text-center">
+            {{ isFailed('commandes') ? 'Service boutique indisponible.' : 'Aucune commande pour le moment.' }}
+          </p>
+        </ng-template>
+      </div>
+    </div>
+
   </div>
-
-  <ng-template #noOrders>
-    <p class="text-text-secondary text-sm py-6 text-center">Aucune commande pour le moment.</p>
-  </ng-template>
-
 </div>

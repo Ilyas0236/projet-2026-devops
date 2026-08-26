@@ -71,7 +71,11 @@ export class RegisterComponent implements OnInit {
   disciplineDemandee = '';
   categorieDemandee = '';
   organismePresse = '';
-  matchSouhaite = '';
+  /** §17 : l'accréditation presse vise un match RÉEL du calendrier
+   * (id vérifié par le serveur auprès du content-service). */
+  matchId: number | null = null;
+  matchsDisponibles: any[] = [];
+  matchsLoading = false;
 
   authService = inject(AuthService);
   api = inject(ApiService);
@@ -106,7 +110,32 @@ export class RegisterComponent implements OnInit {
     this.disciplineDemandee = '';
     this.categorieDemandee = '';
     this.organismePresse = '';
-    this.matchSouhaite = '';
+    this.matchId = null;
+    if (valeur === 'JOURNALISTE') {
+      this.chargerMatchs();
+    }
+  }
+
+  /** §17 : le journaliste choisit parmi les matchs RÉELS du calendrier. */
+  chargerMatchs() {
+    if (this.matchsDisponibles.length || this.matchsLoading) return;
+    this.matchsLoading = true;
+    this.api.getMatches().subscribe({
+      next: (list) => {
+        this.matchsDisponibles = list;
+        this.matchsLoading = false;
+      },
+      error: () => {
+        this.matchsDisponibles = [];
+        this.matchsLoading = false;
+      }
+    });
+  }
+
+  /** Libellé lisible d'un match du calendrier. */
+  matchLabel(m: any): string {
+    const date = m.date ? new Date(m.date).toLocaleDateString('fr-FR') : '';
+    return `Wydad vs ${m.adversaire}${m.competition ? ' — ' + m.competition : ''}${date ? ', le ' + date : ''}`;
   }
 
   isValidForm(): boolean {
@@ -121,6 +150,8 @@ export class RegisterComponent implements OnInit {
     }
     if (this.estSportif && (!this.disciplineDemandee || !this.categorieDemandee)) return false;
     if (this.statut === 'JOURNALISTE' && this.organismePresse.trim().length === 0) return false;
+    // §17 : un match réel du calendrier est obligatoire pour la presse.
+    if (this.statut === 'JOURNALISTE' && !this.matchId) return false;
     return true;
   }
 
@@ -150,7 +181,8 @@ export class RegisterComponent implements OnInit {
       }
       if (this.statut === 'JOURNALISTE') {
         requestData.organismePresse = this.organismePresse.trim();
-        requestData.matchSouhaite = this.matchSouhaite.trim() || null;
+        // §17 : id du match réel choisi — le serveur vérifie son existence.
+        requestData.matchId = this.matchId;
       }
     }
 

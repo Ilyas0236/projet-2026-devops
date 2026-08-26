@@ -144,8 +144,15 @@
             <input id="reg-organe" type="text" class="paper-input w-full rounded-lg px-4 py-2.5" [(ngModel)]="organismePresse" name="organismePresse" placeholder="Ex : Le Matin, SportsDZ.ma...">
           </div>
           <div class="form-group !mb-0">
-            <label for="reg-match" class="block mb-1 text-ink-secondary text-xs uppercase tracking-wider font-semibold">Match à couvrir (optionnel)</label>
-            <input id="reg-match" type="text" class="paper-input w-full rounded-lg px-4 py-2.5" [(ngModel)]="matchSouhaite" name="matchSouhaite" placeholder="Ex : Wydad vs Raja — Botola Pro">
+            <label for="reg-match" class="block mb-1 text-ink-secondary text-xs uppercase tracking-wider font-semibold">Match à couvrir *</label>
+            <select id="reg-match" class="paper-input w-full rounded-lg px-4 py-2.5"
+                    [(ngModel)]="matchId" name="matchId" [disabled]="matchsLoading">
+              <option [ngValue]="null">{{ matchsLoading ? 'Chargement du calendrier…' : '— Choisir un match du calendrier —' }}</option>
+              <option *ngFor="let m of matchsDisponibles" [ngValue]="m.id">{{ matchLabel(m) }}</option>
+            </select>
+            <p class="text-ink-tertiary text-xs mt-1 !mb-0">
+              Votre accréditation est liée à un match réel du calendrier officiel (§17) — elle sera vérifiée par le club.
+            </p>
           </div>
         </div>
 

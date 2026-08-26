@@ -81,7 +81,14 @@ public class User {
     /** Accréditation presse (JOURNALISTE) : organe/site de travail déclaré. */
     private String organismePresse;
 
-    /** Accréditation presse : match pour lequel l'accès est sollicité. */
+    /**
+     * §17 — accréditation presse liée à un match RÉEL du calendrier
+     * content-service (id vérifié à l'inscription par appel interne).
+     * matchCouvreLabel en est le libellé figé affiché sur le badge.
+     */
+    private Long matchId;
+
+    /** Libellé figé du match couvert (ex. « Wydad vs Raja — Botola Pro »). */
     private String matchSouhaite;
 
     private boolean kycVerified = false;

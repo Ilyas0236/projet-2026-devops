@@ -70,7 +70,7 @@ class AuthBadgePresseTest {
         authService = new AuthService(userRepository, kycDocumentRepository,
                 activeSessionRepository, passwordEncoder, jwtUtils,
                 new QrCodeService(), new PdfService(), null, null,
-                null);
+                null, null);
         lenient().when(userRepository.findByEmail(anyString()))
                 .thenReturn(Optional.of(journaliste(StatutCompte.VALIDE)));
     }

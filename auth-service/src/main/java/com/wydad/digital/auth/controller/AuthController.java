@@ -151,6 +151,7 @@ public class AuthController {
                 user.getDisciplineDemandee(),
                 user.getCategorieDemandee(),
                 user.getOrganismePresse(),
+                user.getMatchId(),
                 user.getMatchSouhaite(),
                 user.getMotifRefus()
         );

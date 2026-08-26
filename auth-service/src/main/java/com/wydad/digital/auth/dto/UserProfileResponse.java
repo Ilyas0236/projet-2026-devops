@@ -27,6 +27,7 @@ public record UserProfileResponse(
         String disciplineDemandee,
         String categorieDemandee,
         String organismePresse,
+        Long matchId,
         String matchSouhaite,
         String motifRefus
 ) {}

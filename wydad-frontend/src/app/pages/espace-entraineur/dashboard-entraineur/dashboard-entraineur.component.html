@@ -1,0 +1,171 @@
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- WYDAD DIGITAL — ESPACE ENTRAÎNEUR (Thème clair blanc/rouge) -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="min-h-screen bg-paper-1 light-page text-ink-primary pt-28 pb-24">
+  <div class="container-wydad">
+
+    <!-- LOADING STATE -->
+    <div *ngIf="loading" class="flex justify-center py-32 animate-fade-in">
+      <div class="w-12 h-12 border-4 border-wydad-red border-t-transparent rounded-full animate-spin"></div>
+    </div>
+
+    <!-- ERREUR DE CHARGEMENT -->
+    <app-error-banner *ngIf="loadError && !loading"
+                      message="Impossible de charger votre espace entraîneur."
+                      detail="Vérifiez votre connexion puis réessayez."
+                      (retry)="retryLoad()"></app-error-banner>
+
+    <div *ngIf="!loading">
+
+      <!-- HERO bandeau rouge signature -->
+      <div class="relative w-full rounded-[2.5rem] overflow-hidden shadow-lg mb-10 red-band">
+        <div class="absolute inset-0 opacity-10 mix-blend-overlay z-0"
+             style="background-image: radial-gradient(#ffffff 1px, transparent 1px); background-size: 20px 20px;"></div>
+        <div class="relative z-10 p-8 md:p-12 text-white">
+          <p class="text-[11px] font-bold uppercase tracking-[0.3em] opacity-80 mb-2">Wydad Athletic Club</p>
+          <h1 class="font-display font-black text-3xl md:text-4xl uppercase tracking-wider mb-3">Espace Entraîneur</h1>
+          <p class="text-white/85 text-sm max-w-xl" *ngIf="staff">
+            {{ staff.sportType }} {{ staff.assignedCategory || staff.category }} —
+            pilotage de votre groupe : effectif, séances, matchs et réunions vidéo.
+          </p>
+          <p class="text-white/85 text-sm max-w-xl" *ngIf="!staff">
+            Votre compte n'est pas encore rattaché à une discipline et une catégorie.
+            Contactez l'administration du club.
+          </p>
+        </div>
+      </div>
+
+      <!-- PAS DE FICHE STAFF : pas de données simulées -->
+      <div *ngIf="!staff" class="paper-card rounded-3xl p-12 text-center max-w-lg mx-auto">
+        <div class="w-14 h-14 rounded-full bg-paper-2 border border-paper-3 flex items-center justify-center mx-auto mb-4">
+          <svg class="w-7 h-7 text-ink-tertiary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                  d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/>
+          </svg>
+        </div>
+        <p class="font-display uppercase tracking-wider text-ink-secondary">Affectation en attente</p>
+        <p class="text-ink-tertiary text-xs mt-2 leading-relaxed">
+          Aucun rattachement discipline + catégorie trouvé pour votre compte.
+          L'administration vous affectera un groupe pour débloquer votre espace.
+        </p>
+      </div>
+
+      <!-- ONGLETS (visibles seulement avec fiche staff) -->
+      <ng-container *ngIf="staff">
+        <div class="flex gap-2 mb-8 flex-wrap">
+          <button type="button" (click)="activeTab = 'effectif'"
+                  class="px-6 py-3 rounded-2xl text-xs font-bold uppercase tracking-wider transition-all"
+                  [class]="activeTab === 'effectif' ? 'bg-wydad-red text-white shadow-md' : 'paper-card text-ink-secondary hover:text-wydad-red'">
+            Effectif ({{ joueurs.length }})
+          </button>
+          <button type="button" (click)="activeTab = 'seances'"
+                  class="px-6 py-3 rounded-2xl text-xs font-bold uppercase tracking-wider transition-all"
+                  [class]="activeTab === 'seances' ? 'bg-wydad-red text-white shadow-md' : 'paper-card text-ink-secondary hover:text-wydad-red'">
+            Séances ({{ seances.length }})
+          </button>
+          <button type="button" (click)="activeTab = 'matchs'"
+                  class="px-6 py-3 rounded-2xl text-xs font-bold uppercase tracking-wider transition-all"
+                  [class]="activeTab === 'matchs' ? 'bg-wydad-red text-white shadow-md' : 'paper-card text-ink-secondary hover:text-wydad-red'">
+            Matchs ({{ matchs.length }})
+          </button>
+          <button type="button" (click)="activeTab = 'video'"
+                  class="px-6 py-3 rounded-2xl text-xs font-bold uppercase tracking-wider transition-all"
+                  [class]="activeTab === 'video' ? 'bg-wydad-red text-white shadow-md' : 'paper-card text-ink-secondary hover:text-wydad-red'">
+            Réunions vidéo
+          </button>
+        </div>
+
+        <!-- ═══ EFFECTIF ═══ -->
+        <section *ngIf="activeTab === 'effectif'" class="animate-fade-in-up">
+          <div class="paper-card rounded-3xl p-8">
+            <div *ngIf="joueurs.length; else aucunJoueur" class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead>
+                  <tr class="border-b border-paper-3 text-left text-[11px] uppercase tracking-widest text-ink-tertiary">
+                    <th class="py-3 pr-4">Joueur</th>
+                    <th class="py-3 pr-4">Poste</th>
+                    <th class="py-3 pr-4">Numéro</th>
+                    <th class="py-3">Catégorie</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let j of joueurs" class="border-b border-paper-2 hover:bg-paper-2/50">
+                    <td class="py-3 pr-4 font-bold">{{ j.name || j.firstName + ' ' + j.lastName }}</td>
+                    <td class="py-3 pr-4 text-ink-secondary">{{ j.position || '—' }}</td>
+                    <td class="py-3 pr-4 font-mono">{{ j.shirtNumber ?? '—' }}</td>
+                    <td class="py-3">
+                      <span class="px-3 py-1 rounded-full bg-wydad-red/10 text-wydad-red text-[10px] font-bold uppercase tracking-wider">
+                        {{ j.category || (staff.assignedCategory || staff.category) }}
+                      </span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <ng-template #aucunJoueur>
+              <p class="text-center text-ink-tertiary text-sm py-10">
+                Aucun joueur rattaché à votre groupe pour le moment.
+              </p>
+            </ng-template>
+          </div>
+        </section>
+
+        <!-- ═══ SÉANCES ═══ -->
+        <section *ngIf="activeTab === 'seances'" class="animate-fade-in-up">
+          <div class="grid gap-4 md:grid-cols-2">
+            <div *ngFor="let s of seances" class="paper-card rounded-3xl p-6">
+              <div class="flex items-start justify-between gap-4">
+                <div>
+                  <p class="text-[10px] uppercase tracking-widest text-ink-tertiary mb-1">{{ formatSeance(s) }}</p>
+                  <h4 class="font-display font-bold uppercase tracking-wider text-ink-primary">{{ s.titre || s.title || 'Séance d\'entraînement' }}</h4>
+                  <p class="text-ink-secondary text-sm mt-1">{{ s.lieu || s.location || 'Lieu à confirmer' }}</p>
+                </div>
+                <span class="shrink-0 px-3 py-1 rounded-full bg-wydad-red/10 text-wydad-red text-[10px] font-bold uppercase tracking-wider">
+                  {{ staff.sportType }} {{ staff.assignedCategory || staff.category }}
+                </span>
+              </div>
+            </div>
+            <div *ngIf="!seances.length" class="md:col-span-2 paper-card rounded-3xl p-10 text-center">
+              <p class="text-ink-tertiary text-sm">Aucune séance programmée pour votre catégorie.</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- ═══ MATCHS ═══ -->
+        <section *ngIf="activeTab === 'matchs'" class="animate-fade-in-up">
+          <div class="grid gap-4 md:grid-cols-2">
+            <div *ngFor="let m of matchs" class="paper-card rounded-3xl p-6">
+              <div class="flex items-center gap-4">
+                <div class="w-14 h-14 rounded-full bg-paper-2 border border-paper-3 flex items-center justify-center overflow-hidden shrink-0">
+                  <img *ngIf="m.adversaireLogoUrl; else initiale" [src]="m.adversaireLogoUrl" alt="" class="w-full h-full object-cover"/>
+                  <ng-template #initiale>
+                    <span class="font-display font-black text-ink-primary text-lg">{{ m.adversaire?.charAt(0) }}</span>
+                  </ng-template>
+                </div>
+                <div class="min-w-0">
+                  <h4 class="font-display font-bold uppercase tracking-wider text-ink-primary truncate">WAC vs {{ m.adversaire }}</h4>
+                  <p class="text-[10px] uppercase tracking-widest text-ink-tertiary mt-1">
+                    {{ m.competition }} · {{ formatMatchDate(m) }}
+                  </p>
+                </div>
+                <span class="ml-auto shrink-0 px-3 py-1 rounded-full bg-wydad-red/10 text-wydad-red text-[10px] font-bold uppercase tracking-wider">
+                  {{ m.statut || 'PROGRAMME' }}
+                </span>
+              </div>
+            </div>
+            <div *ngIf="!matchs.length" class="md:col-span-2 paper-card rounded-3xl p-10 text-center">
+              <p class="text-ink-tertiary text-sm">Aucun match de votre catégorie au calendrier.</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- ═══ VIDÉO (composants Phase 5) ═══ -->
+        <section *ngIf="activeTab === 'video'" class="animate-fade-in-up space-y-6">
+          <app-my-calls></app-my-calls>
+          <app-schedule-call-form></app-schedule-call-form>
+        </section>
+      </ng-container>
+
+    </div>
+  </div>
+</div>

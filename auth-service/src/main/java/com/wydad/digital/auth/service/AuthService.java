@@ -40,6 +40,7 @@ public class AuthService {
     private final OtpService otpService;
     private final CloudinaryService cloudinaryService;
     private final com.wydad.digital.auth.client.NotificationClient notificationClient;
+    private final com.wydad.digital.auth.client.ContentClient contentClient;
 
     /** Niveau attribué à l'inscription : le plus bas payant (S3). */
     private static final MembershipLevel NIVEAU_INSCRIPTION = MembershipLevel.ROUGE;
@@ -77,6 +78,7 @@ public class AuthService {
         String discipline = null;
         String categorie = null;
         String organisme = null;
+        Long matchIdDemande = null;
         String match = null;
         if (request.demandeRole() != null && !request.demandeRole().isBlank()) {
             String demande = request.demandeRole().trim().toUpperCase();
@@ -89,9 +91,21 @@ public class AuthService {
                 if (request.organismePresse() == null || request.organismePresse().isBlank()) {
                     throw new IllegalArgumentException("L'organe de presse (site/média) est obligatoire");
                 }
+                // §17 : l'accréditation vise un match RÉEL du calendrier —
+                // jamais un texte libre. L'id est vérifié auprès du
+                // content-service ; sans correspondance la demande est refusée.
+                if (request.matchId() == null) {
+                    throw new IllegalArgumentException(
+                            "Le choix d'un match réel du calendrier est obligatoire pour l'accréditation");
+                }
+                String label = contentClient.fetchMatchLabel(request.matchId());
+                if (label == null) {
+                    throw new IllegalArgumentException(
+                            "Match introuvable dans le calendrier du club : accréditation impossible");
+                }
+                matchIdDemande = request.matchId();
+                match = label;
                 organisme = request.organismePresse().trim();
-                match = request.matchSouhaite() != null && !request.matchSouhaite().isBlank()
-                        ? request.matchSouhaite().trim() : null;
             } else {
                 // Rôle sportif : le couple DISCIPLINE + CATÉGORIE est obligatoire —
                 // c'est ce couple qui isole les groupes dans toute la plateforme.
@@ -125,6 +139,7 @@ public class AuthService {
                 .disciplineDemandee(discipline)
                 .categorieDemandee(categorie)
                 .organismePresse(organisme)
+                .matchId(matchIdDemande)
                 .matchSouhaite(match)
                 .membershipExpiresAt(LocalDateTime.now().plusYears(1))
                 .referralCode(UUID.randomUUID().toString().substring(0, 8).toUpperCase())
@@ -251,7 +266,8 @@ public class AuthService {
             throw new CompteNonValideException(user.getStatutCompte(), user.getMotifRefus());
         }
         String qrData = "WAC-PRESSE|" + user.getFirstName() + "|" + user.getLastName()
-                + "|" + (user.getOrganismePresse() != null ? user.getOrganismePresse() : "");
+                + "|" + (user.getOrganismePresse() != null ? user.getOrganismePresse() : "")
+                + "|" + (user.getMatchId() != null ? user.getMatchId().toString() : "-");
         try {
             String qrBase64 = qrCodeService.generateQrCode(qrData, 300, 300);
             return pdfService.generateBadgePresse(user, qrBase64);
@@ -639,6 +655,7 @@ public class AuthService {
                 user.getDisciplineDemandee(),
                 user.getCategorieDemandee(),
                 user.getOrganismePresse(),
+                user.getMatchId(),
                 user.getMatchSouhaite(),
                 user.getMotifRefus()
         );
@@ -782,6 +799,7 @@ public class AuthService {
                 user.getDisciplineDemandee(),
                 user.getCategorieDemandee(),
                 user.getOrganismePresse(),
+                user.getMatchId(),
                 user.getMatchSouhaite(),
                 user.getMotifRefus()
         );
