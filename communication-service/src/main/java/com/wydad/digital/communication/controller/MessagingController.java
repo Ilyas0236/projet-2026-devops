@@ -28,7 +28,7 @@ public class MessagingController {
     // ─────────────────────────── MESSAGERIE ───────────────────────────
 
     @PostMapping("/send")
-    @PreAuthorize("hasRole('JOUEUR') or hasRole('STAFF') or hasRole('ADMIN')")
+    @PreAuthorize("hasRole('JOUEUR') or hasRole('STAFF') or hasRole('ADMIN') or hasRole('PRESIDENT')")
     public ResponseEntity<Message> send(
             @RequestParam Long toUserId,
             @RequestBody SendRequest body) {
@@ -37,13 +37,13 @@ public class MessagingController {
     }
 
     @GetMapping("/conversation/{otherUserId}")
-    @PreAuthorize("hasRole('JOUEUR') or hasRole('STAFF') or hasRole('ADMIN')")
+    @PreAuthorize("hasRole('JOUEUR') or hasRole('STAFF') or hasRole('ADMIN') or hasRole('PRESIDENT')")
     public ResponseEntity<List<Message>> conversation(@PathVariable Long otherUserId) {
         return ResponseEntity.ok(messagingService.getConversationWith(otherUserId));
     }
 
     @GetMapping("/inbox")
-    @PreAuthorize("hasRole('JOUEUR') or hasRole('STAFF') or hasRole('ADMIN')")
+    @PreAuthorize("hasRole('JOUEUR') or hasRole('STAFF') or hasRole('ADMIN') or hasRole('PRESIDENT')")
     public ResponseEntity<List<Message>> inbox() {
         return ResponseEntity.ok(messagingService.getMyInbox());
     }
@@ -66,7 +66,7 @@ public class MessagingController {
 
     /** Annonces visibles par le connecté : club + SA catégorie (filtrage serveur). */
     @GetMapping("/announcements")
-    @PreAuthorize("hasRole('JOUEUR') or hasRole('STAFF') or hasRole('ADMIN')")
+    @PreAuthorize("hasRole('JOUEUR') or hasRole('STAFF') or hasRole('ADMIN') or hasRole('PRESIDENT')")
     public ResponseEntity<List<Announcement>> visibleAnnouncements() {
         return ResponseEntity.ok(messagingService.getVisibleAnnouncements());
     }

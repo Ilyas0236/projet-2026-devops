@@ -1,0 +1,258 @@
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- WYDAD DIGITAL — ESPACE PRÉSIDENT (Thème clair blanc/rouge)  -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="min-h-screen bg-paper-1 light-page text-ink-primary pt-28 pb-24">
+  <div class="container-wydad">
+
+    <!-- LOADING STATE -->
+    <div *ngIf="loading" class="flex justify-center py-32 animate-fade-in">
+      <div class="w-12 h-12 border-4 border-wydad-red border-t-transparent rounded-full animate-spin"></div>
+    </div>
+
+    <!-- ERREUR DE CHARGEMENT -->
+    <app-error-banner *ngIf="loadError && !loading"
+                      message="Impossible de charger votre espace président."
+                      detail="Vérifiez votre connexion puis réessayez."
+                      (retry)="retryLoad()"></app-error-banner>
+
+    <div *ngIf="!loading">
+
+      <!-- HERO bandeau rouge signature -->
+      <div class="relative w-full rounded-[2.5rem] overflow-hidden shadow-lg mb-10 red-band">
+        <div class="absolute inset-0 opacity-10 mix-blend-overlay z-0"
+             style="background-image: radial-gradient(#ffffff 1px, transparent 1px); background-size: 20px 20px;"></div>
+        <div class="relative z-10 p-8 md:p-12 text-white">
+          <p class="text-[11px] font-bold uppercase tracking-[0.3em] opacity-80 mb-2">Wydad Athletic Club</p>
+          <h1 class="font-display font-black text-3xl md:text-4xl uppercase tracking-wider mb-3">Espace Président</h1>
+          <p class="text-white/85 text-sm max-w-xl">Messagerie directe avec vos agents et joueurs,
+            émission des reçus de salaires et primes, réunions vidéo du club.</p>
+        </div>
+      </div>
+
+      <!-- ONGLETS -->
+      <div class="flex gap-2 mb-8 flex-wrap">
+        <button type="button" (click)="activeTab = 'messagerie'"
+                class="px-6 py-3 rounded-2xl text-xs font-bold uppercase tracking-wider transition-all"
+                [class]="activeTab === 'messagerie' ? 'bg-wydad-red text-white shadow-md' : 'paper-card text-ink-secondary hover:text-wydad-red'">
+          Messagerie
+        </button>
+        <button type="button" (click)="activeTab = 'recus'"
+                class="px-6 py-3 rounded-2xl text-xs font-bold uppercase tracking-wider transition-all"
+                [class]="activeTab === 'recus' ? 'bg-wydad-red text-white shadow-md' : 'paper-card text-ink-secondary hover:text-wydad-red'">
+          Reçus salaires &amp; primes
+        </button>
+        <button type="button" (click)="activeTab = 'video'"
+                class="px-6 py-3 rounded-2xl text-xs font-bold uppercase tracking-wider transition-all"
+                [class]="activeTab === 'video' ? 'bg-wydad-red text-white shadow-md' : 'paper-card text-ink-secondary hover:text-wydad-red'">
+          Réunions vidéo
+        </button>
+      </div>
+
+      <!-- ═════════ ONGLET MESSAGERIE ═════════ -->
+      <section *ngIf="activeTab === 'messagerie'" class="animate-fade-in-up grid gap-6 lg:grid-cols-5">
+
+        <!-- Boîte de réception / contacts -->
+        <div class="lg:col-span-2 paper-card rounded-3xl p-6">
+          <h3 class="font-display font-bold uppercase tracking-wider text-lg mb-4 flex items-center gap-2">
+            <svg class="w-5 h-5 text-wydad-red" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7"
+                    d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+            </svg>
+            Boîte de réception
+          </h3>
+
+          <div *ngIf="inboxLoading" class="flex justify-center py-8">
+            <div class="w-8 h-8 border-3 border-wydad-red border-t-transparent rounded-full animate-spin"></div>
+          </div>
+
+          <div *ngIf="!inboxLoading && contacts.length === 0" class="text-center py-8">
+            <p class="text-ink-tertiary text-sm">Aucun message pour le moment.</p>
+            <p class="text-ink-tertiary text-xs mt-1">Les messages de vos agents et joueurs apparaîtront ici.</p>
+          </div>
+
+          <ul class="space-y-2 max-h-[28rem] overflow-y-auto">
+            <li *ngFor="let c of contacts">
+              <button type="button" (click)="selectContact(c.id)"
+                      class="w-full text-left px-4 py-3 rounded-2xl transition-colors border"
+                      [class]="selectedContactId === c.id
+                        ? 'bg-wydad-red/5 border-wydad-red/40'
+                        : 'border-transparent hover:bg-paper-2'">
+                <span class="block text-sm font-bold text-ink-primary">{{ c.name }}</span>
+                <span class="block text-[11px] uppercase tracking-widest text-ink-tertiary mt-0.5">{{ c.role }}</span>
+              </button>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Conversation -->
+        <div class="lg:col-span-3 paper-card rounded-3xl p-6 flex flex-col min-h-[32rem]">
+          <ng-container *ngIf="selectedContactId; else noContact">
+            <h3 class="font-display font-bold uppercase tracking-wider text-lg mb-4">
+              Conversation
+              <span *ngIf="conversation.length" class="text-ink-tertiary text-xs normal-case tracking-normal ml-1">
+                ({{ conversation.length }} message(s), horodatés et archivés)
+              </span>
+            </h3>
+
+            <div *ngIf="convLoading" class="flex justify-center flex-1 items-center">
+              <div class="w-8 h-8 border-3 border-wydad-red border-t-transparent rounded-full animate-spin"></div>
+            </div>
+
+            <div *ngIf="!convLoading" class="flex-1 space-y-3 overflow-y-auto mb-4 pr-1 max-h-[24rem]">
+              <div *ngFor="let m of conversation"
+                   class="max-w-[80%] px-4 py-3 rounded-2xl text-sm"
+                   [class]="m.senderUserId === selectedContactId
+                     ? 'bg-paper-2 text-ink-primary rounded-bl-md'
+                     : 'bg-wydad-red text-white rounded-br-md ml-auto'">
+                <p>{{ m.content }}</p>
+                <p class="text-[10px] mt-1 opacity-70">{{ formatTime(m.createdAt) }}</p>
+              </div>
+              <p *ngIf="!conversation.length && !convLoading" class="text-center text-ink-tertiary text-xs py-6">
+                Aucun échange avec ce contact — envoyez le premier message.
+              </p>
+            </div>
+
+            <form (ngSubmit)="sendToSelected()" class="flex gap-2">
+              <input type="text" [(ngModel)]="newMessage" name="newMessage" maxlength="500"
+                     placeholder="Votre message…"
+                     class="flex-1 px-4 py-2.5 rounded-xl border border-paper-3 bg-white text-sm focus:outline-none focus:border-wydad-red/60" />
+              <button type="submit" [disabled]="!newMessage.trim()"
+                      class="btn-primary px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider disabled:opacity-50">
+                Envoyer
+              </button>
+            </form>
+          </ng-container>
+
+          <ng-template #noContact>
+            <div class="flex-1 flex flex-col items-center justify-center text-center">
+              <div class="w-14 h-14 rounded-full bg-paper-2 border border-paper-3 flex items-center justify-center mb-3">
+                <svg class="w-7 h-7 text-ink-tertiary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.86 9.86 0 01-4-.8l-3.76.94a1 1 0 01-1.2-1.2l.94-3.76A9.86 9.86 0 013 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                </svg>
+              </div>
+              <p class="font-display uppercase tracking-wider text-ink-secondary">Sélectionnez un contact</p>
+              <p class="text-ink-tertiary text-xs mt-1">Choisissez un expéditeur dans la boîte de réception.</p>
+            </div>
+          </ng-template>
+        </div>
+      </section>
+
+      <!-- ═════════ ONGLET REÇUS ═════════ -->
+      <section *ngIf="activeTab === 'recus'" class="animate-fade-in-up">
+        <div class="paper-card rounded-3xl p-8">
+          <div class="flex justify-between items-end mb-6 flex-wrap gap-4">
+            <div>
+              <h3 class="font-display font-bold uppercase tracking-wider text-2xl">Reçus salaires &amp; primes</h3>
+              <p class="text-ink-tertiary text-xs uppercase tracking-widest mt-1">
+                Chaque bénéficiaire ne voit que ses propres reçus — contrôle serveur strict
+              </p>
+            </div>
+            <button type="button" (click)="showEmissionForm ? closeEmissionForm() : openEmissionForm()"
+                    class="btn-primary px-6 py-3 rounded-xl text-xs font-bold uppercase tracking-wider">
+              {{ showEmissionForm ? 'Annuler' : '+ Émettre un reçu' }}
+            </button>
+          </div>
+
+          <!-- Formulaire d'émission -->
+          <div *ngIf="showEmissionForm" class="mb-8 p-6 rounded-2xl bg-paper-2 border border-paper-3 grid gap-4 md:grid-cols-2">
+            <div class="md:col-span-2">
+              <label class="block text-xs font-bold uppercase tracking-wider text-ink-secondary mb-1">Bénéficiaire</label>
+              <select [(ngModel)]="emissionForm.userId" name="beneficiary"
+                      class="w-full px-4 py-2.5 rounded-xl border border-paper-3 bg-white text-sm focus:outline-none focus:border-wydad-red/60">
+                <option [ngValue]="null">— Sélectionner un joueur ou un agent —</option>
+                <option *ngFor="let u of users" [ngValue]="u.id">{{ u.firstName }} {{ u.lastName }} ({{ u.email }})</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-bold uppercase tracking-wider text-ink-secondary mb-1">Type</label>
+              <select [(ngModel)]="emissionForm.receiptType" name="receiptType"
+                      class="w-full px-4 py-2.5 rounded-xl border border-paper-3 bg-white text-sm focus:outline-none focus:border-wydad-red/60">
+                <option value="SALAIRE">Salaire</option>
+                <option value="PRIME">Prime</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-bold uppercase tracking-wider text-ink-secondary mb-1">Montant (MAD)</label>
+              <input type="number" [(ngModel)]="emissionForm.amount" name="amount" min="0.01" step="0.01"
+                     class="w-full px-4 py-2.5 rounded-xl border border-paper-3 bg-white text-sm focus:outline-none focus:border-wydad-red/60" />
+            </div>
+            <div>
+              <label class="block text-xs font-bold uppercase tracking-wider text-ink-secondary mb-1">
+                Période <span *ngIf="emissionForm.receiptType === 'SALAIRE'" class="text-wydad-red">*</span>
+              </label>
+              <input type="text" [(ngModel)]="emissionForm.periode" name="periode" maxlength="50"
+                     placeholder="Ex. Août 2026" [disabled]="emissionForm.receiptType === 'PRIME'"
+                     class="w-full px-4 py-2.5 rounded-xl border border-paper-3 bg-white text-sm focus:outline-none focus:border-wydad-red/60 disabled:opacity-50" />
+            </div>
+            <div>
+              <label class="block text-xs font-bold uppercase tracking-wider text-ink-secondary mb-1">Motif (prime)</label>
+              <input type="text" [(ngModel)]="emissionForm.motif" name="motif" maxlength="200"
+                     placeholder="Ex. Prime de championnat"
+                     class="w-full px-4 py-2.5 rounded-xl border border-paper-3 bg-white text-sm focus:outline-none focus:border-wydad-red/60" />
+            </div>
+            <div class="md:col-span-2">
+              <button type="button" (click)="submitReceipt()" [disabled]="isSubmittingReceipt"
+                      class="btn-primary px-6 py-3 rounded-xl text-xs font-bold uppercase tracking-wider disabled:opacity-50">
+                {{ isSubmittingReceipt ? 'Émission…' : 'Émettre et notifier' }}
+              </button>
+            </div>
+          </div>
+
+          <!-- Liste des reçus -->
+          <div *ngIf="receiptsLoading" class="flex justify-center py-10">
+            <div class="w-10 h-10 border-4 border-wydad-red border-t-transparent rounded-full animate-spin"></div>
+          </div>
+
+          <div *ngIf="!receiptsLoading && receipts.length === 0" class="text-center py-10">
+            <p class="font-display uppercase tracking-wider text-ink-secondary">Aucun reçu émis</p>
+            <p class="text-ink-tertiary text-xs mt-1">Utilisez « Émettre un reçu » pour générer le premier PDF.</p>
+          </div>
+
+          <div class="overflow-x-auto" *ngIf="!receiptsLoading && receipts.length > 0">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="border-b border-paper-3 text-left text-[11px] uppercase tracking-widest text-ink-tertiary">
+                  <th class="py-3 pr-4">Référence</th>
+                  <th class="py-3 pr-4">Bénéficiaire</th>
+                  <th class="py-3 pr-4">Type</th>
+                  <th class="py-3 pr-4">Montant</th>
+                  <th class="py-3 pr-4">Période / Motif</th>
+                  <th class="py-3 pr-4">Date</th>
+                  <th class="py-3">PDF</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let r of receipts" class="border-b border-paper-2 hover:bg-paper-2/50">
+                  <td class="py-3 pr-4 font-mono text-xs">{{ r.reference }}</td>
+                  <td class="py-3 pr-4 font-bold">{{ r.userFullName }}</td>
+                  <td class="py-3 pr-4">
+                    <span class="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider"
+                          [class]="r.receiptType === 'SALAIRE' ? 'bg-wydad-red/10 text-wydad-red' : 'bg-emerald-100 text-emerald-700'">
+                      {{ r.receiptType }}
+                    </span>
+                  </td>
+                  <td class="py-3 pr-4 font-bold whitespace-nowrap">{{ r.amount | number:'1.2-2' }} MAD</td>
+                  <td class="py-3 pr-4 text-ink-secondary">{{ r.periode || r.motif || '—' }}</td>
+                  <td class="py-3 pr-4 whitespace-nowrap">{{ formatDate(r.paymentDate) }}</td>
+                  <td class="py-3">
+                    <button type="button" (click)="downloadPdf(r)"
+                            class="text-wydad-red font-bold text-xs uppercase tracking-wider hover:underline">
+                      Télécharger
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═════════ ONGLET VIDÉO (composants Phase 5 réutilisés) ═════════ -->
+      <section *ngIf="activeTab === 'video'" class="animate-fade-in-up space-y-6">
+        <app-my-calls></app-my-calls>
+        <app-schedule-call-form></app-schedule-call-form>
+      </section>
+
+    </div>
+  </div>
+</div>

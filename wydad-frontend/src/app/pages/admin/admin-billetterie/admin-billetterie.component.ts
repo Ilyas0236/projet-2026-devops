@@ -117,8 +117,8 @@ export class AdminBilletterieComponent implements OnInit {
     });
   }
 
-  /** Disciplines proposées à la création d'un match. */
-  readonly sports = ['FOOTBALL', 'BASKETBALL', 'HANDBALL', 'VOLLEYBALL', 'SWIMMING', 'JUDO', 'ATHLETICS'];
+  /** Disciplines proposées à la création d'un match (alignées §26). */
+  readonly sports = ['FOOTBALL', 'BASKETBALL', 'HANDBALL', 'VOLLEYBALL', 'SWIMMING', 'JUDO', 'ATHLETICS', 'AUTRE'];
   /** Catégories §26 communes à toutes les disciplines. */
   readonly categories = ['U15', 'U17', 'U18', 'U20', 'SENIOR'];
 

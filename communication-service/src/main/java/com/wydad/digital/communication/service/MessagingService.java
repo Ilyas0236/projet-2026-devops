@@ -78,10 +78,13 @@ public class MessagingService {
                 throw new AccessDeniedException(
                         "Vous ne pouvez écrire qu'aux joueurs de votre catégorie");
             }
+        } else if ("PRESIDENT".equals(myRole)) {
+            // Le Président écrit aux agents (staff) et joueurs du club —
+            // sans restriction de groupe, comme l'ADMIN.
         } else if (!"ADMIN".equals(myRole)) {
             throw new AccessDeniedException("Rôle non autorisé pour la messagerie");
         }
-        // ADMIN : libre d'écrire à tout le monde.
+        // ADMIN et PRESIDENT : libres d'écrire à tout le monde.
 
         Message saved = messageRepository.save(Message.builder()
                 .senderUserId(me)
@@ -190,7 +193,10 @@ public class MessagingService {
         if (info != null && info.fullName() != null && !info.fullName().isBlank()) {
             return info.fullName();
         }
-        return "ADMIN".equals(role) ? "Administration" : "Membre";
+        if ("ADMIN".equals(role)) {
+            return "Administration";
+        }
+        return "PRESIDENT".equals(role) ? "Présidence" : "Membre";
     }
 
     private void notifyRecipient(Message m) {

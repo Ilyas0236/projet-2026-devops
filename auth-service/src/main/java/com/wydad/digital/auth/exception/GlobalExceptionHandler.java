@@ -133,6 +133,25 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
     }
 
+    /**
+     * §24 : appel direct hors gateway (headers X-User-* absents) → 401,
+     * distinct du 400 générique pour rester diagnostiquable.
+     */
+    @ExceptionHandler(GatewayIdentityMissingException.class)
+    public ResponseEntity<ErrorResponse> handleGatewayIdentityMissing(
+            GatewayIdentityMissingException ex, HttpServletRequest request) {
+
+        log.warn("Appel hors passerelle rejeté sur {}", request.getRequestURI());
+        ErrorResponse error = new ErrorResponse(
+                LocalDateTime.now(),
+                HttpStatus.UNAUTHORIZED.value(),
+                "UNAUTHORIZED",
+                ex.getMessage(),
+                request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+    }
+
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<ErrorResponse> handleRuntime(
             RuntimeException ex, HttpServletRequest request) {

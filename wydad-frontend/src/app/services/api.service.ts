@@ -886,4 +886,33 @@ export class ApiService {
   getMediaStatus(): Observable<{ configured: boolean }> {
     return this.http.get<{ configured: boolean }>(`${this.baseUrl}/sports/calls/media-status`);
   }
+
+  // ==========================================
+  // ESPACE PRÉSIDENT — REÇUS SALAIRES/PRIMES
+  // ==========================================
+  /** Tous les reçus (vue présidence) ou les miens selon l'endpoint. */
+  getSalaryReceipts(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/auth/salary-receipts`);
+  }
+
+  getMySalaryReceipts(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/auth/salary-receipts/mine`);
+  }
+
+  /** Émission d'un reçu — contrôlée serveur : PRÉSIDENT/ADMIN uniquement. */
+  emettreRecu(body: {
+    userId: number;
+    receiptType: 'SALAIRE' | 'PRIME';
+    amount: number;
+    periode?: string;
+    motif?: string;
+  }): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/auth/salary-receipts`, body);
+  }
+
+  /** PDF du reçu généré à la volée (OpenPDF) côté auth-service. */
+  getRecuPdf(receiptId: number): Observable<Blob> {
+    return this.http.get(`${this.baseUrl}/auth/salary-receipts/${receiptId}/pdf`,
+      { responseType: 'blob' });
+  }
 }

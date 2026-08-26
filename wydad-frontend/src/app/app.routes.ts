@@ -39,13 +39,14 @@ import { BoutiqueDetailComponent } from './pages/boutique-detail/boutique-detail
 import { CartComponent } from './components/cart/cart.component';
 import { MesCommandesComponent } from './pages/mes-commandes/mes-commandes.component';
 import { authGuard } from './guards/auth.guard';
-import { roleGuard, joueurGuard, staffGuard, parentGuard } from './guards/role.guard';
+import { roleGuard, joueurGuard, staffGuard, parentGuard, presidentGuard } from './guards/role.guard';
 import { NotFoundComponent } from './pages/not-found/not-found.component';
 import { adminGuard } from './guards/admin.guard';
 import { InscriptionAcademieComponent } from './pages/academie/inscription/inscription.component';
 import { DashboardParentComponent } from './pages/academie/dashboard-parent/dashboard-parent.component';
 import { DashboardJoueurComponent } from './pages/espace-joueur/dashboard-joueur/dashboard-joueur.component';
 import { DashboardStaffComponent } from './pages/espace-staff/dashboard-staff/dashboard-staff.component';
+import { PresidentDashboardComponent } from './pages/president/president-dashboard/president-dashboard.component';
 import { EspaceFanComponent } from './pages/espace-fan/espace-fan.component';
 import { SondagesComponent } from './pages/sondages/sondages.component';
 import { AdminSondagesComponent } from './pages/admin/admin-sondages/admin-sondages.component';
@@ -136,6 +137,8 @@ export const routes: Routes = [
       { path: 'academie/mes-enfants', component: DashboardParentComponent, canActivate: [parentGuard] },
       { path: 'joueur/dashboard', component: DashboardJoueurComponent, canActivate: [joueurGuard] },
       { path: 'staff/dashboard', component: DashboardStaffComponent, canActivate: [staffGuard] },
+      // Espace Président (§11-§15) — thème clair, messagerie + reçus + vidéo.
+      { path: 'president/dashboard', component: PresidentDashboardComponent, canActivate: [presidentGuard] },
       // Consultation des dossiers académie par le STAFF (l'ADMIN passe par /admin/academie)
       { path: 'staff/academie', component: AdminAcademieComponent, canActivate: [staffGuard] },
       { path: '**', component: NotFoundComponent }
