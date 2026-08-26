@@ -7,12 +7,14 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Client service-à-service vers auth-service pour récupérer la liste des
@@ -29,6 +31,7 @@ public class AuthClient {
 
     private final RestTemplate restTemplate = new RestTemplate();
     private final String recipientsUrl;
+    private final String visitorUrl;
     private final String internalSecret;
 
     /** Projection minimale de UserProfileResponse (auth-service). */
@@ -52,6 +55,7 @@ public class AuthClient {
             @Value("${wydad.auth-service-uri:http://auth-service:8081}") String baseUrl,
             @Value("${wydad.internal-secret:}") String internalSecret) {
         this.recipientsUrl = baseUrl + "/api/auth/internal/recipients";
+        this.visitorUrl = baseUrl + "/api/auth/internal/visitors";
         this.internalSecret = internalSecret;
     }
 
@@ -85,6 +89,42 @@ public class AuthClient {
         } catch (Exception e) {
             log.error("auth-service injoignable ({}) - aucune génération VIP possible", recipientsUrl, e);
             return Collections.emptyList();
+        }
+    }
+
+    /**
+     * B.28 — Crée (ou récupère) un user VISITEUR à la volée.
+     * Appelé depuis l'endpoint public d'achat sans compte.
+     * Retourne null si auth-service est injoignable ou refuse l'appel :
+     * l'appelant doit alors refuser l'achat (on ne crée PAS de ticket
+     * orphelin, on ne contourne pas la traçabilité userId).
+     */
+    public PlayerRecipient createOrFetchVisitor(String email, String firstName, String lastName, String phone) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        if (internalSecret != null && !internalSecret.isEmpty()) {
+            headers.set("X-Internal-Secret", internalSecret);
+        }
+        Map<String, String> body = Map.of(
+                "email", email,
+                "firstName", firstName,
+                "lastName", lastName,
+                "phone", phone
+        );
+        try {
+            ResponseEntity<PlayerRecipient> response = restTemplate.exchange(
+                    visitorUrl,
+                    HttpMethod.POST,
+                    new HttpEntity<>(body, headers),
+                    PlayerRecipient.class);
+            PlayerRecipient visitor = response.getBody();
+            if (visitor != null) {
+                log.info("VISITEUR créé/récupéré : id={} email={}", visitor.id(), visitor.email());
+            }
+            return visitor;
+        } catch (Exception e) {
+            log.error("auth-service injoignable ({}) - achat visiteur impossible", visitorUrl, e);
+            return null;
         }
     }
 }
