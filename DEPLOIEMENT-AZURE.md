@@ -257,3 +257,23 @@ Tests gateway : 5/5 verts local (`InternalRoutesBlockedTest` 3 + `PublicCatalogA
 - Tokens morts éliminés : `bg-wydad-dark`, `bg-wydad-light`, `to-wydad-darkred`, `text-wydad-dark` n'existaient pas dans tailwind.config.js (no-op → fonds noirs involontaires). Back-office ADMIN volontairement sombre (décision documentée dans tailwind.config.js).
 - QA associé : audit 145 URLs front↔gateway↔contrôleurs = 145/145 PASS ; build prod vert ; 38/38 specs Angular ; sports 55 / communication 16 tests verts.
 - Vérification prod : 7 pages clés HTTP 200 (`/`, `/legendes`, `/palmares`, `/stade`, `/espace-fan`, `/billetterie`, `/inscription-academie`) ; CSS servi contient `clubHeroShift`, `.club-hero`, `.club-underline`, `.club-skeleton`, `.paper-btn-primary`, `.light-page` ; bundle main.js embarque `club-hero` ×10, `club-badge-gold` ×4, `club-photo-card` ×2.
+
+### Campagne E2E complète 37/37 sur la VM + fix /me (26/08)
+- Commit `d46974d` : **bug réel trouvé par la campagne** — `/me`, kyc et sessions
+  n'acceptaient que ADHERENT/ADMIN en `@PreAuthorize` → tout compte JOUEUR/
+  ENTRAINEUR/JOURNALISTE/STAFF/PARENT/PRESIDENT recevait 403 sur son propre
+  profil (cassait l'espace journaliste). Étendu aux 8 rôles ; 61/61 tests unitaires
+  auth-service verts ; redéployé sur la VM (mvn package AVANT compose build).
+- Script commité `scripts/e2e-full-campagne.sh` : exécuté SUR la VM contre
+  gateway `:8080` ET frontend `:4200` (cohérence backend+frontend déployés).
+- Itérations de calibrage sur contrats réels : v1 15/32 (phone manquant, lieu
+  obligatoire) → v2 19/32 (`demandeRole` pas `role`, réponse = 202 sans corps)
+  → v3 30/37 → **finale TOTAL=37 PASS=37 FAIL=0** après le fix /me.
+- Couverture : santé infra, auth multi-statuts (EN_ATTENTE verrouillé,
+  validation admin), isolation discipline+catégorie (403 cross-catégorie),
+  matchs FOOTBALL U17 + logo admin, accréditation §17 liée au calendrier réel
+  (matchId inexistant rejeté, libellé figé stocké, badge %PDF après validation,
+  badge d'autrui 403), file admin, anti-forgery X-User-*, boutique visiteur,
+  billetterie IDOR, élections publiques, nettoyage automatique des données.
+- Rapport détaillé test par test : **`TESTS-E2E-CAMPAGNE.md`** (37 tableaux
+  attendu/réel/verdict). Journal complet conservé sur VM `/tmp/campagne-finale.log`.
