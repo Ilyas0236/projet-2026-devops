@@ -20,9 +20,11 @@ public record UserProfileResponse(
         boolean active,
         boolean kycVerified,
         LocalDateTime createdAt,
-        // Demande d'inscription multi-statuts : catégorie sportive sollicitée
-        // (JOUEUR/ENTRAINEUR/STAFF), organe de presse + match (JOURNALISTE),
-        // et motif de refus éventuel — affichés dans l'écran admin des demandes.
+        // Demande d'inscription multi-statuts : discipline + catégorie sportive
+        // sollicitées (JOUEUR/ENTRAINEUR/STAFF), organe de presse + match
+        // (JOURNALISTE), et motif de refus éventuel — affichés dans l'écran
+        // admin des demandes.
+        String disciplineDemandee,
         String categorieDemandee,
         String organismePresse,
         String matchSouhaite,

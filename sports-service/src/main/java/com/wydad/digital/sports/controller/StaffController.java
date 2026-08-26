@@ -20,6 +20,7 @@ import java.util.List;
 public class StaffController {
 
     private final StaffService staffService;
+    private final com.wydad.digital.sports.service.TeamIsolationService teamIsolationService;
 
     /** Liste complete pour le back-office ADMIN. */
     @GetMapping
@@ -47,14 +48,22 @@ public class StaffController {
         return ResponseEntity.noContent().build();
     }
 
+    /** Listing par équipe avec isolation serveur (§6/§24). */
     @GetMapping("/filter")
+    @PreAuthorize("hasRole('ENTRAINEUR') or hasRole('STAFF') or hasRole('JOUEUR') "
+            + "or hasRole('ADMIN') or hasRole('PRESIDENT')")
     public ResponseEntity<List<StaffDto>> getStaffByTeam(
             @RequestParam SportType sportType,
             @RequestParam Category category) {
+        teamIsolationService.ensureCanQueryTeam(sportType, category);
         return ResponseEntity.ok(staffService.getStaffByTeam(sportType, category));
     }
 
+    /** Lecture d'un profil staff par userId : réservé à l'encadrement et au
+     * back-office (anti-IDOR : un JOUEUR ne peut pas sonder les profils staff). */
     @GetMapping("/user/{userId}")
+    @PreAuthorize("hasRole('ENTRAINEUR') or hasRole('STAFF') or hasRole('ADMIN') "
+            + "or hasRole('PRESIDENT')")
     public ResponseEntity<StaffDto> getStaffByUserId(@PathVariable Long userId) {
         return ResponseEntity.ok(staffService.getStaffByUserId(userId));
     }
@@ -67,9 +76,12 @@ public class StaffController {
     }
 
     @GetMapping("/sessions/filter")
+    @PreAuthorize("hasRole('ENTRAINEUR') or hasRole('STAFF') or hasRole('JOUEUR') "
+            + "or hasRole('ADMIN') or hasRole('PRESIDENT')")
     public ResponseEntity<List<SessionDto>> getTeamSessions(
             @RequestParam SportType sportType,
             @RequestParam Category category) {
+        teamIsolationService.ensureCanQueryTeam(sportType, category);
         return ResponseEntity.ok(staffService.getTeamSessions(sportType, category));
     }
 }

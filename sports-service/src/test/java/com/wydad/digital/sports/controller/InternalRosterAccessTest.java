@@ -63,7 +63,7 @@ class InternalRosterAccessTest {
     void membersAvecBonSecretRetourneListe() throws Exception {
         mockMvc.perform(get("/api/sports/internal/roster/members")
                         .param("sportType", "FOOTBALL")
-                        .param("category", "U19")
+                        .param("category", "SENIOR")
                         .header("X-Internal-Secret", "secret-de-test-interne"))
                 .andExpect(status().isOk());
     }

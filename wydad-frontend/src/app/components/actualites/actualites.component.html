@@ -61,6 +61,15 @@
         <svg aria-hidden="true" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 12c2.5-3 6.5-3.5 9-2M12 12c.5 3.8-1.5 7.2-4 8.6M12 12C11 8.3 12.5 4.7 15 3"/></svg>
         Volley
       </button>
+      <button type="button" (click)="filter = 'AUTRE'"
+              class="inline-flex items-center gap-2 px-6 py-2.5 rounded-full font-display font-bold uppercase text-xs tracking-wider transition-all duration-300 border"
+              [ngClass]="{
+                'bg-wydad-red text-white border-wydad-red': filter === 'AUTRE',
+                'bg-white border-paper-3 text-ink-secondary hover:bg-paper-2': filter !== 'AUTRE'
+              }">
+        <svg aria-hidden="true" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 12c2.5-3 6.5-3.5 9-2M12 12c.5 3.8-1.5 7.2-4 8.6M12 12C11 8.3 12.5 4.7 15 3"/></svg>
+        Autres
+      </button>
     </div>
 
     <!-- News Grid -->
@@ -72,8 +81,11 @@
 
         <!-- Image Container -->
         <div class="relative h-64 overflow-hidden">
-          <div class="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110"
-               [style.backgroundImage]="'url(' + (article.imageUrl || 'assets/images/defaults/default-news-1.svg') + ')'">
+          <div class="absolute inset-0 transition-transform duration-700 group-hover:scale-110 news-placeholder">
+            <div *ngIf="article.imageUrl" class="absolute inset-0 bg-cover bg-center"
+                 [style.backgroundImage]="'url(' + article.imageUrl + ')'">
+            </div>
+            <span *ngIf="!article.imageUrl" class="absolute inset-0 flex items-center justify-center font-display font-black text-6xl text-white/25 select-none">WAC</span>
           </div>
           <div class="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent"></div>
 

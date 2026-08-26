@@ -85,8 +85,8 @@ class MedicalSecurityTest {
 
     @Test
     void coachNePeutPasPoserLeStatutMedical() throws Exception {
-        joueur(701L, "Joueur Foot", SportType.FOOTBALL, Category.U19);
-        staff(702L, "Coach Foot U19", SportType.FOOTBALL, Category.U19,
+        joueur(701L, "Joueur Foot", SportType.FOOTBALL, Category.SENIOR);
+        staff(702L, "Coach Foot U19", SportType.FOOTBALL, Category.SENIOR,
                 com.wydad.digital.sports.enums.StaffRole.HEAD_COACH);
 
         // Même catégorie mais rôle NON médical → 403
@@ -105,8 +105,8 @@ class MedicalSecurityTest {
 
     @Test
     void medecinAutreCategorieRefuse() throws Exception {
-        joueur(711L, "Joueur Foot", SportType.FOOTBALL, Category.U19);
-        staff(712L, "Medecin Handball", SportType.HANDBALL, Category.PRO,
+        joueur(711L, "Joueur Foot", SportType.FOOTBALL, Category.SENIOR);
+        staff(712L, "Medecin Handball", SportType.HANDBALL, Category.U20,
                 com.wydad.digital.sports.enums.StaffRole.DOCTOR);
 
         mvc.perform(put("/api/sports/my-space/staff/medical-status")
@@ -124,8 +124,8 @@ class MedicalSecurityTest {
 
     @Test
     void medecinDeLaCategoriePoseInapte() throws Exception {
-        joueur(721L, "Joueur Foot", SportType.FOOTBALL, Category.U19);
-        staff(722L, "Medecin Foot U19", SportType.FOOTBALL, Category.U19,
+        joueur(721L, "Joueur Foot", SportType.FOOTBALL, Category.SENIOR);
+        staff(722L, "Medecin Foot U19", SportType.FOOTBALL, Category.SENIOR,
                 com.wydad.digital.sports.enums.StaffRole.DOCTOR);
 
         mvc.perform(put("/api/sports/my-space/staff/medical-status")
@@ -148,7 +148,7 @@ class MedicalSecurityTest {
 
     @Test
     void adminPeutPoserLeStatutSurNImporteQuelJoueur() throws Exception {
-        joueur(731L, "Joueur Hand", SportType.HANDBALL, Category.PRO);
+        joueur(731L, "Joueur Hand", SportType.HANDBALL, Category.U20);
 
         mvc.perform(put("/api/sports/my-space/staff/medical-status")
                         .header("X-User-Email", EMAIL)
@@ -163,13 +163,13 @@ class MedicalSecurityTest {
 
     @Test
     void joueurInapteNonConvoquableMemeParAdmin() throws Exception {
-        joueur(741L, "Joueur Inapte", SportType.FOOTBALL, Category.U19);
-        staff(742L, "Coach Foot U19", SportType.FOOTBALL, Category.U19,
+        joueur(741L, "Joueur Inapte", SportType.FOOTBALL, Category.SENIOR);
+        staff(742L, "Coach Foot U19", SportType.FOOTBALL, Category.SENIOR,
                 com.wydad.digital.sports.enums.StaffRole.HEAD_COACH);
         Session s = sessionRepository.save(Session.builder()
                 .title("Entraînement").location("Complexe")
                 .sessionDate(LocalDateTime.now().plusDays(2))
-                .sportType(SportType.FOOTBALL).category(Category.U19)
+                .sportType(SportType.FOOTBALL).category(Category.SENIOR)
                 .createdByStaffId(742L)
                 .build());
 

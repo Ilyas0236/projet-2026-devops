@@ -16,6 +16,10 @@ export class AdminEffectifComponent implements OnInit {
   loading = true;
   showModal = false;
   selectedSportFilter = 'FOOTBALL';
+  /** Catégorie du filtre effectif — toutes les catégories U15→SENIOR sont
+   * interrogeables (vision ADMIN), plus de SENIOR codé en dur. */
+  readonly categories = ['U15', 'U17', 'U18', 'U20', 'SENIOR'];
+  selectedCategoryFilter = 'SENIOR';
   isSaving = false;
   saveError = '';
 
@@ -27,7 +31,7 @@ export class AdminEffectifComponent implements OnInit {
     // Profil sportif (sports-service)
     fullName: '',
     sportType: 'FOOTBALL',
-    category: 'PRO',
+    category: 'SENIOR',
     position: 'Milieu',
     jerseyNumber: 99,
     nationality: 'Maroc',
@@ -50,7 +54,7 @@ export class AdminEffectifComponent implements OnInit {
 
   loadPlayers() {
     this.loading = true;
-    this.api.getPlayersByCategory(this.selectedSportFilter, 'PRO').subscribe({
+    this.api.getPlayersByCategory(this.selectedSportFilter, this.selectedCategoryFilter).subscribe({
       next: (data) => {
         this.players = data.sort((a: any, b: any) => (a.jerseyNumber || 99) - (b.jerseyNumber || 99));
         this.loading = false;

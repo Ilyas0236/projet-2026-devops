@@ -21,6 +21,7 @@ import java.util.List;
 public class PlayerController {
 
     private final PlayerService playerService;
+    private final com.wydad.digital.sports.service.TeamIsolationService teamIsolationService;
 
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
@@ -54,15 +55,29 @@ public class PlayerController {
         return ResponseEntity.ok(playerService.getPlayerByUserId(userId));
     }
 
+    /**
+     * Liste complète : back-office ADMIN et espace PRESIDENT uniquement
+     * (§6 — l'encadrement et les joueurs passent par /filter, bornés à leur
+     * propre groupe).
+     */
     @GetMapping
+    @PreAuthorize("hasRole('ADMIN') or hasRole('PRESIDENT')")
     public ResponseEntity<List<PlayerDto>> getAllPlayers() {
         return ResponseEntity.ok(playerService.getAllPlayers());
     }
 
+    /**
+     * Listing par équipe avec isolation serveur (§6/§24) : le couple
+     * discipline+catégorie est vérifié contre le profil de l'appelant — un
+     * entraîneur Football U17 qui demande Basketball U17 reçoit 403.
+     */
     @GetMapping("/filter")
+    @PreAuthorize("hasRole('ENTRAINEUR') or hasRole('STAFF') or hasRole('JOUEUR') "
+            + "or hasRole('ADMIN') or hasRole('PRESIDENT')")
     public ResponseEntity<List<PlayerDto>> getPlayersByCategory(
             @RequestParam SportType sportType,
             @RequestParam Category category) {
+        teamIsolationService.ensureCanQueryTeam(sportType, category);
         return ResponseEntity.ok(playerService.getPlayersByCategory(sportType, category));
     }
 }

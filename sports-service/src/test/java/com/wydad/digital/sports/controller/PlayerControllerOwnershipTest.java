@@ -35,7 +35,8 @@ class PlayerControllerOwnershipTest {
     @BeforeEach
     void setUp() {
         PlayerController controller = new PlayerController(
-                Mockito.mock(com.wydad.digital.sports.service.PlayerService.class));
+                Mockito.mock(com.wydad.digital.sports.service.PlayerService.class),
+                Mockito.mock(com.wydad.digital.sports.service.TeamIsolationService.class));
         mockMvc = MockMvcBuilders.standaloneSetup(controller)
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .build();

@@ -9,8 +9,9 @@ import jakarta.validation.constraints.*;
 // Choix du statut à l'inscription : demandeRole ∈ {JOURNALISTE, JOUEUR,
 // ENTRAINEUR, STAFF}. Toute demande crée le compte EN_ATTENTE dans la file
 // admin — un client sollicite un statut, il ne l'obtient qu'après validation.
-//   - JOUEUR / ENTRAINEUR / STAFF : categorieDemandee obligatoire
-//     (U15/U17/U18/U20/SENIOR — SENIOR est la catégorie sénior pro) ;
+//   - JOUEUR / ENTRAINEUR / STAFF : disciplineDemandee + categorieDemandee
+//     obligatoires — le couple discipline+catégorie isole les groupes
+//     (ex : Football U17 ≠ Football Senior ≠ Basketball U17) ;
 //   - JOURNALISTE : organismePresse (site/média) + matchSouhaite obligatoires.
 public record RegisterRequest(
         @NotBlank @Email String email,
@@ -20,6 +21,7 @@ public record RegisterRequest(
         @NotBlank String lastName,
         String referralCode,
         String demandeRole,
+        String disciplineDemandee,
         String categorieDemandee,
         String organismePresse,
         String matchSouhaite

@@ -1,6 +1,6 @@
 <div class="flex min-h-screen light-page flex-row-reverse">
   <!-- Right Side (Hero Image - Mirrored) -->
-  <div class="hidden lg:flex w-1/2 relative items-center justify-center" style="background-image: url('assets/images/backgrounds/login-bg.jpg'); background-size: cover; background-position: center; transform: scaleX(-1);">
+  <div class="hidden lg:flex w-1/2 relative items-center justify-center club-hero" style="transform: scaleX(-1);">
     <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/40 to-black/60 z-0"></div>
     <div class="relative z-10 text-center px-12 animate-fade-in-up" style="transform: scaleX(-1);">
       <h1 class="text-9xl font-display text-white font-bold mb-4 opacity-90 drop-shadow-xl">WAC</h1>
@@ -91,23 +91,46 @@
 
         <!-- ======== CHAMPS CONDITIONNELS SELON LE STATUT ======== -->
 
-        <!-- Rôles sportifs : catégorie -->
-        <div *ngIf="estSportif" class="mb-6 p-4 rounded-xl bg-paper-1 border border-paper-3 animate-fade-in">
-          <label class="block mb-2 text-ink-primary text-xs uppercase tracking-wider font-semibold">
-            Catégorie souhaitée *
-            <span class="normal-case text-ink-tertiary font-normal">— {{ statut === 'JOUEUR' ? 'votre catégorie d\'âge' : 'catégorie que vous encadrerez' }}</span>
-          </label>
-          <div class="grid grid-cols-5 gap-2" role="radiogroup" aria-label="Catégorie sportive">
-            <button type="button" *ngFor="let cat of categories"
-                    (click)="categorieDemandee = cat"
-                    role="radio" [attr.aria-checked]="categorieDemandee === cat"
-                    class="py-2.5 rounded-lg border font-display text-sm tracking-wider transition-all duration-150"
-                    [ngClass]="categorieDemandee === cat
-                      ? 'bg-wydad-red text-white border-wydad-red'
-                      : 'border-paper-3 text-ink-secondary hover:border-wydad-red/60'">
-              {{ cat }}
-            </button>
+        <!-- Rôles sportifs : discipline + catégorie (couple obligatoire) -->
+        <div *ngIf="estSportif" class="mb-6 p-4 rounded-xl bg-paper-1 border border-paper-3 animate-fade-in space-y-4">
+          <div>
+            <label class="block mb-2 text-ink-primary text-xs uppercase tracking-wider font-semibold">
+              Discipline *
+              <span class="normal-case text-ink-tertiary font-normal">— votre section sportive</span>
+            </label>
+            <div class="grid grid-cols-4 gap-2" role="radiogroup" aria-label="Discipline sportive">
+              <button type="button" *ngFor="let d of disciplines"
+                      (click)="disciplineDemandee = d.valeur"
+                      role="radio" [attr.aria-checked]="disciplineDemandee === d.valeur"
+                      class="py-2.5 rounded-lg border font-display text-sm tracking-wider transition-all duration-150"
+                      [ngClass]="disciplineDemandee === d.valeur
+                        ? 'bg-wydad-red text-white border-wydad-red'
+                        : 'border-paper-3 text-ink-secondary hover:border-wydad-red/60'">
+                {{ d.label }}
+              </button>
+            </div>
           </div>
+          <div>
+            <label class="block mb-2 text-ink-primary text-xs uppercase tracking-wider font-semibold">
+              Catégorie souhaitée *
+              <span class="normal-case text-ink-tertiary font-normal">— {{ statut === 'JOUEUR' ? 'votre catégorie d\'âge' : 'catégorie que vous encadrerez' }}</span>
+            </label>
+            <div class="grid grid-cols-5 gap-2" role="radiogroup" aria-label="Catégorie sportive">
+              <button type="button" *ngFor="let cat of categories"
+                      (click)="categorieDemandee = cat"
+                      role="radio" [attr.aria-checked]="categorieDemandee === cat"
+                      class="py-2.5 rounded-lg border font-display text-sm tracking-wider transition-all duration-150"
+                      [ngClass]="categorieDemandee === cat
+                        ? 'bg-wydad-red text-white border-wydad-red'
+                        : 'border-paper-3 text-ink-secondary hover:border-wydad-red/60'">
+                {{ cat }}
+              </button>
+            </div>
+          </div>
+          <p class="text-ink-tertiary text-xs leading-relaxed !mb-0">
+            Vous serez rattaché au groupe <strong class="text-ink-secondary">{{ disciplineDemandee || '…' }} {{ categorieDemandee || '…' }}</strong> —
+            chaque couple discipline + catégorie forme un groupe isolé (un coach Football U17 ne voit jamais les joueurs Basketball U17).
+          </p>
         </div>
 
         <!-- Journaliste : accréditation presse -->
@@ -169,8 +192,13 @@
           {{ error }}
         </div>
         <div *ngIf="success" role="status" class="mt-4 p-3 bg-success/10 border border-success/25 text-success rounded-lg text-center text-sm font-medium animate-fade-in">
-          {{ statut === 'ADHERENT' ? 'Compte créé avec succès !' : 'Demande envoyée ! Le club va l\'examiner.' }}
+          Compte créé avec succès !
           Redirection vers la page de connexion...
+        </div>
+        <div *ngIf="enAttente" role="status" class="mt-4 p-4 bg-amber-50 border border-amber-300 text-amber-800 rounded-lg text-center text-sm font-medium animate-fade-in">
+          <span class="block text-base font-semibold mb-1">⏳ Demande envoyée</span>
+          Votre compte est en attente de validation par le club.
+          Vous recevrez un email dès son approbation — vous pourrez alors vous connecter.
         </div>
 
         <div class="relative flex items-center justify-center mt-8 mb-6">

@@ -92,22 +92,21 @@ import { ConfirmService } from '../../../services/confirm.service';
                   <option value="BASKETBALL">Basketball</option>
                   <option value="HANDBALL">Handball</option>
                   <option value="VOLLEYBALL">Volleyball</option>
-                  <option value="NATATION">Natation</option>
+                  <option value="SWIMMING">Natation</option>
                   <option value="JUDO">Judo</option>
-                  <option value="ATHLETISME">Athlétisme</option>
-                  <option value="GENERAL">Général</option>
+                  <option value="ATHLETICS">Athlétisme</option>
+                  <option value="AUTRE">Autre discipline</option>
                 </select>
               </div>
               <div class="admin-field">
                 <!-- Valeurs de l'enum Category du sports-service -->
                 <label class="admin-label">Catégorie</label>
                 <select [(ngModel)]="current.assignedCategory" class="admin-input">
-                  <option value="PRO">Pro</option>
-                  <option value="ESPOIR">Espoir</option>
-                  <option value="U19">U19</option>
-                  <option value="U17">U17</option>
                   <option value="U15">U15</option>
-                  <option value="ACADEMY">Académie</option>
+                  <option value="U17">U17</option>
+                  <option value="U18">U18</option>
+                  <option value="U20">U20</option>
+                  <option value="SENIOR">Senior</option>
                 </select>
               </div>
             </div>
@@ -164,7 +163,7 @@ export class AdminStaffComponent implements OnInit {
     } else {
       this.isEdit = false;
       this.editingId = null;
-      this.current = { fullName: '', userId: null, role: '', sportType: 'FOOTBALL', assignedCategory: 'PRO' };
+      this.current = { fullName: '', userId: null, role: '', sportType: 'FOOTBALL', assignedCategory: 'SENIOR' };
     }
     this.formError = '';
     this.showModal = true;

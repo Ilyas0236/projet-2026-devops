@@ -5,11 +5,11 @@
 
   <!-- ─── HERO SECTION ────────────────────────────────────── -->
   <section class="relative w-full h-screen min-h-[700px] flex items-center justify-center overflow-hidden bg-hero-light">
-    <!-- Photo stadium en voile très léger sur le dégradé blanc -> rouge pâle -->
-    <div class="absolute inset-0 z-0">
-      <div class="absolute inset-0 bg-cover bg-center opacity-[0.08] transform scale-105"
-           style="background-image: url('assets/images/backgrounds/hero-stadium.jpg');"></div>
-    </div>
+    <!-- Voile décoratif club (dégradé rouge pâle) à la place de la photo stadium -->
+    <div class="absolute inset-0 z-0 pointer-events-none"
+         style="background:
+              radial-gradient(ellipse 55% 45% at 85% 8%, rgba(220, 20, 60, 0.10) 0%, transparent 65%),
+              radial-gradient(ellipse 50% 55% at 5% 100%, rgba(142, 0, 0, 0.08) 0%, transparent 60%);"></div>
 
     <!-- Red accent line top -->
     <div class="absolute top-0 left-0 w-full h-[3px] bg-gradient-to-r from-transparent via-wydad-red to-transparent z-20"></div>
@@ -152,8 +152,11 @@
         <!-- Main News Card -->
         <a [routerLink]="['/actualites', articles[0].id]"
            class="md:col-span-2 group relative overflow-hidden rounded-2xl h-[400px] md:h-[500px] cursor-pointer paper-card red-band" *ngIf="articles[0]">
-          <div class="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110"
-               [style.backgroundImage]="'url(' + (articles[0].imageUrl ? api.getMediaUrl(articles[0].imageUrl) : 'assets/images/defaults/default-news-1.svg') + ')'"></div>
+          <div class="absolute inset-0 transition-transform duration-700 group-hover:scale-110 news-placeholder">
+            <div *ngIf="articles[0].imageUrl" class="absolute inset-0 bg-cover bg-center"
+                 [style.backgroundImage]="'url(' + api.getMediaUrl(articles[0].imageUrl) + ')'"></div>
+            <span *ngIf="!articles[0].imageUrl" class="absolute inset-0 flex items-center justify-center font-display font-black text-7xl text-white/25 select-none">WAC</span>
+          </div>
           <div class="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent"></div>
           <div class="absolute bottom-0 left-0 w-full p-8 md:p-10">
             <span class="paper-badge mb-4">{{ articles[0].sport || 'Actualité' }}</span>
@@ -167,8 +170,11 @@
           <!-- Second article -->
           <a [routerLink]="['/actualites', articles[1].id]"
              class="flex-1 group relative overflow-hidden rounded-2xl cursor-pointer paper-card red-band min-h-[200px]" *ngIf="articles[1]">
-            <div class="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110"
-                 [style.backgroundImage]="'url(' + (articles[1].imageUrl ? api.getMediaUrl(articles[1].imageUrl) : 'assets/images/defaults/default-news-2.svg') + ')'"></div>
+            <div class="absolute inset-0 transition-transform duration-700 group-hover:scale-110 news-placeholder">
+              <div *ngIf="articles[1].imageUrl" class="absolute inset-0 bg-cover bg-center"
+                   [style.backgroundImage]="'url(' + api.getMediaUrl(articles[1].imageUrl) + ')'"></div>
+              <span *ngIf="!articles[1].imageUrl" class="absolute inset-0 flex items-center justify-center font-display font-black text-5xl text-white/25 select-none">WAC</span>
+            </div>
             <div class="absolute inset-0 bg-gradient-to-t from-black to-transparent"></div>
             <div class="absolute bottom-0 left-0 w-full p-6">
               <span class="paper-badge mb-2">{{ articles[1].sport || 'Sport' }}</span>

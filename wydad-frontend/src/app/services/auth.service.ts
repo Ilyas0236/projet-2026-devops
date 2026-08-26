@@ -39,6 +39,9 @@ export class AuthService {
   register(userData: any): Observable<any> {
     return this.http.post(`${this.baseUrl}/register`, userData).pipe(
       tap((res: any) => {
+        // Demande de statut privilégié : le backend répond 202 sans corps —
+        // aucun token n'est émis tant que l'ADMIN n'a pas validé le compte.
+        if (!res?.accessToken) return;
         localStorage.setItem('wydad_token', res.accessToken);
         localStorage.setItem('wydad_user_id', res.id);
         localStorage.setItem('wydad_email', res.email);

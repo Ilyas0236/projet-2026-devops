@@ -48,7 +48,7 @@ class MatchStatSecurityTest {
     private Player joueur(Long uid, String nom) {
         return playerRepository.save(Player.builder()
                 .userId(uid).fullName(nom)
-                .sportType(SportType.FOOTBALL).category(Category.U19)
+                .sportType(SportType.FOOTBALL).category(Category.SENIOR)
                 .position("Milieu").jerseyNumber(8)
                 .build());
     }
@@ -73,7 +73,7 @@ class MatchStatSecurityTest {
     @Test
     void staffAutreCategorieRefuse() throws Exception {
         joueur(501L, "Joueur Stats");
-        staff(500L, SportType.HANDBALL, Category.PRO);
+        staff(500L, SportType.HANDBALL, Category.U20);
 
         mvc.perform(post("/api/sports/my-space/staff/stats")
                         .header("X-User-Email", EMAIL)
@@ -90,7 +90,7 @@ class MatchStatSecurityTest {
     @Test
     void staffCategorieSaisit_etTotauxAgreges() throws Exception {
         Player p = joueur(502L, "Joueur Stats 2");
-        staff(503L, SportType.FOOTBALL, Category.U19);
+        staff(503L, SportType.FOOTBALL, Category.SENIOR);
 
         mvc.perform(post("/api/sports/my-space/staff/stats")
                         .header("X-User-Email", EMAIL)
@@ -137,7 +137,7 @@ class MatchStatSecurityTest {
     @Test
     void adversaireObligatoire() throws Exception {
         joueur(505L, "Joueur Stats 4");
-        staff(506L, SportType.FOOTBALL, Category.U19);
+        staff(506L, SportType.FOOTBALL, Category.SENIOR);
 
         mvc.perform(post("/api/sports/my-space/staff/stats")
                         .header("X-User-Email", EMAIL)
@@ -155,7 +155,7 @@ class MatchStatSecurityTest {
     void joueurNeVoitQueSesStats() throws Exception {
         joueur(507L, "Joueur Moi");
         Player autre = joueur(508L, "Joueur Autre");
-        staff(509L, SportType.FOOTBALL, Category.U19);
+        staff(509L, SportType.FOOTBALL, Category.SENIOR);
 
         // Deux matchs pour 507, un pour 508
         for (String date : new String[]{"2026-03-01", "2026-03-08"}) {

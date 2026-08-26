@@ -1,0 +1,16 @@
+feat(security): isolation discipline+categorie + aucun JWT pour comptes EN_ATTENTE
+
+- sports-service : TeamIsolationService (§6/24) — listings /players,
+  /players/filter, /staff/filter, /sessions/filter bornés au couple
+  discipline+catégorie résolu côté serveur depuis le profil appelant
+  (ADMIN/PRESIDENT vision globale, ENTRAINEUR/STAFF/JOUEUR leur groupe)
+- anti-IDOR : GET /staff/user/{userId} et GET /sessions/staff/{staffId}
+  réservés à l encadrement ; consultation des séances limitée à soi-même
+- auth-service : register ne renvoie PLUS de token pour un compte
+  EN_ATTENTE (202 Accepted sans corps) — bloquant audit 26/08
+- frontend : filtre catégorie réel dans admin-effectif (plus de SENIOR
+  en dur), message inscription "en attente de validation" pour 202
+- tests : TeamIsolationSecurityTest (7 scénarios), AuthAccreditationTest
+  mis à jour (aucun token généré pour EN_ATTENTE)
+
+Co-Authored-By: Claude <noreply@anthropic.com>

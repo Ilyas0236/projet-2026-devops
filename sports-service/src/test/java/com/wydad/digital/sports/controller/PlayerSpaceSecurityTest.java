@@ -84,7 +84,7 @@ class PlayerSpaceSecurityTest {
     private Player joueur(Long uid, String nom) {
         return playerRepository.save(Player.builder()
                 .userId(uid).fullName(nom)
-                .sportType(SportType.FOOTBALL).category(Category.U19)
+                .sportType(SportType.FOOTBALL).category(Category.SENIOR)
                 .position("Milieu").jerseyNumber(8)
                 .build());
     }
@@ -92,7 +92,7 @@ class PlayerSpaceSecurityTest {
     private Session seance(LocalDateTime date) {
         return sessionRepository.save(Session.builder()
                 .title("Entraînement collectif").location("Complexe Mohammed V")
-                .sessionDate(date).sportType(SportType.FOOTBALL).category(Category.U19)
+                .sessionDate(date).sportType(SportType.FOOTBALL).category(Category.SENIOR)
                 .createdByStaffId(99L)
                 .build());
     }
@@ -100,7 +100,7 @@ class PlayerSpaceSecurityTest {
     private Convocation convoque(Long uid, Session s) {
         return convocationRepository.save(Convocation.builder()
                 .joueurUserId(uid).session(s)
-                .sportType(SportType.FOOTBALL).category(Category.U19)
+                .sportType(SportType.FOOTBALL).category(Category.SENIOR)
                 .createdByStaffId(99L).build());
     }
 
@@ -192,7 +192,7 @@ class PlayerSpaceSecurityTest {
         staffRepository.save(Staff.builder()
                 .userId(401L).fullName("Coach Foot U19")
                 .role(com.wydad.digital.sports.enums.StaffRole.HEAD_COACH)
-                .sportType(SportType.FOOTBALL).assignedCategory(Category.U19)
+                .sportType(SportType.FOOTBALL).assignedCategory(Category.SENIOR)
                 .build());
 
         mvc.perform(post("/api/sports/my-space/staff/convocations")
@@ -230,7 +230,7 @@ class PlayerSpaceSecurityTest {
         assertThat(p.getHeight()).isEqualTo(180.0);          // champ autorisé appliqué
         assertThat(p.getJerseyNumber()).isEqualTo(8);         // champ interdit inchangé
         assertThat(p.getPosition()).isEqualTo("Milieu");      // champ interdit inchangé
-        assertThat(p.getCategory()).isEqualTo(Category.U19); // champ interdit inchangé
+        assertThat(p.getCategory()).isEqualTo(Category.SENIOR); // champ interdit inchangé
     }
 
     // ─────────────────────── Phase 3 — groupage & suivi ───────────────────────
@@ -244,7 +244,7 @@ class PlayerSpaceSecurityTest {
         staffRepository.save(Staff.builder()
                 .userId(402L).fullName("Coach Foot U19 bis")
                 .role(com.wydad.digital.sports.enums.StaffRole.HEAD_COACH)
-                .sportType(SportType.FOOTBALL).assignedCategory(Category.U19)
+                .sportType(SportType.FOOTBALL).assignedCategory(Category.SENIOR)
                 .build());
 
         // 311 + 312 créés ; 311 une 2e fois → rejet motivé (doublon).
@@ -342,7 +342,7 @@ class PlayerSpaceSecurityTest {
         staffRepository.save(Staff.builder()
                 .userId(404L).fullName("Coach Foot U19 ter")
                 .role(com.wydad.digital.sports.enums.StaffRole.HEAD_COACH)
-                .sportType(SportType.FOOTBALL).assignedCategory(Category.U19)
+                .sportType(SportType.FOOTBALL).assignedCategory(Category.SENIOR)
                 .build());
 
         mvc.perform(get("/api/sports/my-space/staff/sessions/" + s.getId() + "/responses")
@@ -376,7 +376,7 @@ class PlayerSpaceSecurityTest {
         staffRepository.save(Staff.builder()
                 .userId(405L).fullName("Coach Média U19")
                 .role(com.wydad.digital.sports.enums.StaffRole.HEAD_COACH)
-                .sportType(SportType.FOOTBALL).assignedCategory(Category.U19)
+                .sportType(SportType.FOOTBALL).assignedCategory(Category.SENIOR)
                 .build());
 
         byte[] pdf = "%PDF-1.4 test tactique".getBytes();
@@ -425,7 +425,7 @@ class PlayerSpaceSecurityTest {
         staffRepository.save(Staff.builder()
                 .userId(406L).fullName("Coach Vidéo U19")
                 .role(com.wydad.digital.sports.enums.StaffRole.HEAD_COACH)
-                .sportType(SportType.FOOTBALL).assignedCategory(Category.U19)
+                .sportType(SportType.FOOTBALL).assignedCategory(Category.SENIOR)
                 .build());
 
         byte[] png = new byte[]{(byte) 0x89, 'P', 'N', 'G'};

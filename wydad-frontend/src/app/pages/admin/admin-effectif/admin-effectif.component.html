@@ -13,6 +13,14 @@
         <option value="BASKETBALL">Basketball</option>
         <option value="HANDBALL">Handball</option>
         <option value="VOLLEYBALL">Volleyball</option>
+        <option value="SWIMMING">Natation</option>
+        <option value="JUDO">Judo</option>
+        <option value="ATHLETICS">Athlétisme</option>
+        <option value="AUTRE">Autre discipline</option>
+      </select>
+      <!-- Category Filter -->
+      <select [(ngModel)]="selectedCategoryFilter" (change)="loadPlayers()" class="admin-input !w-auto">
+        <option *ngFor="let c of categories" [value]="c">{{ c === 'SENIOR' ? 'Seniors' : c }}</option>
       </select>
       <button (click)="openAddModal()" class="bg-wydad-red hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-colors">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
@@ -150,17 +158,20 @@
               <option value="BASKETBALL">Basketball</option>
               <option value="HANDBALL">Handball</option>
               <option value="VOLLEYBALL">Volleyball</option>
+              <option value="SWIMMING">Natation</option>
+              <option value="JUDO">Judo</option>
+              <option value="ATHLETICS">Athlétisme</option>
+              <option value="AUTRE">Autre discipline</option>
             </select>
           </div>
           <div class="admin-field">
             <label class="admin-label">Catégorie</label>
             <select [(ngModel)]="newPlayer.category" class="admin-input">
-              <option value="PRO">Pro</option>
-              <option value="ESPOIR">Espoir</option>
-              <option value="U19">U19</option>
-              <option value="U17">U17</option>
               <option value="U15">U15</option>
-              <option value="ACADEMY">Academy</option>
+              <option value="U17">U17</option>
+              <option value="U18">U18</option>
+              <option value="U20">U20</option>
+              <option value="SENIOR">Senior</option>
             </select>
           </div>
           <div class="admin-field">

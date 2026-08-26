@@ -36,6 +36,15 @@ export class LoginComponent {
           case 'STAFF':
             this.router.navigate(['/staff/dashboard']);
             break;
+          case 'ENTRAINEUR':
+            this.router.navigate(['/entraineur/dashboard']);
+            break;
+          case 'JOURNALISTE':
+            this.router.navigate(['/journaliste/accueil']);
+            break;
+          case 'PRESIDENT':
+            this.router.navigate(['/president/dashboard']);
+            break;
           case 'PARENT':
             this.router.navigate(['/academie/mes-enfants']);
             break;

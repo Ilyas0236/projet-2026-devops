@@ -16,8 +16,12 @@ import { ApiService } from '../../services/api.service';
         <span>{{ article.titre }}</span>
       </div>
 
-      <!-- COVER IMAGE -->
-      <div class="cover-image" [style.backgroundImage]="'url(' + (article.imageUrl || 'assets/images/defaults/default-news-2.svg') + ')'"></div>
+      <!-- COVER : image dynamique ou placeholder club (monogramme) -->
+      <div class="cover-image news-placeholder">
+        <div *ngIf="article.imageUrl" class="absolute inset-0 bg-cover bg-center rounded-2xl"
+             [style.backgroundImage]="'url(' + article.imageUrl + ')'"></div>
+        <span *ngIf="!article.imageUrl" class="absolute inset-0 flex items-center justify-center font-display font-black text-8xl text-white/25 select-none">WAC</span>
+      </div>
 
       <!-- ARTICLE BODY -->
       <div class="article-card">
@@ -63,9 +67,9 @@ import { ApiService } from '../../services/api.service';
     .breadcrumbs a:hover { text-decoration: underline; }
 
     .cover-image {
+      position: relative;
       height: 400px;
-      background-size: cover;
-      background-position: center;
+      overflow: hidden;
       border-radius: 16px;
       box-shadow: 0 4px 20px rgba(0,0,0,0.1);
       margin-bottom: 2rem;

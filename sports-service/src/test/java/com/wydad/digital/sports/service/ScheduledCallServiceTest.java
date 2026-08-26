@@ -71,12 +71,12 @@ class ScheduledCallServiceTest {
     @BeforeEach
     void setup() {
         playerRepository.save(Player.builder().userId(JOUEUR_A).fullName("Joueur A")
-                .sportType(SportType.FOOTBALL).category(Category.U19).build());
+                .sportType(SportType.FOOTBALL).category(Category.SENIOR).build());
         playerRepository.save(Player.builder().userId(JOUEUR_B).fullName("Joueur B")
-                .sportType(SportType.FOOTBALL).category(Category.U19).build());
+                .sportType(SportType.FOOTBALL).category(Category.SENIOR).build());
         staffRepository.save(Staff.builder().userId(COACH).fullName("Coach Test")
                 .role(com.wydad.digital.sports.enums.StaffRole.HEAD_COACH)
-                .sportType(SportType.FOOTBALL).assignedCategory(Category.U19).build());
+                .sportType(SportType.FOOTBALL).assignedCategory(Category.SENIOR).build());
     }
 
     @AfterEach
@@ -95,7 +95,7 @@ class ScheduledCallServiceTest {
     private CreateCallRequest reqCoach(TargetType target) {
         // sport/catégorie ignorés pour l'entraîneur : forcés depuis sa fiche.
         return new CreateCallRequest("Briefing avant match", SportType.BASKETBALL,
-                Category.PRO, LocalDateTime.now().plusHours(2), 30, target, null);
+                Category.U20, LocalDateTime.now().plusHours(2), 30, target, null);
     }
 
     @Test
@@ -104,7 +104,7 @@ class ScheduledCallServiceTest {
         ScheduledCall call = callService.createCall(reqCoach(TargetType.CATEGORIE_EQUIPE));
 
         assertThat(call.getSportType()).isEqualTo(SportType.FOOTBALL); // forcé depuis la fiche, pas BASKETBALL
-        assertThat(call.getCategory()).isEqualTo(Category.U19);
+        assertThat(call.getCategory()).isEqualTo(Category.SENIOR);
         assertThat(call.getRoomName()).startsWith("wac-call-");
         assertThat(call.getStatus()).isEqualTo(ScheduledCall.CallStatus.PROGRAMME);
         // Joueurs A+B + coach, PAS un utilisateur extérieur :
@@ -257,11 +257,11 @@ class ScheduledCallServiceTest {
     void titreVideOuDatePasseeRefuses() {
         as(COACH, "ENTRAINEUR");
         assertThatThrownBy(() -> callService.createCall(new CreateCallRequest(
-                "  ", SportType.FOOTBALL, Category.U19, null, 30,
+                "  ", SportType.FOOTBALL, Category.SENIOR, null, 30,
                 TargetType.CATEGORIE_EQUIPE, null)))
                 .isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> callService.createCall(new CreateCallRequest(
-                "Trop tard", SportType.FOOTBALL, Category.U19,
+                "Trop tard", SportType.FOOTBALL, Category.SENIOR,
                 LocalDateTime.now().minusHours(3), 30,
                 TargetType.CATEGORIE_EQUIPE, null)))
                 .isInstanceOf(IllegalArgumentException.class);

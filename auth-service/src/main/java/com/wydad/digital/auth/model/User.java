@@ -68,6 +68,12 @@ public class User {
     private String timezone = "Africa/Casablanca";
     private String bio;
 
+    /** Discipline sportive sollicitée (FOOTBALL/BASKETBALL/HANDBALL/AUTRE)
+     * pour JOUEUR, ENTRAINEUR ou STAFF — renseignée à l'inscription,
+     * confirmée par l'admin. Toujours accompagnée de categorieDemandee :
+     * un compte sportif est rattaché au couple discipline+catégorie. */
+    private String disciplineDemandee;
+
     /** Catégorie sportive sollicitée (U15/U17/U18/U20/SENIOR) pour JOUEUR,
      * ENTRAINEUR ou STAFF — renseignée à l'inscription, confirmée par l'admin. */
     private String categorieDemandee;

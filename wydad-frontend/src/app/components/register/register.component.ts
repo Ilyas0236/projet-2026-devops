@@ -40,6 +40,9 @@ export class RegisterComponent implements OnInit {
   loading = false;
   error = '';
   success = false;
+  /** Vrai quand l'inscription crée un compte EN_ATTENTE (statut privilégié) :
+   * pas de session, message dédié "en attente de validation". */
+  enAttente = false;
   tiers: any[] = [];
 
   // ----- Choix du statut -----
@@ -52,8 +55,20 @@ export class RegisterComponent implements OnInit {
     { valeur: 'STAFF',       titre: 'Staff technique',      description: 'Personnel médical, physique ou manager — validé par le club.', icone: '🩺' }
   ];
 
+  /** Disciplines sportives (alignées sur le backend DISCIPLINES_VALIDES). */
+  readonly disciplines = [
+    { valeur: 'FOOTBALL', label: 'Football' },
+    { valeur: 'BASKETBALL', label: 'Basketball' },
+    { valeur: 'HANDBALL', label: 'Handball' },
+    { valeur: 'VOLLEYBALL', label: 'Volleyball' },
+    { valeur: 'SWIMMING', label: 'Natation' },
+    { valeur: 'JUDO', label: 'Judo' },
+    { valeur: 'ATHLETICS', label: 'Athlétisme' },
+    { valeur: 'AUTRE', label: 'Autre discipline' }
+  ];
   /** Catégories sportives (alignées sur le backend CATEGORIES_VALIDES). */
   readonly categories = ['U15', 'U17', 'U18', 'U20', 'SENIOR'];
+  disciplineDemandee = '';
   categorieDemandee = '';
   organismePresse = '';
   matchSouhaite = '';
@@ -88,6 +103,7 @@ export class RegisterComponent implements OnInit {
   choisirStatut(valeur: StatutChoix) {
     this.statut = valeur;
     // Réinitialisation des champs conditionnels au changement de statut.
+    this.disciplineDemandee = '';
     this.categorieDemandee = '';
     this.organismePresse = '';
     this.matchSouhaite = '';
@@ -103,7 +119,7 @@ export class RegisterComponent implements OnInit {
     )) {
       return false;
     }
-    if (this.estSportif && !this.categorieDemandee) return false;
+    if (this.estSportif && (!this.disciplineDemandee || !this.categorieDemandee)) return false;
     if (this.statut === 'JOURNALISTE' && this.organismePresse.trim().length === 0) return false;
     return true;
   }
@@ -112,6 +128,7 @@ export class RegisterComponent implements OnInit {
     this.loading = true;
     this.error = '';
     this.success = false;
+    this.enAttente = false;
 
     // Pas de membershipLevel dans la requête : le serveur force le niveau de
     // départ — la montée passe par /upgrade après paiement.
@@ -127,7 +144,10 @@ export class RegisterComponent implements OnInit {
     // Demande de statut : envoyée seulement si différente d'adhérent.
     if (this.statut !== 'ADHERENT') {
       requestData.demandeRole = this.statut;
-      if (this.estSportif) requestData.categorieDemandee = this.categorieDemandee;
+      if (this.estSportif) {
+        requestData.disciplineDemandee = this.disciplineDemandee;
+        requestData.categorieDemandee = this.categorieDemandee;
+      }
       if (this.statut === 'JOURNALISTE') {
         requestData.organismePresse = this.organismePresse.trim();
         requestData.matchSouhaite = this.matchSouhaite.trim() || null;
@@ -135,10 +155,16 @@ export class RegisterComponent implements OnInit {
     }
 
     this.authService.register(requestData).subscribe({
-      next: () => {
-        this.success = true;
+      next: (res) => {
         this.loading = false;
-        setTimeout(() => this.router.navigate(['/login']), 2500);
+        if (res && res.accessToken) {
+          // Adhérent : compte VALIDE, session ouverte immédiatement.
+          this.success = true;
+          setTimeout(() => this.router.navigate(['/login']), 2500);
+        } else {
+          // Statut privilégié : 202 sans corps — compte EN_ATTENTE.
+          this.enAttente = true;
+        }
       },
       error: (err) => {
         this.error = err.error?.message || "Erreur lors de la création du compte. Veuillez vérifier vos informations.";

@@ -48,6 +48,13 @@ public class AuthService {
     private static final java.util.Set<String> CATEGORIES_VALIDES =
             java.util.Set.of("U15", "U17", "U18", "U20", "SENIOR");
 
+    /** Disciplines sportives sollicitables à l'inscription (joueur/staff) —
+     * alignées sur sports-service SportType ; toutes partagent les mêmes
+     * catégories U15/U17/U18/U20/SENIOR. */
+    private static final java.util.Set<String> DISCIPLINES_VALIDES =
+            java.util.Set.of("FOOTBALL", "BASKETBALL", "HANDBALL",
+                    "VOLLEYBALL", "SWIMMING", "JUDO", "ATHLETICS", "AUTRE");
+
     /** Rôles que le public peut solliciter à l'inscription. */
     private static final java.util.Set<String> ROLES_SOLICITABLES =
             java.util.Set.of("JOURNALISTE", "JOUEUR", "ENTRAINEUR", "STAFF");
@@ -67,6 +74,7 @@ public class AuthService {
         }
 
         Role roleDemande = Role.ADHERENT;
+        String discipline = null;
         String categorie = null;
         String organisme = null;
         String match = null;
@@ -85,7 +93,15 @@ public class AuthService {
                 match = request.matchSouhaite() != null && !request.matchSouhaite().isBlank()
                         ? request.matchSouhaite().trim() : null;
             } else {
-                // Rôle sportif : catégorie obligatoire et normalisée.
+                // Rôle sportif : le couple DISCIPLINE + CATÉGORIE est obligatoire —
+                // c'est ce couple qui isole les groupes dans toute la plateforme.
+                if (request.disciplineDemandee() == null || request.disciplineDemandee().isBlank()) {
+                    throw new IllegalArgumentException("La discipline est obligatoire (FOOTBALL/BASKETBALL/HANDBALL/AUTRE)");
+                }
+                discipline = request.disciplineDemandee().trim().toUpperCase();
+                if (!DISCIPLINES_VALIDES.contains(discipline)) {
+                    throw new IllegalArgumentException("Discipline invalide — valeurs acceptées : FOOTBALL, BASKETBALL, HANDBALL, AUTRE");
+                }
                 if (request.categorieDemandee() == null || request.categorieDemandee().isBlank()) {
                     throw new IllegalArgumentException("La catégorie est obligatoire (U15/U17/U18/U20/SENIOR)");
                 }
@@ -106,6 +122,7 @@ public class AuthService {
                 .role(roleDemande)
                 // Toute demande de statut passe par la file admin.
                 .statutCompte(roleDemande == Role.ADHERENT ? StatutCompte.VALIDE : StatutCompte.EN_ATTENTE)
+                .disciplineDemandee(discipline)
                 .categorieDemandee(categorie)
                 .organismePresse(organisme)
                 .matchSouhaite(match)
@@ -116,6 +133,13 @@ public class AuthService {
                 .build();
 
         userRepository.save(user);
+
+        // Sécurité : un compte EN_ATTENTE ne reçoit AUCUN token — il n'a pas
+        // encore le droit d'accéder à la plateforme. Il ne pourra se connecter
+        // qu'une fois validé par l'ADMIN (cf. blocage identique au login).
+        if (user.getStatutCompte() != StatutCompte.VALIDE) {
+            return null;
+        }
 
         String accessToken = jwtUtils.generateAccessToken(user.getId(), user.getEmail(), user.getRole().name());
         String refreshToken = jwtUtils.generateRefreshToken(user.getId(), user.getEmail());
@@ -209,6 +233,30 @@ public class AuthService {
             return pdfService.generateAttestation(user);
         } catch (Exception e) {
             throw new RuntimeException("Erreur génération PDF", e);
+        }
+    }
+
+    /**
+     * Accréditation presse : badge PDF+QR réservé aux JOURNALISTES dont le
+     * compte est VALIDÉ. Un compte EN_ATTENTE ou REFUSE ne peut pas obtenir
+     * de badge — c'est la contrepartie matérielle de la validation admin.
+     */
+    public byte[] generateBadgePresse(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UserNotFoundException(email));
+        if (user.getRole() != Role.JOURNALISTE) {
+            throw new IllegalArgumentException("Le badge presse est réservé aux journalistes accrédités");
+        }
+        if (user.getStatutCompte() != StatutCompte.VALIDE) {
+            throw new CompteNonValideException(user.getStatutCompte(), user.getMotifRefus());
+        }
+        String qrData = "WAC-PRESSE|" + user.getFirstName() + "|" + user.getLastName()
+                + "|" + (user.getOrganismePresse() != null ? user.getOrganismePresse() : "");
+        try {
+            String qrBase64 = qrCodeService.generateQrCode(qrData, 300, 300);
+            return pdfService.generateBadgePresse(user, qrBase64);
+        } catch (Exception e) {
+            throw new RuntimeException("Erreur génération badge presse", e);
         }
     }
 
@@ -588,6 +636,7 @@ public class AuthService {
                 user.isActive(),
                 user.isKycVerified(),
                 user.getCreatedAt(),
+                user.getDisciplineDemandee(),
                 user.getCategorieDemandee(),
                 user.getOrganismePresse(),
                 user.getMatchSouhaite(),
@@ -730,6 +779,7 @@ public class AuthService {
                 user.isActive(),
                 user.isKycVerified(),
                 user.getCreatedAt(),
+                user.getDisciplineDemandee(),
                 user.getCategorieDemandee(),
                 user.getOrganismePresse(),
                 user.getMatchSouhaite(),

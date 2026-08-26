@@ -146,16 +146,16 @@ export class AdminSeancesComponent implements OnInit {
   api = inject(ApiService);
   private toast = inject(ToastService);
 
-  sports = ['FOOTBALL', 'BASKETBALL', 'HANDBALL', 'VOLLEYBALL', 'SWIMMING', 'JUDO', 'ATHLETICS'];
-  categories = ['PRO', 'ESPOIR', 'U19', 'U17', 'U15', 'ACADEMY'];
+  sports = ['FOOTBALL', 'BASKETBALL', 'HANDBALL', 'VOLLEYBALL', 'SWIMMING', 'JUDO', 'ATHLETICS', 'AUTRE'];
+  categories = ['U15', 'U17', 'U18', 'U20', 'SENIOR'];
   sportLabels: Record<string, string> = {
     FOOTBALL: 'Football', BASKETBALL: 'Basketball', HANDBALL: 'Handball',
     VOLLEYBALL: 'Volleyball', SWIMMING: 'Natation', JUDO: 'Judo',
-    ATHLETICS: 'Athlétisme'
+    ATHLETICS: 'Athlétisme', AUTRE: 'Autre discipline'
   };
 
   filterSport = 'FOOTBALL';
-  filterCategory = 'PRO';
+  filterCategory = 'SENIOR';
 
   sessions: any[] = [];
   loading = true;
@@ -175,7 +175,7 @@ export class AdminSeancesComponent implements OnInit {
       location: '',
       sessionDate: '',
       sportType: 'FOOTBALL',
-      category: 'PRO'
+      category: 'SENIOR'
     };
   }
 

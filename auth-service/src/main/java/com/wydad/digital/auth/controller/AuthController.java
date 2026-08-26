@@ -28,7 +28,14 @@ public class AuthController {
 
     @PostMapping("/register")
     public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest request) {
-        return ResponseEntity.ok(authService.register(request));
+        AuthResponse response = authService.register(request);
+        // Demande de statut privilégié (JOUEUR/ENTRAINEUR/STAFF/JOURNALISTE) :
+        // compte EN_ATTENTE, aucun token émis → 202 Accepted. Le compte ne
+        // sera actif qu'après validation par l'ADMIN.
+        if (response == null) {
+            return ResponseEntity.accepted().build();
+        }
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/login")
@@ -84,6 +91,31 @@ public class AuthController {
                 .body(pdf);
     }
 
+    /**
+     * Accréditation presse — badge PDF avec QR code (nom, prénom, organe).
+     * Réservé au journaliste lui-même (ou à l'ADMIN) et uniquement après
+     * validation du compte par le club.
+     */
+    @GetMapping("/presse/badge")
+    public ResponseEntity<byte[]> generateBadgePresse(
+            @RequestParam("email") String email,
+            @RequestHeader(value = "X-User-Email", required = false) String gatewayEmail,
+            @RequestHeader(value = "X-User-Role", required = false) String gatewayRole) {
+
+        if (gatewayEmail == null || gatewayRole == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        boolean isAdmin = "ADMIN".equals(gatewayRole);
+        if (!isAdmin && !gatewayEmail.equalsIgnoreCase(email)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        byte[] pdf = authService.generateBadgePresse(email);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=badge-presse-wac.pdf")
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(pdf);
+    }
+
     @PostMapping("/refresh")
     public ResponseEntity<AuthResponse> refreshToken(
             @Valid @RequestBody RefreshTokenRequest request,
@@ -116,6 +148,7 @@ public class AuthController {
                 user.isActive(),
                 user.isKycVerified(),
                 user.getCreatedAt(),
+                user.getDisciplineDemandee(),
                 user.getCategorieDemandee(),
                 user.getOrganismePresse(),
                 user.getMatchSouhaite(),

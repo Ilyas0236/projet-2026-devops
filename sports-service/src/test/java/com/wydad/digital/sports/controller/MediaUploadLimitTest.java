@@ -62,18 +62,18 @@ class MediaUploadLimitTest {
                     .userId(8L).fullName("Coach Limite")
                     .role(com.wydad.digital.sports.enums.StaffRole.HEAD_COACH)
                     .sportType(com.wydad.digital.sports.enums.SportType.FOOTBALL)
-                    .assignedCategory(com.wydad.digital.sports.enums.Category.U19)
+                    .assignedCategory(com.wydad.digital.sports.enums.Category.SENIOR)
                     .build());
         }
         // wholeTeam=true notifie tous les joueurs de la catégorie du staff :
         // sans joueur U19 -> IllegalStateException "Aucun joueur dans votre catégorie".
         if (playerRepository.findBySportTypeAndCategory(
                 com.wydad.digital.sports.enums.SportType.FOOTBALL,
-                com.wydad.digital.sports.enums.Category.U19).isEmpty()) {
+                com.wydad.digital.sports.enums.Category.SENIOR).isEmpty()) {
             playerRepository.save(com.wydad.digital.sports.model.Player.builder()
                     .userId(300L).fullName("Joueur U19 Limite")
                     .sportType(com.wydad.digital.sports.enums.SportType.FOOTBALL)
-                    .category(com.wydad.digital.sports.enums.Category.U19)
+                    .category(com.wydad.digital.sports.enums.Category.SENIOR)
                     .position("Milieu").jerseyNumber(10)
                     .build());
         }
