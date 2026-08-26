@@ -57,8 +57,7 @@ public class ElectionController {
     }
 
     @PostMapping("/{id}/vote")
-    @PreAuthorize("hasRole('VISITEUR') or hasRole('ADHERENT') or hasRole('PARENT') "
-            + "or hasRole('JOUEUR') or hasRole('STAFF') or hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('VISITEUR','ADHERENT','PARENT','JOUEUR','STAFF','ENTRAINEUR','JOURNALISTE','PRESIDENT','ADMIN')")
     public ResponseEntity<ElectionView> vote(@PathVariable Long id,
                                              @RequestBody Map<String, Long> body) {
         Long candidateId = body == null ? null : body.get("candidateId");

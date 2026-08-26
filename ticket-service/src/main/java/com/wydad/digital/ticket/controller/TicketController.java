@@ -27,7 +27,7 @@ public class TicketController {
     private final TicketRepository ticketRepository;
 
     @PostMapping("/purchase")
-    @PreAuthorize("hasRole('ADHERENT') or hasRole('JOUEUR') or hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADHERENT','JOUEUR','STAFF','ENTRAINEUR','JOURNALISTE','PRESIDENT','PARENT','ADMIN')")
     public ResponseEntity<List<TicketResponse>> purchaseTickets(@Valid @RequestBody PurchaseTicketRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(ticketService.purchaseTickets(request));
     }

@@ -151,4 +151,35 @@ public class InternalRosterController {
             return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
         }
     }
+
+    /**
+     * Suppression interne d'une fiche joueur (auth-service lors d'un
+     * deleteAccount). Idempotent : 404 si la fiche n'existe pas est absorbé
+     * en 200 côté appelant.
+     */
+    @DeleteMapping("/players/user/{userId}")
+    public ResponseEntity<?> deletePlayer(
+            @RequestHeader(value = "X-Internal-Secret", required = false) String secret,
+            @PathVariable Long userId) {
+        if (!secretValidator.isInternalCallAuthorized(secret)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        playerRepository.findByUserId(userId).ifPresent(playerRepository::delete);
+        return ResponseEntity.ok(Map.of("userId", userId, "deleted", true));
+    }
+
+    /**
+     * Suppression interne d'une fiche staff (auth-service lors d'un
+     * deleteAccount d'un ENTRAINEUR / STAFF).
+     */
+    @DeleteMapping("/staff/user/{userId}")
+    public ResponseEntity<?> deleteStaff(
+            @RequestHeader(value = "X-Internal-Secret", required = false) String secret,
+            @PathVariable Long userId) {
+        if (!secretValidator.isInternalCallAuthorized(secret)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        staffRepository.findByUserId(userId).ifPresent(staffRepository::delete);
+        return ResponseEntity.ok(Map.of("userId", userId, "deleted", true));
+    }
 }

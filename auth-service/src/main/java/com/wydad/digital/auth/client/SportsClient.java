@@ -76,4 +76,32 @@ public class SportsClient {
             return false;
         }
     }
+
+    /**
+     * Supprime la fiche roster (players + staff) d'un compte supprimé côté
+     * auth-service. Best-effort : un échec est logué, l'auth-service ne
+     * ré-essaie pas (à nettoyer via un script SQL si besoin).
+     */
+    public boolean deleteRosterEntry(Long userId) {
+        try {
+            HttpHeaders headers = new HttpHeaders();
+            if (internalSecret != null && !internalSecret.isEmpty()) {
+                headers.set("X-Internal-Secret", internalSecret);
+            }
+            // L'endpoint interne accepte les deux suffixes (players + staff)
+            // — l'un des deux renverra 404 si la fiche n'existe pas, on
+            // tolère. Pour une suppression effective, on tente les deux.
+            restTemplate.exchange(
+                    baseUrl + "/players/user/" + userId,
+                    HttpMethod.DELETE, new HttpEntity<>(headers), Void.class);
+            restTemplate.exchange(
+                    baseUrl + "/staff/user/" + userId,
+                    HttpMethod.DELETE, new HttpEntity<>(headers), Void.class);
+            log.info("Fiche roster supprimée pour user {}", userId);
+            return true;
+        } catch (Exception e) {
+            log.error("Suppression fiche roster échouée pour user {} : {}", userId, e.getMessage());
+            return false;
+        }
+    }
 }

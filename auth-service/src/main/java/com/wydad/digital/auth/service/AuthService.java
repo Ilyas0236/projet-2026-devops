@@ -19,6 +19,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -29,6 +31,8 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class AuthService {
+
+    private static final Logger log = LoggerFactory.getLogger(AuthService.class);
 
     private final UserRepository userRepository;
     private final KycDocumentRepository kycDocumentRepository;
@@ -633,6 +637,20 @@ public class AuthService {
                 kycDocumentRepository.deleteById(doc.getId())
         );
 
+        // Suppression de la fiche roster (players/staff) côté sports-service.
+        // Best-effort : si le service est injoignable, on logue pour qu'un
+        // script de nettoyage puisse finir le travail — mais le compte auth
+        // est bien supprimé (le user ne peut plus se connecter).
+        if (user.getRole() == Role.JOUEUR || user.getRole() == Role.ENTRAINEUR
+                || user.getRole() == Role.STAFF) {
+            try {
+                sportsClient.deleteRosterEntry(user.getId());
+            } catch (Exception e) {
+                log.error("Impossible de supprimer la fiche roster du user {} ({} {}) : {} — fiche orpheline à nettoyer",
+                        user.getId(), user.getFirstName(), user.getLastName(), e.getMessage());
+            }
+        }
+
         userRepository.delete(user);
     }
 
@@ -687,18 +705,29 @@ public class AuthService {
     public void changeUserRole(Long id, String roleName) {
         User user = userRepository.findById(id).orElseThrow(() -> new RuntimeException("User not found"));
         Role newRole = Role.valueOf(roleName.toUpperCase());
+        Role oldRole = user.getRole();
         user.setRole(newRole);
 
         // Phase 0 : l'attribution d'un rôle privilégié repasse TOUJOURS par la
         // validation de l'admin (vérification des justificatifs) — même si le
         // compte était VALIDE en tant qu'adhérent. Un compte déjà REFUSE est
         // ré-examiné.
-        if (newRole == Role.ENTRAINEUR || newRole == Role.JOURNALISTE || newRole == Role.PRESIDENT
-                || newRole == Role.JOUEUR || newRole == Role.STAFF) {
+        boolean privilegedRole = newRole == Role.ENTRAINEUR || newRole == Role.JOURNALISTE
+                || newRole == Role.PRESIDENT || newRole == Role.JOUEUR || newRole == Role.STAFF;
+        if (privilegedRole) {
             user.setStatutCompte(StatutCompte.EN_ATTENTE);
             user.setMotifRefus(null);
         }
         userRepository.save(user);
+
+        // Sécurité : un changement de rôle invalide toutes les sessions actives.
+        // Le prochain appel de l'utilisateur réclamera un nouveau JWT, cohérent
+        // avec ses nouvelles permissions (et son éventuel passage EN_ATTENTE).
+        if (oldRole != newRole) {
+            activeSessionRepository.deleteByEmail(user.getEmail());
+            log.info("Sessions révoquées pour {} suite changement de rôle {} -> {}",
+                    user.getEmail(), oldRole, newRole);
+        }
     }
 
     // ============================================
@@ -734,12 +763,19 @@ public class AuthService {
         userRepository.save(user);
         // Comptes sportifs : créer la fiche roster (players/staff) dans le
         // sports-service — sans elle, l'espace joueur/staff ne peut pas se
-        // charger. Best-effort : n'invalide jamais la décision admin.
+        // charger. Best-effort : n'invalide jamais la décision admin MAIS
+        // on logue toute erreur pour que l'admin puisse relancer via une
+        // route de réparation (voir /api/auth/admin/accounts/{id}/recreate-roster).
         if (user.getRole() == Role.JOUEUR || user.getRole() == Role.ENTRAINEUR
                 || user.getRole() == Role.STAFF) {
-            sportsClient.createRosterEntry(user.getId(),
-                    (user.getFirstName() + " " + user.getLastName()).trim(),
-                    user.getRole().name(), user.getDisciplineDemandee(), user.getCategorieDemandee());
+            try {
+                sportsClient.createRosterEntry(user.getId(),
+                        (user.getFirstName() + " " + user.getLastName()).trim(),
+                        user.getRole().name(), user.getDisciplineDemandee(), user.getCategorieDemandee());
+            } catch (Exception e) {
+                log.error("Échec de création de la fiche roster pour le user {} ({} {}) — compte validé mais fiche orpheline : {}",
+                        user.getId(), user.getFirstName(), user.getLastName(), e.getMessage());
+            }
         }
         notifyCompteDecision(user, true, null); // Phase 1 ter : in-app best-effort
         return mapToProfile(user);

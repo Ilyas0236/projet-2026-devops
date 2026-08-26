@@ -70,7 +70,7 @@ public class StaffController {
 
     // Sessions are managed by staff
     @PostMapping("/sessions")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN','STAFF','ENTRAINEUR')")
     public ResponseEntity<SessionDto> createSession(@Valid @RequestBody SessionDto dto) {
         return ResponseEntity.status(HttpStatus.CREATED).body(staffService.createSession(dto));
     }

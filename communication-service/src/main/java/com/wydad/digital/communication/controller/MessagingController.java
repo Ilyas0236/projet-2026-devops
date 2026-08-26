@@ -66,7 +66,7 @@ public class MessagingController {
 
     /** Annonces visibles par le connecté : club + SA catégorie (filtrage serveur). */
     @GetMapping("/announcements")
-    @PreAuthorize("hasRole('JOUEUR') or hasRole('STAFF') or hasRole('ADMIN') or hasRole('PRESIDENT')")
+    @PreAuthorize("hasAnyRole('JOUEUR','STAFF','ENTRAINEUR','JOURNALISTE','ADMIN','PRESIDENT')")
     public ResponseEntity<List<Announcement>> visibleAnnouncements() {
         return ResponseEntity.ok(messagingService.getVisibleAnnouncements());
     }

@@ -27,7 +27,7 @@ public class TeamChatController {
     private final TeamChatService teamChatService;
 
     @GetMapping("/{sport}/{category}/messages")
-    @PreAuthorize("hasAnyRole('JOUEUR','STAFF','ENTRAINEUR','ADMIN')")
+    @PreAuthorize("hasAnyRole('JOUEUR','STAFF','ENTRAINEUR','JOURNALISTE','PRESIDENT','PARENT','ADMIN')")
     public ResponseEntity<List<TeamMessage>> recentMessages(
             @PathVariable String sport,
             @PathVariable String category) {
@@ -35,7 +35,7 @@ public class TeamChatController {
     }
 
     @PostMapping("/{sport}/{category}/messages")
-    @PreAuthorize("hasAnyRole('JOUEUR','STAFF','ENTRAINEUR','ADMIN')")
+    @PreAuthorize("hasAnyRole('JOUEUR','STAFF','ENTRAINEUR','JOURNALISTE','PRESIDENT','PARENT','ADMIN')")
     public ResponseEntity<TeamMessage> send(
             @PathVariable String sport,
             @PathVariable String category,
@@ -45,7 +45,7 @@ public class TeamChatController {
     }
 
     @GetMapping("/{sport}/{category}/members")
-    @PreAuthorize("hasAnyRole('JOUEUR','STAFF','ENTRAINEUR','ADMIN')")
+    @PreAuthorize("hasAnyRole('JOUEUR','STAFF','ENTRAINEUR','JOURNALISTE','PRESIDENT','PARENT','ADMIN')")
     public ResponseEntity<List<RosterClient.RosterMember>> members(
             @PathVariable String sport,
             @PathVariable String category) {

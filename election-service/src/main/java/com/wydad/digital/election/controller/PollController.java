@@ -33,8 +33,7 @@ public class PollController {
     }
 
     @PostMapping("/{id}/vote")
-    @PreAuthorize("hasRole('VISITEUR') or hasRole('ADHERENT') or hasRole('PARENT') "
-            + "or hasRole('JOUEUR') or hasRole('STAFF') or hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('VISITEUR','ADHERENT','PARENT','JOUEUR','STAFF','ENTRAINEUR','JOURNALISTE','PRESIDENT','ADMIN')")
     public ResponseEntity<PollResponse> vote(@PathVariable Long id, @RequestParam int optionIndex) {
         return ResponseEntity.ok(pollService.vote(id, optionIndex));
     }

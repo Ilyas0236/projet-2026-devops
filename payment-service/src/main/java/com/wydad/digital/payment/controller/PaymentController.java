@@ -19,7 +19,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/payment")
 @RequiredArgsConstructor
-@PreAuthorize("hasRole('ADHERENT') or hasRole('ADMIN')")
+@PreAuthorize("isAuthenticated()")
 public class PaymentController {
 
     private final PaymentService paymentService;
