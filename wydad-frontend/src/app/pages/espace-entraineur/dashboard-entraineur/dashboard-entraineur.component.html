@@ -90,7 +90,7 @@
                 </thead>
                 <tbody>
                   <tr *ngFor="let j of joueurs" class="border-b border-paper-2 hover:bg-paper-2/50">
-                    <td class="py-3 pr-4 font-bold">{{ j.name || j.firstName + ' ' + j.lastName }}</td>
+                    <td class="py-3 pr-4 font-bold">{{ j.fullName || (j.firstName + ' ' + j.lastName) }}</td>
                     <td class="py-3 pr-4 text-ink-secondary">{{ j.position || '—' }}</td>
                     <td class="py-3 pr-4 font-mono">{{ j.shirtNumber ?? '—' }}</td>
                     <td class="py-3">

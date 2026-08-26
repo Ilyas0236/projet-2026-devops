@@ -37,7 +37,7 @@ import { ErrorBannerComponent } from '../../components/error-banner/error-banner
         <div class="cart-items">
           <div class="cart-item" *ngFor="let item of items">
             <div class="item-image">
-              <img *ngIf="item.productImage" [src]="item.productImage" alt="{{ item.productName }}">
+              <img *ngIf="item.productImage" [src]="api.getMediaUrl(item.productImage)" alt="{{ item.productName }}">
               <div *ngIf="!item.productImage" class="placeholder">{{ item.productName?.charAt(0) }}</div>
             </div>
             <div class="item-info">

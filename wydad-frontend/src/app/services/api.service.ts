@@ -343,6 +343,24 @@ export class ApiService {
     return this.http.post<any[]>(`${this.baseUrl}/ticket/tickets/purchase`, purchaseRequest);
   }
 
+  /**
+   * B.28 — Achat sans compte (visiteur) : endpoint public POST /ticket/tickets/purchase-guest
+   * Crée ou réutilise un compte VISITEUR idempotent (clé = email) et génère les billets.
+   * NE PAS exiger de JWT : cet appel doit être fait sans Authorization header.
+   */
+  purchaseAsGuest(guestRequest: {
+    eventId: number;
+    category: string;
+    quantity: number;
+    guestFirstName: string;
+    guestLastName: string;
+    guestEmail: string;
+    guestPhone: string;
+    paymentMethod: string;
+  }): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/ticket/tickets/purchase-guest`, guestRequest);
+  }
+
   getTicketsByUser(userId: number): Observable<any[]> {
     return this.http.get<any[]>(`${this.baseUrl}/ticket/tickets/user/${userId}`);
   }

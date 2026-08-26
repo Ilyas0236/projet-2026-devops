@@ -29,11 +29,11 @@ import { ErrorBannerComponent } from '../../components/error-banner/error-banner
             </div>
             <div *ngIf="product.images && product.images.length > 1" class="flex gap-3 mt-4">
               <div *ngFor="let img of product.images; let i = index"
-                   (click)="mainImage = img"
-                   [class.ring-2]="mainImage === img"
-                   [class.ring-wydad-red]="mainImage === img"
+                   (click)="mainImage = api.getMediaUrl(img)"
+                   [class.ring-2]="mainImage === api.getMediaUrl(img)"
+                   [class.ring-wydad-red]="mainImage === api.getMediaUrl(img)"
                    class="w-20 h-20 bg-white rounded-lg overflow-hidden border border-gray-200 cursor-pointer hover:border-wydad-red transition-colors">
-                <img [src]="img" class="w-full h-full object-cover">
+                <img [src]="api.getMediaUrl(img)" class="w-full h-full object-cover">
               </div>
             </div>
           </div>
@@ -176,7 +176,7 @@ export class BoutiqueDetailComponent implements OnInit {
       this.api.getProductById(Number(id)).subscribe({
         next: (data) => {
           this.product = data;
-          this.mainImage = data.images?.[0] || null;
+          this.mainImage = data.images?.[0] ? this.api.getMediaUrl(data.images[0]) : null;
           this.extractVariants(data.variants || []);
           this.loading = false;
         },
@@ -196,7 +196,7 @@ export class BoutiqueDetailComponent implements OnInit {
       this.api.getProductById(Number(id)).subscribe({
         next: (data) => {
           this.product = data;
-          this.mainImage = data.images?.[0] || null;
+          this.mainImage = data.images?.[0] ? this.api.getMediaUrl(data.images[0]) : null;
           this.extractVariants(data.variants || []);
           this.loading = false;
         },

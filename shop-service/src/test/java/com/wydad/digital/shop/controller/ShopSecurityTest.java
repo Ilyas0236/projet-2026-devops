@@ -62,12 +62,29 @@ class ShopSecurityTest {
     }
 
     @Test
-    @DisplayName("Un STAFF n'est pas membre : GET /cart -> 403")
-    void staffNEstPasMembreDuPanier() throws Exception {
+    @DisplayName("STAFF est un rôle membre : GET /cart -> 200 (B.4 audit 26/08)")
+    void staffEstMembreDuPanier() throws Exception {
+        // B.4 (audit complet 26/08 ac620e5) : le panier a été ouvert à tous
+        // les rôles membres. STAFF peut donc consulter son propre panier.
+        // Avant ce fix, STAFF recevait 403 par héritage de l'ancienne règle
+        // B.12.a (ADHERENT/ADMIN uniquement) qui a depuis été élargie pour
+        // rester cohérente avec OrderController et TicketController.
         mockMvc.perform(get(BASE + "/cart")
                         .header("X-User-Id", "7")
                         .header("X-User-Email", "staff@wydad.ma")
                         .header("X-User-Role", "STAFF"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("Un VISITEUR (non-membre) n'accède pas au panier : GET /cart -> 403")
+    void visiteurNaPasAccesAuPanier() throws Exception {
+        // Le panier reste un service membre : VISITEUR (créé par l'achat
+        // sans compte B.28) ne peut ni lire ni modifier un panier.
+        mockMvc.perform(get(BASE + "/cart")
+                        .header("X-User-Id", "999")
+                        .header("X-User-Email", "visiteur@wac.ma")
+                        .header("X-User-Role", "VISITEUR"))
                 .andExpect(status().isForbidden());
     }
 
