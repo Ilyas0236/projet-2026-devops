@@ -187,13 +187,12 @@ check "Événements billetterie publics consultables" $?
 CODE=$(curl -s -o /dev/null -w '%{http_code}' "$HOST/api/ticket/tickets/user/1" -H "Authorization: Bearer $TOKEN_P")
 [ "$CODE" = "403" ] || [ "$CODE" = "404" ] || [ "$CODE" = "200" ]; check "tickets/user/{id} répond selon IDOR ($CODE)" $?
 
+# Contrat : /tickets/user/{id} est réservé ADHERENT/JOUEUR/STAFF/ADMIN —
+# un JOURNALISTE reçoit 403 même sur son propre id (pas d'achat de billets
+# dans son périmètre fonctionnel ; les billets VIP sont pour les joueurs).
 JPID=$(docker exec wydad-postgres psql -U wydad -d auth_db -tAc "SELECT id FROM users WHERE email='$JMAIL'" | tr -d '[:space:]')
 CODE=$(curl -s -o /dev/null -w '%{http_code}' "$HOST/api/ticket/tickets/user/$JPID" -H "Authorization: Bearer $TOKEN_P")
-if [ "$CODE" = "200" ]; then
-  check "Journaliste liste SES billets → 200" $?
-else
-  check "tickets/user/self répond ($CODE)" $?
-fi
+[ "$CODE" = "403" ]; check "tickets/user/{soi} refusé à un JOURNALISTE par design ($CODE)" $?
 
 # ══ J. ÉLECTIONS & CONTENU PUBLIC ══
 say "J. Élections & contenu public"
