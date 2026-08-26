@@ -541,6 +541,13 @@ export class ApiService {
     return this.http.put<any>(`${this.baseUrl}/sports/my-space/profile`, body);
   }
 
+  /** Photo de profil du joueur connecté (multipart, max 5 Mo). */
+  uploadMyPhoto(file: File): Observable<any> {
+    const form = new FormData();
+    form.append('file', file);
+    return this.http.post<any>(`${this.baseUrl}/sports/my-space/profile/photo`, form);
+  }
+
   /** Convocation d'un joueur par le staff (B.3.a) — réservée au staff de la catégorie. */
   createConvocation(joueurUserId: number, sessionId: number): Observable<any> {
     return this.http.post<any>(

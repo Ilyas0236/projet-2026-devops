@@ -13,4 +13,5 @@ public class PurchaseTicketRequest {
     private String userEmail;
     @NotNull private TicketCategory category;
     @Positive private Integer quantity;
+    private String paymentMethod = "ECASH";
 }

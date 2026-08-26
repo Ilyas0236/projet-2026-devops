@@ -86,6 +86,18 @@ public class PlayerSpaceController {
         return ResponseEntity.ok(playerSpaceService.updateMyProfile(request));
     }
 
+    /**
+     * Photo de profil du joueur connecté (multipart, JPEG/PNG/WebP, max 5 Mo).
+     * La fiche est résolue depuis le token — un joueur ne modifie jamais
+     * la photo d'un autre.
+     */
+    @PostMapping(value = "/profile/photo", consumes = "multipart/form-data")
+    @PreAuthorize("hasRole('JOUEUR')")
+    public ResponseEntity<PlayerDto> uploadMyPhoto(
+            @RequestParam("file") org.springframework.web.multipart.MultipartFile file) {
+        return ResponseEntity.ok(playerSpaceService.uploadMyPhoto(file));
+    }
+
     /** Statistiques de match détaillées du joueur connecté (B.4). */
     @GetMapping("/stats")
     @PreAuthorize("hasRole('JOUEUR')")

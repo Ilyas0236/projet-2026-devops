@@ -6,10 +6,22 @@ spring:
     name: api-gateway
   cloud:
     gateway:
+      globalcors:
+        corsConfigurations:
+          '[/**]':
+            allowedOrigins: "http://localhost:4200"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - PATCH
+              - OPTIONS
+            allowedHeaders: "*"
+            allowCredentials: true
+      default-filters:
+        - TokenRelay
       routes:
-        # Endpoints internes service-a-service : jamais joignables depuis l'exterieur.
-        # Doivent preceder les routes des services concernes (la premiere route
-        # matchante gagne).
         - id: block-notification-internal
           uri: no://op
           predicates:
@@ -50,9 +62,6 @@ spring:
             - name: SetStatus
               args:
                 status: FORBIDDEN
-        # Defense en profondeur : shop/ticket/sports n'exposent aucun endpoint
-        # /internal aujourd'hui, mais tout futur endpoint de ce type doit etre
-        # bloque par defaut, pas expose par oubli.
         - id: block-shop-internal
           uri: no://op
           predicates:
@@ -77,12 +86,18 @@ spring:
             - name: SetStatus
               args:
                 status: FORBIDDEN
-        # Defense en profondeur : election-service n'expose aucun endpoint
-        # /internal ; tout futur endpoint de ce type doit etre bloque ici.
         - id: block-election-internal
           uri: no://op
           predicates:
             - Path=/api/elections/internal/**
+          filters:
+            - name: SetStatus
+              args:
+                status: FORBIDDEN
+        - id: block-communication-internal
+          uri: no://op
+          predicates:
+            - Path=/api/communication/internal/**
           filters:
             - name: SetStatus
               args:
@@ -107,11 +122,6 @@ spring:
           uri: ${TICKET_SERVICE_URI:http://localhost:8085}
           predicates:
             - Path=/api/ticket/**
-        # Messagerie privée et chat de groupe : migrés de sports-service vers
-        # communication-service (audit thématique). Les chemins historiques
-        # /api/sports/messaging|team-chat sont conservés pour compatibilité
-        # frontend — ces routes DOIVENT précéder la route générique
-        # sports-service ci-dessous (première matchante gagne).
         - id: communication-messaging
           uri: ${COMMUNICATION_SERVICE_URI:http://localhost:8090}
           predicates:
@@ -120,10 +130,6 @@ spring:
           uri: ${COMMUNICATION_SERVICE_URI:http://localhost:8090}
           predicates:
             - Path=/api/sports/team-chat/**
-        # Chat de groupe : upgrade WebSocket/STOMP (SockJS inclus) vers
-        # communication-service. L'identité est exigée par frame STOMP
-        # CONNECT (JWT validé par le service) ; l'adhésion est revérifiée
-        # à chaque envoi.
         - id: communication-websocket
           uri: ${COMMUNICATION_SERVICE_URI:http://localhost:8090}
           predicates:
@@ -144,23 +150,10 @@ spring:
           uri: ${NOTIFICATION_SERVICE_URI:http://localhost:8086}
           predicates:
             - Path=/api/notification/**
-        # Gouvernance du club : élections du président + sondages (migration
-        # depuis sports-service — audit thématique). Résultats publiés publics,
-        # vote et administration authentifiés (côté service).
         - id: election-service
           uri: ${ELECTION_SERVICE_URI:http://localhost:8089}
           predicates:
             - Path=/api/elections/**,/api/polls/**
-        # Defense en profondeur : communication-service n'expose aucun endpoint
-        # /internal ; tout futur endpoint de ce type doit etre bloque ici.
-        - id: block-communication-internal
-          uri: no://op
-          predicates:
-            - Path=/api/communication/internal/**
-          filters:
-            - name: SetStatus
-              args:
-                status: FORBIDDEN
         - id: communication-service
           uri: ${COMMUNICATION_SERVICE_URI:http://localhost:8090}
           predicates:
@@ -170,9 +163,6 @@ logging:
   level:
     org.springframework.cloud.gateway: INFO
 
-# Actuator : health uniquement, sans detail. L'endpoint 'gateway'
-# (lecture/creation de routes a chaud) ne doit JAMAIS etre expose sur
-# le port public — il permettrait de contourner le blocage des routes internes.
 management:
   endpoints:
     web:

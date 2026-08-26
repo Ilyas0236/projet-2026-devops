@@ -403,6 +403,27 @@ public class PlayerSpaceService {
         return toPlayerDto(playerRepository.save(p));
     }
 
+    /**
+     * Photo de profil : le joueur dépose SA photo (multipart) — la fiche est
+     * toujours résolue depuis l'identité du token, jamais d'un paramètre.
+     */
+    @Transactional
+    public com.wydad.digital.sports.dto.PlayerDto uploadMyPhoto(org.springframework.web.multipart.MultipartFile file) {
+        Long me = requireCurrentUserId();
+        Player p = playerRepository.findByUserId(me)
+                .orElseThrow(() -> new EntityNotFoundException("Aucune fiche sportive liée à votre compte"));
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("Aucun fichier reçu.");
+        }
+        try {
+            MediaStorageService.UploadResult up = mediaStorageService.uploadProfilePhoto(file, me);
+            p.setPhotoUrl(up.secureUrl() != null ? up.secureUrl() : up.publicId());
+        } catch (java.io.IOException e) {
+            throw new IllegalStateException("Échec de l'envoi de la photo, veuillez réessayer.");
+        }
+        return toPlayerDto(playerRepository.save(p));
+    }
+
     private com.wydad.digital.sports.dto.PlayerDto toPlayerDto(Player p) {
         var dto = new com.wydad.digital.sports.dto.PlayerDto();
         dto.setId(p.getId());

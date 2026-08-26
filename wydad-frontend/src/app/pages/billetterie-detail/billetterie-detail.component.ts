@@ -234,7 +234,8 @@ export class BilletterieDetailComponent implements OnInit {
       userFullName: localStorage.getItem('wydad_first_name') + ' ' + localStorage.getItem('wydad_last_name'),
       userEmail: localStorage.getItem('wydad_email'),
       category: this.selectedSection.category,
-      quantity: this.quantity
+      quantity: this.quantity,
+      paymentMethod: this.paymentMethod
     };
 
     this.api.purchaseTickets(req).subscribe({

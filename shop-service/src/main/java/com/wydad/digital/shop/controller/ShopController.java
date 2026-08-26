@@ -51,17 +51,16 @@ public class ShopController {
         return ResponseEntity.ok(productService.getProductById(id));
     }
 
-    // ========== PRODUITS (ADMIN) ==========
     @PostMapping("/products")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ProductDto> createProduct(@Valid @RequestBody ProductRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(productService.createProduct(request));
+    public ResponseEntity<ProductDto> createProduct(@RequestBody ProductRequest productRequest) {
+        return ResponseEntity.ok(productService.createProduct(productRequest));
     }
 
     @PutMapping("/products/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ProductDto> updateProduct(@PathVariable Long id, @Valid @RequestBody ProductRequest request) {
-        return ResponseEntity.ok(productService.updateProduct(id, request));
+    public ResponseEntity<ProductDto> updateProduct(@PathVariable Long id, @RequestBody ProductRequest productRequest) {
+        return ResponseEntity.ok(productService.updateProduct(id, productRequest));
     }
 
     @DeleteMapping("/products/{id}")

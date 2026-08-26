@@ -89,6 +89,53 @@ public class MediaStorageService {
     /** Taille maximum acceptée, exposée au frontend pour validation. */
     public static final long MAX_SIZE_BYTES = 25L * 1024 * 1024;
 
+    /** Limite applicative d'une photo de profil (5 Mo). */
+    public static final long MAX_PHOTO_SIZE_BYTES = 5L * 1024 * 1024;
+
+    private static final java.util.Set<String> ALLOWED_PHOTO_TYPES =
+            java.util.Set.of("image/jpeg", "image/png", "image/webp");
+
+    /**
+     * Upload de la photo de profil d'un joueur (JPEG/PNG/WebP, max 5 Mo).
+     * Différence avec les médias tactiques : livraison PUBLIQUE (type
+     * « upload ») car la photo s'affiche directement dans les espaces
+     * (héros joueur, liste des coéquipiers) sans URL signée à durée limitée.
+     */
+    @SuppressWarnings("unchecked")
+    public UploadResult uploadProfilePhoto(MultipartFile file, Long userId) throws IOException {
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("Fichier vide.");
+        }
+        String contentType = file.getContentType();
+        if (contentType == null || !ALLOWED_PHOTO_TYPES.contains(contentType.toLowerCase())) {
+            throw new IllegalArgumentException("Format non supporté (JPEG, PNG ou WebP uniquement).");
+        }
+        byte[] data = file.getBytes();
+        if (data.length > MAX_PHOTO_SIZE_BYTES) {
+            throw new org.springframework.web.multipart.MaxUploadSizeExceededException(
+                    MAX_PHOTO_SIZE_BYTES,
+                    new IllegalArgumentException("Photo trop volumineuse (max. 5 Mo)."));
+        }
+
+        // Mode dégradé sans clés (dev local) : référence locale, circuit inchangé.
+        if (!configured) {
+            return new UploadResult("local:profile-photos/" + userId + ":" + file.getOriginalFilename(),
+                    null, false);
+        }
+
+        Map<String, Object> result = cloudinary.uploader().upload(data, ObjectUtils.asMap(
+                "folder", "profile-photos",
+                "public_id", "player-" + userId,
+                "resource_type", "image",
+                "overwrite", true,
+                "invalidate", true
+        ));
+        return new UploadResult(
+                String.valueOf(result.get("public_id")),
+                String.valueOf(result.get("secure_url")),
+                true);
+    }
+
     /**
      * URL signée temporaire (1 h) pour consulter un média — utilisée par le
      * joueur destinataire et par le staff émetteur. Retourne null en mode

@@ -13,6 +13,7 @@ import com.wydad.digital.ticket.repository.SectionRepository;
 import com.wydad.digital.ticket.repository.TicketRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,6 +25,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class TicketService {
 
     private final TicketRepository ticketRepository;
@@ -88,15 +90,17 @@ public class TicketService {
         event.setSoldTickets(event.getSoldTickets() + qty);
         eventRepository.save(event);
 
-        // Paiement E-cash OBLIGATOIRE avant emission des billets : si le debit
-        // echoue (solde insuffisant, payment-service indisponible), l'exception
-        // propage et la transaction locale est annulee -> jamais de billet gratuit.
-        // (Le prix est toujours le prix serveur de la section, jamais une valeur client.)
+        // Paiement
         BigDecimal total = section.getPrice().multiply(BigDecimal.valueOf(qty));
-        paymentClient.debitEcash(
-                effectiveUserEmail,
-                total,
-                "WAC-TICKET-" + event.getId());
+        if ("ECASH".equalsIgnoreCase(request.getPaymentMethod())) {
+            paymentClient.debitEcash(
+                    effectiveUserEmail,
+                    total,
+                    "WAC-TICKET-" + event.getId());
+        } else {
+            // Simulation carte bancaire
+            log.info("Paiement par CARTE BANCAIRE simulé pour {} : {} DH", effectiveUserEmail, total);
+        }
 
         // Best-effort : une panne de notification ne doit pas annuler l'achat
         notificationClient.notifyUser(
