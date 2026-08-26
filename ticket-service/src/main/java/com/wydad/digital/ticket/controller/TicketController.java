@@ -33,7 +33,7 @@ public class TicketController {
     }
 
     @GetMapping("/user/{userId}")
-    @PreAuthorize("hasRole('ADHERENT') or hasRole('JOUEUR') or hasRole('ADMIN') or hasRole('STAFF')")
+    @PreAuthorize("hasAnyRole('ADHERENT','JOUEUR','STAFF','ENTRAINEUR','JOURNALISTE','PRESIDENT','PARENT','ADMIN')")
     public ResponseEntity<List<TicketResponse>> getTicketsByUser(@PathVariable Long userId) {
         if (!UserContext.isAdmin() && !userId.equals(UserContext.getCurrentUserId())) {
             throw new AccessDeniedException("Accès aux billets d'un autre utilisateur interdit");
