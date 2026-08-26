@@ -45,7 +45,7 @@ call "Mes enfants"                  GET  /api/sports/academy/parent/$PID "" 200
 call "Enfants d'un autre parent"    GET  /api/sports/academy/parent/999 "" 403   # anti-IDOR
 call "Tous dossiers (admin/staff)"  GET  /api/sports/academy/all "" 403   # parent n'est pas STAFF/ADMIN
 call "Documents enfant 1"           GET  /api/sports/academy/1/documents "" 200
-call "Update statut enfant (admin/staff)" PATCH /api/sports/academy/1/status "" 403   # parent n'a pas le droit
+call "Update statut enfant (admin/staff)" PATCH "/api/sports/academy/1/status?active=true" "" 403   # parent n'a pas le droit
 
 echo "--- SPORTS (lecture parent) ---"
 call "Liste joueurs FOOTBALL SENIOR" GET  "/api/sports/players/filter?sportType=FOOTBALL&category=SENIOR" "" 403   # parent pas d'équipe
