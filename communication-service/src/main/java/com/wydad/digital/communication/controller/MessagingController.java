@@ -28,7 +28,7 @@ public class MessagingController {
     // ─────────────────────────── MESSAGERIE ───────────────────────────
 
     @PostMapping("/send")
-    @PreAuthorize("hasRole('JOUEUR') or hasRole('STAFF') or hasRole('ENTRAINEUR') or hasRole('ADMIN') or hasRole('PRESIDENT')")
+    @PreAuthorize("hasAnyRole('JOUEUR','STAFF','ENTRAINEUR','JOURNALISTE','ADMIN','PRESIDENT')")
     public ResponseEntity<Message> send(
             @RequestParam Long toUserId,
             @RequestBody SendRequest body) {
@@ -37,13 +37,13 @@ public class MessagingController {
     }
 
     @GetMapping("/conversation/{otherUserId}")
-    @PreAuthorize("hasRole('JOUEUR') or hasRole('STAFF') or hasRole('ENTRAINEUR') or hasRole('ADMIN') or hasRole('PRESIDENT')")
+    @PreAuthorize("hasAnyRole('JOUEUR','STAFF','ENTRAINEUR','JOURNALISTE','ADMIN','PRESIDENT')")
     public ResponseEntity<List<Message>> conversation(@PathVariable Long otherUserId) {
         return ResponseEntity.ok(messagingService.getConversationWith(otherUserId));
     }
 
     @GetMapping("/inbox")
-    @PreAuthorize("hasRole('JOUEUR') or hasRole('STAFF') or hasRole('ENTRAINEUR') or hasRole('ADMIN') or hasRole('PRESIDENT')")
+    @PreAuthorize("hasAnyRole('JOUEUR','STAFF','ENTRAINEUR','JOURNALISTE','ADMIN','PRESIDENT')")
     public ResponseEntity<List<Message>> inbox() {
         return ResponseEntity.ok(messagingService.getMyInbox());
     }

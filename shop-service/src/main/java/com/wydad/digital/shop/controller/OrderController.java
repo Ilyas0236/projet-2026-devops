@@ -19,7 +19,7 @@ public class OrderController {
     private final OrderService orderService;
 
     @PostMapping
-    @PreAuthorize("hasRole('ADHERENT') or hasRole('ADMIN')")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<OrderResponseDto> createOrder(
             @RequestHeader("X-User-Email") String userEmail,
             @RequestHeader(value = "X-User-Id", required = false) Long userId,
@@ -28,7 +28,7 @@ public class OrderController {
     }
 
     @GetMapping
-    @PreAuthorize("hasRole('ADHERENT') or hasRole('ADMIN')")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Page<OrderResponseDto>> getMyOrders(
             @RequestHeader("X-User-Email") String userEmail,
             Pageable pageable) {
@@ -36,7 +36,7 @@ public class OrderController {
     }
 
     @GetMapping("/{orderNumber}")
-    @PreAuthorize("hasRole('ADHERENT') or hasRole('ADMIN')")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<OrderResponseDto> getOrder(
             @RequestHeader("X-User-Email") String userEmail,
             @PathVariable String orderNumber) {
