@@ -310,6 +310,27 @@ public class AuthController {
         return ResponseEntity.ok(authService.verifyKyc(email));
     }
 
+    /**
+     * Dépôt du justificatif d'identité juste après l'inscription : les comptes
+     * EN_ATTENTE (JOUEUR/ENTRAINEUR/STAFF/JOURNALISTE) n'ont pas de session —
+     * ils n'auraient sinon aucun moyen de déposer leur document. L'authentification
+     * se fait par le couple email + mot de passe fraîchement créé (pas de JWT,
+     * pas d'upload anonyme possible). Même stockage Cloudinary que /kyc/upload-file.
+     */
+    @PostMapping(value = "/kyc/register-upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<KycResponse> registerUploadKyc(
+            @RequestParam("file") org.springframework.web.multipart.MultipartFile file,
+            @RequestParam("documentType") String documentType,
+            @RequestParam("documentNumber") String documentNumber,
+            @RequestParam("email") String email,
+            @RequestParam("password") String password) {
+
+        // Authentification par credentials : seul celui qui vient de créer le
+        // compte (et connaît donc le mot de passe) peut déposer le document.
+        authService.checkCredentialsForKycUpload(email, password);
+        return ResponseEntity.ok(authService.uploadKycFile(file, email.trim(), documentType, documentNumber));
+    }
+
     // ============================================
     // Sessions Actives
     // ============================================

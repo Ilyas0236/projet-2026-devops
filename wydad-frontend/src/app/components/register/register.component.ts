@@ -77,6 +77,20 @@ export class RegisterComponent implements OnInit {
   matchsDisponibles: any[] = [];
   matchsLoading = false;
 
+  // ----- Justificatif d'identité (KYC) -----
+  /** Pièce d'identité exigée pour les statuts validés par le club :
+   * l'admin doit pouvoir vérifier l'identité avant d'approuver. */
+  kycFile: File | null = null;
+  kycFileName = '';
+  kycDocNumber = '';
+  kycUploading = false;
+
+  onKycFileSelected(event: any) {
+    const input = event.target as HTMLInputElement;
+    this.kycFile = input.files && input.files.length ? input.files[0] : null;
+    this.kycFileName = this.kycFile?.name || '';
+  }
+
   authService = inject(AuthService);
   api = inject(ApiService);
   router = inject(Router);
@@ -111,6 +125,10 @@ export class RegisterComponent implements OnInit {
     this.categorieDemandee = '';
     this.organismePresse = '';
     this.matchId = null;
+    // La pièce d'identité est exigée pour les statuts validés par le club.
+    this.kycFile = null;
+    this.kycFileName = '';
+    this.kycDocNumber = '';
     if (valeur === 'JOURNALISTE') {
       this.chargerMatchs();
     }
@@ -152,6 +170,8 @@ export class RegisterComponent implements OnInit {
     if (this.statut === 'JOURNALISTE' && this.organismePresse.trim().length === 0) return false;
     // §17 : un match réel du calendrier est obligatoire pour la presse.
     if (this.statut === 'JOURNALISTE' && !this.matchId) return false;
+    // Pièce d'identité exigée pour les statuts soumis à validation du club.
+    if (this.statut !== 'ADHERENT' && (!this.kycFile || this.kycDocNumber.trim().length === 0)) return false;
     return true;
   }
 
@@ -188,14 +208,16 @@ export class RegisterComponent implements OnInit {
 
     this.authService.register(requestData).subscribe({
       next: (res) => {
-        this.loading = false;
         if (res && res.accessToken) {
           // Adhérent : compte VALIDE, session ouverte immédiatement.
+          this.loading = false;
           this.success = true;
           setTimeout(() => this.router.navigate(['/login']), 2500);
         } else {
           // Statut privilégié : 202 sans corps — compte EN_ATTENTE.
-          this.enAttente = true;
+          // On dépose ensuite le justificatif d'identité (auth par
+          // email+password, pas de session nécessaire).
+          this.deposerKyc();
         }
       },
       error: (err) => {
@@ -203,5 +225,31 @@ export class RegisterComponent implements OnInit {
         this.loading = false;
       }
     });
+  }
+
+  /** Dépôt du document d'identité après la création du compte EN_ATTENTE.
+   * En cas d'échec d'upload, le compte existe quand même : on l'indique
+   * clairement plutôt que de perdre l'inscription. */
+  private deposerKyc() {
+    if (!this.kycFile || this.statut === 'ADHERENT') {
+      this.loading = false;
+      this.enAttente = true;
+      return;
+    }
+    this.kycUploading = true;
+    this.authService.uploadKycRegister(this.kycFile, 'CIN', this.kycDocNumber.trim(), this.email.trim(), this.password)
+      .subscribe({
+        next: () => {
+          this.kycUploading = false;
+          this.loading = false;
+          this.enAttente = true;
+        },
+        error: () => {
+          this.kycUploading = false;
+          this.loading = false;
+          this.enAttente = true;
+          this.error = "Compte créé, mais le dépôt du document a échoué. Vous pourrez le renvoyer depuis votre page de connexion auprès du club.";
+        }
+      });
   }
 }

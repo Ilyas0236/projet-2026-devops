@@ -62,7 +62,8 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
         // Auth-service : public endpoints (member-card et attestation exigent désormais un JWT)
         if (path.equals("/api/auth/login") || path.equals("/api/auth/register") || path.equals("/api/auth/refresh") || path.equals("/api/auth/otp/send") || path.equals("/api/auth/otp/verify")
-                || path.equals("/api/auth/password/reset")) { // S6 : reset de mot de passe protégé par l'OTP, pas par le JWT
+                || path.equals("/api/auth/password/reset")
+                || path.equals("/api/auth/kyc/register-upload")) { // KYC post-inscription : authentifié par email+password dans la requête, pas par JWT
             return chain.filter(exchange);
         }
 

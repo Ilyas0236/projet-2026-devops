@@ -156,6 +156,26 @@
           </div>
         </div>
 
+        <!-- Justificatif d'identité : exigé pour les statuts validés par le club -->
+        <div *ngIf="statut !== 'ADHERENT'" class="mb-6 p-4 rounded-xl bg-paper-1 border border-paper-3 animate-fade-in space-y-4">
+          <p class="text-ink-secondary text-xs leading-relaxed">
+            <strong class="text-ink-primary">Pièce d'identité requise.</strong> Déposez votre CIN ou passeport —
+            l'administrateur du club vérifie votre identité avant d'approuver votre demande.
+          </p>
+          <div class="form-group">
+            <label for="reg-kyc-file" class="block mb-1 text-ink-secondary text-xs uppercase tracking-wider font-semibold">Document d'identité *</label>
+            <input id="reg-kyc-file" type="file" accept="image/*,.pdf" class="paper-input w-full rounded-lg px-4 py-2.5 text-sm"
+                   (change)="onKycFileSelected($event)">
+            <p class="text-ink-tertiary text-xs mt-1 !mb-0">
+              {{ kycFileName ? 'Fichier choisi : ' + kycFileName : 'Image ou PDF — CIN ou passeport' }}
+            </p>
+          </div>
+          <div class="form-group !mb-0">
+            <label for="reg-kyc-num" class="block mb-1 text-ink-secondary text-xs uppercase tracking-wider font-semibold">N° du document *</label>
+            <input id="reg-kyc-num" type="text" class="paper-input w-full rounded-lg px-4 py-2.5" [(ngModel)]="kycDocNumber" name="kycDocNumber" placeholder="Ex : AB123456">
+          </div>
+        </div>
+
         <!-- ======== ADHÉSION (paliers, vitrine informative) ======== -->
         <h3 class="text-ink-primary font-display uppercase tracking-wider mb-4 border-b border-paper-3 pb-2 text-lg">
           <span class="text-wydad-red mr-2">3.</span>Adhésion
@@ -192,7 +212,7 @@
 
         <button type="button" (click)="register()" [disabled]="loading || !isValidForm()"
                 class="paper-btn-primary w-full py-4 text-lg disabled:opacity-50 disabled:cursor-not-allowed">
-          {{ loading ? 'Création du compte...' : (statut === 'ADHERENT' ? 'Créer mon compte' : 'Envoyer ma demande') }}
+          {{ loading ? (kycUploading ? 'Envoi du document...' : 'Création du compte...') : (statut === 'ADHERENT' ? 'Créer mon compte' : 'Envoyer ma demande') }}
         </button>
 
         <div *ngIf="error" role="alert" class="mt-4 p-3 bg-wydad-red/[0.07] border border-wydad-red/30 text-wydad-red rounded-lg text-center text-sm font-medium animate-fade-in">

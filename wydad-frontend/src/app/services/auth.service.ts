@@ -149,6 +149,21 @@ export class AuthService {
     return this.http.post(`${this.baseUrl}/kyc/verify?email=${email}`, {});
   }
 
+  /**
+   * Dépôt du justificatif juste après l'inscription : les comptes
+   * EN_ATTENTE n'ont pas de session — l'authentification passe par le
+   * couple email + mot de passe fraîchement créé (pas de JWT).
+   */
+  uploadKycRegister(file: File, documentType: string, documentNumber: string, email: string, password: string): Observable<any> {
+    const form = new FormData();
+    form.append('file', file);
+    form.append('documentType', documentType);
+    form.append('documentNumber', documentNumber);
+    form.append('email', email);
+    form.append('password', password);
+    return this.http.post(`${this.baseUrl}/kyc/register-upload`, form);
+  }
+
   sendOtp(phone: string): Observable<any> {
     return this.http.post(`${this.baseUrl}/otp/send`, { email: this.currentUserValue, phone }, { responseType: 'text' });
   }

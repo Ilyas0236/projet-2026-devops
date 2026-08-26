@@ -446,6 +446,20 @@ public class AuthService {
     }
 
     /**
+     * Authentification par credentials pour le dépôt KYC post-inscription :
+     * le compte EN_ATTENTE n'a pas de session, on valide donc le couple
+     * email + mot de passe. Même discipline que login : message uniforme
+     * (pas d'énumération), comptes désactivés refusés.
+     */
+    public void checkCredentialsForKycUpload(String email, String password) {
+        User user = userRepository.findByEmailIgnoreCase(email == null ? "" : email.trim())
+                .orElseThrow(InvalidCredentialsException::new);
+        if (!user.isActive() || !passwordEncoder.matches(password == null ? "" : password, user.getPassword())) {
+            throw new InvalidCredentialsException();
+        }
+    }
+
+    /**
      * Phase 1 — upload RÉEL du justificatif : le fichier part sur Cloudinary
      * (folder privé kyc-documents), seuls publicId + URL sécurisée sont
      * stockés. Un seul dossier KYC actif par utilisateur (le nouveau remplace
