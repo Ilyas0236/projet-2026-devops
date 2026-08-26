@@ -1,8 +1,9 @@
 import { Component, HostListener, OnInit } from '@angular/core';
-import { RouterOutlet, RouterModule } from '@angular/router';
+import { Router, RouterOutlet, RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../services/api.service';
+import { AuthService } from '../../services/auth.service';
 import { ToastContainerComponent } from '../../components/toast-container/toast-container.component';
 import { ConfirmDialogComponent } from '../../components/confirm-dialog/confirm-dialog.component';
 
@@ -17,6 +18,10 @@ export class PublicLayoutComponent implements OnInit {
   isScrolled = false;
   isMobileMenuOpen = false;
 
+  /** État connecté du header (pages consommateur : profil, panier…). */
+  isLoggedIn = false;
+  firstName: string | null = null;
+
   // Coordonnees du club — source de verite : configuration club (ADMIN)
   clubInfo: any = null;
 
@@ -25,9 +30,40 @@ export class PublicLayoutComponent implements OnInit {
   sponsors: any[] = [];
   socialLinks: any[] = [];
 
-  constructor(private api: ApiService) {}
+  constructor(
+    private api: ApiService,
+    private auth: AuthService,
+    private router: Router
+  ) {}
+
+  /** Lien « Mon espace » selon le rôle du compte connecté. */
+  get espaceLink(): string {
+    switch (this.auth.getTokenRole()) {
+      case 'JOUEUR': return '/joueur/dashboard';
+      case 'ENTRAINEUR': return '/entraineur/dashboard';
+      case 'STAFF': return '/staff/dashboard';
+      case 'PRESIDENT': return '/president/dashboard';
+      case 'JOURNALISTE': return '/journaliste/accueil';
+      case 'PARENT': return '/academie/mes-enfants';
+      case 'ADMIN': return '/admin';
+      default: return '/profil';
+    }
+  }
+
+  logout(): void {
+    this.auth.logout();
+    this.router.navigate(['/']);
+  }
 
   ngOnInit() {
+    // État connecté du header (pages consommateur sous layout public).
+    this.isLoggedIn = !!this.auth.currentUserValue && this.auth.isTokenValid();
+    this.firstName = localStorage.getItem('wydad_first_name');
+    this.auth.currentUser$.subscribe(() => {
+      this.isLoggedIn = !!this.auth.currentUserValue && this.auth.isTokenValid();
+      this.firstName = localStorage.getItem('wydad_first_name');
+    });
+
     this.api.getClubSetting('club_info').subscribe({
       next: (info) => (this.clubInfo = info),
       error: () => (this.clubInfo = null)

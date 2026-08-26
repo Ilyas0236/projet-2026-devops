@@ -32,10 +32,18 @@
 
       <!-- Actions -->
       <div class="flex items-center gap-4 shrink-0">
-        <a routerLink="/login" class="hidden xl:inline-block text-ink-secondary hover:text-wydad-red font-display text-xs uppercase tracking-widest transition-colors">Connexion</a>
-        <a routerLink="/register" class="hidden md:flex wydad-btn-primary items-center justify-center font-display text-xs tracking-widest uppercase px-6 py-2 skew-x-[-10deg]">
-          <span class="skew-x-[10deg]">Inscription</span>
-        </a>
+        <!-- État connecté : bonjour + espace + déconnexion au lieu de Connexion/Inscription -->
+        <ng-container *ngIf="isLoggedIn; else anonymous">
+          <span class="hidden xl:inline-block text-ink-secondary font-display text-xs uppercase tracking-widest">Bonjour {{ firstName }}</span>
+          <a [routerLink]="espaceLink" class="hidden xl:inline-block text-wydad-red hover:opacity-80 font-display text-xs uppercase tracking-widest transition-colors">Mon espace</a>
+          <button type="button" (click)="logout()" class="hidden xl:inline-block text-ink-secondary hover:text-wydad-red font-display text-xs uppercase tracking-widest transition-colors cursor-pointer bg-transparent border-none">Déconnexion</button>
+        </ng-container>
+        <ng-template #anonymous>
+          <a routerLink="/login" class="hidden xl:inline-block text-ink-secondary hover:text-wydad-red font-display text-xs uppercase tracking-widest transition-colors">Connexion</a>
+          <a routerLink="/register" class="hidden md:flex wydad-btn-primary items-center justify-center font-display text-xs tracking-widest uppercase px-6 py-2 skew-x-[-10deg]">
+            <span class="skew-x-[10deg]">Inscription</span>
+          </a>
+        </ng-template>
 
         <!-- Mobile Menu Btn -->
         <button class="xl:hidden w-10 h-10 flex flex-col justify-center gap-1.5 items-center text-ink-primary z-50 relative" (click)="toggleMobileMenu()" aria-label="Menu">
@@ -64,8 +72,15 @@
       <a routerLink="/boutique" (click)="toggleMobileMenu()" class="text-ink-secondary hover:text-wydad-red" routerLinkActive="text-wydad-red">Boutique</a>
       <a routerLink="/transparence" (click)="toggleMobileMenu()" class="text-ink-secondary hover:text-wydad-red" routerLinkActive="text-wydad-red">Transparence</a>
       <div class="h-px w-full bg-paper-3 my-4"></div>
-      <a routerLink="/login" (click)="toggleMobileMenu()" class="text-ink-secondary hover:text-wydad-red">Connexion</a>
-      <a routerLink="/register" (click)="toggleMobileMenu()" class="text-wydad-red hover:text-ink-primary">Inscription</a>
+      <ng-container *ngIf="isLoggedIn; else anonymousMobile">
+        <span class="text-ink-secondary">Bonjour {{ firstName }}</span>
+        <a [routerLink]="espaceLink" (click)="toggleMobileMenu()" class="text-wydad-red hover:text-ink-primary">Mon espace</a>
+        <button type="button" (click)="logout(); toggleMobileMenu()" class="text-left text-ink-secondary hover:text-wydad-red cursor-pointer bg-transparent border-none p-0 font-inherit">Déconnexion</button>
+      </ng-container>
+      <ng-template #anonymousMobile>
+        <a routerLink="/login" (click)="toggleMobileMenu()" class="text-ink-secondary hover:text-wydad-red">Connexion</a>
+        <a routerLink="/register" (click)="toggleMobileMenu()" class="text-wydad-red hover:text-ink-primary">Inscription</a>
+      </ng-template>
     </nav>
   </div>
 

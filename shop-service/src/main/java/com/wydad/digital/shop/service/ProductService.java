@@ -2,12 +2,15 @@ package com.wydad.digital.shop.service;
 
 import com.wydad.digital.shop.dto.ProductDto;
 import com.wydad.digital.shop.dto.ProductRequest;
+import com.wydad.digital.shop.enums.ProductSize;
 import com.wydad.digital.shop.enums.SportSection;
 import com.wydad.digital.shop.model.Category;
+import com.wydad.digital.shop.model.OrderItem;
 import com.wydad.digital.shop.model.Product;
 import com.wydad.digital.shop.model.ProductImage;
 import com.wydad.digital.shop.model.ProductVariant;
 import com.wydad.digital.shop.repository.CategoryRepository;
+import com.wydad.digital.shop.repository.OrderItemRepository;
 import com.wydad.digital.shop.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -15,7 +18,12 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -24,6 +32,7 @@ public class ProductService {
 
     private final ProductRepository productRepository;
     private final CategoryRepository categoryRepository;
+    private final OrderItemRepository orderItemRepository;
 
     public Page<ProductDto> getAllActiveProducts(Pageable pageable) {
         return productRepository.findByActiveTrue(pageable)
@@ -110,18 +119,23 @@ public class ProductService {
             product.setSku(null); // sera généré dans createProduct
         }
 
-        // Stock : une seule variante UNIQUE (le formulaire admin gère le stock global)
-        Integer stock = request.getStockQuantity();
-        if (stock != null && stock >= 0) {
-            ProductVariant variant = product.getVariants().isEmpty()
-                    ? ProductVariant.builder().product(product).size(com.wydad.digital.shop.enums.ProductSize.UNIQUE).build()
-                    : product.getVariants().get(0);
-            variant.setStockQuantity(stock);
-            if (variant.getSku() == null || variant.getSku().isBlank()) {
-                variant.setSku("VAR-" + product.getName().toUpperCase(Locale.ROOT).replaceAll("[^A-Z0-9]", "-"));
-            }
-            if (!product.getVariants().contains(variant)) {
-                product.getVariants().add(variant);
+        // Stock : soit édition par taille (variants fourni), soit la
+        // variante UNIQUE historique (le formulaire admin gère le stock global).
+        if (request.getVariants() != null && !request.getVariants().isEmpty()) {
+            applyVariants(product, request.getVariants());
+        } else {
+            Integer stock = request.getStockQuantity();
+            if (stock != null && stock >= 0) {
+                ProductVariant variant = product.getVariants().isEmpty()
+                        ? ProductVariant.builder().product(product).size(com.wydad.digital.shop.enums.ProductSize.UNIQUE).build()
+                        : product.getVariants().get(0);
+                variant.setStockQuantity(stock);
+                if (variant.getSku() == null || variant.getSku().isBlank()) {
+                    variant.setSku("VAR-" + product.getName().toUpperCase(Locale.ROOT).replaceAll("[^A-Z0-9]", "-"));
+                }
+                if (!product.getVariants().contains(variant)) {
+                    product.getVariants().add(variant);
+                }
             }
         }
 
@@ -136,6 +150,95 @@ public class ProductService {
                     .build();
             product.getImages().add(image);
         }
+    }
+
+    /**
+     * Applique l'édition par taille : upsert par taille, suppression des
+     * tailles retirées — sauf si une commande historique référence la
+     * variante (OrderItem.variantId), auquel cas le stock est mis à zéro
+     * pour préserver l'intégrité des commandes passées.
+     */
+    private void applyVariants(Product product, List<ProductRequest.VariantRequest> variantRequests) {
+        Map<String, ProductRequest.VariantRequest> bySize = new LinkedHashMap<>();
+        for (ProductRequest.VariantRequest vr : variantRequests) {
+            String normalized = normalizeSize(vr.getSize());
+            if (bySize.containsKey(normalized)) {
+                throw new IllegalArgumentException("Taille dupliquée dans la requête : " + normalized);
+            }
+            if (bySize.values().stream().anyMatch(v ->
+                    v.getColor() != null && !v.getColor().isBlank()
+                            && vr.getColor() != null && !vr.getColor().isBlank()
+                            && v.getColor().equalsIgnoreCase(vr.getColor()))) {
+                throw new IllegalArgumentException("Couleur dupliquée pour la taille " + normalized);
+            }
+            bySize.put(normalized, vr);
+        }
+
+        List<ProductVariant> existing = product.getVariants();
+        Set<String> requestedSizes = bySize.keySet();
+
+        // Upsert des tailles demandées.
+        for (Map.Entry<String, ProductRequest.VariantRequest> e : bySize.entrySet()) {
+            ProductSize size = ProductSize.valueOf(e.getKey());
+            ProductRequest.VariantRequest vr = e.getValue();
+            ProductVariant variant = existing.stream()
+                    .filter(v -> v.getSize() == size
+                            && sameColor(v.getColor(), vr.getColor()))
+                    .findFirst()
+                    .orElseGet(() -> {
+                        ProductVariant v = ProductVariant.builder().product(product).size(size).build();
+                        existing.add(v);
+                        return v;
+                    });
+            if (vr.getStockQuantity() != null && vr.getStockQuantity() >= 0) {
+                variant.setStockQuantity(vr.getStockQuantity());
+            } else if (variant.getStockQuantity() == null) {
+                variant.setStockQuantity(0);
+            }
+            if (vr.getColor() != null && !vr.getColor().isBlank()) {
+                variant.setColor(vr.getColor());
+            }
+            if (vr.getColorHex() != null && !vr.getColorHex().isBlank()) {
+                variant.setColorHex(vr.getColorHex());
+            }
+            if (variant.getSku() == null || variant.getSku().isBlank()) {
+                variant.setSku("VAR-" + product.getName().toUpperCase(Locale.ROOT)
+                        .replaceAll("[^A-Z0-9]", "-") + "-" + size);
+            }
+        }
+
+        // Retrait des tailles absentes de la requête.
+        Iterator<ProductVariant> it = existing.iterator();
+        while (it.hasNext()) {
+            ProductVariant v = it.next();
+            boolean kept = requestedSizes.contains(v.getSize() != null ? v.getSize().name() : "");
+            boolean referencedByOrder = v.getId() != null && orderItemRepository.existsByVariantId(v.getId());
+            if (!kept && referencedByOrder) {
+                // Taille retirée mais déjà commandée : on conserve la ligne,
+                // stock à zéro (rupture définitive).
+                v.setStockQuantity(0);
+                continue;
+            }
+            if (!kept) {
+                it.remove();
+            }
+        }
+    }
+
+    /** Tolérant : accepte « u17 », espaces, etc. Rejette une taille inconnue. */
+    private String normalizeSize(String raw) {
+        if (raw == null || raw.isBlank()) {
+            throw new IllegalArgumentException("Taille requise pour chaque variante");
+        }
+        return raw.trim().toUpperCase(Locale.ROOT);
+    }
+
+    private boolean sameColor(String a, String b) {
+        boolean blankA = a == null || a.isBlank();
+        boolean blankB = b == null || b.isBlank();
+        if (blankA && blankB) return true;
+        if (blankA || blankB) return false;
+        return a.equalsIgnoreCase(b);
     }
 
     private String generateSku(String name) {

@@ -12,8 +12,9 @@ import java.util.Map;
 
 /**
  * Phase 5 — appels vidéo/vocaux programmés.
- * Création : ENTRAINEUR / PRESIDENT / ADMIN uniquement (re-vérifié dans le
- * service). Lecture/jeton : organisateur ou participant (liste fermée).
+ * Création : ENTRAINEUR / PRESIDENT / ADMIN / JOUEUR (re-vérifié dans le
+ * service ; le joueur est borné aux coéquipiers de son groupe).
+ * Lecture/jeton : organisateur ou participant (liste fermée).
  * Sorties via CallView : jamais l'entité brute (participantUserIds/roomName
  * ne fuient pas aux clients).
  */
@@ -25,7 +26,7 @@ public class ScheduledCallController {
     private final ScheduledCallService callService;
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('ENTRAINEUR','PRESIDENT','ADMIN')")
+    @PreAuthorize("hasAnyRole('ENTRAINEUR','PRESIDENT','ADMIN','JOUEUR')")
     public ResponseEntity<ScheduledCallService.CallView> create(@RequestBody ScheduledCallService.CreateCallRequest req) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ScheduledCallService.CallView.from(callService.createCall(req)));
@@ -44,7 +45,7 @@ public class ScheduledCallController {
     }
 
     @PostMapping("/{id}/cancel")
-    @PreAuthorize("hasAnyRole('ENTRAINEUR','PRESIDENT','ADMIN')")
+    @PreAuthorize("hasAnyRole('ENTRAINEUR','PRESIDENT','ADMIN','JOUEUR')")
     public ResponseEntity<ScheduledCallService.CallView> cancel(@PathVariable Long id) {
         return ResponseEntity.status(HttpStatus.OK)
                 .body(ScheduledCallService.CallView.from(callService.cancelCall(id)));

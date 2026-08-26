@@ -28,12 +28,13 @@ import java.util.List;
  * header X-User-* falsifiable, et la gateway n'a pas à laisser passer une
  * requête non authentifiée.
  *
- * <p>Le principal est posé au CONNECT puis attaché à la session ; chaque
- * SEND repasse ensuite par les règles d'adhésion du service (défense en
+ * <p>Le principal est posé au CONNECT puis attaché à la session. Les
+ * SUBSCRIBE aux topics de groupe sont vérifiés contre le roster (un compte
+ * authentifié ne peut pas écouter le chat d'une autre équipe) ; chaque SEND
+ * repasse ensuite par les règles d'adhésion du service (défense en
  * profondeur).</p>
  */
 @Component
-@RequiredArgsConstructor
 public class TeamChatAuthInterceptor implements ChannelInterceptor {
 
     public static final String HDR_AUTHORIZATION = "Authorization";
@@ -41,10 +42,23 @@ public class TeamChatAuthInterceptor implements ChannelInterceptor {
     @Value("${wydad.jwt-secret:${JWT_SECRET:}}")
     private String jwtSecret;
 
+    /** Adhésion au groupe (sport+catégorie), interrogée sur sports-service. */
+    private final com.wydad.digital.communication.client.RosterClient rosterClient;
+
+    public TeamChatAuthInterceptor(
+            com.wydad.digital.communication.client.RosterClient rosterClient,
+            @Value("${wydad.jwt-secret:${JWT_SECRET:}}") String jwtSecret) {
+        this.rosterClient = rosterClient;
+        this.jwtSecret = jwtSecret;
+    }
+
     @Override
     public Message<?> preSend(Message<?> message, MessageChannel channel) {
         StompHeaderAccessor accessor =
                 MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
+        if (accessor != null && StompCommand.SUBSCRIBE.equals(accessor.getCommand())) {
+            verifyTopicMembership(accessor);
+        }
         if (accessor != null && StompCommand.CONNECT.equals(accessor.getCommand())) {
             List<String> auth = accessor.getNativeHeader(HDR_AUTHORIZATION);
             String token = (auth == null || auth.isEmpty())
@@ -75,6 +89,47 @@ public class TeamChatAuthInterceptor implements ChannelInterceptor {
         }
         return message;
     }
+
+    /**
+     * Un SUBSCRIBE sur un topic de groupe n'est accepté que si la fiche
+     * roster de l'abonné correspond à ce groupe (ADMIN : supervision).
+     * Sinon le SUBSCRIBE est refusé — le client ne recevra jamais les
+     * messages d'une équipe dont il ne fait pas partie.
+     */
+    private void verifyTopicMembership(StompHeaderAccessor accessor) {
+        String destination = accessor.getDestination();
+        if (destination == null || !destination.startsWith("/topic/chat/")) {
+            // Seuls les topics de chat sont protégés ; autres destinations :
+            // refus par précaution (aucune diffusion publique attendue).
+            throw new IllegalArgumentException("Destination non autorisée");
+        }
+        java.util.regex.Matcher m = TOPIC_PATTERN.matcher(destination);
+        if (!m.matches()) {
+            throw new IllegalArgumentException("Topic de chat invalide");
+        }
+        String sport = m.group(1);
+        String category = m.group(2);
+
+        Principal principal = accessor.getUser();
+        if (!(principal instanceof TeamChatPrincipal me)) {
+            throw new IllegalArgumentException("Session non authentifiée");
+        }
+        if ("ADMIN".equals(me.role())) {
+            return; // supervision
+        }
+        var mine = rosterClient.findMembership(me.userId());
+        boolean member = mine != null
+                && ("JOUEUR".equals(mine.rosterRole()) || "STAFF".equals(mine.rosterRole()))
+                && sport.equalsIgnoreCase(mine.sportType())
+                && category.equalsIgnoreCase(mine.category());
+        if (!member) {
+            throw new IllegalArgumentException("Ce groupe ne correspond pas à votre équipe");
+        }
+    }
+
+    /** /topic/chat/{sport}/{category} (segments simples). */
+    private static final java.util.regex.Pattern TOPIC_PATTERN =
+            java.util.regex.Pattern.compile("^/topic/chat/([^/]+)/([^/]+)$");
 
     /** Identité immuable attachée à la session WebSocket. */
     public record TeamChatPrincipal(Long userId, String role) implements Principal {

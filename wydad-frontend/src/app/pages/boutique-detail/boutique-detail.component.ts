@@ -43,7 +43,7 @@ import { ErrorBannerComponent } from '../../components/error-banner/error-banner
             <div class="mb-2">
               <span class="text-wydad-red text-xs font-bold uppercase tracking-widest">{{ product.sportSection }} · {{ product.categoryName }}</span>
             </div>
-            <h1 class="font-display font-black text-4xl text-wydad-dark uppercase tracking-tight mb-4">{{ product.name }}</h1>
+            <h1 class="font-display font-black text-4xl text-ink-primary uppercase tracking-tight mb-4">{{ product.name }}</h1>
 
             <!-- Rating -->
             <div *ngIf="product.averageRating" class="flex items-center gap-2 mb-4">
@@ -63,10 +63,11 @@ import { ErrorBannerComponent } from '../../components/error-banner/error-banner
               <div class="flex flex-wrap gap-2">
                 <button *ngFor="let size of availableSizes"
                         (click)="selectSize(size)"
+                        [disabled]="sizeStock(size) <= 0"
                         [class.bg-gray-900]="selectedSize === size"
                         [class.text-white]="selectedSize === size"
-                        [class.border-wydad-dark]="selectedSize === size"
-                        class="min-w-[48px] h-12 border-2 border-gray-300 rounded-lg font-bold text-sm uppercase hover:border-wydad-dark transition-colors flex items-center justify-center">
+                        [class.border-wydad-red]="selectedSize === size"
+                        class="min-w-[48px] h-12 border-2 border-gray-300 rounded-lg font-bold text-sm uppercase hover:border-wydad-red transition-colors flex items-center justify-center disabled:opacity-30 disabled:line-through disabled:cursor-not-allowed disabled:hover:border-gray-300">
                   {{ size }}
                 </button>
               </div>
@@ -104,9 +105,9 @@ import { ErrorBannerComponent } from '../../components/error-banner/error-banner
             <div class="mb-8">
               <h3 class="text-sm font-bold uppercase tracking-wider text-gray-800 mb-3">Quantité</h3>
               <div class="flex items-center gap-4 bg-gray-100 p-2 rounded-lg w-fit">
-                <button (click)="changeQty(-1)" class="w-10 h-10 flex items-center justify-center bg-white hover:bg-wydad-red hover:text-white rounded-lg text-wydad-dark font-bold transition-colors shadow-sm">-</button>
+                <button (click)="changeQty(-1)" class="w-10 h-10 flex items-center justify-center bg-white hover:bg-wydad-red hover:text-white rounded-lg text-ink-primary font-bold transition-colors shadow-sm">-</button>
                 <span class="font-bold text-lg w-6 text-center">{{ quantity }}</span>
-                <button (click)="changeQty(1)" class="w-10 h-10 flex items-center justify-center bg-white hover:bg-wydad-red hover:text-white rounded-lg text-wydad-dark font-bold transition-colors shadow-sm">+</button>
+                <button (click)="changeQty(1)" class="w-10 h-10 flex items-center justify-center bg-white hover:bg-wydad-red hover:text-white rounded-lg text-ink-primary font-bold transition-colors shadow-sm">+</button>
               </div>
             </div>
 
@@ -216,13 +217,24 @@ export class BoutiqueDetailComponent implements OnInit {
     }
     this.availableSizes = Array.from(sizes);
     this.availableColors = Array.from(colorsMap).map(([color, hex]) => ({ color, hex }));
-    // Auto-select first
-    if (this.availableSizes.length > 0) this.selectedSize = this.availableSizes[0];
+    // Auto-select : première taille disponible en stock si possible.
+    if (this.availableSizes.length > 0) {
+      this.selectedSize =
+        this.availableSizes.find((s) => this.sizeStock(s) > 0) || this.availableSizes[0];
+    }
     if (this.availableColors.length > 0) this.selectedColor = this.availableColors[0].color;
     this.resolveVariant();
   }
 
+  /** Stock cumulé d'une taille (toutes couleurs confondues). */
+  sizeStock(size: string): number {
+    return (this.product?.variants || [])
+      .filter((v: any) => v.size === size)
+      .reduce((sum: number, v: any) => sum + (v.stockQuantity ?? 0), 0);
+  }
+
   selectSize(size: string) {
+    if (this.sizeStock(size) <= 0) return;
     this.selectedSize = size;
     this.resolveVariant();
   }

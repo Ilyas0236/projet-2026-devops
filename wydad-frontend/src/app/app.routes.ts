@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { PublicLayoutComponent } from './layouts/public-layout/public-layout.component';
+import { EspaceLayoutComponent } from './layouts/espace-layout/espace-layout.component';
 import { HomeComponent } from './pages/home/home.component';
 import { AdminLayoutComponent } from './layouts/admin-layout/admin-layout.component';
 import { DashboardComponent } from './pages/admin/dashboard/dashboard.component';
@@ -102,6 +103,63 @@ export const routes: Routes = [
     ]
   },
   {
+    // Espaces connectés (joueur, staff/entraîneur, président, journaliste,
+    // parent) : layout dédié SANS header public — comme l'arbre admin,
+    // déclaré AVANT le layout public dont le catch-all '**' absorberait
+    // sinon toutes ces URLs.
+    path: 'joueur',
+    component: EspaceLayoutComponent,
+    canActivate: [joueurGuard],
+    children: [
+      { path: 'dashboard', component: DashboardJoueurComponent }
+    ]
+  },
+  {
+    path: 'staff',
+    component: EspaceLayoutComponent,
+    canActivate: [staffGuard],
+    children: [
+      { path: 'dashboard', component: DashboardStaffComponent },
+      // Consultation des dossiers académie par le STAFF (l'ADMIN passe par /admin/academie)
+      { path: 'academie', component: AdminAcademieComponent }
+    ]
+  },
+  {
+    path: 'entraineur',
+    component: EspaceLayoutComponent,
+    canActivate: [entraineurGuard],
+    children: [
+      { path: 'dashboard', component: DashboardEntraineurComponent }
+    ]
+  },
+  {
+    // Espace Président (§11-§15) — thème clair, messagerie + reçus + vidéo.
+    path: 'president',
+    component: EspaceLayoutComponent,
+    canActivate: [presidentGuard],
+    children: [
+      { path: 'dashboard', component: PresidentDashboardComponent }
+    ]
+  },
+  {
+    // Espace Journaliste — destination du login (§27).
+    path: 'journaliste',
+    component: EspaceLayoutComponent,
+    canActivate: [journalisteGuard],
+    children: [
+      { path: 'accueil', component: DashboardJournalisteComponent }
+    ]
+  },
+  {
+    // Espace Parent académies.
+    path: 'academie',
+    component: EspaceLayoutComponent,
+    canActivate: [parentGuard],
+    children: [
+      { path: 'mes-enfants', component: DashboardParentComponent }
+    ]
+  },
+  {
     path: '',
     component: PublicLayoutComponent,
     children: [
@@ -136,16 +194,6 @@ export const routes: Routes = [
       // Le backend n'accepte l'inscription académie que PARENT/ADMIN —
       // on aligne la garde frontend pour éviter un 403 après remplissage.
       { path: 'academie/inscription', component: InscriptionAcademieComponent, canActivate: [roleGuard('PARENT', 'ADMIN')] },
-      { path: 'academie/mes-enfants', component: DashboardParentComponent, canActivate: [parentGuard] },
-      { path: 'joueur/dashboard', component: DashboardJoueurComponent, canActivate: [joueurGuard] },
-      { path: 'staff/dashboard', component: DashboardStaffComponent, canActivate: [staffGuard] },
-      // Espace Président (§11-§15) — thème clair, messagerie + reçus + vidéo.
-      { path: 'president/dashboard', component: PresidentDashboardComponent, canActivate: [presidentGuard] },
-      // Espaces Entraîneur et Journaliste — destinations du login (§27).
-      { path: 'entraineur/dashboard', component: DashboardEntraineurComponent, canActivate: [entraineurGuard] },
-      { path: 'journaliste/accueil', component: DashboardJournalisteComponent, canActivate: [journalisteGuard] },
-      // Consultation des dossiers académie par le STAFF (l'ADMIN passe par /admin/academie)
-      { path: 'staff/academie', component: AdminAcademieComponent, canActivate: [staffGuard] },
       { path: '**', component: NotFoundComponent }
     ]
   }

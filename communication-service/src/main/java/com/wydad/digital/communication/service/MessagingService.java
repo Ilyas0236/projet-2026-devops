@@ -19,9 +19,10 @@ import java.util.List;
  *
  * Règles serveur :
  * <ul>
- *   <li>un JOUEUR n'écrit qu'au staff encadrant SA catégorie ;</li>
- *   <li>un STAFF n'écrit qu'aux joueurs de SA catégorie ;</li>
- *   <li>l'ADMIN écrit à tout le monde ;</li>
+ *   <li>un JOUEUR écrit au staff encadrant SA catégorie ET aux coéquipiers
+ *       de SON groupe (même sport+catégorie) ;</li>
+ *   <li>un STAFF ou ENTRAINEUR n'écrit qu'aux joueurs de SA catégorie ;</li>
+ *   <li>l'ADMIN et le PRESIDENT écrivent à tout le monde ;</li>
  *   <li>une conversation n'est lisible que par ses deux participants.</li>
  * </ul>
  *
@@ -57,18 +58,24 @@ public class MessagingService {
 
         RosterClient.MembershipInfo mine = rosterClient.findMembership(me);
         if ("JOUEUR".equals(myRole)) {
-            // Le destinataire doit être un staff encadrant MA catégorie.
+            // Destinataire : un staff encadrant MA catégorie, ou un
+            // coéquipier de MON groupe (même sport+catégorie).
             if (mine == null) {
                 throw new AccessDeniedException("Aucune fiche sportive liée à votre compte");
             }
             RosterClient.MembershipInfo theirs = rosterClient.findMembership(recipientUserId);
-            boolean recipientIsStaff = theirs != null && "STAFF".equals(theirs.rosterRole());
-            if (!recipientIsStaff || !sameGroup(mine, theirs)) {
+            boolean recipientIsStaff =
+                    theirs != null && "STAFF".equals(theirs.rosterRole());
+            boolean recipientIsTeammate =
+                    theirs != null && "JOUEUR".equals(theirs.rosterRole());
+            if ((!recipientIsStaff && !recipientIsTeammate) || !sameGroup(mine, theirs)) {
                 throw new AccessDeniedException(
-                        "Vous ne pouvez écrire qu'au staff encadrant votre catégorie");
+                        "Vous ne pouvez écrire qu'au staff encadrant votre catégorie "
+                                + "et aux joueurs de votre équipe");
             }
-        } else if ("STAFF".equals(myRole)) {
+        } else if ("STAFF".equals(myRole) || "ENTRAINEUR".equals(myRole)) {
             // Le destinataire doit être un joueur de MA catégorie.
+            // L'ENTRAINEUR possède une fiche roster interne de rôle STAFF.
             if (mine == null || !"STAFF".equals(mine.rosterRole())) {
                 throw new AccessDeniedException("Aucun profil staff lié à votre compte");
             }

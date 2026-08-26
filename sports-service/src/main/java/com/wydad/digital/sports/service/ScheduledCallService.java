@@ -30,10 +30,13 @@ import java.util.Set;
  *   <li><b>ENTRAINEUR</b> : programme pour SA catégorie (fiche staff
  *       obligatoire, sport/catégorie forcés depuis la fiche) ; audience =
  *       joueurs et/ou staff de la catégorie ;</li>
+ *   <li><b>JOUEUR</b> : programme un appel d'équipe pour SON groupe
+ *       (fiche joueur obligatoire, sport/catégorie forcés depuis la fiche,
+ *       cible forcée aux coéquipiers — jamais le staff) ;</li>
  *   <li><b>PRESIDENT</b> : programme pour toute catégorie, les adhérents
  *       PREMIUM ou une liste explicite d'utilisateurs ;</li>
  *   <li><b>ADMIN</b> : tout ;</li>
- *   <li><b>JOUEUR / autres</b> : ne peuvent QUE lister leurs appels et
+ *   <li><b>autres</b> : peuvent uniquement lister leurs appels et
  *       rejoindre (jeton) — jamais créer.</li>
  * </ul>
  * Les participants forment une liste fermée : hors de cette liste, pas de
@@ -65,8 +68,10 @@ public class ScheduledCallService {
         Long me = requireCurrentUserId();
         String role = requireRole();
 
-        if (!"ENTRAINEUR".equals(role) && !"PRESIDENT".equals(role) && !"ADMIN".equals(role)) {
-            throw new AccessDeniedException("Seuls l'entraîneur et le président peuvent programmer un appel");
+        if (!"ENTRAINEUR".equals(role) && !"PRESIDENT".equals(role)
+                && !"ADMIN".equals(role) && !"JOUEUR".equals(role)) {
+            throw new AccessDeniedException(
+                    "Seuls les joueurs, l'entraîneur et le président peuvent programmer un appel");
         }
         if (req.title() == null || req.title().isBlank() || req.title().trim().length() > 120) {
             throw new IllegalArgumentException("Titre requis (120 caractères maximum)");
@@ -78,7 +83,8 @@ public class ScheduledCallService {
             throw new IllegalArgumentException("Durée entre 5 et 240 minutes");
         }
 
-        // Entraîneur : la catégorie vient de SA fiche (le client ne choisit pas).
+        // Entraîneur et joueur : le groupe vient de LEUR fiche (le client
+        // ne choisit jamais sport/catégorie lui-même).
         SportType sportType = req.sportType();
         Category category = req.category();
         if ("ENTRAINEUR".equals(role)) {
@@ -86,6 +92,12 @@ public class ScheduledCallService {
                     .orElseThrow(() -> new AccessDeniedException("Aucun profil staff lié à votre compte"));
             sportType = fiche.getSportType();
             category = fiche.getAssignedCategory();
+        } else if ("JOUEUR".equals(role)) {
+            Player fiche = playerRepository.findByUserId(me)
+                    .orElseThrow(() -> new AccessDeniedException(
+                            "Aucune fiche joueur liée à votre compte"));
+            sportType = fiche.getSportType();
+            category = fiche.getCategory();
         }
 
         Set<Long> participants = resolveAudience(role, req, sportType, category);
@@ -111,13 +123,33 @@ public class ScheduledCallService {
     }
 
     /**
-     * Résolution de l'audience selon la cible demandée. L'ENTRAINEUR ne peut
-     * cibler que sa catégorie ; le PRESIDENT/ADMIN ont en plus PREMIUM et
-     * liste explicite.
+     * Résolution de l'audience selon la cible demandée. L'ENTRAINEUR et le
+     * JOUEUR ne peuvent cibler que leur propre groupe (le joueur : uniquement
+     * ses coéquipiers, jamais le staff) ; le PRESIDENT/ADMIN ont en plus
+     * PREMIUM et liste explicite.
      */
     private Set<Long> resolveAudience(String role, CreateCallRequest req,
                                       SportType sportType, Category category) {
-        TargetType target = req.target() == null ? TargetType.CATEGORIE_EQUIPE : req.target();
+        TargetType requested = req.target() == null ? TargetType.CATEGORIE_EQUIPE : req.target();
+        // Un joueur invite toujours SES coéquipiers — cible forcée côté serveur,
+        // toute autre cible (staff inclus) est refusée.
+        if ("JOUEUR".equals(role)) {
+            if (requested != TargetType.CATEGORIE_JOUEURS && requested != TargetType.EQUIPE_JOUEURS) {
+                throw new AccessDeniedException(
+                        "Vous pouvez uniquement convier les joueurs de votre équipe");
+            }
+            requireCategory(sportType, category);
+            Set<Long> teammateIds = new HashSet<>();
+            for (Player p : playerRepository.findBySportTypeAndCategory(sportType, category)) {
+                teammateIds.add(p.getUserId());
+            }
+            if (teammateIds.isEmpty()) {
+                throw new IllegalArgumentException("Aucun coéquipier trouvé pour votre équipe");
+            }
+            return teammateIds;
+        }
+
+        TargetType target = requested;
         Set<Long> ids = new HashSet<>();
 
         switch (target) {
@@ -269,6 +301,10 @@ public class ScheduledCallService {
 
     private String resolveOrganizerName(Long userId, String role) {
         if ("PRESIDENT".equals(role)) return "Président";
+        if ("JOUEUR".equals(role)) {
+            return playerRepository.findByUserId(userId)
+                    .map(Player::getFullName).orElse("Joueur");
+        }
         return staffRepository.findByUserId(userId).map(Staff::getFullName).orElse("Organisateur");
     }
 
@@ -298,8 +334,11 @@ public class ScheduledCallService {
      */
     static final Set<String> PREMIUM_MEMBERSHIP_LEVELS = Set.of("DIAMANT", "LEGENDE");
 
-    /** Cible de l'appel. */
-    public enum TargetType { CATEGORIE_JOUEURS, CATEGORIE_EQUIPE, PREMIUM, UTILISATEURS }
+    /**
+     * Cible de l'appel. {@code EQUIPE_JOUEURS} = les coéquipiers du groupe
+     * (joueurs uniquement, sans le staff) — cible utilisée par un JOUEUR.
+     */
+    public enum TargetType { CATEGORIE_JOUEURS, EQUIPE_JOUEURS, CATEGORIE_EQUIPE, PREMIUM, UTILISATEURS }
 
     public record CreateCallRequest(
             String title,

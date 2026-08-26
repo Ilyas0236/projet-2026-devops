@@ -37,8 +37,9 @@ import static org.mockito.Mockito.verify;
 /**
  * Phase 5 — appels vidéo/vocaux programmés : autorisations de création
  * (ENTRAINEUR catégorie forcée depuis sa fiche, PRESIDENT premium/liste,
- * JOUEUR interdit de création), audience liste fermée, jeton refusé hors
- * liste, annulation organisateur uniquement, notifications émises.
+ * JOUEUR borné aux coéquipiers de son groupe), audience liste fermée,
+ * jeton refusé hors liste, annulation organisateur uniquement,
+ * notifications émises.
  */
 @SpringBootTest(properties = {
         "spring.datasource.url=jdbc:h2:mem:calls;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1",
@@ -116,9 +117,33 @@ class ScheduledCallServiceTest {
     }
 
     @Test
-    void joueurNePeutPasCreerDAppel() {
+    void joueurCreeAppelPourSesCoequipiersUniquement() {
         as(JOUEUR_A, "JOUEUR");
+        // sport/catégorie ignorés : forcés depuis SA fiche (FOOTBALL SENIOR).
+        ScheduledCall call = callService.createCall(new CreateCallRequest(
+                "Entraînement entre nous", SportType.BASKETBALL, Category.U20,
+                LocalDateTime.now().plusHours(3), 30, TargetType.EQUIPE_JOUEURS, null));
+
+        // Groupe forcé depuis la fiche, PAS BASKETBALL/U20 :
+        assertThat(call.getSportType()).isEqualTo(SportType.FOOTBALL);
+        assertThat(call.getCategory()).isEqualTo(Category.SENIOR);
+        // Coéquipier B + organisateur A — JAMAIS le coach ni un extérieur :
+        assertThat(call.getParticipantUserIds())
+                .containsExactlyInAnyOrder(JOUEUR_A, JOUEUR_B);
+        verify(notificationClient).notifyUser(org.mockito.ArgumentMatchers.eq(JOUEUR_B),
+                any(), org.mockito.ArgumentMatchers.contains("Appel programmé"),
+                anyString(), anyString());
+    }
+
+    @Test
+    void joueurNePeutPasInclureLeStaffNiCiblerAutreChose() {
+        as(JOUEUR_A, "JOUEUR");
+        // Cible équipe complète (staff inclus) : refusée au joueur.
         assertThatThrownBy(() -> callService.createCall(reqCoach(TargetType.CATEGORIE_EQUIPE)))
+                .isInstanceOf(AccessDeniedException.class);
+        // Cibles présidentielles : refusées aussi.
+        assertThatThrownBy(() -> callService.createCall(new CreateCallRequest(
+                "Premium", null, null, null, 30, TargetType.PREMIUM, null)))
                 .isInstanceOf(AccessDeniedException.class);
         assertThat(callRepository.count()).isZero();
     }

@@ -92,6 +92,7 @@ export class DashboardJoueurComponent implements OnInit {
         this.loadMySpace();
         this.loadRapportsFinanciers();
         this.loadVipTickets(userId);
+        this.loadTeammates();
       },
       error: () => {
         this.loadError = true;
@@ -344,6 +345,67 @@ export class DashboardJoueurComponent implements OnInit {
         this.toast.error(err?.error?.message || 'Envoi impossible');
         this.sendingMessage = false;
       }
+    });
+  }
+
+  // ───────────────────── Mon équipe (coéquipiers) ─────────────────────
+  // Phase 4 — joueurs de MON sport+catégorie (même groupe). La conversation
+  // individuelle réutilise la messagerie existante ; l'appel vidéo cible
+  // EQUIPE_JOUEURS (le serveur force le groupe depuis MA fiche, jamais les
+  // paramètres du client).
+
+  teammates: any[] = [];
+  loadingTeammates = false;
+  creatingTeamCall = false;
+
+  /** La conversation ouverte est un coéquipier (affichage du renvoi messagerie). */
+  get isTeammateConversation(): boolean {
+    return !!this.conversationWith && this.teammates.some(t => t.userId === this.conversationWith!.id);
+  }
+
+  /** Liste mes coéquipiers via l'endpoint filtré par mon propre groupe. */
+  loadTeammates() {
+    if (!this.player?.sportType || !this.player?.category) { return; }
+    this.loadingTeammates = true;
+    this.api.getPlayersByCategory(this.player.sportType, this.player.category).subscribe({
+      next: (list) => {
+        const myId = Number(this.auth.getCurrentUserId());
+        this.teammates = (Array.isArray(list) ? list : [])
+          .filter((p: any) => Number(p.userId) !== myId);
+        this.loadingTeammates = false;
+      },
+      error: () => { this.teammates = []; this.loadingTeammates = false; }
+    });
+  }
+
+  /**
+   * Programme un appel pour MES coéquipiers (cible EQUIPE_JOUEURS).
+   * Sport/catégorie volontairement omis : forcés côté serveur depuis ma fiche.
+   */
+  createTeamCall() {
+    const title = window.prompt('Titre de l\'appel (ex : « Point tactique avant samedi ») :') || '';
+    if (!title.trim()) { return; }
+    this.creatingTeamCall = true;
+    this.api.createCall({
+      title: title.trim(),
+      durationMinutes: 30,
+      target: 'EQUIPE_JOUEURS'
+    }).subscribe({
+      next: () => {
+        this.toast.success('Appel d\'équipe programmé — vos coéquipiers sont notifiés');
+        this.creatingTeamCall = false;
+      },
+      error: (err) => {
+        this.toast.error(err?.error?.message || 'Programmation impossible');
+        this.creatingTeamCall = false;
+      }
+    });
+  }
+
+  /** Fait défiler jusqu'à la messagerie où la conversation s'affiche. */
+  scrollMessagerie() {
+    setTimeout(() => {
+      document.getElementById('messagerie-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
   }
 

@@ -10,6 +10,8 @@ import com.wydad.digital.sports.dto.PlayerSpaceDtos.RespondRequest;
 import com.wydad.digital.sports.dto.PlayerSpaceDtos.UpdateMyProfileRequest;
 import com.wydad.digital.sports.filter.SportsUserContext;
 import com.wydad.digital.sports.model.Staff;
+import com.wydad.digital.sports.model.Session;
+import com.wydad.digital.sports.repository.SessionRepository;
 import com.wydad.digital.sports.repository.StaffRepository;
 import com.wydad.digital.sports.service.MedicalService;
 import com.wydad.digital.sports.service.MatchStatService;
@@ -38,6 +40,7 @@ public class PlayerSpaceController {
     private final MatchStatService matchStatService;
     private final MedicalService medicalService;
     private final StaffRepository staffRepository;
+    private final SessionRepository sessionRepository;
 
     // ────────────────────── JOUEUR (routes self) ──────────────────────
 
@@ -124,19 +127,21 @@ public class PlayerSpaceController {
                 .body(playerSpaceService.createBatchConvocation(request, staffId));
     }
 
-    /** Phase 3 — suivi des réponses d'une séance (vue entraîneur). */
+    /** Phase 3 — suivi des réponses d'une séance (vue entraîneur, ownership catégorie). */
     @GetMapping("/staff/sessions/{sessionId}/responses")
     @PreAuthorize("hasAnyRole('ENTRAINEUR','STAFF','ADMIN')")
     public ResponseEntity<List<PlayerSpaceDtos.StaffConvocationView>> getSessionResponses(
             @PathVariable Long sessionId) {
+        ensureStaffOwnsSession(sessionId);
         return ResponseEntity.ok(playerSpaceService.getSessionResponses(sessionId));
     }
 
-    /** Phase 3 — compteurs de suivi d'une séance (lu/non lu, présences). */
+    /** Phase 3 — compteurs de suivi d'une séance (lu/non lu, présences, ownership catégorie). */
     @GetMapping("/staff/sessions/{sessionId}/responses/summary")
     @PreAuthorize("hasAnyRole('ENTRAINEUR','STAFF','ADMIN')")
     public ResponseEntity<PlayerSpaceDtos.SessionResponsesSummary> getSessionSummary(
             @PathVariable Long sessionId) {
+        ensureStaffOwnsSession(sessionId);
         return ResponseEntity.ok(playerSpaceService.getSessionSummary(sessionId));
     }
 
@@ -281,5 +286,32 @@ public class PlayerSpaceController {
                     "Seul le staff encadrant la catégorie du joueur peut agir sur lui");
         }
         return staff.getId();
+    }
+
+    /**
+     * Phase 5 — lecture des réponses d'une séance : la séance doit appartenir
+     * au groupe (sport + catégorie) du staff appelant. Un entraîneur U17
+     * Football ne peut donc pas consulter les réponses d'une séance U20
+     * Basketball, même authentifié. L'ADMIN passe partout.
+     */
+    private void ensureStaffOwnsSession(Long sessionId) {
+        if (SportsUserContext.isAdmin()) {
+            return;
+        }
+        Long userId = SportsUserContext.getCurrentUserId();
+        if (userId == null) {
+            throw new AccessDeniedException("Identité introuvable dans le contexte de sécurité");
+        }
+        Staff staff = staffRepository.findByUserId(userId)
+                .orElseThrow(() -> new AccessDeniedException(
+                        "Aucun profil staff lié à votre compte"));
+        Session session = sessionRepository.findById(sessionId)
+                .orElseThrow(() -> new EntityNotFoundException("Séance introuvable"));
+        boolean sameGroup = staff.getSportType() == session.getSportType()
+                && staff.getAssignedCategory() == session.getCategory();
+        if (!sameGroup) {
+            throw new AccessDeniedException(
+                    "Cette séance n'appartient pas à votre catégorie");
+        }
     }
 }

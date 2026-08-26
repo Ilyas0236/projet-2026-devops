@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, BehaviorSubject, tap } from 'rxjs';
+import { Observable, BehaviorSubject, tap, throwError } from 'rxjs';
 import { environment } from '../../environments/environment';
 
 @Injectable({
@@ -12,10 +12,30 @@ export class AuthService {
   public currentUser$ = this.currentUserSubject.asObservable();
 
   constructor(private http: HttpClient) {
+    this.restoreFromStorage();
+  }
+
+  /** Restaure l'état de session depuis localStorage (F5, retour arrière…). */
+  private restoreFromStorage(): void {
     const email = localStorage.getItem('wydad_email');
     if (email) {
       this.currentUserSubject.next(email);
     }
+  }
+
+  private persistSession(res: any): void {
+    localStorage.setItem('wydad_token', res.accessToken);
+    if (res.refreshToken) {
+      // Refresh token rotatif (7 j) — permet la reconnexion silencieuse
+      // au rafraîchissement de page et à l'expiration de l'access token.
+      localStorage.setItem('wydad_refresh_token', res.refreshToken);
+    }
+    localStorage.setItem('wydad_user_id', res.id);
+    localStorage.setItem('wydad_email', res.email);
+    localStorage.setItem('wydad_first_name', res.firstName);
+    localStorage.setItem('wydad_last_name', res.lastName);
+    localStorage.setItem('wydad_role', res.role);
+    this.currentUserSubject.next(res.email);
   }
 
   public get currentUserValue(): string | null {
@@ -24,15 +44,7 @@ export class AuthService {
 
   login(email: string, password: string): Observable<any> {
     return this.http.post(`${this.baseUrl}/login`, { email, password }).pipe(
-      tap((res: any) => {
-        localStorage.setItem('wydad_token', res.accessToken);
-        localStorage.setItem('wydad_user_id', res.id);
-        localStorage.setItem('wydad_email', res.email);
-        localStorage.setItem('wydad_first_name', res.firstName);
-        localStorage.setItem('wydad_last_name', res.lastName);
-        localStorage.setItem('wydad_role', res.role);
-        this.currentUserSubject.next(res.email);
-      })
+      tap((res: any) => this.persistSession(res))
     );
   }
 
@@ -42,24 +54,32 @@ export class AuthService {
         // Demande de statut privilégié : le backend répond 202 sans corps —
         // aucun token n'est émis tant que l'ADMIN n'a pas validé le compte.
         if (!res?.accessToken) return;
-        localStorage.setItem('wydad_token', res.accessToken);
-        localStorage.setItem('wydad_user_id', res.id);
-        localStorage.setItem('wydad_email', res.email);
-        localStorage.setItem('wydad_first_name', res.firstName);
-        localStorage.setItem('wydad_last_name', res.lastName);
-        localStorage.setItem('wydad_role', res.role);
-        this.currentUserSubject.next(res.email);
+        this.persistSession(res);
+      })
+    );
+  }
+
+  /**
+   * Reconnexion silencieuse : échange le refresh token rotatif contre un
+   * nouvel access token (+ nouveau refresh token). Utilisé par l'intercepteur
+   * à l'expiration de l'access token et par l'app initializer au démarrage.
+   */
+  refreshSession(): Observable<any> {
+    const refreshToken = localStorage.getItem('wydad_refresh_token');
+    if (!refreshToken) {
+      return throwError(() => new Error('Aucun refresh token'));
+    }
+    return this.http.post(`${this.baseUrl}/refresh`, { refreshToken }).pipe(
+      tap((res: any) => {
+        if (res?.accessToken) this.persistSession(res);
       })
     );
   }
 
   logout() {
-    localStorage.removeItem('wydad_token');
-    localStorage.removeItem('wydad_email');
-    localStorage.removeItem('wydad_first_name');
-    localStorage.removeItem('wydad_last_name');
-    localStorage.removeItem('wydad_role');
-    localStorage.removeItem('wydad_user_id');
+    ['wydad_token', 'wydad_refresh_token', 'wydad_email', 'wydad_first_name',
+      'wydad_last_name', 'wydad_role', 'wydad_user_id']
+      .forEach((k) => localStorage.removeItem(k));
     this.currentUserSubject.next(null);
   }
 

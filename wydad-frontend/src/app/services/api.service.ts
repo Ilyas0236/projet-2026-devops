@@ -869,14 +869,14 @@ export class ApiService {
     return this.http.get<any[]>(`${this.baseUrl}/sports/calls/mine`);
   }
 
-  /** Programme un appel (ENTRAINEUR / PRESIDENT / ADMIN — contrôlé serveur). */
+  /** Programme un appel (ENTRAINEUR / PRESIDENT / ADMIN / JOUEUR — contrôlé serveur). */
   createCall(body: {
     title: string;
     sportType?: string;
     category?: string;
     scheduledAt?: string | null;
     durationMinutes?: number;
-    target: 'CATEGORIE_JOUEURS' | 'CATEGORIE_EQUIPE' | 'PREMIUM' | 'UTILISATEURS';
+    target: 'CATEGORIE_JOUEURS' | 'EQUIPE_JOUEURS' | 'CATEGORIE_EQUIPE' | 'PREMIUM' | 'UTILISATEURS';
     targetUserIds?: number[];
   }): Observable<any> {
     return this.http.post<any>(`${this.baseUrl}/sports/calls`, body);

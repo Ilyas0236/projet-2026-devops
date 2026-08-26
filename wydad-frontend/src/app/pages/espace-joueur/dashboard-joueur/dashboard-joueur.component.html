@@ -556,8 +556,9 @@
             </div>
           </div>
 
-          <!-- MESSAGERIE STAFF ↔ MOI (B.5) — l'appariement est validé côté serveur -->
-          <div class="paper-card rounded-3xl p-8">
+          <!-- MESSAGERIE STAFF/ÉQUIPE ↔ MOI (B.5 + Phase 4) — l'appariement est
+               validé côté serveur : staff de ma catégorie ET coéquipiers -->
+          <div id="messagerie-card" class="paper-card rounded-3xl p-8">
             <div class="flex justify-between items-end mb-6">
               <h3 class="font-display font-bold text-lg uppercase tracking-wider flex items-center gap-3">
                 <span class="w-8 h-8 rounded-full bg-paper-2 flex items-center justify-center text-sm border border-paper-3 text-ink-secondary">
@@ -574,7 +575,7 @@
             <!-- Liste des messages reçus -->
             <div *ngIf="!conversationWith">
               <p *ngIf="inbox.length === 0" class="text-ink-tertiary text-xs uppercase tracking-widest py-4">
-                Aucun message reçu. Vous pouvez écrire au staff encadrant votre catégorie.
+                Aucun message reçu. Vous pouvez écrire au staff de votre catégorie et à vos coéquipiers.
               </p>
               <div class="space-y-3">
                 <button *ngFor="let m of inbox" (click)="openConversation(m.senderUserId, m.senderName)"
@@ -611,7 +612,7 @@
                 <label class="sr-only" for="message-draft">Votre message</label>
                 <input id="message-draft" type="text" [(ngModel)]="messageDraft" maxlength="500"
                        (keyup.enter)="sendMessageToStaff()"
-                       placeholder="Écrire au staff de votre catégorie…"
+                       [placeholder]="conversationWith ? 'Écrire à ' + conversationWith.name + '…' : 'Écrire au staff de votre catégorie…'"
                        class="paper-input flex-1 rounded-xl px-4 py-3 text-sm">
                 <button (click)="sendMessageToStaff()" [disabled]="!messageDraft.trim() || sendingMessage"
                         class="bg-wydad-red hover:bg-wydad-red-dark disabled:opacity-40 text-white px-5 py-3 rounded-xl text-xs font-bold uppercase tracking-widest transition-colors">
@@ -619,6 +620,65 @@
                 </button>
               </div>
             </div>
+          </div>
+
+          <!-- MON ÉQUIPE (Phase 4) — coéquipiers de MON sport+catégorie ;
+               conversation individuelle + appel d'équipe (cible forcée serveur) -->
+          <div class="paper-card rounded-3xl p-8">
+            <div class="flex justify-between items-end mb-6 flex-wrap gap-3">
+              <div>
+                <h3 class="font-display font-bold text-lg uppercase tracking-wider flex items-center gap-3">
+                  <span class="w-8 h-8 rounded-full bg-wydad-red/10 text-wydad-red flex items-center justify-center text-sm">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-1.13a4 4 0 10-8 0 4 4 0 008 0zm6-4a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+                  </span>
+                  Mon équipe
+                </h3>
+                <p class="text-ink-tertiary text-xs uppercase tracking-widest mt-1">
+                  {{ player.sportType }} · {{ player.category }} — écrivez ou appelez vos coéquipiers
+                </p>
+              </div>
+              <button (click)="createTeamCall()" [disabled]="creatingTeamCall"
+                      class="bg-wydad-red hover:bg-wydad-red-dark disabled:opacity-50 text-white px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors whitespace-nowrap">
+                {{ creatingTeamCall ? 'Programmation…' : '+ Appel d\'équipe' }}
+              </button>
+            </div>
+
+            <p *ngIf="loadingTeammates" class="text-ink-secondary text-sm py-6 text-center">Chargement de votre équipe…</p>
+
+            <div *ngIf="!loadingTeammates && teammates.length === 0"
+                 class="rounded-2xl border border-paper-3 bg-paper-1 p-6 text-center">
+              <p class="text-ink-secondary text-sm">Aucun coéquipier enregistré pour le moment.</p>
+            </div>
+
+            <div *ngIf="!loadingTeammates && teammates.length > 0"
+                 class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+              <div *ngFor="let tm of teammates"
+                   class="bg-paper-1 border border-paper-3 rounded-2xl p-4 flex flex-col gap-3 hover:border-wydad-red/40 transition-all">
+                <div class="flex items-center gap-3 min-w-0">
+                  <div class="w-10 h-10 shrink-0 rounded-full bg-white border border-paper-3 flex items-center justify-center overflow-hidden">
+                    <svg class="w-5 h-5 text-ink-tertiary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                  </div>
+                  <div class="min-w-0">
+                    <p class="text-sm font-bold truncate text-ink-primary">{{ tm.fullName }}</p>
+                    <p class="text-[10px] uppercase tracking-widest text-ink-tertiary">
+                      N° {{ tm.jerseyNumber ?? '-' }}<span *ngIf="tm.position"> · {{ tm.position }}</span>
+                    </p>
+                  </div>
+                </div>
+                <div class="flex gap-2 mt-auto">
+                  <button (click)="openConversation(tm.userId, tm.fullName); scrollMessagerie()"
+                          title="Discuter avec ce coéquipier"
+                          class="flex-1 bg-white hover:bg-paper-2 border border-paper-3 text-ink-primary px-3 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-colors">
+                    Discuter
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <p *ngIf="isTeammateConversation"
+               class="mt-4 text-[11px] text-ink-secondary italic">
+              Conversation avec {{ conversationWith?.name }} ouverte dans la messagerie ci-dessous ↓
+            </p>
           </div>
 
           <!-- CHAT DE GROUPE « ÉQUIPE » (Phase 4) — temps réel WebSocket,

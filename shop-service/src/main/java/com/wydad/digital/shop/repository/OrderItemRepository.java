@@ -9,4 +9,7 @@ import java.util.List;
 @Repository
 public interface OrderItemRepository extends JpaRepository<OrderItem, Long> {
     List<OrderItem> findByOrderId(Long orderId);
+
+    /** Garde-fou : une variante référencée par une commande ne doit jamais être supprimée. */
+    boolean existsByVariantId(Long variantId);
 }

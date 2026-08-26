@@ -37,6 +37,7 @@ public class TeamChatWsController {
 
     private final TeamChatService teamChatService;
     private final SimpMessagingTemplate messagingTemplate;
+    private final com.wydad.digital.communication.client.RosterClient rosterClient;
 
     /**
      * Sessions actuellement connectées PAR GROUPE — sert à n'envoyer des
@@ -72,7 +73,12 @@ public class TeamChatWsController {
         }
     }
 
-    /** Le client signale son arrivée/départ pour le suivi « en ligne ». */
+    /**
+     * Le client signale son arrivée/départ pour le suivi « en ligne ».
+     * Phase 5 — l'adhésion au groupe est vérifiée ici aussi : sans ce
+     * contrôle, un compte authentifié hors équipe pourrait s'annoncer en
+     * ligne sur le topic d'une autre équipe (et fausser les notifications).
+     */
     @MessageMapping("/chat/{sport}/{category}/presence")
     public void presence(@DestinationVariable String sport,
                          @DestinationVariable String category,
@@ -80,6 +86,11 @@ public class TeamChatWsController {
                          Principal principal) {
         TeamChatPrincipal me = (TeamChatPrincipal) principal;
         if (me == null) { return; }
+        if (!isMemberOfGroup(me, sport, category)) {
+            log.warn("Presence refusée : user {} hors du groupe {}:{}",
+                    me.userId(), sport, category);
+            return;
+        }
         String key = groupKey(sport, category);
         var sessions = onlineByGroup.computeIfAbsent(key, k -> ConcurrentHashMap.newKeySet());
         if (payload.online()) {
@@ -87,6 +98,23 @@ public class TeamChatWsController {
         } else {
             sessions.remove(me.userId());
         }
+    }
+
+    /**
+     * Adhésion au groupe demandé — même règle que le SUBSCRIBE de
+     * {@link com.wydad.digital.communication.config.TeamChatAuthInterceptor} :
+     * fiche roster JOUEUR ou STAFF correspondant au sport+catégorie
+     * (ADMIN : supervision).
+     */
+    private boolean isMemberOfGroup(TeamChatPrincipal me, String sport, String category) {
+        if ("ADMIN".equals(me.role())) {
+            return true; // supervision
+        }
+        var mine = rosterClient.findMembership(me.userId());
+        return mine != null
+                && ("JOUEUR".equals(mine.rosterRole()) || "STAFF".equals(mine.rosterRole()))
+                && sport.equalsIgnoreCase(mine.sportType())
+                && category.equalsIgnoreCase(mine.category());
     }
 
     private String groupKey(String sport, String category) {

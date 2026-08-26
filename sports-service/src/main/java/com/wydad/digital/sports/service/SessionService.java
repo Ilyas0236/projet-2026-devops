@@ -4,12 +4,16 @@ import com.wydad.digital.sports.client.NotificationClient;
 import com.wydad.digital.sports.dto.SessionDto;
 import com.wydad.digital.sports.enums.Category;
 import com.wydad.digital.sports.enums.SportType;
+import com.wydad.digital.sports.filter.SportsUserContext;
 import com.wydad.digital.sports.model.Player;
 import com.wydad.digital.sports.model.Session;
+import com.wydad.digital.sports.model.Staff;
 import com.wydad.digital.sports.repository.PlayerRepository;
 import com.wydad.digital.sports.repository.SessionRepository;
+import com.wydad.digital.sports.repository.StaffRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -22,6 +26,7 @@ public class SessionService {
 
     private final SessionRepository sessionRepository;
     private final PlayerRepository playerRepository;
+    private final StaffRepository staffRepository;
     private final NotificationClient notificationClient;
 
     /**
@@ -29,16 +34,33 @@ public class SessionService {
      * sport/catégorie donnés. Chaque joueur du groupe visé reçoit une
      * notification IN_APP (best-effort : une panne de notification ne doit
      * pas empêcher la création de la séance).
+     *
+     * <p>Isolation §6/§24 : un STAFF ne peut créer que pour SON groupe —
+     * sport/catégorie forcés depuis sa fiche, les valeurs du client sont
+     * ignorées. L'ADMIN peut cibler n'importe quel groupe.</p>
      */
     public SessionDto createSession(SessionDto dto) {
+        SportType sportType = dto.getSportType();
+        Category category = dto.getCategory();
+        Long createdByStaffId = dto.getCreatedByStaffId();
+
+        if (!SportsUserContext.isAdmin()) {
+            Staff fiche = staffRepository.findByUserId(SportsUserContext.getCurrentUserId())
+                    .orElseThrow(() -> new AccessDeniedException(
+                            "Aucun profil encadrement rattaché à ce compte"));
+            sportType = fiche.getSportType();
+            category = fiche.getAssignedCategory();
+            createdByStaffId = fiche.getId(); // ownership réel, jamais le client
+        }
+
         Session session = Session.builder()
                 .title(dto.getTitle())
                 .description(dto.getDescription())
                 .location(dto.getLocation())
                 .sessionDate(dto.getSessionDate())
-                .sportType(dto.getSportType())
-                .category(dto.getCategory())
-                .createdByStaffId(dto.getCreatedByStaffId())
+                .sportType(sportType)
+                .category(category)
+                .createdByStaffId(createdByStaffId)
                 .build();
         Session saved = sessionRepository.save(session);
         notifyGroup(saved);

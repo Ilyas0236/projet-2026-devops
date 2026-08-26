@@ -56,8 +56,12 @@
             <td class="px-6 py-4 text-white font-bold">{{ product.basePrice }} DH</td>
             <td class="px-6 py-4">
               <span class="px-2 py-1 rounded text-xs font-medium"
-                    [ngClass]="(product.variants?.[0]?.stockQuantity ?? 0) > 10 ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'">
-                {{ product.variants?.[0]?.stockQuantity ?? 0 }} unités
+                    [ngClass]="totalStock(product) > 10 ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'">
+                {{ totalStock(product) }} unités
+              </span>
+              <!-- Détail par taille si le produit est vendu par tailles -->
+              <span *ngIf="hasSizes(product)" class="block mt-1 text-xs text-gray-400">
+                {{ sizeSummary(product) }}
               </span>
             </td>
             <td class="px-6 py-4 text-right">
@@ -181,8 +185,38 @@
           <input type="number" min="0" step="0.01" [(ngModel)]="newProduct.basePrice" class="admin-input">
         </div>
         <div class="admin-field">
-          <label class="admin-label">Stock</label>
-          <input type="number" min="0" [(ngModel)]="newProduct.stockQuantity" class="admin-input">
+          <!-- Stock global : masqué quand le produit est géré par tailles -->
+          <label class="admin-label">Stock global</label>
+          <input type="number" min="0" [(ngModel)]="newProduct.stockQuantity"
+                 [disabled]="useSizes" class="admin-input">
+        </div>
+      </div>
+
+      <!-- Édition par taille (vêtements S/M/L/XL/XXL) -->
+      <div class="admin-field">
+        <label class="admin-label flex items-center gap-2 cursor-pointer select-none">
+          <input type="checkbox" [(ngModel)]="useSizes" class="accent-red-500 w-4 h-4">
+          Vendu par tailles (S, M, L, XL, XXL…)
+        </label>
+        <p class="text-xs text-gray-400 mt-1 mb-3">
+          Cochez les tailles proposées puis saisissez le stock de chacune. Le stock global est ignoré.
+        </p>
+
+        <div *ngIf="useSizes" class="grid grid-cols-3 sm:grid-cols-6 gap-2">
+          <div *ngFor="let size of SIZES"
+               class="flex flex-col items-center gap-1 p-2 rounded-lg border transition-colors"
+               [ngClass]="hasSize(size)
+                 ? 'border-wydad-red bg-red-500/10'
+                 : 'border-white/10 bg-white/5 opacity-50'">
+            <button type="button" (click)="toggleSize(size)"
+                    class="font-display font-bold text-sm uppercase tracking-wide cursor-pointer bg-transparent border-none p-0"
+                    [ngClass]="hasSize(size) ? 'text-white' : 'text-gray-400'">
+              {{ size }}
+            </button>
+            <input *ngIf="hasSize(size)" type="number" min="0"
+                   [(ngModel)]="variantStocks[size]" name="stock-{{size}}"
+                   class="admin-input !px-1 !py-0.5 text-center text-xs w-full">
+          </div>
         </div>
       </div>
       <div class="grid grid-cols-2 gap-4">

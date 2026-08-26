@@ -50,6 +50,16 @@ export class AdminBoutiqueComponent implements OnInit {
     mainImageUrl: ''
   };
 
+  /** Tailles proposées pour l'édition par variante (vêtements). */
+  readonly SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL'] as const;
+
+  /**
+   * Édition par taille : { size -> stock }. Vide ⇒ produit sans tailles
+   * (stock global, variante UNIQUE historique).
+   */
+  variantStocks: Record<string, number> = {};
+  useSizes = false;
+
   api = inject(ApiService);
   private toast = inject(ToastService);
   private confirm = inject(ConfirmService);
@@ -166,22 +176,52 @@ export class AdminBoutiqueComponent implements OnInit {
     this.isEdit = false;
     this.editingId = null;
     this.newProduct = { name: '', basePrice: 0, stockQuantity: 0, sportSection: 'FOOTBALL', categoryName: '', description: '', mainImageUrl: '' };
+    this.useSizes = false;
+    this.variantStocks = {};
     this.showModal = true;
   }
 
   openEditModal(product: any) {
     this.isEdit = true;
     this.editingId = product.id;
-    const stock = product.variants?.[0]?.stockQuantity ?? 0;
-    this.newProduct = {
-      name: product.name,
-      basePrice: product.basePrice,
-      stockQuantity: stock,
-      sportSection: product.sportSection || 'FOOTBALL',
-      categoryName: product.categoryName || '',
-      description: product.description || '',
-      mainImageUrl: product.images?.[0] || ''
-    };
+
+    // Pré-remplissage des variantes existantes (tailles réelles du produit).
+    const sizesWithStock: Record<string, number> = {};
+    let hasRealSizes = false;
+    for (const v of product.variants || []) {
+      if (v.size && v.size !== 'UNIQUE') {
+        sizesWithStock[v.size] = v.stockQuantity ?? 0;
+        hasRealSizes = true;
+      }
+    }
+    // Produit sans tailles : on pré-remplit quand même la grille avec le
+    // stock UNIQUE historique, l'admin coche les tailles qu'il veut.
+    if (!hasRealSizes) {
+      const uniqueStock = product.variants?.[0]?.stockQuantity ?? 0;
+      this.useSizes = false;
+      this.variantStocks = {};
+      this.newProduct = {
+        name: product.name,
+        basePrice: product.basePrice,
+        stockQuantity: uniqueStock,
+        sportSection: product.sportSection || 'FOOTBALL',
+        categoryName: product.categoryName || '',
+        description: product.description || '',
+        mainImageUrl: product.images?.[0] || ''
+      };
+    } else {
+      this.useSizes = true;
+      this.variantStocks = sizesWithStock;
+      this.newProduct = {
+        name: product.name,
+        basePrice: product.basePrice,
+        stockQuantity: Object.values(sizesWithStock).reduce((a, b) => a + b, 0),
+        sportSection: product.sportSection || 'FOOTBALL',
+        categoryName: product.categoryName || '',
+        description: product.description || '',
+        mainImageUrl: product.images?.[0] || ''
+      };
+    }
     this.showModal = true;
   }
 
@@ -189,9 +229,47 @@ export class AdminBoutiqueComponent implements OnInit {
     this.showModal = false;
   }
 
+  toggleSize(size: string) {
+    if (size in this.variantStocks) {
+      delete this.variantStocks[size];
+    } else {
+      this.variantStocks[size] = 0;
+    }
+  }
+
+  /** La taille est cochée dans l'éditeur de variantes (template-safe). */
+  hasSize(size: string): boolean {
+    return Object.prototype.hasOwnProperty.call(this.variantStocks, size);
+  }
+
+  /** Stock total affiché dans la table produits. */
+  totalStock(product: any): number {
+    return (product.variants || []).reduce((sum: number, v: any) => sum + (v.stockQuantity ?? 0), 0);
+  }
+
+  hasSizes(product: any): boolean {
+    return (product.variants || []).some((v: any) => v.size && v.size !== 'UNIQUE');
+  }
+
+  /** « S×3 M×5 L×0 » — résumé lisible du stock par taille. */
+  sizeSummary(product: any): string {
+    return (product.variants || [])
+      .filter((v: any) => v.size && v.size !== 'UNIQUE')
+      .map((v: any) => `${v.size}×${v.stockQuantity ?? 0}`)
+      .join(' ');
+  }
+
   saveProduct() {
     const payload: any = { ...this.newProduct };
     if (!payload.categoryName) delete payload.categoryName;
+
+    // Édition par taille : on envoie uniquement les tailles cochées.
+    if (this.useSizes) {
+      payload.variants = Object.entries(this.variantStocks)
+        .map(([size, stock]) => ({ size, stockQuantity: stock }));
+      delete payload.stockQuantity;
+    }
+
 
     const call$ = this.isEdit && this.editingId
       ? this.api.updateProduct(this.editingId, payload)

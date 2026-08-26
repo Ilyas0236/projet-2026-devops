@@ -1,0 +1,142 @@
+:host {
+  display: block;
+  min-height: 100vh;
+  background: #f6f7f9;
+}
+
+.espace-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.espace-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.5rem 1.25rem;
+  background: linear-gradient(90deg, #fff 0%, #fff 55%, rgba(220, 20, 60, 0.06) 100%);
+  border-bottom: 3px solid var(--color-wydad-red, #dc143c);
+  box-shadow: 0 2px 12px rgba(15, 15, 20, 0.08);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.15rem 0.4rem;
+  border-radius: 0.6rem;
+
+  &:hover {
+    background: rgba(var(--color-wydad-red-rgb, 220, 20, 60), 0.06);
+  }
+}
+
+.brand-logo {
+  height: 42px;
+  width: auto;
+}
+
+.brand-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  line-height: 1.15;
+}
+
+.brand-club {
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  font-size: 0.85rem;
+  color: #16161c;
+}
+
+.brand-espace {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--color-wydad-red, #dc143c);
+}
+
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.hello {
+  font-size: 0.82rem;
+  color: #55555f;
+  white-space: nowrap;
+}
+
+.btn-site,
+.btn-logout {
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.45rem 0.9rem;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  white-space: nowrap;
+  text-decoration: none;
+}
+
+.btn-site {
+  color: #26262e;
+  border: 1px solid rgba(22, 22, 28, 0.18);
+  background: #fff;
+
+  &:hover {
+    border-color: var(--color-wydad-red, #dc143c);
+    color: var(--color-wydad-red, #dc143c);
+  }
+}
+
+/* Libellé long par défaut, court sur mobile */
+.btn-site-short {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  .btn-site-long { display: none; }
+  .btn-site-short { display: inline; }
+}
+
+.btn-logout {
+  color: #fff;
+  border: none;
+  background: var(--color-wydad-red, #dc143c);
+
+  &:hover {
+    filter: brightness(1.08);
+    box-shadow: 0 0 16px rgba(var(--color-wydad-red-rgb, 220, 20, 60), 0.35);
+  }
+}
+
+.espace-content {
+  flex: 1;
+  width: 100%;
+
+  // Les pages d'espace portent pt-28/pt-32 (héritage de l'ancien header
+  // FIXE du site public). La topbar ici est sticky DANS le flux : on
+  // compresse ce padding pour supprimer le double espace sous le bandeau.
+  ::ng-deep {
+    .pt-28 { padding-top: 2.5rem !important; }
+    .pt-32 { padding-top: 2.5rem !important; }
+    .pb-24 { padding-bottom: 5rem !important; }
+    .pb-20 { padding-bottom: 5rem !important; }
+  }
+}
+
+@media (max-width: 640px) {
+  .hello { display: none; }
+}

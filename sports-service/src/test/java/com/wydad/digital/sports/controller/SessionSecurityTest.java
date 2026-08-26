@@ -3,8 +3,10 @@ package com.wydad.digital.sports.controller;
 import com.wydad.digital.sports.client.NotificationClient;
 import com.wydad.digital.sports.model.Player;
 import com.wydad.digital.sports.model.Session;
+import com.wydad.digital.sports.model.Staff;
 import com.wydad.digital.sports.repository.PlayerRepository;
 import com.wydad.digital.sports.repository.SessionRepository;
+import com.wydad.digital.sports.repository.StaffRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -60,6 +62,9 @@ class SessionSecurityTest {
     @Autowired
     private PlayerRepository playerRepository;
 
+    @Autowired
+    private StaffRepository staffRepository;
+
     @MockBean
     private NotificationClient notificationClient;
 
@@ -67,6 +72,7 @@ class SessionSecurityTest {
     void seedPlayers() {
         sessionRepository.deleteAll();
         playerRepository.deleteAll();
+        staffRepository.deleteAll();
         // Deux joueurs FOOTBALL/U15 avec compte lié + un joueur U17 (autre groupe)
         playerRepository.save(Player.builder()
                 .userId(101L).fullName("Joueur U15 A")
@@ -80,6 +86,13 @@ class SessionSecurityTest {
                 .userId(103L).fullName("Joueur U17")
                 .sportType(com.wydad.digital.sports.enums.SportType.FOOTBALL)
                 .category(com.wydad.digital.sports.enums.Category.U17).build());
+        // Phase 5 — le coach STAFF doit avoir une fiche encadrement rattachée
+        // à son userId : createSession force sport/catégorie depuis SA fiche.
+        staffRepository.save(Staff.builder()
+                .userId(301L).fullName("Coach U15")
+                .role(com.wydad.digital.sports.enums.StaffRole.HEAD_COACH)
+                .sportType(com.wydad.digital.sports.enums.SportType.FOOTBALL)
+                .assignedCategory(com.wydad.digital.sports.enums.Category.U15).build());
     }
 
     private static String body(String titre) {
@@ -127,8 +140,13 @@ class SessionSecurityTest {
                 .andExpect(jsonPath("$.title").value("Entraînement technique U15"))
                 .andExpect(jsonPath("$.category").value("U15"));
 
+        // Phase 5 — ownership : createdByStaffId est l'ID de la fiche staff
+        // résolue depuis le contexte JWT (jamais la valeur du payload client).
+        Long ficheStaffId = staffRepository.findByUserId(301L).orElseThrow().getId();
         Session saved = sessionRepository.findAll().get(0);
-        assertThat(saved.getCreatedByStaffId()).isEqualTo(5L);
+        assertThat(saved.getCreatedByStaffId()).isEqualTo(ficheStaffId);
+        assertThat(saved.getSportType())
+                .isEqualTo(com.wydad.digital.sports.enums.SportType.FOOTBALL);
 
         // Chaque joueur du groupe visé (2 joueurs U15) est notifié
         Mockito.verify(notificationClient).notifyUser(eq(101L), Mockito.any(),

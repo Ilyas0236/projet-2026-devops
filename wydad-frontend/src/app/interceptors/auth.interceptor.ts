@@ -1,12 +1,13 @@
 import { HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { Router } from '@angular/router';
-import { catchError, throwError } from 'rxjs';
+import { BehaviorSubject, catchError, filter, finalize, first, switchMap, take, throwError } from 'rxjs';
+import { AuthService } from '../services/auth.service';
 
 /** Décode le payload JWT (sans vérification de signature — c'est le rôle du serveur). */
 function decodeJwtPayload(token: string): { exp?: number; role?: string } | null {
   try {
-        const b64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+    const b64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
     const json = decodeURIComponent(
       atob(b64)
         .split('')
@@ -19,48 +20,81 @@ function decodeJwtPayload(token: string): { exp?: number; role?: string } | null
   }
 }
 
+/**
+ * File d'attente du refresh : un seul appel /auth/refresh à la fois, les
+ * requêtes concurrentes attendent le résultat (premier arrivé gagne).
+ */
+let refreshInProgress$: BehaviorSubject<string | null> | null = null;
+
+/** Purge la session et ramène au login. */
+function forceLogout(auth: AuthService, router: Router): void {
+  auth.logout();
+  router.navigate(['/login']);
+}
+
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
-  const token = localStorage.getItem('wydad_token');
-  if (token) {
-    // Jeton périmé (émis avant l'ajout du claim role, expiré, ou illisible) :
-    // plutôt que de laisser partir une requête condamnée à un 401/403 obscur,
-    // on purge la session et on renvoie au login immédiatement.
-    const payload = decodeJwtPayload(token);
-    const expired = !!payload?.exp && payload.exp * 1000 < Date.now();
-    const sansRole = !payload?.role && !req.url.includes('/auth/');
-    if (!payload || expired || sansRole) {
-      ['wydad_token', 'wydad_email', 'wydad_first_name', 'wydad_last_name', 'wydad_role', 'wydad_user_id']
-        .forEach((k) => localStorage.removeItem(k));
-      inject(Router).navigate(['/login']);
-      return throwError(() => new HttpErrorResponse({ url: req.url, status: 401, statusText: 'Session expirée' }));
-    }
-    req = req.clone({
-      setHeaders: {
-        Authorization: `Bearer ${token}`
-      }
-    });
+  const auth = inject(AuthService);
+  const router = inject(Router);
+  let token = localStorage.getItem('wydad_token');
+
+  // Les appels d'authentification partent toujours sans Bearer et ne
+  // déclenchent jamais de refresh (sinon boucle infinie).
+  const isAuthCall = req.url.includes('/auth/login')
+    || req.url.includes('/auth/register')
+    || req.url.includes('/auth/refresh');
+
+  if (token && !isAuthCall) {
+    req = req.clone({ setHeaders: { Authorization: `Bearer ${token}` } });
   }
 
   return next(req).pipe(
     catchError((error: unknown) => {
-      // Token invalide ou expire : deconnexion et retour au login.
-      // On ignore les appels d'auth eux-memes (mauvais mot de passe = 401 legitime).
       if (
-        error instanceof HttpErrorResponse &&
-        error.status === 401 &&
-        !req.url.includes('/auth/login') &&
-        !req.url.includes('/auth/register')
+        !(error instanceof HttpErrorResponse)
+        || error.status !== 401
+        || isAuthCall
+        // Mauvais identifiant = 401 légitime, pas de refresh.
+        || req.url.includes('/auth/')
       ) {
-        localStorage.removeItem('wydad_token');
-        localStorage.removeItem('wydad_email');
-        localStorage.removeItem('wydad_first_name');
-        localStorage.removeItem('wydad_last_name');
-        localStorage.removeItem('wydad_role');
-        localStorage.removeItem('wydad_user_id');
-        const router = inject(Router);
-        router.navigate(['/login']);
+        return throwError(() => error);
       }
-      return throwError(() => error);
+
+      // ─── 401 sur une requête métier → tentative de reconnexion ───
+      const refreshToken = localStorage.getItem('wydad_refresh_token');
+      if (!refreshToken) {
+        forceLogout(auth, router);
+        return throwError(() => error);
+      }
+
+      if (!refreshInProgress$) {
+        refreshInProgress$ = new BehaviorSubject<string | null>(null);
+        auth.refreshSession().pipe(
+          first(),
+          finalize(() => {
+            // Le prochain 401 pourra relancer un refresh.
+            setTimeout(() => (refreshInProgress$ = null));
+          })
+        ).subscribe({
+          next: (res: any) => {
+            refreshInProgress$?.next(res?.accessToken ?? null);
+            refreshInProgress$?.complete();
+          },
+          error: () => {
+            // Refresh refusé (session révoquée, token expiré…) : déconnexion.
+            forceLogout(auth, router);
+            refreshInProgress$?.next(null);
+            refreshInProgress$?.complete();
+          }
+        });
+      }
+
+      return refreshInProgress$.pipe(
+        filter((t): t is string => t !== null),
+        take(1),
+        switchMap((newToken) => next(req.clone({
+          setHeaders: { Authorization: `Bearer ${newToken}` }
+        })))
+      );
     })
   );
 };

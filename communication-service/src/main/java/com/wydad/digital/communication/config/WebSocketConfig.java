@@ -11,9 +11,9 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 /**
  * Broker STOMP embarqué (texte uniquement). Le handshake n'exige rien au
  * niveau HTTP : l'identité est exigée par frame STOMP CONNECT (JWT validé
- * par {@link TeamChatAuthInterceptor}) et l'adhésion au groupe est
- * revérifiée à CHAQUE envoi côté service — le socket ne donne aucun droit,
- * il n'est qu'un canal.
+ * par {@link TeamChatAuthInterceptor}), les SUBSCRIBE aux topics de groupe
+ * sont vérifiés contre le roster, et l'adhésion est revérifiée à CHAQUE
+ * envoi côté service — le socket ne donne aucun droit, il n'est qu'un canal.
  */
 @Configuration
 @EnableWebSocketMessageBroker
