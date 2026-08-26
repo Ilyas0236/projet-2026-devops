@@ -92,4 +92,63 @@ public class InternalRosterController {
         }
         return ResponseEntity.ok(members);
     }
+
+    /**
+     * Création interne d'une fiche joueur — appelée par auth-service à la
+     * validation d'un compte JOUEUR par l'ADMIN. Idempotent (upsert par
+     * userId) ; les champs sportifs détaillés restent modifiables ensuite
+     * depuis le back-office ADMIN.
+     */
+    @PostMapping("/players")
+    public ResponseEntity<?> createPlayer(
+            @RequestHeader(value = "X-Internal-Secret", required = false) String secret,
+            @RequestBody Map<String, Object> body) {
+        if (!secretValidator.isInternalCallAuthorized(secret)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        try {
+            Long userId = Long.valueOf(String.valueOf(body.get("userId")));
+            Player player = playerRepository.findByUserId(userId).orElseGet(Player::new);
+            player.setUserId(userId);
+            player.setFullName(String.valueOf(body.getOrDefault("fullName", "")));
+            player.setSportType(com.wydad.digital.sports.enums.SportType
+                    .valueOf(String.valueOf(body.get("sportType")).toUpperCase()));
+            player.setCategory(com.wydad.digital.sports.enums.Category
+                    .valueOf(String.valueOf(body.get("category")).toUpperCase()));
+            playerRepository.save(player);
+            return ResponseEntity.ok(Map.of("userId", userId, "created", true));
+        } catch (IllegalArgumentException e) {
+            // Enum inconnu (discipline/catégorie hors référentiel)
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
+    }
+
+    /**
+     * Création interne d'une fiche staff (ENTRAINEUR / STAFF validés).
+     * Rôle par défaut MANAGER, ajustable ensuite depuis le back-office.
+     */
+    @PostMapping("/staff")
+    public ResponseEntity<?> createStaff(
+            @RequestHeader(value = "X-Internal-Secret", required = false) String secret,
+            @RequestBody Map<String, Object> body) {
+        if (!secretValidator.isInternalCallAuthorized(secret)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        try {
+            Long userId = Long.valueOf(String.valueOf(body.get("userId")));
+            Staff staff = staffRepository.findByUserId(userId).orElseGet(Staff::new);
+            staff.setUserId(userId);
+            staff.setFullName(String.valueOf(body.getOrDefault("fullName", "")));
+            staff.setRole(com.wydad.digital.sports.enums.StaffRole
+                    .valueOf(String.valueOf(body.getOrDefault("role", "MANAGER")).toUpperCase()));
+            staff.setSportType(com.wydad.digital.sports.enums.SportType
+                    .valueOf(String.valueOf(body.get("sportType")).toUpperCase()));
+            staff.setAssignedCategory(com.wydad.digital.sports.enums.Category
+                    .valueOf(String.valueOf(body.get("assignedCategory")).toUpperCase()));
+            staffRepository.save(staff);
+            return ResponseEntity.ok(Map.of("userId", userId, "created", true));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
+    }
 }

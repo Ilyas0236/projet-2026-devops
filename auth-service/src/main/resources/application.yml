@@ -40,6 +40,9 @@ spring.servlet.multipart:
 
 wydad:
   internal-secret: ${WYDAD_INTERNAL_SECRET:}
+  # URIs des services frères (réseau docker interne) — clients internes
+  content-service-uri: ${CONTENT_SERVICE_URI:http://content-service:8082}
+  sports-service-uri: ${SPORTS_SERVICE_URI:http://sports-service:8087}
 
 app:
   otp:

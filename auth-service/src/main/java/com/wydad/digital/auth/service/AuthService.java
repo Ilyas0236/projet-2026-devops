@@ -41,6 +41,7 @@ public class AuthService {
     private final CloudinaryService cloudinaryService;
     private final com.wydad.digital.auth.client.NotificationClient notificationClient;
     private final com.wydad.digital.auth.client.ContentClient contentClient;
+    private final com.wydad.digital.auth.client.SportsClient sportsClient;
 
     /** Niveau attribué à l'inscription : le plus bas payant (S3). */
     private static final MembershipLevel NIVEAU_INSCRIPTION = MembershipLevel.ROUGE;
@@ -731,6 +732,15 @@ public class AuthService {
         user.setStatutCompte(StatutCompte.VALIDE);
         user.setMotifRefus(null);
         userRepository.save(user);
+        // Comptes sportifs : créer la fiche roster (players/staff) dans le
+        // sports-service — sans elle, l'espace joueur/staff ne peut pas se
+        // charger. Best-effort : n'invalide jamais la décision admin.
+        if (user.getRole() == Role.JOUEUR || user.getRole() == Role.ENTRAINEUR
+                || user.getRole() == Role.STAFF) {
+            sportsClient.createRosterEntry(user.getId(),
+                    (user.getFirstName() + " " + user.getLastName()).trim(),
+                    user.getRole().name(), user.getDisciplineDemandee(), user.getCategorieDemandee());
+        }
         notifyCompteDecision(user, true, null); // Phase 1 ter : in-app best-effort
         return mapToProfile(user);
     }
