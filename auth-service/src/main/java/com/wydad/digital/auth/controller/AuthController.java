@@ -126,7 +126,8 @@ public class AuthController {
     }
 
     @GetMapping("/me")
-    @PreAuthorize("hasRole('ADHERENT') or hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADHERENT') or hasRole('JOUEUR') or hasRole('ENTRAINEUR') or hasRole('JOURNALISTE') "
+            + "or hasRole('STAFF') or hasRole('PARENT') or hasRole('PRESIDENT') or hasRole('ADMIN')")
     public ResponseEntity<UserProfileResponse> getCurrentUser(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authHeader) {
 
@@ -159,7 +160,8 @@ public class AuthController {
     }
 
     @PutMapping("/me")
-    @PreAuthorize("hasRole('ADHERENT') or hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADHERENT') or hasRole('JOUEUR') or hasRole('ENTRAINEUR') or hasRole('JOURNALISTE') "
+            + "or hasRole('STAFF') or hasRole('PARENT') or hasRole('PRESIDENT') or hasRole('ADMIN')")
     public ResponseEntity<AuthResponse> updateProfile(
             @Valid @RequestBody UpdateProfileRequest request,
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authHeader) {
@@ -180,7 +182,8 @@ public class AuthController {
     }
 
     @DeleteMapping("/me")
-    @PreAuthorize("hasRole('ADHERENT') or hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADHERENT') or hasRole('JOUEUR') or hasRole('ENTRAINEUR') or hasRole('JOURNALISTE') "
+            + "or hasRole('STAFF') or hasRole('PARENT') or hasRole('PRESIDENT') or hasRole('ADMIN')")
     public ResponseEntity<String> deleteAccount(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authHeader) {
         String token = authHeader.replace("Bearer ", "");
@@ -190,7 +193,7 @@ public class AuthController {
     }
 
     @PostMapping("/upgrade")
-    @PreAuthorize("hasRole('ADHERENT') or hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADHERENT') or hasRole('JOUEUR') or hasRole('ENTRAINEUR') or hasRole('JOURNALISTE') or hasRole('STAFF') or hasRole('PARENT') or hasRole('PRESIDENT') or hasRole('ADMIN')")
     public ResponseEntity<AuthResponse> upgradeLevel(
             @Valid @RequestBody UpgradeRequest request,
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authHeader) {
@@ -267,7 +270,8 @@ public class AuthController {
     }
 
     @PostMapping("/kyc/upload")
-    @PreAuthorize("hasRole('ADHERENT') or hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADHERENT') or hasRole('JOUEUR') or hasRole('ENTRAINEUR') or hasRole('JOURNALISTE') "
+            + "or hasRole('STAFF') or hasRole('PARENT') or hasRole('PRESIDENT') or hasRole('ADMIN')")
     public ResponseEntity<KycResponse> uploadKyc(@Valid @RequestBody KycUploadRequest request) {
         return ResponseEntity.ok(authService.uploadKyc(request));
     }
@@ -310,7 +314,7 @@ public class AuthController {
     // Sessions Actives
     // ============================================
     @GetMapping("/sessions")
-    @PreAuthorize("hasRole('ADHERENT') or hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADHERENT') or hasRole('JOUEUR') or hasRole('ENTRAINEUR') or hasRole('JOURNALISTE') or hasRole('STAFF') or hasRole('PARENT') or hasRole('PRESIDENT') or hasRole('ADMIN')")
     public ResponseEntity<List<SessionResponse>> getActiveSessions(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authHeader) {
         String token = authHeader.replace("Bearer ", "");
@@ -319,7 +323,7 @@ public class AuthController {
     }
 
     @PostMapping("/sessions/revoke")
-    @PreAuthorize("hasRole('ADHERENT') or hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADHERENT') or hasRole('JOUEUR') or hasRole('ENTRAINEUR') or hasRole('JOURNALISTE') or hasRole('STAFF') or hasRole('PARENT') or hasRole('PRESIDENT') or hasRole('ADMIN')")
     public ResponseEntity<String> revokeSession(
             @Valid @RequestBody RevokeSessionRequest request,
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authHeader) {
@@ -330,7 +334,7 @@ public class AuthController {
     }
 
     @PostMapping("/sessions/revoke-all")
-    @PreAuthorize("hasRole('ADHERENT') or hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADHERENT') or hasRole('JOUEUR') or hasRole('ENTRAINEUR') or hasRole('JOURNALISTE') or hasRole('STAFF') or hasRole('PARENT') or hasRole('PRESIDENT') or hasRole('ADMIN')")
     public ResponseEntity<String> revokeAllSessions(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authHeader) {
         String token = authHeader.replace("Bearer ", "");
