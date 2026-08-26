@@ -38,6 +38,21 @@ public class Event {
     private String venue;
     private String competition;
 
+    /**
+     * §26 — catégorie du groupe concerné par le match (SENIOR, U20…).
+     * Nullable pour les événements créés avant la mise en place (comportement
+     * historique : billets pour tous les joueurs actifs). Dès qu'elle est
+     * renseignée, seuls les joueurs de la discipline+catégorie du match
+     * reçoivent des billets (§24 : jamais un joueur Football U17 sur un
+     * match Basketball U17).
+     */
+    @Enumerated(EnumType.STRING)
+    private EventCategory category;
+
+    /** §16/§21 — logo adverse (image téléversée par l'ADMIN), repris sur le PDF. */
+    @Column(length = 2000)
+    private String adversaireLogoUrl;
+
     @Column(nullable = false)
     private LocalDateTime eventDate;
 

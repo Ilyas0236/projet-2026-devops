@@ -29,6 +29,8 @@ export class AdminBilletterieComponent implements OnInit {
       competition: comp?.name || '',
       venue: 'Stade Mohammed V',
       eventType: 'FOOTBALL',
+      category: 'SENIOR',
+      adversaireLogoUrl: '',
       basePrice: 50,
       totalCapacity: 45000,
       sections: []
@@ -82,6 +84,8 @@ export class AdminBilletterieComponent implements OnInit {
       competition: event.competition,
       venue: event.venue,
       eventType: event.eventType || 'FOOTBALL',
+      category: event.category || 'SENIOR',
+      adversaireLogoUrl: event.adversaireLogoUrl || '',
       basePrice: event.basePrice,
       totalCapacity: event.totalCapacity,
       sections: event.sections || []
@@ -92,6 +96,31 @@ export class AdminBilletterieComponent implements OnInit {
   closeAddModal() {
     this.showModal = false;
   }
+
+  // §16/§21 — logo adverse : image téléversée par l'ADMIN à la création du
+  // match, reprise automatiquement sur les billets PDF.
+  uploadingLogo = false;
+
+  uploadLogo(event: any) {
+    const file = event.target.files[0];
+    if (!file) return;
+    this.uploadingLogo = true;
+    this.api.uploadMedia(file).subscribe({
+      next: (res) => {
+        this.newEvent.adversaireLogoUrl = res.url;
+        this.uploadingLogo = false;
+      },
+      error: () => {
+        this.uploadingLogo = false;
+        this.toast.error('Erreur lors de l\'upload du logo.');
+      }
+    });
+  }
+
+  /** Disciplines proposées à la création d'un match. */
+  readonly sports = ['FOOTBALL', 'BASKETBALL', 'HANDBALL', 'VOLLEYBALL', 'SWIMMING', 'JUDO', 'ATHLETICS'];
+  /** Catégories §26 communes à toutes les disciplines. */
+  readonly categories = ['U15', 'U17', 'U18', 'U20', 'SENIOR'];
 
   saveEvent() {
     if (this.isEdit && this.editingId !== null) {

@@ -35,6 +35,10 @@
                 [ngClass]="event.competition?.includes('CAF') ? 'text-wydad-gold-dark' : 'text-wydad-red'">
             {{ event.competition }}
           </span>
+          <!-- §26 — discipline + catégorie du groupe concerné -->
+          <span *ngIf="event.category" class="text-[9px] font-bold uppercase tracking-widest bg-wydad-red/10 text-wydad-red rounded-full px-2 py-0.5 mt-1">
+            {{ event.eventType }} · {{ event.category }}
+          </span>
           <span class="font-display font-black text-3xl text-ink-primary tracking-tight">{{ event.eventDate | date:'dd MMM' | uppercase }}</span>
           <span class="text-ink-tertiary text-sm font-mono">{{ event.eventDate | date:'HH:mm' }} GMT+1</span>
           <span class="text-ink-tertiary text-xs mt-1">{{ event.venue }}</span>

@@ -2,6 +2,7 @@ package com.wydad.digital.ticket.service;
 
 import com.wydad.digital.ticket.client.AuthClient;
 import com.wydad.digital.ticket.client.NotificationClient;
+import com.wydad.digital.ticket.client.SportsRosterClient;
 import com.wydad.digital.ticket.dto.TicketResponse;
 import com.wydad.digital.ticket.enums.TicketCategory;
 import com.wydad.digital.ticket.enums.TicketStatus;
@@ -22,14 +23,19 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Phase 2 — Génération automatique des billets VIP joueurs.
+ * Phase 2 / §3-§4 — Génération automatique des billets VIP joueurs.
  *
- * À chaque match du Wydad À DOMICILE, chaque joueur actif reçoit 4 billets
- * VIP gratuits (invités du club), attachés à son compte et téléchargeables
- * en PDF avec QR unique depuis son espace.
+ * À chaque match du Wydad À DOMICILE, chaque joueur DU GROUPE concerné
+ * (discipline + catégorie, §26) reçoit des billets VIP gratuits (invités du
+ * club) : 4 billets pour les SENIOR, 2 billets pour les catégories jeunes
+ * (U15/U17/U18/U20). Les billets sont attachés à son compte et
+ * téléchargeables en PDF avec QR unique depuis son espace.
  *
  * Règles métier :
  * - Match à l'extérieur → aucun billet (rejet explicite).
+ * - §24/§26 : seuls les joueurs de la discipline+catégorie de l'événement
+ *   sont servis — jamais un joueur Football U17 sur un match Basketball U17.
+ *   Événement sans catégorie (historique) → tous les joueurs actifs.
  * - Idempotent : relancer la génération pour un événement déjà traité ne
  *   crée AUCUN doublon — seuls les joueurs manquants sont servis.
  * - Hors circuit de vente : prix 0, statut PAID directement (offre du club),
@@ -42,14 +48,18 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class VipTicketService {
 
-    /** Nombre de billets VIP offerts par joueur actif à domicile. */
-    static final int BILLETS_PAR_JOUEUR = 4;
+    /** Billets VIP offerts par joueur SENIOR à domicile (§3). */
+    static final int BILLETS_PAR_JOUEUR_SENIOR = 4;
+
+    /** Billets VIP adaptés par joueur d'une catégorie jeune (§4). */
+    static final int BILLETS_PAR_JOUEUR_JEUNE = 2;
 
     private final EventRepository eventRepository;
     private final SectionRepository sectionRepository;
     private final TicketRepository ticketRepository;
     private final QrCodeService qrCodeService;
     private final AuthClient authClient;
+    private final SportsRosterClient rosterClient;
     private final NotificationClient notificationClient;
 
     /**
@@ -73,7 +83,7 @@ public class VipTicketService {
             log.info("Auto-génération VIP après création de l'événement {} : {} joueur(s), {} billet(s)",
                     event.getId(), result.joueursServis(), result.billetsCrees());
         } catch (Exception e) {
-            // Section VIP absente, auth-service injoignable... : l'ADMIN peut
+            // Section VIP absente, sports/auth injoignable... : l'ADMIN peut
             // relancer manuellement via POST /api/ticket/internal/vip-generate/{eventId}.
             log.warn("Auto-génération VIP non aboutie pour l'événement {} — relance manuelle possible",
                     event.getId(), e);
@@ -94,21 +104,21 @@ public class VipTicketService {
                 .orElseThrow(() -> new IllegalStateException(
                         "Aucune section VIP sur cet événement — créez-la avant la génération"));
 
-        var players = authClient.fetchActivePlayers();
+        List<Recipient> recipients = recipientsForEvent(event);
         int billets = 0;
 
-        for (var player : players) {
-            if (ticketRepository.existsByEventIdAndUserIdAndCategory(eventId, player.id(), TicketCategory.VIP)) {
+        for (var recipient : recipients) {
+            if (ticketRepository.existsByEventIdAndUserIdAndCategory(eventId, recipient.id(), TicketCategory.VIP)) {
                 continue; // déjà servi (relance/idempotence)
             }
-            for (int i = 0; i < BILLETS_PAR_JOUEUR; i++) {
+            for (int i = 0; i < recipient.billets(); i++) {
                 String ticketNumber = "WAC-VIP-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
-                String qrData = "WAC-TICKET:" + ticketNumber + ":EVENT:" + event.getId() + ":USER:" + player.id();
+                String qrData = "WAC-TICKET:" + ticketNumber + ":EVENT:" + event.getId() + ":USER:" + recipient.id();
                 ticketRepository.save(Ticket.builder()
                         .ticketNumber(ticketNumber)
-                        .userId(player.id())
-                        .userFullName(player.displayName())
-                        .userEmail(player.email())
+                        .userId(recipient.id())
+                        .userFullName(recipient.displayName())
+                        .userEmail(recipient.email())
                         .event(event)
                         .section(sectionVip)
                         .category(TicketCategory.VIP)
@@ -119,18 +129,18 @@ public class VipTicketService {
                         .status(TicketStatus.PAID)
                         .build());
             }
-            sectionVip.setAvailableSeats(Math.max(sectionVip.getAvailableSeats() - BILLETS_PAR_JOUEUR, 0));
-            billets += BILLETS_PAR_JOUEUR;
+            sectionVip.setAvailableSeats(Math.max(sectionVip.getAvailableSeats() - recipient.billets(), 0));
+            billets += recipient.billets();
         }
 
         sectionRepository.save(sectionVip);
 
         // Best-effort : prévenir chaque joueur nouvellement servi.
-        notifyPlayers(players, eventId, billets);
+        notifyPlayers(recipients, eventId, billets);
 
-        log.info("Génération VIP événement {} : {} joueur(s), {} billet(s)",
-                eventId, players.size(), billets);
-        return new VipGenerationResult(players.size(), billets);
+        log.info("Génération VIP événement {} : {} bénéficiaire(s), {} billet(s)",
+                eventId, recipients.size(), billets);
+        return new VipGenerationResult(recipients.size(), billets);
     }
 
     /** Un match est « à domicile » si le Wydad est l'équipe recevante. */
@@ -140,17 +150,49 @@ public class VipTicketService {
                 && event.getHomeTeam().toLowerCase().contains("wydad");
     }
 
-    private void notifyPlayers(List<AuthClient.PlayerRecipient> players, Long eventId, int billetsCrees) {
-        for (var player : players) {
+    /**
+     * §24/§26 — destinataires des billets : les joueurs du groupe
+     * discipline+catégorie de l'événement (roster serveur), 4 billets en
+     * SENIOR et 2 en catégorie jeune. Sans catégorie renseignée
+     * (événements historiques), repli sur tous les joueurs actifs avec le
+     * quota SENIOR.
+     */
+    private List<Recipient> recipientsForEvent(Event event) {
+        int billetsParJoueur = event.getCategory() == null
+                ? BILLETS_PAR_JOUEUR_SENIOR
+                : billetsPourCategorie(event.getCategory().name());
+
+        if (event.getCategory() == null) {
+            return authClient.fetchActivePlayers().stream()
+                    .map(p -> new Recipient(p.id(), p.email(), p.displayName(), billetsParJoueur))
+                    .toList();
+        }
+
+        return rosterClient.fetchPlayersOfGroup(event.getEventType().name(), event.getCategory().name())
+                .stream()
+                .map(m -> new Recipient(m.userId(), null, m.fullName(), billetsParJoueur))
+                .toList();
+    }
+
+    /** §3/§4 — quota de billets selon la catégorie du groupe. */
+    static int billetsPourCategorie(String category) {
+        return "SENIOR".equalsIgnoreCase(category) ? BILLETS_PAR_JOUEUR_SENIOR : BILLETS_PAR_JOUEUR_JEUNE;
+    }
+
+    /** Destinataire normalisé (auth-service ou roster sports-service). */
+    private record Recipient(Long id, String email, String displayName, int billets) {}
+
+    private void notifyPlayers(List<Recipient> recipients, Long eventId, int billetsCrees) {
+        for (var recipient : recipients) {
             try {
                 notificationClient.notifyUser(
-                        player.id(),
-                        player.email(),
+                        recipient.id(),
+                        recipient.email(),
                         "Billets VIP disponibles",
-                        BILLETS_PAR_JOUEUR + " billets VIP vous sont offerts pour ce match à domicile.",
+                        recipient.billets() + " billet(s) VIP vous sont offerts pour ce match à domicile.",
                         "/joueur/billets");
             } catch (Exception e) {
-                log.warn("Notification VIP non envoyée à {}", player.email(), e);
+                log.warn("Notification VIP non envoyée à {}", recipient.displayName(), e);
             }
         }
     }

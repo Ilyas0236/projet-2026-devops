@@ -30,10 +30,12 @@ public class EventService {
                 .title(request.getTitle())
                 .description(request.getDescription())
                 .eventType(request.getEventType())
+                .category(request.getCategory())
                 .homeTeam(request.getHomeTeam())
                 .awayTeam(request.getAwayTeam())
                 .venue(request.getVenue())
                 .competition(request.getCompetition())
+                .adversaireLogoUrl(request.getAdversaireLogoUrl())
                 .eventDate(request.getEventDate())
                 .gateOpenTime(request.getGateOpenTime())
                 .basePrice(request.getBasePrice())
@@ -105,10 +107,12 @@ public class EventService {
         event.setTitle(request.getTitle());
         event.setDescription(request.getDescription());
         event.setEventType(request.getEventType());
+        event.setCategory(request.getCategory());
         event.setHomeTeam(request.getHomeTeam());
         event.setAwayTeam(request.getAwayTeam());
         event.setVenue(request.getVenue());
         event.setCompetition(request.getCompetition());
+        event.setAdversaireLogoUrl(request.getAdversaireLogoUrl());
         event.setEventDate(request.getEventDate());
         event.setGateOpenTime(request.getGateOpenTime());
         event.setBasePrice(request.getBasePrice());
@@ -189,6 +193,7 @@ public class EventService {
                 .title(event.getTitle())
                 .description(event.getDescription())
                 .eventType(event.getEventType())
+                .category(event.getCategory())
                 .status(event.getStatus())
                 .homeTeam(event.getHomeTeam())
                 .awayTeam(event.getAwayTeam())
@@ -201,6 +206,7 @@ public class EventService {
                 .availableSeats(event.getAvailableSeats())
                 .soldTickets(event.getSoldTickets())
                 .posterUrl(event.getPosterUrl())
+                .adversaireLogoUrl(event.getAdversaireLogoUrl())
                 .sections(sections)
                 .createdAt(event.getCreatedAt())
                 .build();

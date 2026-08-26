@@ -164,6 +164,8 @@ services:
       - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD:-wydad2024}
       - WYDAD_INTERNAL_SECRET=${INTERNAL_SECRET:?INTERNAL_SECRET manquant dans .env}
       - PAYMENT_SERVICE_URI=http://payment-service:8083
+      # §3/§4/§26 — billets VIP filtrés par discipline+catégorie (roster)
+      - SPORTS_SERVICE_URI=http://sports-service:8087
     depends_on:
       postgres:
         condition: service_healthy

@@ -2,6 +2,7 @@ package com.wydad.digital.ticket.service;
 
 import com.wydad.digital.ticket.client.AuthClient;
 import com.wydad.digital.ticket.client.NotificationClient;
+import com.wydad.digital.ticket.client.SportsRosterClient;
 import com.wydad.digital.ticket.enums.TicketCategory;
 import com.wydad.digital.ticket.model.Event;
 import com.wydad.digital.ticket.model.Section;
@@ -23,18 +24,22 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 /**
- * Phase 2 (E) — Tests métier de la génération automatique des billets VIP :
+ * Phase 2 (E) / §3-§4 — Tests métier de la génération automatique des
+ * billets VIP :
  *
- * 1. 4 billets VIP par joueur actif, à domicile uniquement ;
+ * 1. 4 billets VIP par joueur SENIOR du groupe, à domicile uniquement ;
  * 2. match à l'extérieur → aucun billet, rejet explicite ;
  * 3. régénération idempotente → aucun doublon (cas ISTQB « billet dupliqué ») ;
  * 4. prix 0 + statut PAID : hors circuit E-cash, jamais débité ;
- * 5. notification in-app best-effort envoyée à chaque joueur servi.
+ * 5. notification in-app best-effort envoyée à chaque joueur servi ;
+ * 6. §24/§26 : seuls les joueurs du groupe discipline+catégorie sont servis,
+ *    catégories jeunes → 2 billets.
  */
 @SpringBootTest(properties = {
         "spring.datasource.url=jdbc:h2:mem:viptest;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1",
@@ -68,6 +73,9 @@ class VipTicketServiceTest {
     private AuthClient authClient;
 
     @MockBean
+    private SportsRosterClient rosterClient;
+
+    @MockBean
     private NotificationClient notificationClient;
 
     private Long homeEventId;
@@ -76,7 +84,8 @@ class VipTicketServiceTest {
 
     @BeforeAll
     void seedEvents() {
-        // Match à DOMICILE avec section VIP
+        // Match à DOMICILE avec section VIP — SANS catégorie (historique :
+        // repli sur tous les joueurs actifs, quota SENIOR)
         Event home = eventRepository.save(Event.builder()
                 .title("WAC - Raja (VIP test)")
                 .eventType(com.wydad.digital.ticket.enums.EventType.FOOTBALL)
@@ -163,6 +172,99 @@ class VipTicketServiceTest {
         assertThat(billetsJ1).allMatch(t -> t.getQrCodeImage() != null && t.getQrCodeImage().length > 0);
     }
 
+    // ---------- 1bis. §24/§26 — filtrage par groupe + quotas ----------
+
+    /**
+     * Un événement AVEC catégorie ne sert que les joueurs du roster du
+     * groupe discipline+catégorie — jamais un joueur d'un autre groupe.
+     */
+    @Test
+    void evenementAvecCategorieNeSertQueLesJoueursDuGroupe() {
+        Event u17 = eventRepository.save(Event.builder()
+                .title("WAC U17 - Difaa El Jadidi (groupe test)")
+                .eventType(com.wydad.digital.ticket.enums.EventType.FOOTBALL)
+                .category(com.wydad.digital.ticket.model.EventCategory.U17)
+                .homeTeam("Wydad AC")
+                .awayTeam("Difaa El Jadidi")
+                .venue("Complexe Mohammed V")
+                .eventDate(LocalDateTime.now().plusDays(8))
+                .basePrice(new BigDecimal("40.00"))
+                .totalCapacity(60)
+                .availableSeats(60)
+                .soldTickets(0)
+                .build());
+        sectionRepository.save(Section.builder()
+                .name("VIP U17 (test)")
+                .category(TicketCategory.VIP)
+                .capacity(30)
+                .availableSeats(30)
+                .price(BigDecimal.ZERO)
+                .event(u17)
+                .build());
+
+        // Le roster serveur ne renvoie que les DEUX joueurs Football U17.
+        org.mockito.BDDMockito.given(rosterClient.fetchPlayersOfGroup("FOOTBALL", "U17"))
+                .willReturn(List.of(
+                        new SportsRosterClient.RosterMember(JOUEUR_1_ID, "Youssef El Amrani", "JOUEUR"),
+                        new SportsRosterClient.RosterMember(JOUEUR_2_ID, "Omar Naji", "JOUEUR")));
+
+        var result = vipTicketService.generateVipTicketsForEvent(u17.getId());
+
+        // Catégorie jeune : 2 billets par joueur, PAS 4 (§4).
+        assertThat(result.joueursServis()).isEqualTo(2);
+        assertThat(result.billetsCrees()).isEqualTo(4);
+
+        // Le client auth n'a PAS été consulté : la source de vérité est le roster.
+        verify(authClient, never()).fetchActivePlayers();
+
+        var billetsJ1 = ticketRepository.findByUserIdOrderByCreatedAtDesc(JOUEUR_1_ID).stream()
+                .filter(t -> t.getEvent().getId().equals(u17.getId())).toList();
+        assertThat(billetsJ1).hasSize(2);
+    }
+
+    /** Quota SENIOR = 4 billets (§3), catégorie jeune = 2 billets (§4). */
+    @Test
+    void quotaSeniorQuatreBilletsEtJeuneDeuxBillets() {
+        assertThat(VipTicketService.billetsPourCategorie("SENIOR")).isEqualTo(4);
+        assertThat(VipTicketService.billetsPourCategorie("U15")).isEqualTo(2);
+        assertThat(VipTicketService.billetsPourCategorie("U17")).isEqualTo(2);
+        assertThat(VipTicketService.billetsPourCategorie("U20")).isEqualTo(2);
+    }
+
+    /** Roster vide (groupe sans joueur) : génération propre, zéro billet. */
+    @Test
+    void groupeSansJoueurNeGenereRien() {
+        org.mockito.BDDMockito.given(rosterClient.fetchPlayersOfGroup(anyString(), anyString()))
+                .willReturn(List.of());
+
+        Event senior = eventRepository.save(Event.builder()
+                .title("WAC - OC Khouribga (senior test)")
+                .eventType(com.wydad.digital.ticket.enums.EventType.FOOTBALL)
+                .category(com.wydad.digital.ticket.model.EventCategory.SENIOR)
+                .homeTeam("Wydad AC")
+                .awayTeam("OC Khouribga")
+                .venue("Complexe Mohammed V")
+                .eventDate(LocalDateTime.now().plusDays(6))
+                .basePrice(new BigDecimal("100.00"))
+                .totalCapacity(100)
+                .availableSeats(100)
+                .soldTickets(0)
+                .build());
+        sectionRepository.save(Section.builder()
+                .name("VIP senior (test)")
+                .category(TicketCategory.VIP)
+                .capacity(30)
+                .availableSeats(30)
+                .price(BigDecimal.ZERO)
+                .event(senior)
+                .build());
+
+        var result = vipTicketService.generateVipTicketsForEvent(senior.getId());
+
+        assertThat(result.joueursServis()).isZero();
+        assertThat(result.billetsCrees()).isZero();
+    }
+
     // ---------- 2. Match extérieur ----------
 
     @Test
@@ -237,7 +339,7 @@ class VipTicketServiceTest {
                 org.mockito.ArgumentMatchers.anyLong(),
                 org.mockito.ArgumentMatchers.anyString(),
                 org.mockito.ArgumentMatchers.anyString(),
-                org.mockito.ArgumentMatchers.contains("billets VIP"),
+                org.mockito.ArgumentMatchers.contains("VIP"),
                 org.mockito.ArgumentMatchers.anyString());
     }
 

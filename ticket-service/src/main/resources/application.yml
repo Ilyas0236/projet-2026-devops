@@ -24,6 +24,8 @@ spring:
 wydad:
   internal-secret: ${WYDAD_INTERNAL_SECRET:}
   payment-service-uri: ${PAYMENT_SERVICE_URI:http://localhost:8083}
+  # §24/§26 — roster des groupes (billets VIP par discipline+catégorie)
+  sports-service-uri: ${SPORTS_SERVICE_URI:http://localhost:8087}
 
 logging:
   level:
