@@ -8,6 +8,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import jakarta.servlet.DispatcherType;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
@@ -24,6 +25,9 @@ public class SecurityConfig {
             .addFilterBefore(userContextFilter, UsernamePasswordAuthenticationFilter.class)
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
+                        // Dispatch d erreur Spring : le laisser passer pour renvoyer le vrai code
+                        // (400/500) ; sinon /error est re-securise et renvoie 403 qui masque la cause.
+                        .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
                 // Défense de titre : public (classement visible de tous)
                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/gamification/leaderboard").permitAll()
                 // Endpoints internes service-à-service : authentifiés par le secret
