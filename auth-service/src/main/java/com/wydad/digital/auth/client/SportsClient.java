@@ -8,8 +8,6 @@ import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
-import java.util.Map;
-
 /**
  * Client interne vers sports-service — à la validation d'un compte sportif
  * (JOUEUR, ENTRAINEUR, STAFF) par l'ADMIN, l'auth-service crée la fiche
@@ -49,32 +47,32 @@ public class SportsClient {
         }
         try {
             HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(org.springframework.http.MediaType.APPLICATION_JSON);
             if (internalSecret != null && !internalSecret.isEmpty()) {
                 headers.set("X-Internal-Secret", internalSecret);
             }
-            Map<String, Object> body;
-            if ("JOUEUR".equals(roleDemande)) {
-                body = Map.of(
-                        "userId", userId,
-                        "fullName", fullName,
-                        "sportType", discipline,
-                        "category", categorie);
-            } else {
-                // ENTRAINEUR / STAFF : fiche staff — rôle par défaut MANAGER
-                // (précisable ensuite par l'ADMIN depuis le back-office).
-                body = Map.of(
-                        "userId", userId,
-                        "fullName", fullName,
-                        "role", "MANAGER",
-                        "sportType", discipline,
-                        "assignedCategory", categorie);
-            }
+            // Sérialisation JSON explicite : Map.of ne tolère aucune valeur
+            // null (NPE immédiate) et le convertisseur par défaut de
+            // RestTemplate a déjà produit un corps dégradé en prod.
+            String safeName = fullName.replace("\"", "").trim();
+            boolean isPlayer = "JOUEUR".equals(roleDemande);
+            String json = isPlayer
+                    ? String.format(
+                        "{\"userId\":%d,\"fullName\":\"%s\",\"sportType\":\"%s\",\"category\":\"%s\"}",
+                        userId, safeName, discipline.trim(), categorie.trim())
+                    // ENTRAINEUR / STAFF : fiche staff — rôle par défaut MANAGER,
+                    // précisable ensuite par l'ADMIN depuis le back-office.
+                    : String.format(
+                        "{\"userId\":%d,\"fullName\":\"%s\",\"role\":\"MANAGER\",\"sportType\":\"%s\",\"assignedCategory\":\"%s\"}",
+                        userId, safeName, discipline.trim(), categorie.trim());
             restTemplate.exchange(
-                    baseUrl + ("/JOUEUR".equals(roleDemande) ? "/players" : "/staff"),
-                    HttpMethod.POST, new HttpEntity<>(body, headers), Void.class);
+                    baseUrl + (isPlayer ? "/players" : "/staff"),
+                    HttpMethod.POST, new HttpEntity<>(json, headers), Void.class);
+            log.info("Fiche roster créée : user {} -> {} {} {}", userId, roleDemande, discipline, categorie);
             return true;
         } catch (Exception e) {
-            log.error("Création fiche roster échouée pour user {}: {}", userId, e.getMessage());
+            log.error("Création fiche roster échouée pour user {} ({}, {}) : {}",
+                    userId, discipline, categorie, e.getMessage());
             return false;
         }
     }
