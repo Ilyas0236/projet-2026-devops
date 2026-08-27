@@ -3,11 +3,14 @@ package com.wydad.digital.auth.repository.subscription;
 import com.wydad.digital.auth.model.User;
 import com.wydad.digital.auth.model.subscription.UserSubscription;
 import com.wydad.digital.auth.model.subscription.UserSubscriptionStatus;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -32,4 +35,20 @@ public interface UserSubscriptionRepository extends JpaRepository<UserSubscripti
 
     /** Historique complet d'un utilisateur, plus récent d'abord. */
     List<UserSubscription> findByUserOrderByPaidAtDesc(User user);
+
+    /**
+     * B.12 — Inventaire admin des abonnements. Filtre par date + email.
+     */
+    @Query("""
+            SELECT s FROM UserSubscription s
+              WHERE (:startDate IS NULL OR s.paidAt >= :startDate)
+                AND (:endDate   IS NULL OR s.paidAt <= :endDate)
+                AND (:userEmail IS NULL OR LOWER(s.user.email) LIKE LOWER(CONCAT('%', :userEmail, '%')))
+            ORDER BY s.paidAt DESC
+            """)
+    Page<UserSubscription> adminFilter(
+            @Param("startDate") LocalDateTime startDate,
+            @Param("endDate") LocalDateTime endDate,
+            @Param("userEmail") String userEmail,
+            Pageable pageable);
 }

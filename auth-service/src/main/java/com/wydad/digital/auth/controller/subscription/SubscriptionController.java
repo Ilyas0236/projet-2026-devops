@@ -14,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
@@ -84,6 +85,24 @@ public class SubscriptionController {
         // Le secret sera ajouté en V2 quand on aura une gateway-side
         // whitelist des routes internes.
         return ResponseEntity.ok(subscriptionService.isActiveAdherent(email));
+    }
+
+    /**
+     * B.12 — Inventaire admin des abonnements (filtres date + email).
+     */
+    @GetMapping("/admin/filter")
+    @PreAuthorize("hasRole('ADMIN')")
+    public org.springframework.data.domain.Page<SubscriptionResponse> adminFilter(
+            @RequestParam(required = false)
+            @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME)
+            LocalDateTime startDate,
+            @RequestParam(required = false)
+            @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME)
+            LocalDateTime endDate,
+            @RequestParam(required = false) String userEmail,
+            org.springframework.data.domain.Pageable pageable) {
+        return subscriptionService.adminFilter(
+                startDate, endDate, userEmail, pageable);
     }
 
     private String emailFromHeader(HttpServletRequest httpRequest) {

@@ -142,6 +142,20 @@ public class SubscriptionService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * B.12 — Inventaire admin des abonnements (filtres date + email).
+     */
+    @Transactional(readOnly = true)
+    public org.springframework.data.domain.Page<SubscriptionResponse> adminFilter(
+            LocalDateTime startDate,
+            LocalDateTime endDate,
+            String userEmail,
+            org.springframework.data.domain.Pageable pageable) {
+        return subscriptionRepository.adminFilter(
+                        startDate, endDate, userEmail, pageable)
+                .map(SubscriptionResponse::from);
+    }
+
     /** Abonnement actif courant. */
     public SubscriptionResponse myActive(String email) {
         User user = userRepository.findByEmail(email)

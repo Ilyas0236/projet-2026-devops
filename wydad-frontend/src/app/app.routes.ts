@@ -59,6 +59,7 @@ import { ElectionsComponent } from './pages/elections/elections.component';
 import { MesElectionsComponent } from './pages/mes-elections/mes-elections.component';
 import { AdminElectionsComponent } from './pages/admin/admin-elections/admin-elections.component';
 import { AdminCommandesComponent } from './pages/admin/admin-commandes/admin-commandes.component';
+import { AdminAchatsComponent } from './pages/admin/admin-achats/admin-achats.component';
 import { AdminBadgesComponent } from './pages/admin/admin-badges/admin-badges.component';
 import { AdminSeancesComponent } from './pages/admin/admin-seances/admin-seances.component';
 import { AdminJoueursPublicComponent } from './pages/admin/admin-joueurs-public/admin-joueurs-public.component';
@@ -87,6 +88,7 @@ export const routes: Routes = [
       { path: 'classements', component: AdminClassementsComponent },
       { path: 'boutique', component: AdminBoutiqueComponent },
       { path: 'commandes', component: AdminCommandesComponent },
+      { path: 'achats', component: AdminAchatsComponent },
       { path: 'billetterie', component: AdminBilletterieComponent },
       { path: 'effectif', component: AdminEffectifComponent },
       { path: 'effectif-public', component: AdminJoueursPublicComponent },

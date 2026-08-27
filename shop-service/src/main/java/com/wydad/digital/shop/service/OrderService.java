@@ -231,6 +231,22 @@ public class OrderService {
     }
 
     /**
+     * B.12 — Inventaire admin : applique filtres date + userEmail +
+     * productName (optionnels, tous combinables). Aucun filtre = tout.
+     */
+    @Transactional(readOnly = true)
+    public Page<OrderResponseDto> adminFilter(
+            LocalDateTime startDate,
+            LocalDateTime endDate,
+            String userEmail,
+            String productName,
+            Pageable pageable) {
+        return shopOrderRepository.adminFilter(
+                        startDate, endDate, userEmail, productName, pageable)
+                .map(this::mapToDto);
+    }
+
+    /**
      * Changement de statut par l'ADMIN (préparation, expédition, livraison,
      * annulation...). Seules les transitions valides sont acceptées ; la
      * numérotation de suivi est demandée à l'expédition.

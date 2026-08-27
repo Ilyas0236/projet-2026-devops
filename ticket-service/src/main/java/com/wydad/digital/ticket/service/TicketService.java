@@ -204,6 +204,22 @@ public class TicketService {
     }
 
     /**
+     * B.12 — Inventaire admin : filtre par date + email + eventId (tous
+     * optionnels et cumulables).
+     */
+    @Transactional(readOnly = true)
+    public org.springframework.data.domain.Page<TicketResponse> adminFilter(
+            java.time.LocalDateTime startDate,
+            java.time.LocalDateTime endDate,
+            String userEmail,
+            Long eventId,
+            org.springframework.data.domain.Pageable pageable) {
+        return ticketRepository.adminFilter(
+                        startDate, endDate, userEmail, eventId, pageable)
+                .map(this::mapToResponse);
+    }
+
+    /**
      * B.28 — Achat sans compte (visiteur).
      *
      * 1) Crée/récupère un user VISITEUR côté auth-service (idempotent sur l'email).

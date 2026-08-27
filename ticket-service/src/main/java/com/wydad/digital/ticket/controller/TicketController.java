@@ -53,6 +53,26 @@ public class TicketController {
         return ResponseEntity.ok(ticketService.getTicketsByUser(userId));
     }
 
+    /**
+     * B.12 — Inventaire admin des billets (filtres date + email + eventId).
+     * Tous les filtres sont optionnels et cumulables.
+     */
+    @GetMapping("/admin/filter")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<org.springframework.data.domain.Page<TicketResponse>> adminFilter(
+            @RequestParam(required = false)
+            @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME)
+            java.time.LocalDateTime startDate,
+            @RequestParam(required = false)
+            @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME)
+            java.time.LocalDateTime endDate,
+            @RequestParam(required = false) String userEmail,
+            @RequestParam(required = false) Long eventId,
+            org.springframework.data.domain.Pageable pageable) {
+        return ResponseEntity.ok(ticketService.adminFilter(
+                startDate, endDate, userEmail, eventId, pageable));
+    }
+
     @GetMapping("/number/{ticketNumber}")
     public ResponseEntity<TicketResponse> getTicketByNumber(@PathVariable String ticketNumber) {
         Ticket ticket = ticketRepository.findByTicketNumber(ticketNumber)
