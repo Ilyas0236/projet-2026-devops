@@ -72,20 +72,15 @@
         <div class="club-card p-6 sticky top-32">
           <h2 class="text-xl font-display font-bold uppercase mb-6 text-center text-ink-primary border-b-2 border-wydad-red pb-3">Votre Commande</h2>
 
-          <!-- Écran de succès (B.28 visiteurs + fallback membres) -->
+          <!-- Écran de succès (membres uniquement) -->
           <div *ngIf="successMsg" class="space-y-4">
             <div class="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
               <div class="text-3xl mb-2">✅</div>
               <p class="text-green-800 font-bold mb-1">{{ successMsg }}</p>
-              <p class="text-green-700 text-sm" *ngIf="lastTicketNumber">Votre n° de billet : <span class="font-mono font-bold">{{ lastTicketNumber }}</span></p>
               <p class="text-green-700 text-sm mt-2">Un e-mail de confirmation vous a été envoyé.</p>
             </div>
 
-            <button *ngIf="!isLoggedIn" (click)="viewTicketAfterPurchase()" class="paper-btn-primary w-full py-4 skew-x-[-10deg]">
-              <span class="skew-x-[10deg] block">Voir mon billet</span>
-            </button>
-
-            <a *ngIf="isLoggedIn" routerLink="/profil/billets" class="paper-btn-primary w-full py-4 skew-x-[-10deg] block text-center">
+            <a routerLink="/profil/billets" class="paper-btn-primary w-full py-4 skew-x-[-10deg] block text-center">
               <span class="skew-x-[10deg] block">Voir mes billets</span>
             </a>
 
@@ -128,40 +123,7 @@
                 <span class="text-3xl font-black text-wydad-red">{{ getTotal() }} DH</span>
               </div>
 
-              <!-- ====== Formulaire VISITEUR (B.28) ====== -->
-              <div *ngIf="!isLoggedIn" class="space-y-3">
-                <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 text-xs text-blue-900">
-                  ℹ️ Achat sans compte : remplissez vos coordonnées pour recevoir vos billets par e-mail.
-                </div>
-                <div class="grid grid-cols-2 gap-3">
-                  <div>
-                    <label class="block text-sm text-ink-secondary mb-1">Prénom <span class="text-wydad-red">*</span></label>
-                    <input type="text" name="guestFirstName" [(ngModel)]="guest.firstName" autocomplete="given-name"
-                           class="w-full bg-paper-0 border border-paper-3 rounded-lg p-2 text-ink-primary focus:border-wydad-red focus:ring-0"
-                           placeholder="Ex: Karim" />
-                  </div>
-                  <div>
-                    <label class="block text-sm text-ink-secondary mb-1">Nom <span class="text-wydad-red">*</span></label>
-                    <input type="text" name="guestLastName" [(ngModel)]="guest.lastName" autocomplete="family-name"
-                           class="w-full bg-paper-0 border border-paper-3 rounded-lg p-2 text-ink-primary focus:border-wydad-red focus:ring-0"
-                           placeholder="Ex: El Amrani" />
-                  </div>
-                </div>
-                <div>
-                  <label class="block text-sm text-ink-secondary mb-1">E-mail <span class="text-wydad-red">*</span></label>
-                  <input type="email" name="guestEmail" [(ngModel)]="guest.email" autocomplete="email"
-                         class="w-full bg-paper-0 border border-paper-3 rounded-lg p-2 text-ink-primary focus:border-wydad-red focus:ring-0"
-                         placeholder="vous@exemple.com" />
-                </div>
-                <div>
-                  <label class="block text-sm text-ink-secondary mb-1">Téléphone <span class="text-wydad-red">*</span></label>
-                  <input type="tel" name="guestPhone" [(ngModel)]="guest.phone" autocomplete="tel"
-                         class="w-full bg-paper-0 border border-paper-3 rounded-lg p-2 text-ink-primary focus:border-wydad-red focus:ring-0"
-                         placeholder="+212600000000" />
-                </div>
-              </div>
-
-              <!-- ====== Méthode de paiement (commune) ====== -->
+              <!-- ====== Méthode de paiement ====== -->
               <div>
                 <label class="block text-sm text-ink-secondary mb-2">Méthode de paiement</label>
                 <select [(ngModel)]="paymentMethod" class="w-full bg-paper-0 border border-paper-3 rounded-lg p-3 text-ink-primary mb-4 focus:border-wydad-red focus:ring-0">
@@ -172,7 +134,10 @@
                 <button (click)="purchase()"
                         [disabled]="processing || !selectedSection || (isLoggedIn && paymentMethod === 'ECASH' && userBalance < getTotal())"
                         class="paper-btn-primary w-full py-4 skew-x-[-10deg]">
-                  <span class="skew-x-[10deg] block">{{ processing ? 'Traitement...' : 'Confirmer le paiement' }}</span>
+                  <span class="skew-x-[10deg] block">
+                    {{ !isLoggedIn ? 'Se connecter pour acheter'
+                       : (processing ? 'Traitement...' : 'Confirmer le paiement') }}
+                  </span>
                 </button>
 
                 <p *ngIf="isLoggedIn && paymentMethod === 'ECASH' && userBalance < getTotal()" class="text-wydad-red-dark text-xs text-center mt-2 font-semibold">Solde insuffisant. Veuillez recharger votre E-Cash.</p>

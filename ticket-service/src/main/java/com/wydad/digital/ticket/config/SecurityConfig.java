@@ -31,10 +31,6 @@ public class SecurityConfig {
                                 "/api/ticket/events", "/api/ticket/events/{id}",
                                 "/api/ticket/events/upcoming",
                                 "/api/ticket/events/type/{type}").permitAll()
-                        // B.28 — achat sans compte (visiteur) : pas de JWT.
-                        // Le service crée un user VISITEUR à la volée.
-                        .requestMatchers(org.springframework.http.HttpMethod.POST,
-                                "/api/ticket/tickets/purchase-guest").permitAll()
                         // Routes internes service-à-service : protégées par le
                         // secret partagé X-Internal-Secret (validé dans le
                         // contrôleur) ; la gateway les bloque en amont.

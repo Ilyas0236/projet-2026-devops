@@ -445,21 +445,6 @@ public class AuthController {
         return ResponseEntity.ok(authService.getAllActiveUsers());
     }
 
-    /**
-     * B.28 — Crée (ou récupère) un compte VISITEUR à la volée.
-     * Appelé par ticket-service quand un visiteur clique "Acheter" sans être
-     * connecté. Idempotent : si l'email existe déjà, retourne l'user existant.
-     */
-    @PostMapping("/internal/visitors")
-    public ResponseEntity<UserProfileResponse> createVisitor(
-            @RequestHeader(value = "X-Internal-Secret", required = false) String secret,
-            @Valid @RequestBody CreateVisitorRequest request) {
-        if (!internalSecretValidator.isInternalCallAuthorized(secret)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-        }
-        return ResponseEntity.ok(authService.createOrFetchVisitor(request));
-    }
-
     private String getClientIp(HttpServletRequest request) {
         String xfHeader = request.getHeader("X-Forwarded-For");
         if (xfHeader == null) {

@@ -28,16 +28,8 @@ export class BilletterieDetailComponent implements OnInit, OnDestroy {
   processing = false;
   errorMsg = '';
   successMsg = '';
-  /** Numéro du ticket émis après achat visiteur (pour affichage confirmation). */
+  /** Numéro du ticket émis après achat membre (affichage confirmation). */
   lastTicketNumber: string | null = null;
-
-  // Champs du formulaire visiteur (B.28)
-  guest = {
-    firstName: '',
-    lastName: '',
-    email: '',
-    phone: ''
-  };
 
   private destroy$ = new Subject<void>();
 
@@ -120,34 +112,10 @@ export class BilletterieDetailComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Validation client du formulaire visiteur (B.28). Retourne true si OK,
-   * sinon remplit this.errorMsg et renvoie false.
-   */
-  private validateGuest(): boolean {
-    const g = this.guest;
-    if (!g.firstName.trim() || !g.lastName.trim()) {
-      this.errorMsg = 'Veuillez saisir votre prénom et nom.';
-      return false;
-    }
-    // Email : regex simple mais suffisante
-    const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(g.email.trim());
-    if (!emailOk) {
-      this.errorMsg = 'Adresse e-mail invalide.';
-      return false;
-    }
-    // Téléphone : on accepte tout format international commençant par + et 8-15 chiffres
-    const phoneOk = /^\+?\d{8,15}$/.test(g.phone.replace(/[\s.-]/g, ''));
-    if (!phoneOk) {
-      this.errorMsg = 'Numéro de téléphone invalide (format international attendu).';
-      return false;
-    }
-    return true;
-  }
-
-  /**
-   * Point d'entrée unique : déclenche l'achat côté membre (purchaseTickets)
-   * ou côté visiteur (purchaseAsGuest, B.28) selon l'état de connexion.
-   * Les deux flux convergent vers un écran de succès avec n° de billet.
+   * B.12 — Achat MEMBRE uniquement. L'ancien flux visiteur (B.28) a été
+   * retiré : tout achat requiert un compte VALIDE. Si l'utilisateur n'est
+   * pas connecté, on le renvoie vers la page de connexion avec retour
+   * automatique à l'URL courante.
    */
   purchase() {
     if (!this.selectedSection || !this.event) {
@@ -158,15 +126,13 @@ export class BilletterieDetailComponent implements OnInit, OnDestroy {
     this.successMsg = '';
     this.processing = true;
 
-    if (this.isLoggedIn) {
-      this.purchaseAsMember();
-    } else {
-      if (!this.validateGuest()) {
-        this.processing = false;
-        return;
-      }
-      this.purchaseAsGuest();
+    if (!this.isLoggedIn) {
+      // Pas connecté → invitation à se connecter (ou s'inscrire)
+      this.processing = false;
+      this.router.navigate(['/connexion'], { queryParams: { returnUrl: this.router.url } });
+      return;
     }
+    this.purchaseAsMember();
   }
 
   private purchaseAsMember() {
@@ -193,50 +159,21 @@ export class BilletterieDetailComponent implements OnInit, OnDestroy {
     });
   }
 
-  private purchaseAsGuest() {
-    const req = {
-      eventId: this.event.id,
-      category: this.selectedSection.category,
-      quantity: this.quantity,
-      guestFirstName: this.guest.firstName.trim(),
-      guestLastName: this.guest.lastName.trim(),
-      guestEmail: this.guest.email.trim(),
-      guestPhone: this.guest.phone.trim(),
-      paymentMethod: this.paymentMethod
-    };
-
-    this.api.purchaseAsGuest(req).subscribe({
-      next: (res) => this.handlePurchaseSuccess(res),
-      error: (err) => this.handlePurchaseError(err)
-    });
-  }
-
   /**
    * Centralise le traitement de la réponse : récupère le(s) numéro(s) de
-   * billet et affiche l'écran de succès. Redirige vers /profil/billets
-   * seulement pour les membres (les visiteurs n'ont pas de compte).
+   * billet et redirige vers l'espace membre.
    */
   private handlePurchaseSuccess(res: any) {
     this.processing = false;
-    const tickets: any[] = Array.isArray(res) ? res : (res?.tickets || [res]);
-    const first = tickets.find((t: any) => t && (t.ticketNumber || t.ticket_number)) || tickets[0];
-    this.lastTicketNumber = first?.ticketNumber || first?.ticket_number || null;
     this.successMsg = 'Paiement effectué avec succès !';
-
-    if (this.isLoggedIn) {
-      // Membre : redirection vers son espace (authGuard laisse passer)
-      this.router.navigate(['/profil/billets']);
-    }
-    // Visiteur : on reste sur la page et on affiche l'écran de confirmation
-    // (voir *ngIf="successMsg" dans le template)
+    // Membre : redirection vers son espace (authGuard laisse passer)
+    this.router.navigate(['/profil/billets']);
   }
 
   private handlePurchaseError(err: any) {
     this.processing = false;
     this.errorMsg = err?.error?.message || err?.message || 'Erreur lors de la réservation des billets.';
   }
-
-  /** Bouton "Voir mes billets" depuis l'écran de succès visiteur. */
   viewTicketAfterPurchase() {
     if (this.lastTicketNumber) {
       this.router.navigate(['/profil/billets'], { queryParams: { ticket: this.lastTicketNumber } });
