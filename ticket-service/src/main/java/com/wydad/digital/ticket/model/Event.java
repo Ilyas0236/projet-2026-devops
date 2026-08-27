@@ -58,6 +58,17 @@ public class Event {
 
     private LocalDateTime gateOpenTime;
 
+    /**
+     * B.12 — Match EXCEPTIONNEL (LDC/quart/semi/finale). Si true, les
+     * ADHÉRENTS (abonnement saisonnier actif) bénéficient d'une fenêtre
+     * d'achat prioritaire de 48h avant l'ouverture au public.
+     *
+     * Stocké en base mais nullable : les événements historiques ne sont
+     * pas concernés. Migration ALTER TABLE manuelle en prod.
+     */
+    @Builder.Default
+    private Boolean exceptional = false;
+
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal basePrice;
 

@@ -99,6 +99,18 @@ public class EventService {
         return mapToResponse(eventRepository.save(event));
     }
 
+    /**
+     * B.12 — Bascule le flag EXCEPTIONNEL sans toucher au reste.
+     * Utilisé par l'admin pour marquer un match LDC/quart/semi/finale.
+     */
+    @Transactional
+    public EventResponse setExceptional(Long id, Boolean value) {
+        Event event = eventRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Événement non trouvé"));
+        event.setExceptional(Boolean.TRUE.equals(value));
+        return mapToResponse(eventRepository.save(event));
+    }
+
     @Transactional
     public EventResponse updateEvent(Long id, CreateEventRequest request) {
         Event event = eventRepository.findById(id)
@@ -117,6 +129,10 @@ public class EventService {
         event.setGateOpenTime(request.getGateOpenTime());
         event.setBasePrice(request.getBasePrice());
         event.setPosterUrl(request.getPosterUrl());
+        // B.12 — match EXCEPTIONNEL : ne pas écraser si non fourni (null = "no change")
+        if (request.getExceptional() != null) {
+            event.setExceptional(request.getExceptional());
+        }
 
         // totalCapacity : ne jamais descendre sous le nombre de places déjà vendues
         if (request.getTotalCapacity() != null) {
@@ -264,6 +280,7 @@ public class EventService {
                 .competition(event.getCompetition())
                 .eventDate(event.getEventDate())
                 .gateOpenTime(event.getGateOpenTime())
+                .exceptional(event.getExceptional() != null && event.getExceptional())
                 .basePrice(event.getBasePrice())
                 .totalCapacity(event.getTotalCapacity())
                 .availableSeats(event.getAvailableSeats())

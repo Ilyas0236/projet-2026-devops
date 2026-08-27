@@ -35,6 +35,27 @@
     <div class="max-w-7xl mx-auto px-6 flex flex-col lg:flex-row gap-10">
       <!-- Stade & Sections -->
       <div class="lg:w-2/3">
+        <!-- B.12 — Bandeau match EXCEPTIONNEL (LDC/quart/semi/finale) -->
+        <div *ngIf="event.exceptional" class="mb-6 rounded-lg border-2 border-wydad-red bg-gradient-to-r from-wydad-red/10 via-paper-0 to-wydad-red/10 p-4 shadow-sm">
+          <div class="flex items-start gap-3">
+            <div class="text-2xl">⭐</div>
+            <div class="flex-1">
+              <h3 class="font-bold text-wydad-red uppercase tracking-wide text-sm">Match exceptionnel</h3>
+              <p class="text-ink-primary text-sm mt-1">
+                <ng-container *ngIf="isInPriorityWindow(); else publicOpen">
+                  Vente prioritaire <strong>réservée aux ADHÉRENTS</strong> pendant encore
+                  <strong>{{ hoursUntilPublicOpen() }}h</strong>. Souscrivez un
+                  <a routerLink="/abonnement" class="text-wydad-red font-bold underline hover:no-underline">abonnement saisonnier</a>
+                  pour y accéder dès maintenant.
+                </ng-container>
+                <ng-template #publicOpen>
+                  Ouvert au public. Les non-adhérents peuvent désormais acheter.
+                </ng-template>
+              </p>
+            </div>
+          </div>
+        </div>
+
         <h2 class="text-2xl font-display font-bold uppercase text-ink-primary mb-6 border-b-2 border-wydad-red pb-3">Choix de la Zone</h2>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-5">

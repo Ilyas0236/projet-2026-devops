@@ -93,6 +93,28 @@ export class BilletterieDetailComponent implements OnInit, OnDestroy {
     }
   }
 
+  /**
+   * B.12 — Fenêtre d'achat prioritaire ADHÉRENT (48h avant ouverture au
+   * public) sur un match EXCEPTIONNEL. Côté front, on affiche un bandeau
+   * informatif et le bouton d'achat sera refusé côté back si l'utilisateur
+   * n'est pas adhérent. Le front n'a pas besoin de connaître l'état
+   * d'adhésion : le back est la source de vérité (message 403 explicite).
+   */
+  isInPriorityWindow(): boolean {
+    if (!this.event?.exceptional || !this.event?.eventDate) return false;
+    const eventDate = new Date(this.event.eventDate).getTime();
+    const publicOpen = eventDate - 48 * 60 * 60 * 1000;
+    return Date.now() < publicOpen;
+  }
+
+  hoursUntilPublicOpen(): number {
+    if (!this.event?.eventDate) return 0;
+    const eventDate = new Date(this.event.eventDate).getTime();
+    const publicOpen = eventDate - 48 * 60 * 60 * 1000;
+    const diff = publicOpen - Date.now();
+    return diff > 0 ? Math.ceil(diff / (60 * 60 * 1000)) : 0;
+  }
+
   selectSection(section: any) {
     if (section.availableSeats > 0) {
       this.selectedSection = section;

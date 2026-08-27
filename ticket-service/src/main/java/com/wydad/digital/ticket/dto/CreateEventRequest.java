@@ -30,4 +30,11 @@ public class CreateEventRequest {
     @NotNull @Positive private Integer totalCapacity;
     private String posterUrl;
     private List<SectionRequest> sections;
+    /**
+     * B.12 — Match EXCEPTIONNEL (LDC/quart/semi/finale). Active la fenêtre
+     * d'achat prioritaire de 48h pour les ADHÉRENTS. Optionnel : sur un
+     * PUT, l'omission conserve la valeur actuelle (un événement reste
+     * "non-exceptionnel" par défaut).
+     */
+    private Boolean exceptional;
 }

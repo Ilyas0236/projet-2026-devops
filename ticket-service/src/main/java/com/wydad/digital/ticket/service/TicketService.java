@@ -46,6 +46,25 @@ public class TicketService {
         Section section = sectionRepository.findByEventIdAndCategory(event.getId(), request.getCategory())
                 .orElseThrow(() -> new EntityNotFoundException("Section non trouvée pour cette catégorie"));
 
+        // B.12 — Match EXCEPTIONNEL : si l'événement a le flag exceptional ET
+        // que nous sommes dans la fenêtre des 48h précédant l'ouverture
+        // publique (eventDate - 48h), seuls les ADHÉRENTS peuvent acheter.
+        // L'ADMIN peut toujours passer (override) — utile pour offrir des
+        // places en loge officielle.
+        if (Boolean.TRUE.equals(event.getExceptional())) {
+            java.time.LocalDateTime now = java.time.LocalDateTime.now();
+            java.time.LocalDateTime priorityOpen = event.getEventDate().minusHours(48);
+            if (now.isBefore(priorityOpen) && !UserContext.isAdmin()) {
+                String email = UserContext.getCurrentUserEmail();
+                if (!authClient.isActiveAdherent(email)) {
+                    throw new IllegalStateException(
+                            "Ce match est en vente prioritaire pour les ADHÉRENTS (abonnement saisonnier)."
+                                    + " Ouverture au public dans " + java.time.Duration.between(now, priorityOpen).toHours()
+                                    + "h. Souscrivez un abonnement sur /abonnement pour y accéder dès maintenant.");
+                }
+            }
+        }
+
         int qty = request.getQuantity() != null ? request.getQuantity() : 1;
 
         if (section.getAvailableSeats() < qty) {
