@@ -1,0 +1,146 @@
+<section class="max-w-7xl mx-auto px-4 py-10">
+  <header class="mb-8 text-center">
+    <p class="text-wydad-red font-display uppercase tracking-widest text-sm mb-2">Espace personnel</p>
+    <h1 class="font-display text-4xl md:text-5xl text-white font-bold uppercase">Mes Achats</h1>
+    <p class="text-gray-300 mt-3">Billets, abonnement saisonnier et commandes boutique — tout votre historique WAC.</p>
+  </header>
+
+  <div *ngIf="!isLoggedIn" class="text-center py-20">
+    <p class="text-gray-300 mb-6">Connectez-vous pour consulter votre historique d'achats.</p>
+    <a routerLink="/login" class="paper-btn-primary inline-block px-8 py-3 rounded-xl font-display uppercase">Se connecter</a>
+  </div>
+
+  <div *ngIf="isLoggedIn">
+    <!-- Onglets -->
+    <div class="flex gap-1 border-b border-white/10 mb-6">
+      <button (click)="setTab('billets')" class="tab-btn" [class.active]="tab==='billets'">
+        Billets ({{ tickets.length }})
+      </button>
+      <button (click)="setTab('abonnement')" class="tab-btn" [class.active]="tab==='abonnement'">
+        Abonnement
+      </button>
+      <button (click)="setTab('commandes')" class="tab-btn" [class.active]="tab==='commandes'">
+        Commandes boutique ({{ orders.length }})
+      </button>
+    </div>
+
+    <!-- ============= BILLETS ============= -->
+    <div *ngIf="tab==='billets'">
+      <div *ngIf="tickets.length === 0" class="bg-white/5 border border-white/10 rounded-2xl p-10 text-center">
+        <div class="text-5xl mb-3">🎫</div>
+        <p class="text-gray-300 mb-4">Aucun billet acheté pour le moment.</p>
+        <a routerLink="/billetterie" class="paper-btn-primary inline-block px-6 py-2 rounded-xl font-display uppercase">Voir la billetterie</a>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-5" *ngIf="tickets.length > 0">
+        <div *ngFor="let ticket of tickets" class="bg-white/5 border border-white/10 rounded-2xl overflow-hidden flex flex-col">
+          <div class="bg-wydad-red text-white px-4 py-2 flex justify-between items-center">
+            <span class="font-bold uppercase text-sm">{{ ticket.category }}</span>
+            <span class="bg-white/20 px-2 py-1 rounded text-xs font-bold">{{ ticket.status }}</span>
+          </div>
+          <div class="p-5 flex-1">
+            <h3 class="font-bold text-white text-lg">{{ ticket.eventTitle }}</h3>
+            <p class="text-gray-400 text-sm">{{ ticket.eventDate | date:'dd/MM/yyyy HH:mm':'':'fr' }} • {{ ticket.venue }}</p>
+            <div class="grid grid-cols-2 gap-3 bg-white/5 p-3 rounded-lg mt-4">
+              <div><span class="text-xs text-gray-400 uppercase block">Zone</span><strong class="text-white">{{ ticket.sectionName }}</strong></div>
+              <div><span class="text-xs text-gray-400 uppercase block">Prix</span><strong class="text-white">{{ ticket.price }} DH</strong></div>
+            </div>
+            <div class="flex items-center gap-3 mt-4">
+              <div class="w-14 h-14 bg-white rounded p-1 flex-shrink-0">
+                <img *ngIf="qrUrl(ticket.id)" [src]="qrUrl(ticket.id)" alt="QR" class="w-full h-full object-cover" />
+              </div>
+              <div class="flex-1 min-w-0">
+                <span class="text-xs text-gray-400 uppercase block">N° billet</span>
+                <code class="text-sm font-bold text-white break-all">{{ ticket.ticketNumber }}</code>
+              </div>
+            </div>
+          </div>
+          <div class="border-t border-white/10 p-3">
+            <button (click)="downloadTicketPdf(ticket.id, ticket.ticketNumber)" [disabled]="downloadingId === ticket.id"
+                    class="w-full bg-white/10 hover:bg-white/20 text-white py-2 rounded-lg text-sm font-bold transition-colors disabled:opacity-50">
+              {{ downloadingId === ticket.id ? '⏳ Téléchargement…' : '⬇️ Télécharger le billet PDF' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============= ABONNEMENT ============= -->
+    <div *ngIf="tab==='abonnement'">
+      <div *ngIf="activeSubscription" class="bg-gradient-to-br from-wydad-red/20 to-black/40 border border-wydad-red/40 rounded-2xl p-8 text-center">
+        <p class="text-wydad-red font-display uppercase tracking-widest text-sm">Abonnement actif</p>
+        <h2 class="text-white text-3xl font-display font-bold mt-1">{{ activeSubscription.zoneDisplayName }}</h2>
+        <p class="text-gray-300 mt-1">Saison {{ activeSubscription.season }}</p>
+        <p class="text-gray-400 text-sm">
+          Valable du {{ activeSubscription.validFrom | date:'dd/MM/yyyy' }}
+          au {{ activeSubscription.validTo | date:'dd/MM/yyyy' }}
+        </p>
+        <div *ngIf="activeSubscription.qrCodeBase64" class="mt-4 flex justify-center">
+          <img [src]="'data:image/png;base64,' + activeSubscription.qrCodeBase64"
+               alt="QR code d'accès" class="w-40 h-40 bg-white p-2 rounded-xl" />
+        </div>
+        <p class="text-gray-300 text-sm mt-4">
+          Payé : <strong class="text-white">{{ activeSubscription.paidAmount }} DH</strong>
+          <span *ngIf="totalSaved() > 0" class="ml-2 text-green-400">— économie estimée {{ totalSaved() }} DH</span>
+        </p>
+        <p *ngIf="activeSubscription.pdfPath" class="text-gray-500 text-xs mt-2">PDF disponible : {{ activeSubscription.pdfPath }}</p>
+      </div>
+
+      <div *ngIf="!activeSubscription" class="bg-white/5 border border-white/10 rounded-2xl p-10 text-center">
+        <div class="text-5xl mb-3">🎟️</div>
+        <p class="text-gray-300 mb-4">Vous n'avez pas encore d'abonnement saisonnier.</p>
+        <a routerLink="/abonnement" class="paper-btn-primary inline-block px-6 py-2 rounded-xl font-display uppercase">Découvrir les abonnements</a>
+      </div>
+
+      <div *ngIf="subscriptionHistory.length > 1" class="mt-6">
+        <h3 class="text-white font-display uppercase tracking-widest text-sm mb-3">Historique</h3>
+        <div class="space-y-2">
+          <div *ngFor="let sub of subscriptionHistory.slice(1)"
+               class="bg-white/5 border border-white/10 rounded-lg p-3 flex justify-between items-center">
+            <div>
+              <strong class="text-white">{{ sub.zoneDisplayName }}</strong>
+              <span class="text-gray-400 text-sm ml-2">Saison {{ sub.season }}</span>
+            </div>
+            <div class="text-right">
+              <div class="text-white font-bold">{{ sub.paidAmount }} DH</div>
+              <div class="text-xs text-gray-500">{{ sub.status }} • {{ sub.paidAt | date:'dd/MM/yyyy' }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============= COMMANDES ============= -->
+    <div *ngIf="tab==='commandes'">
+      <div *ngIf="orders.length === 0" class="bg-white/5 border border-white/10 rounded-2xl p-10 text-center">
+        <div class="text-5xl mb-3">🛍️</div>
+        <p class="text-gray-300 mb-4">Aucune commande boutique pour le moment.</p>
+        <a routerLink="/boutique" class="paper-btn-primary inline-block px-6 py-2 rounded-xl font-display uppercase">Visiter la boutique</a>
+      </div>
+
+      <div class="space-y-4" *ngIf="orders.length > 0">
+        <div *ngFor="let order of orders" class="bg-white/5 border border-white/10 rounded-2xl p-5">
+          <div class="flex flex-wrap justify-between items-start gap-2 mb-3">
+            <div>
+              <h3 class="text-white font-bold">{{ order.orderNumber }}</h3>
+              <p class="text-gray-400 text-sm">{{ order.createdAt | date:'dd/MM/yyyy HH:mm':'':'fr' }}</p>
+            </div>
+            <div class="text-right">
+              <span class="bg-wydad-red/20 text-wydad-red px-3 py-1 rounded text-xs font-bold uppercase">{{ order.status }}</span>
+              <p class="text-white text-2xl font-bold mt-1">{{ order.totalAmount }} DH</p>
+              <p *ngIf="order.adherentDiscount && +order.adherentDiscount > 0" class="text-green-400 text-xs">
+                dont {{ order.adherentDiscount }} DH de remise adhérent
+              </p>
+            </div>
+          </div>
+          <ul class="space-y-1 text-sm text-gray-300">
+            <li *ngFor="let item of order.items">
+              {{ item.productName }} <span *ngIf="item.variantInfo" class="text-gray-500">({{ item.variantInfo }})</span>
+              — <strong class="text-white">x{{ item.quantity }}</strong> · {{ item.totalPrice }} DH
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

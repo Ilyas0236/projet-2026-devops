@@ -36,6 +36,7 @@ import { DonComponent } from './components/don/don.component';
 import { EcashComponent } from './components/ecash/ecash.component';
 import { BilletterieDetailComponent } from './pages/billetterie-detail/billetterie-detail.component';
 import { AbonnementComponent } from './pages/abonnement/abonnement.component';
+import { MesAchatsComponent } from './pages/mes-achats/mes-achats.component';
 import { MesBilletsComponent } from './pages/mes-billets/mes-billets.component';
 import { BoutiqueDetailComponent } from './pages/boutique-detail/boutique-detail.component';
 import { CartComponent } from './components/cart/cart.component';
@@ -177,6 +178,7 @@ export const routes: Routes = [
       { path: 'billetterie', component: BilletterieComponent },
       { path: 'billetterie/:id', component: BilletterieDetailComponent },
       { path: 'abonnement', component: AbonnementComponent },
+      { path: 'mes-achats', component: MesAchatsComponent, canActivate: [authGuard] },
       { path: 'effectif', component: EffectifComponent },
       { path: 'palmares', component: PalmaresComponent },
       { path: 'legendes', component: LegendesComponent },
