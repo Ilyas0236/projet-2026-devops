@@ -329,7 +329,20 @@ public class AuthService {
                 .orElseThrow(() -> new UserNotFoundException(email));
     }
 
+    /**
+     * B.12 — DEPRECATED : cet endpoint ne demandait aucun paiement
+     * (faille corrigée). Il est conservé temporairement pour les scripts
+     * de migration et l'admin CLI. Toute nouvelle utilisation DOIT passer
+     * par /api/auth/subscriptions/purchase qui exige un vrai paiement.
+     *
+     * Comportement modifié : retourne maintenant une erreur explicite
+     * plutôt que d'appliquer le changement en silence.
+     */
+    @Deprecated
     public AuthResponse upgradeLevel(UpgradeRequest request) {
+        throw new UnsupportedOperationException(
+                "Cet endpoint est désactivé. Utilisez POST /api/auth/subscriptions/purchase "
+                + "pour acheter un abonnement avec paiement.");
         User user = userRepository.findByEmail(request.email())
                 .orElseThrow(() -> new UserNotFoundException(request.email()));
 

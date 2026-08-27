@@ -3,6 +3,7 @@ package com.wydad.digital.auth.service;
 import com.lowagie.text.*;
 import com.lowagie.text.pdf.PdfWriter;
 import com.wydad.digital.auth.model.User;
+import com.wydad.digital.auth.model.subscription.UserSubscription;
 import org.springframework.stereotype.Service;
 
 import java.awt.Color;
@@ -174,5 +175,22 @@ public class PdfService {
 
         document.close();
         return outputStream.toByteArray();
+    }
+
+    /**
+     * Abonnement saisonnier WAC — carte A4 avec QR code d'accès au stade.
+     * Valable 15 matchs à domicile de la saison.
+     *
+     * @return chemin de stockage du PDF (Cloudinary publicId ou local).
+     *         V1 : on retourne null + on stocke les bytes en base via le
+     *         service appelant si nécessaire. Le PDF complet sera uploadé
+     *         sur Cloudinary en V2.
+     */
+    public String generateSubscriptionPdf(UserSubscription sub, User user, String qrPayload) {
+        // V1 : on ne génère pas encore le PDF physique. Le QR code base64
+        // est déjà stocké sur UserSubscription.qrCodeBase64, suffisant pour
+        // le scan à l'entrée. On retournera un URL Cloudinary en V2.
+        // (Implémentation stub — voir tâche B.12-V2)
+        return "wydad://subscription/" + sub.getId();
     }
 }
