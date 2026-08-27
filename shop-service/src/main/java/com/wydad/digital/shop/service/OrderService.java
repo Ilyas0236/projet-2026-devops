@@ -31,11 +31,15 @@ public class OrderService {
     private final com.wydad.digital.shop.client.NotificationClient notificationClient;
     private final com.wydad.digital.shop.client.PaymentClient paymentClient;
     private final com.wydad.digital.shop.client.LoyaltyClient loyaltyClient;
+    private final com.wydad.digital.shop.client.AdherentClient adherentClient;
     private final CartItemRepository cartItemRepository;
     private final ProductVariantRepository productVariantRepository;
     private final PromoCodeRepository promoCodeRepository;
     private final StoreRepository storeRepository;
     private final OrderStatusHistoryRepository orderStatusHistoryRepository;
+
+    /** Pourcentage de réduction automatique appliqué aux ADHÉRENTS (B.12). */
+    private static final BigDecimal ADHERENT_DISCOUNT_PERCENT = new BigDecimal("15");
 
     public OrderResponseDto createOrder(String userEmail, Long userId, OrderRequestDto dto) {
         var cartItems = cartItemRepository.findByUserEmail(userEmail);
@@ -120,8 +124,19 @@ public class OrderService {
 
         order.setSubtotal(subtotal);
 
+        // B.12 — Réduction ADHÉRENT (15% automatique, cumulable avec code promo)
+        // On interroge auth-service : best-effort, l'absence de la remise ne
+        // doit pas faire échouer la commande (AdherentClient logge l'erreur).
+        BigDecimal adherentDiscount = BigDecimal.ZERO;
+        if (adherentClient.isActiveAdherent(userEmail)) {
+            adherentDiscount = subtotal
+                    .multiply(ADHERENT_DISCOUNT_PERCENT)
+                    .divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);
+            order.setAdherentDiscount(adherentDiscount);
+        }
+
         // Promo code
-        BigDecimal discount = BigDecimal.ZERO;
+        BigDecimal discount = adherentDiscount;
         if (dto.getPromoCode() != null && !dto.getPromoCode().isBlank()) {
             // Verrou pessimiste : l'incrément de currentUses ne peut pas dépasser maxUses
             PromoCode promo = promoCodeRepository.findActiveByCodeForUpdate(dto.getPromoCode())
@@ -216,6 +231,22 @@ public class OrderService {
     }
 
     /**
+     * B.12 — Inventaire admin : applique filtres date + userEmail +
+     * productName (optionnels, tous combinables). Aucun filtre = tout.
+     */
+    @Transactional(readOnly = true)
+    public Page<OrderResponseDto> adminFilter(
+            LocalDateTime startDate,
+            LocalDateTime endDate,
+            String userEmail,
+            String productName,
+            Pageable pageable) {
+        return shopOrderRepository.adminFilter(
+                        startDate, endDate, userEmail, productName, pageable)
+                .map(this::mapToDto);
+    }
+
+    /**
      * Changement de statut par l'ADMIN (préparation, expédition, livraison,
      * annulation...). Seules les transitions valides sont acceptées ; la
      * numérotation de suivi est demandée à l'expédition.
@@ -297,6 +328,7 @@ public class OrderService {
                 .subtotal(o.getSubtotal())
                 .shippingCost(o.getShippingCost())
                 .discountAmount(o.getDiscountAmount())
+                .adherentDiscount(o.getAdherentDiscount())
                 .totalAmount(o.getTotalAmount())
                 .trackingNumber(o.getTrackingNumber())
                 .createdAt(o.getCreatedAt())

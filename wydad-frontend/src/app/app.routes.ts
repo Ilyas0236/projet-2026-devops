@@ -35,6 +35,8 @@ import { CarteMembreComponent } from './components/carte-membre/carte-membre.com
 import { DonComponent } from './components/don/don.component';
 import { EcashComponent } from './components/ecash/ecash.component';
 import { BilletterieDetailComponent } from './pages/billetterie-detail/billetterie-detail.component';
+import { AbonnementComponent } from './pages/abonnement/abonnement.component';
+import { MesAchatsComponent } from './pages/mes-achats/mes-achats.component';
 import { MesBilletsComponent } from './pages/mes-billets/mes-billets.component';
 import { BoutiqueDetailComponent } from './pages/boutique-detail/boutique-detail.component';
 import { CartComponent } from './components/cart/cart.component';
@@ -57,6 +59,7 @@ import { ElectionsComponent } from './pages/elections/elections.component';
 import { MesElectionsComponent } from './pages/mes-elections/mes-elections.component';
 import { AdminElectionsComponent } from './pages/admin/admin-elections/admin-elections.component';
 import { AdminCommandesComponent } from './pages/admin/admin-commandes/admin-commandes.component';
+import { AdminAchatsComponent } from './pages/admin/admin-achats/admin-achats.component';
 import { AdminBadgesComponent } from './pages/admin/admin-badges/admin-badges.component';
 import { AdminSeancesComponent } from './pages/admin/admin-seances/admin-seances.component';
 import { AdminJoueursPublicComponent } from './pages/admin/admin-joueurs-public/admin-joueurs-public.component';
@@ -85,6 +88,7 @@ export const routes: Routes = [
       { path: 'classements', component: AdminClassementsComponent },
       { path: 'boutique', component: AdminBoutiqueComponent },
       { path: 'commandes', component: AdminCommandesComponent },
+      { path: 'achats', component: AdminAchatsComponent },
       { path: 'billetterie', component: AdminBilletterieComponent },
       { path: 'effectif', component: AdminEffectifComponent },
       { path: 'effectif-public', component: AdminJoueursPublicComponent },
@@ -175,6 +179,8 @@ export const routes: Routes = [
       { path: 'boutique/:id', component: BoutiqueDetailComponent },
       { path: 'billetterie', component: BilletterieComponent },
       { path: 'billetterie/:id', component: BilletterieDetailComponent },
+      { path: 'abonnement', component: AbonnementComponent },
+      { path: 'mes-achats', component: MesAchatsComponent, canActivate: [authGuard] },
       { path: 'effectif', component: EffectifComponent },
       { path: 'palmares', component: PalmaresComponent },
       { path: 'legendes', component: LegendesComponent },

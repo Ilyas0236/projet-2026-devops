@@ -46,6 +46,25 @@ public class TicketService {
         Section section = sectionRepository.findByEventIdAndCategory(event.getId(), request.getCategory())
                 .orElseThrow(() -> new EntityNotFoundException("Section non trouvée pour cette catégorie"));
 
+        // B.12 — Match EXCEPTIONNEL : si l'événement a le flag exceptional ET
+        // que nous sommes dans la fenêtre des 48h précédant l'ouverture
+        // publique (eventDate - 48h), seuls les ADHÉRENTS peuvent acheter.
+        // L'ADMIN peut toujours passer (override) — utile pour offrir des
+        // places en loge officielle.
+        if (Boolean.TRUE.equals(event.getExceptional())) {
+            java.time.LocalDateTime now = java.time.LocalDateTime.now();
+            java.time.LocalDateTime priorityOpen = event.getEventDate().minusHours(48);
+            if (now.isBefore(priorityOpen) && !UserContext.isAdmin()) {
+                String email = UserContext.getCurrentUserEmail();
+                if (!authClient.isActiveAdherent(email)) {
+                    throw new IllegalStateException(
+                            "Ce match est en vente prioritaire pour les ADHÉRENTS (abonnement saisonnier)."
+                                    + " Ouverture au public dans " + java.time.Duration.between(now, priorityOpen).toHours()
+                                    + "h. Souscrivez un abonnement sur /abonnement pour y accéder dès maintenant.");
+                }
+            }
+        }
+
         int qty = request.getQuantity() != null ? request.getQuantity() : 1;
 
         if (section.getAvailableSeats() < qty) {
@@ -204,93 +223,26 @@ public class TicketService {
     }
 
     /**
-     * B.28 — Achat sans compte (visiteur).
-     *
-     * 1) Crée/récupère un user VISITEUR côté auth-service (idempotent sur l'email).
-     * 2) Lui rattache un billet en BASE (utilise le userId du user créé).
-     * 3) Le paiement est forcément par carte (le visiteur n'a pas de e-cash).
-     *
-     * L'email du guest devient userEmail/userFullName sur le Ticket, comme
-     * pour un membre : l'envoi du PDF et la traçabilité comptable restent
-     * possibles.
+     * B.12 — Inventaire admin : filtre par date + email + eventId (tous
+     * optionnels et cumulables).
      */
-    @Transactional
-    public List<TicketResponse> purchaseAsGuest(GuestPurchaseRequest request) {
-        // 1) Création/récupération du user VISITEUR
-        AuthClient.PlayerRecipient visitor = authClient.createOrFetchVisitor(
-                request.getGuestEmail(),
-                request.getGuestFirstName(),
-                request.getGuestLastName(),
-                request.getGuestPhone());
-        if (visitor == null) {
-            throw new IllegalStateException("Service d'authentification indisponible. Réessayez dans quelques minutes.");
-        }
-        Long visitorUserId = visitor.id();
-        String visitorEmail = visitor.email();
-        String visitorFullName = (request.getGuestFirstName() + " " + request.getGuestLastName()).trim();
-
-        // 2) Logique d'achat classique, mais on injecte le userId du visiteur
-        Event event = eventRepository.findByIdForUpdate(request.getEventId())
-                .orElseThrow(() -> new EntityNotFoundException("Événement non trouvé"));
-
-        Section section = sectionRepository.findByEventIdAndCategory(event.getId(), request.getCategory())
-                .orElseThrow(() -> new EntityNotFoundException("Section non trouvée pour cette catégorie"));
-
-        int qty = request.getQuantity() != null ? request.getQuantity() : 1;
-
-        if (section.getAvailableSeats() < qty) {
-            throw new IllegalStateException("Pas assez de places disponibles dans cette section. Restantes: " + section.getAvailableSeats());
-        }
-
-        List<Ticket> tickets = new ArrayList<>();
-        for (int i = 0; i < qty; i++) {
-            String ticketNumber = "WAC-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
-            String qrData = "WAC-TICKET:" + ticketNumber + ":EVENT:" + event.getId() + ":USER:" + visitorUserId;
-
-            byte[] qrImage = qrCodeService.generateQrCode(qrData);
-
-            Ticket ticket = Ticket.builder()
-                    .ticketNumber(ticketNumber)
-                    .userId(visitorUserId)
-                    .userFullName(visitorFullName)
-                    .userEmail(visitorEmail)
-                    .event(event)
-                    .section(section)
-                    .category(request.getCategory())
-                    .price(section.getPrice())
-                    .qrCodeData(qrData)
-                    .qrCodeImage(qrImage)
-                    .status(TicketStatus.PAID)
-                    .build();
-
-            tickets.add(ticketRepository.save(ticket));
-        }
-
-        section.setAvailableSeats(section.getAvailableSeats() - qty);
-        sectionRepository.save(section);
-
-        event.setAvailableSeats(event.getAvailableSeats() - qty);
-        event.setSoldTickets(event.getSoldTickets() + qty);
-        eventRepository.save(event);
-
-        // 3) Paiement : ECASH refusé pour un visiteur (il n'a pas de compte e-cash).
-        //    Paiement par carte bancaire simulé (best-effort, log).
-        BigDecimal total = section.getPrice().multiply(BigDecimal.valueOf(qty));
-        if ("ECASH".equalsIgnoreCase(request.getPaymentMethod())) {
-            throw new IllegalArgumentException("Le paiement par e-cash nécessite un compte membre. Veuillez payer par carte.");
-        }
-        log.info("Paiement CARTE (visiteur) simulé pour {} : {} DH", visitorEmail, total);
-
-        // 4) Notification email (best-effort) avec le PDF du billet
-        notificationClient.notifyUser(
-                visitorUserId,
-                visitorEmail,
-                "Votre billet WAC",
-                qty + " billet(s) pour « " + event.getTitle() + " » — merci de votre soutien !",
-                "/profil/billets");
-
-        return tickets.stream().map(this::mapToResponse).collect(Collectors.toList());
+    @Transactional(readOnly = true)
+    public org.springframework.data.domain.Page<TicketResponse> adminFilter(
+            java.time.LocalDateTime startDate,
+            java.time.LocalDateTime endDate,
+            String userEmail,
+            Long eventId,
+            org.springframework.data.domain.Pageable pageable) {
+        return ticketRepository.adminFilter(
+                        startDate, endDate, userEmail, eventId, pageable)
+                .map(this::mapToResponse);
     }
+
+    /**
+     * Achat sans compte SUPPRIMÉ (B.12) : tout achat requiert désormais
+     * un compte VALIDE (membre WAC). Le flux B.28 « visiteur » a été
+     * retiré pour respecter la règle de traçabilité (userId obligatoire).
+     */
 
     /** Version publique du mapper pour les contrôleurs. */
     public TicketResponse mapToResponsePublic(Ticket ticket) {

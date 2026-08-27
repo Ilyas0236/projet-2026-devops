@@ -25,6 +25,13 @@ public class EventResponse {
     private String competition;
     private LocalDateTime eventDate;
     private LocalDateTime gateOpenTime;
+    /**
+     * B.12 — Si true, les ADHÉRENTS (abonnement saisonnier actif) ont une
+     * fenêtre d'achat prioritaire de 48h avant l'ouverture au public.
+     * Le front affiche un bandeau d'information, et l'achat par un
+     * utilisateur non-adhérent est refusé tant que cette fenêtre court.
+     */
+    private Boolean exceptional;
     private BigDecimal basePrice;
     private Integer totalCapacity;
     private Integer availableSeats;

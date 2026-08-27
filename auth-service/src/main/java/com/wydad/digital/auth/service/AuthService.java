@@ -329,32 +329,20 @@ public class AuthService {
                 .orElseThrow(() -> new UserNotFoundException(email));
     }
 
+    /**
+     * B.12 — DEPRECATED : cet endpoint ne demandait aucun paiement
+     * (faille corrigée). Il est conservé temporairement pour les scripts
+     * de migration et l'admin CLI. Toute nouvelle utilisation DOIT passer
+     * par /api/auth/subscriptions/purchase qui exige un vrai paiement.
+     *
+     * Comportement modifié : retourne maintenant une erreur explicite
+     * plutôt que d'appliquer le changement en silence.
+     */
+    @Deprecated
     public AuthResponse upgradeLevel(UpgradeRequest request) {
-        User user = userRepository.findByEmail(request.email())
-                .orElseThrow(() -> new UserNotFoundException(request.email()));
-
-        if (request.newLevel().getPrice() <= user.getMembershipLevel().getPrice()) {
-            throw new RuntimeException("Le nouveau niveau doit être supérieur au niveau actuel");
-        }
-
-        user.setMembershipLevel(request.newLevel());
-        user.setMembershipExpiresAt(LocalDateTime.now().plusYears(1));
-        userRepository.save(user);
-
-        String accessToken = jwtUtils.generateAccessToken(user.getId(), user.getEmail(), user.getRole().name());
-        String refreshToken = jwtUtils.generateRefreshToken(user.getId(), user.getEmail());
-
-        return new AuthResponse(
-                user.getId(),
-                accessToken,
-                refreshToken,
-                user.getEmail(),
-                user.getFirstName(),
-                user.getLastName(),
-                user.getMembershipLevel(),
-                user.getReferralCode(),
-                user.getRole().name()
-        );
+        throw new UnsupportedOperationException(
+                "Cet endpoint est désactivé. Utilisez POST /api/auth/subscriptions/purchase "
+                + "pour acheter un abonnement avec paiement.");
     }
 
     public MembershipStatusResponse checkMembershipStatus(String email) {
@@ -671,39 +659,9 @@ public class AuthService {
     }
 
     /**
-     * B.28 — Crée un compte VISITEUR à la volée (ou récupère l'existant si
-     * l'email est déjà connu) lors d'un achat sans compte préalable.
-     *
-     * Idempotent : si un user avec cet email existe déjà, on le retourne tel
-     * quel (cas d'un visiteur qui achète un 2e billet, ou qui s'était inscrit
-     * entre-temps). Sinon, on crée un user avec role=VISITEUR, statut=VALIDE,
-     * mdp généré (le visiteur ne s'est jamais authentifié — s'il veut rejoindre
-     * plus tard, il utilisera "mot de passe oublié").
+     * B.28 « visitor » SUPPRIMÉ : tout achat requiert désormais un compte
+     * VALIDE. Voir SubscriptionService / TicketService.
      */
-    @Transactional
-    public UserProfileResponse createOrFetchVisitor(CreateVisitorRequest request) {
-        var existing = userRepository.findByEmailIgnoreCase(request.email().trim());
-        if (existing.isPresent()) {
-            return mapToProfile(existing.get());
-        }
-        String tempPassword = "Visitor-" + UUID.randomUUID().toString().substring(0, 12);
-        User visitor = User.builder()
-                .email(request.email().trim().toLowerCase())
-                .phone(request.phone().trim())
-                .password(passwordEncoder.encode(tempPassword))
-                .firstName(request.firstName().trim())
-                .lastName(request.lastName().trim())
-                .membershipLevel(MembershipLevel.ROUGE)
-                .role(Role.VISITEUR)
-                .statutCompte(StatutCompte.VALIDE)
-                .membershipExpiresAt(LocalDateTime.now().plusYears(1))
-                .referralCode(UUID.randomUUID().toString().substring(0, 8).toUpperCase())
-                .active(true)
-                .build();
-        User saved = userRepository.save(visitor);
-        log.info("VISITEUR créé à la volée : id={} email={}", saved.getId(), saved.getEmail());
-        return mapToProfile(saved);
-    }
 
     private UserProfileResponse mapToProfile(User user) {
         return new UserProfileResponse(

@@ -113,13 +113,6 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
             return chain.filter(exchange);
         }
 
-        // B.28 — Achat billetterie SANS compte (visiteur). Le service crée un
-        // user VISITEUR à la volée puis rattache le billet. POST sans JWT
-        // autorisé ici ; le reste de /api/ticket reste authentifié.
-        if ("POST".equals(method) && path.equals("/api/ticket/tickets/purchase-guest")) {
-            return chain.filter(exchange);
-        }
-
         // Gamification : leaderboard consultable sans compte — le service fait
         // déjà permitAll sur ce GET (SecurityConfig gamification) ; la gateway
         // doit laisser passer l'anonyme, sinon incohérence 401 côté visiteur.

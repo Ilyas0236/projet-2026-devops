@@ -32,6 +32,35 @@ export class ApiService {
     return this.http.post(`${this.baseUrl}/auth/upgrade`, { email, newLevel });
   }
 
+  // -------- B.12 — Abonnements saisonniers (carte adhérent) --------
+
+  /** Catalogue public des zones. includeSoldOut réservé à l'admin. */
+  listSubscriptionZones(includeSoldOut = false): Observable<any[]> {
+    const params = includeSoldOut ? `?includeSoldOut=true` : '';
+    return this.http.get<any[]>(`${this.baseUrl}/auth/subscriptions/zones${params}`);
+  }
+
+  /** Abonnement actif courant (null si aucun). */
+  getMyActiveSubscription(): Observable<any> {
+    return this.http.get(`${this.baseUrl}/auth/subscriptions/me/active`);
+  }
+
+  /** Historique complet. */
+  getMySubscriptionHistory(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/auth/subscriptions/me/history`);
+  }
+
+  /** Achat via paiement carte SIMULÉ. */
+  purchaseSubscription(req: {
+    zoneCode: string;
+    cardNumber: string;
+    expiryDate: string;
+    cvv: string;
+    otp: string;
+  }): Observable<any> {
+    return this.http.post(`${this.baseUrl}/auth/subscriptions/purchase`, req);
+  }
+
   getArticles(): Observable<any[]> {
     return this.http.get<any[]>(`${this.baseUrl}/content/articles`);
   }
@@ -351,24 +380,6 @@ export class ApiService {
 
   purchaseTickets(purchaseRequest: any): Observable<any[]> {
     return this.http.post<any[]>(`${this.baseUrl}/ticket/tickets/purchase`, purchaseRequest);
-  }
-
-  /**
-   * B.28 — Achat sans compte (visiteur) : endpoint public POST /ticket/tickets/purchase-guest
-   * Crée ou réutilise un compte VISITEUR idempotent (clé = email) et génère les billets.
-   * NE PAS exiger de JWT : cet appel doit être fait sans Authorization header.
-   */
-  purchaseAsGuest(guestRequest: {
-    eventId: number;
-    category: string;
-    quantity: number;
-    guestFirstName: string;
-    guestLastName: string;
-    guestEmail: string;
-    guestPhone: string;
-    paymentMethod: string;
-  }): Observable<any> {
-    return this.http.post<any>(`${this.baseUrl}/ticket/tickets/purchase-guest`, guestRequest);
   }
 
   getTicketsByUser(userId: number): Observable<any[]> {

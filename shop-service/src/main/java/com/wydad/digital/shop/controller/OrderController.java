@@ -50,6 +50,23 @@ public class OrderController {
     }
 
     /**
+     * B.12 — Inventaire admin : filtres date + userEmail + productName.
+     * Les filtres sont tous optionnels et cumulables. Si tout est null, on
+     * renvoie les commandes paginées par date décroissante.
+     */
+    @GetMapping("/filter")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Page<OrderResponseDto>> filter(
+            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime startDate,
+            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime endDate,
+            @RequestParam(required = false) String userEmail,
+            @RequestParam(required = false) String productName,
+            Pageable pageable) {
+        return ResponseEntity.ok(orderService.adminFilter(
+                startDate, endDate, userEmail, productName, pageable));
+    }
+
+    /**
      * ADMIN : changement de statut d'une commande (préparation, expédition,
      * livraison, annulation, remboursement). Transitions validées côté service.
      */

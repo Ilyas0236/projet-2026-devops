@@ -7,14 +7,12 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Client service-à-service vers auth-service pour récupérer la liste des
@@ -31,7 +29,7 @@ public class AuthClient {
 
     private final RestTemplate restTemplate = new RestTemplate();
     private final String recipientsUrl;
-    private final String visitorUrl;
+    private final String isAdherentUrl;
     private final String internalSecret;
 
     /** Projection minimale de UserProfileResponse (auth-service). */
@@ -55,7 +53,7 @@ public class AuthClient {
             @Value("${wydad.auth-service-uri:http://auth-service:8081}") String baseUrl,
             @Value("${wydad.internal-secret:}") String internalSecret) {
         this.recipientsUrl = baseUrl + "/api/auth/internal/recipients";
-        this.visitorUrl = baseUrl + "/api/auth/internal/visitors";
+        this.isAdherentUrl = baseUrl + "/api/auth/subscriptions/internal/is-adherent";
         this.internalSecret = internalSecret;
     }
 
@@ -93,38 +91,28 @@ public class AuthClient {
     }
 
     /**
-     * B.28 — Crée (ou récupère) un user VISITEUR à la volée.
-     * Appelé depuis l'endpoint public d'achat sans compte.
-     * Retourne null si auth-service est injoignable ou refuse l'appel :
-     * l'appelant doit alors refuser l'achat (on ne crée PAS de ticket
-     * orphelin, on ne contourne pas la traçabilité userId).
+     * B.12 — Indique si l'utilisateur (par email) a un abonnement saisonnier
+     * ACTIF non expiré. Utilisé pour la fenêtre 48h prioritaire des matchs
+     * EXCEPTIONNELS (LDC, demi-finales…). Renvoie false en cas d'erreur
+     * réseau : on préfère ne PAS bloquer l'achat si auth-service est
+     * injoignable (best-effort), mais on le journalise.
      */
-    public PlayerRecipient createOrFetchVisitor(String email, String firstName, String lastName, String phone) {
+    public boolean isActiveAdherent(String email) {
+        if (email == null || email.isBlank()) return false;
         HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
         if (internalSecret != null && !internalSecret.isEmpty()) {
             headers.set("X-Internal-Secret", internalSecret);
         }
-        Map<String, String> body = Map.of(
-                "email", email,
-                "firstName", firstName,
-                "lastName", lastName,
-                "phone", phone
-        );
         try {
-            ResponseEntity<PlayerRecipient> response = restTemplate.exchange(
-                    visitorUrl,
-                    HttpMethod.POST,
-                    new HttpEntity<>(body, headers),
-                    PlayerRecipient.class);
-            PlayerRecipient visitor = response.getBody();
-            if (visitor != null) {
-                log.info("VISITEUR créé/récupéré : id={} email={}", visitor.id(), visitor.email());
-            }
-            return visitor;
+            ResponseEntity<Boolean> response = restTemplate.exchange(
+                    isAdherentUrl + "?email=" + email,
+                    HttpMethod.GET,
+                    new HttpEntity<>(headers),
+                    Boolean.class);
+            return Boolean.TRUE.equals(response.getBody());
         } catch (Exception e) {
-            log.error("auth-service injoignable ({}) - achat visiteur impossible", visitorUrl, e);
-            return null;
+            log.warn("auth-service injoignable pour is-adherent({}) : {}", email, e.getMessage());
+            return false;
         }
     }
 }

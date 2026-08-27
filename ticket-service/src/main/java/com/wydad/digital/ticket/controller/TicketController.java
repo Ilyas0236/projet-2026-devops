@@ -1,7 +1,6 @@
 package com.wydad.digital.ticket.controller;
 
 import com.wydad.digital.ticket.dto.PurchaseTicketRequest;
-import com.wydad.digital.ticket.dto.GuestPurchaseRequest;
 import com.wydad.digital.ticket.dto.TicketResponse;
 import com.wydad.digital.ticket.dto.ValidateTicketRequest;
 import com.wydad.digital.ticket.filter.UserContext;
@@ -33,17 +32,6 @@ public class TicketController {
         return ResponseEntity.status(HttpStatus.CREATED).body(ticketService.purchaseTickets(request));
     }
 
-    /**
-     * B.28 — Achat sans compte (visiteur).
-     * Pas de JWT requis : le visiteur renseigne nom/email/téléphone,
-     * ticket-service crée un user VISITEUR à la volée côté auth-service.
-     * Paiement obligatoirement par carte (pas d'e-cash sans compte).
-     */
-    @PostMapping("/purchase-guest")
-    public ResponseEntity<List<TicketResponse>> purchaseAsGuest(@Valid @RequestBody GuestPurchaseRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(ticketService.purchaseAsGuest(request));
-    }
-
     @GetMapping("/user/{userId}")
     @PreAuthorize("hasAnyRole('ADHERENT','JOUEUR','STAFF','ENTRAINEUR','JOURNALISTE','PRESIDENT','PARENT','ADMIN')")
     public ResponseEntity<List<TicketResponse>> getTicketsByUser(@PathVariable Long userId) {
@@ -51,6 +39,26 @@ public class TicketController {
             throw new AccessDeniedException("Accès aux billets d'un autre utilisateur interdit");
         }
         return ResponseEntity.ok(ticketService.getTicketsByUser(userId));
+    }
+
+    /**
+     * B.12 — Inventaire admin des billets (filtres date + email + eventId).
+     * Tous les filtres sont optionnels et cumulables.
+     */
+    @GetMapping("/admin/filter")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<org.springframework.data.domain.Page<TicketResponse>> adminFilter(
+            @RequestParam(required = false)
+            @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME)
+            java.time.LocalDateTime startDate,
+            @RequestParam(required = false)
+            @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME)
+            java.time.LocalDateTime endDate,
+            @RequestParam(required = false) String userEmail,
+            @RequestParam(required = false) Long eventId,
+            org.springframework.data.domain.Pageable pageable) {
+        return ResponseEntity.ok(ticketService.adminFilter(
+                startDate, endDate, userEmail, eventId, pageable));
     }
 
     @GetMapping("/number/{ticketNumber}")

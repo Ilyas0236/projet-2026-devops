@@ -64,6 +64,19 @@ public class EventController {
         return ResponseEntity.ok(eventService.updateEventStatus(id, status));
     }
 
+    /**
+     * B.12 — Bascule le flag EXCEPTIONNEL (LDC/quart/semi/finale) sans
+     * toucher au reste de l'événement. Active la fenêtre d'achat
+     * prioritaire de 48h pour les ADHÉRENTS.
+     */
+    @PatchMapping("/{id}/exceptional")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<EventResponse> updateExceptional(
+            @PathVariable Long id,
+            @RequestParam Boolean value) {
+        return ResponseEntity.ok(eventService.setExceptional(id, value));
+    }
+
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deleteEvent(@PathVariable Long id) {

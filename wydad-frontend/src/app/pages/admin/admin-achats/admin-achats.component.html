@@ -1,0 +1,180 @@
+<div class="container py-4">
+  <h2 class="text-light mb-3">
+    <i class="bi bi-cart-check"></i> Inventaire des achats
+  </h2>
+
+  <div class="filter-bar">
+    <form [formGroup]="filterForm" (ngSubmit)="apply()">
+      <div class="row g-3 align-items-end">
+        <div class="col-md-2">
+          <label>Depuis</label>
+          <input type="datetime-local" formControlName="startDate" />
+        </div>
+        <div class="col-md-2">
+          <label>Jusqu'à</label>
+          <input type="datetime-local" formControlName="endDate" />
+        </div>
+        <div class="col-md-3">
+          <label>Email utilisateur</label>
+          <input type="text" formControlName="userEmail" placeholder="ex: karim@wac.ma" />
+        </div>
+        <div class="col-md-2">
+          <label>Produit (commandes)</label>
+          <input type="text" formControlName="productName" placeholder="ex: maillot" />
+        </div>
+        <div class="col-md-2">
+          <label>ID événement (billets)</label>
+          <input type="number" formControlName="eventId" placeholder="ex: 1" />
+        </div>
+        <div class="col-md-1 d-flex gap-1">
+          <button type="submit" class="btn btn-danger btn-sm flex-fill">Filtrer</button>
+          <button type="button" (click)="reset()" class="btn btn-outline-secondary btn-sm">×</button>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <div class="d-flex gap-0 mb-3">
+    <button class="tab-btn" [class.active]="tab==='orders'" (click)="switchTab('orders')">
+      Commandes boutique ({{ totalOrders }})
+    </button>
+    <button class="tab-btn" [class.active]="tab==='tickets'" (click)="switchTab('tickets')">
+      Billets matchs ({{ totalTickets }})
+    </button>
+    <button class="tab-btn" [class.active]="tab==='subs'" (click)="switchTab('subs')">
+      Abonnements saisonniers ({{ totalSubs }})
+    </button>
+  </div>
+
+  <div *ngIf="error" class="alert alert-danger">{{ error }}</div>
+  <div *ngIf="loading" class="text-light">Chargement…</div>
+
+  <!-- COMMANDES BOUTIQUE -->
+  <div *ngIf="tab==='orders' && !loading">
+    <table class="inv">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Date</th>
+          <th>Utilisateur</th>
+          <th>Produits</th>
+          <th>Sous-total</th>
+          <th>Remise</th>
+          <th>Total</th>
+          <th>Statut</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let o of orders">
+          <td>#{{ o.id }}</td>
+          <td>{{ o.createdAt | date:'dd/MM/yy HH:mm' }}</td>
+          <td>
+            {{ o.userFullName || o.userEmail }}<br>
+            <small class="text-muted">{{ o.userEmail }}</small>
+          </td>
+          <td>
+            <span *ngFor="let it of o.items" class="me-2">
+              {{ it.productName }} ×{{ it.quantity }}
+            </span>
+          </td>
+          <td>{{ o.subtotal | number:'1.2-2' }} DH</td>
+          <td>
+            <span *ngIf="o.adherentDiscount > 0" class="pill-15">
+              ADH -{{ o.adherentDiscount | number:'1.2-2' }}
+            </span>
+            <span *ngIf="o.discount > 0 && o.adherentDiscount === 0">
+              -{{ o.discount | number:'1.2-2' }}
+            </span>
+          </td>
+          <td><strong>{{ o.total | number:'1.2-2' }} DH</strong></td>
+          <td><span [class]="badgeClass(o.status)">{{ o.status }}</span></td>
+        </tr>
+        <tr *ngIf="orders.length === 0">
+          <td colspan="8" class="text-center text-muted py-3">Aucune commande</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="pager mt-2">
+      <button (click)="goOrdersPage(-1)" [disabled]="ordersPage === 0">‹ Précédent</button>
+      <span>Page {{ ordersPage + 1 }} / {{ totalOrders === 0 ? 1 : (totalOrders / pageSize | number:'1.0-0') }}</span>
+      <button (click)="goOrdersPage(1)" [disabled]="orders.length < pageSize">Suivant ›</button>
+    </div>
+  </div>
+
+  <!-- BILLETS -->
+  <div *ngIf="tab==='tickets' && !loading">
+    <table class="inv">
+      <thead>
+        <tr>
+          <th>#Billet</th>
+          <th>Achat</th>
+          <th>Utilisateur</th>
+          <th>Match</th>
+          <th>Catégorie</th>
+          <th>Prix</th>
+          <th>Statut</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let t of tickets">
+          <td><code>{{ t.ticketNumber }}</code></td>
+          <td>{{ t.createdAt | date:'dd/MM/yy HH:mm' }}</td>
+          <td>
+            {{ t.userFullName || t.userEmail }}<br>
+            <small class="text-muted">{{ t.userEmail }}</small>
+          </td>
+          <td>{{ t.eventTitle }} <small class="text-muted">(#{{ t.eventId }})</small></td>
+          <td>{{ t.category }}</td>
+          <td>{{ t.price | number:'1.2-2' }} DH</td>
+          <td><span [class]="badgeClass(t.status)">{{ t.status }}</span></td>
+        </tr>
+        <tr *ngIf="tickets.length === 0">
+          <td colspan="7" class="text-center text-muted py-3">Aucun billet</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="pager mt-2">
+      <button (click)="goTicketsPage(-1)" [disabled]="ticketsPage === 0">‹ Précédent</button>
+      <span>Page {{ ticketsPage + 1 }}</span>
+      <button (click)="goTicketsPage(1)" [disabled]="tickets.length < pageSize">Suivant ›</button>
+    </div>
+  </div>
+
+  <!-- ABONNEMENTS -->
+  <div *ngIf="tab==='subs' && !loading">
+    <table class="inv">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Payé le</th>
+          <th>Utilisateur</th>
+          <th>Zone</th>
+          <th>Saison</th>
+          <th>Montant</th>
+          <th>Validité</th>
+          <th>Statut</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let s of subs">
+          <td>#{{ s.id }}</td>
+          <td>{{ s.paidAt | date:'dd/MM/yy HH:mm' }}</td>
+          <td>{{ s.userEmail }}</td>
+          <td><strong>{{ s.zoneCode }}</strong></td>
+          <td>{{ s.season }}</td>
+          <td>{{ s.paidAmount | number:'1.2-2' }} DH</td>
+          <td>jusqu'au {{ s.validTo | date:'dd/MM/yy' }}</td>
+          <td><span [class]="badgeClass(s.status)">{{ s.status }}</span></td>
+        </tr>
+        <tr *ngIf="subs.length === 0">
+          <td colspan="8" class="text-center text-muted py-3">Aucun abonnement</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="pager mt-2">
+      <button (click)="goSubsPage(-1)" [disabled]="subsPage === 0">‹ Précédent</button>
+      <span>Page {{ subsPage + 1 }}</span>
+      <button (click)="goSubsPage(1)" [disabled]="subs.length < pageSize">Suivant ›</button>
+    </div>
+  </div>
+</div>
