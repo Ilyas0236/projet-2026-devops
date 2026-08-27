@@ -43,6 +43,16 @@ public class ShopOrder {
     @Column(precision = 10, scale = 2)
     private BigDecimal discountAmount;
 
+    /**
+     * B.12 — Réduction automatique 15% appliquée aux ADHÉRENTS (titulaires
+     * d'un abonnement saisonnier actif). Calculée sur le sous-total,
+     * cumulable avec un code promo (l'addition des deux est soustraite au
+     * total). 0 si l'utilisateur n'est pas adhérent.
+     */
+    @Column(precision = 10, scale = 2)
+    @Builder.Default
+    private BigDecimal adherentDiscount = BigDecimal.ZERO;
+
     @Column(precision = 10, scale = 2)
     private BigDecimal totalAmount;
 

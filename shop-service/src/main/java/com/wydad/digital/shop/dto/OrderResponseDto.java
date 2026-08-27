@@ -16,6 +16,8 @@ public class OrderResponseDto {
     private BigDecimal subtotal;
     private BigDecimal shippingCost;
     private BigDecimal discountAmount;
+    /** B.12 — part de la réduction totale venant de l'avantage ADHÉRENT (15%). */
+    private BigDecimal adherentDiscount;
     private BigDecimal totalAmount;
     private String trackingNumber;
     private LocalDateTime createdAt;
