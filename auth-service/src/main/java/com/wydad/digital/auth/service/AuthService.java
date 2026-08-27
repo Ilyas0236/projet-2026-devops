@@ -343,31 +343,6 @@ public class AuthService {
         throw new UnsupportedOperationException(
                 "Cet endpoint est désactivé. Utilisez POST /api/auth/subscriptions/purchase "
                 + "pour acheter un abonnement avec paiement.");
-        User user = userRepository.findByEmail(request.email())
-                .orElseThrow(() -> new UserNotFoundException(request.email()));
-
-        if (request.newLevel().getPrice() <= user.getMembershipLevel().getPrice()) {
-            throw new RuntimeException("Le nouveau niveau doit être supérieur au niveau actuel");
-        }
-
-        user.setMembershipLevel(request.newLevel());
-        user.setMembershipExpiresAt(LocalDateTime.now().plusYears(1));
-        userRepository.save(user);
-
-        String accessToken = jwtUtils.generateAccessToken(user.getId(), user.getEmail(), user.getRole().name());
-        String refreshToken = jwtUtils.generateRefreshToken(user.getId(), user.getEmail());
-
-        return new AuthResponse(
-                user.getId(),
-                accessToken,
-                refreshToken,
-                user.getEmail(),
-                user.getFirstName(),
-                user.getLastName(),
-                user.getMembershipLevel(),
-                user.getReferralCode(),
-                user.getRole().name()
-        );
     }
 
     public MembershipStatusResponse checkMembershipStatus(String email) {

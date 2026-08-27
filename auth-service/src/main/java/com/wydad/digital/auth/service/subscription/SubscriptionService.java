@@ -117,7 +117,13 @@ public class SubscriptionService {
 
         // 3) Génération QR + PDF
         String qrPayload = buildQrPayload(sub, user);
-        sub.setQrCodeBase64(qrCodeService.generateQrCodeBase64(qrPayload));
+        try {
+            sub.setQrCodeBase64(qrCodeService.generateQrCode(qrPayload, 300, 300));
+        } catch (Exception qrEx) {
+            // QR code best-effort : on log et on continue, le PDF reste
+            // l'élément critique pour l'accès au stade.
+            log.warn("Échec génération QR pour abonnement {} : {}", sub.getId(), qrEx.getMessage());
+        }
         sub.setPdfPath(pdfService.generateSubscriptionPdf(sub, user, qrPayload));
 
         UserSubscription saved = subscriptionRepository.save(sub);
