@@ -175,6 +175,69 @@ public class EventService {
                 .stream().map(this::mapToResponse).collect(Collectors.toList());
     }
 
+    /**
+     * Patch partiel d'une section (ADMIN). Conçu pour corriger le prix d'une
+     * section SANS toucher aux billets vendus : un PUT sur l'event supprimerait
+     * puis recréerait la section, ce qui violerait la FK
+     * {@code tickets.section_id -> sections.id} dès qu'un billet existe.
+     *
+     * <p>Tous les champs du DTO sont optionnels ; seuls les non-null sont
+     * appliqués. Refus de baisser la capacité en dessous du nombre de billets
+     * déjà vendus (sinon, on se retrouverait avec des billets "fantômes"
+     * pointant sur des places qui n'existent plus).</p>
+     *
+     * @throws EntityNotFoundException si la section n'existe pas
+     * @throws IllegalArgumentException si le prix ≤ 0 ou la capacité incohérente
+     */
+    @Transactional
+    public SectionResponse updateSection(Long sectionId, SectionPatchRequest req) {
+        Section s = sectionRepository.findById(sectionId)
+                .orElseThrow(() -> new EntityNotFoundException("Section " + sectionId + " introuvable"));
+
+        if (req.getName() != null && !req.getName().isBlank()) {
+            s.setName(req.getName().trim());
+        }
+        if (req.getCategory() != null) {
+            s.setCategory(req.getCategory());
+        }
+        if (req.getSeatType() != null) {
+            s.setSeatType(req.getSeatType());
+        }
+        if (req.getPrice() != null) {
+            if (req.getPrice().signum() <= 0) {
+                throw new IllegalArgumentException("Le prix doit être strictement positif.");
+            }
+            s.setPrice(req.getPrice());
+        }
+        if (req.getCapacity() != null) {
+            int sold = (s.getCapacity() != null ? s.getCapacity() : 0)
+                     - (s.getAvailableSeats() != null ? s.getAvailableSeats() : 0);
+            if (req.getCapacity() < sold) {
+                throw new IllegalArgumentException(
+                        "Impossible de réduire la capacité à " + req.getCapacity()
+                        + " : " + sold + " billet(s) déjà vendu(s) pour cette section.");
+            }
+            // Recale availableSeats pour conserver le même nombre de billets
+            // vendus : si on augmente la capacité, on ouvre de nouvelles places ;
+            // si on la baisse (au-dessus du seuil sold), idem.
+            int delta = req.getCapacity() - (s.getCapacity() != null ? s.getCapacity() : 0);
+            s.setCapacity(req.getCapacity());
+            s.setAvailableSeats(s.getAvailableSeats() + delta);
+        }
+
+        // Pas besoin de save explicite : la section est managée par JPA dans
+        // la transaction (dirty checking).
+        return SectionResponse.builder()
+                .id(s.getId())
+                .name(s.getName())
+                .category(s.getCategory())
+                .seatType(s.getSeatType())
+                .capacity(s.getCapacity())
+                .availableSeats(s.getAvailableSeats())
+                .price(s.getPrice())
+                .build();
+    }
+
     private EventResponse mapToResponse(Event event) {
         List<SectionResponse> sections = event.getSections() != null
                 ? event.getSections().stream().map(s -> SectionResponse.builder()

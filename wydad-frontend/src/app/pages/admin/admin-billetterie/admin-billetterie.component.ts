@@ -126,9 +126,15 @@ export class AdminBilletterieComponent implements OnInit {
     if (this.isEdit && this.editingId !== null) {
       this.api.updateEvent(this.editingId, this.newEvent).subscribe({
         next: () => {
-          this.toast.success('Match mis à jour.');
-          this.loadEvents();
-          this.closeAddModal();
+          // Après le PUT, on PATCH chaque section existante pour appliquer
+          // les modifications de prix/capacité (le PUT backend supprime puis
+          // recrée les sections si on les inclut, ce qui viole la FK dès
+          // qu'un billet est vendu). Le PATCH travaille in-place.
+          this.persistSectionChanges(() => {
+            this.toast.success('Match mis à jour.');
+            this.loadEvents();
+            this.closeAddModal();
+          });
         },
         error: (err) => {
           console.error('Erreur modification event', err);
@@ -149,6 +155,39 @@ export class AdminBilletterieComponent implements OnInit {
         }
       });
     }
+  }
+
+  /**
+   * Envoie un PATCH par section modifiée. Le front n'a aucun moyen de savoir
+   * si une section a été "touchée" (prix changé, capacité changée) — on PATCH
+   * toutes les sections présentes dans le formulaire. Les champs non édités
+   * reprennent simplement leur valeur courante.
+   */
+  private persistSectionChanges(done: () => void) {
+    const sections: any[] = this.newEvent.sections || [];
+    if (sections.length === 0) { done(); return; }
+
+    let remaining = sections.length;
+    let firstError: any = null;
+    sections.forEach((s) => {
+      this.api.patchSection(s.id, {
+        name: s.name,
+        category: s.category,
+        price: typeof s.price === 'number' ? s.price : Number(s.price),
+        capacity: typeof s.capacity === 'number' ? s.capacity : Number(s.capacity)
+      }).subscribe({
+        next: () => {
+          if (--remaining === 0 && !firstError) done();
+        },
+        error: (err) => {
+          if (!firstError) {
+            firstError = err;
+            this.toast.error(err.error?.message || 'Erreur lors de la mise à jour d\'une section.');
+            console.error('PATCH section failed', err);
+          }
+        }
+      });
+    });
   }
 
   async deleteEvent(id: number) {

@@ -339,6 +339,16 @@ export class ApiService {
     return this.http.delete<any>(`${this.baseUrl}/ticket/events/${id}`);
   }
 
+  /**
+   * PATCH partiel d'une section (ADMIN).
+   * Permet de corriger le prix d'une section existante SANS casser
+   * l'historique des billets vendus (PUT sur l'event supprimerait+recréerait
+   * les sections, ce qui viole la FK tickets.section_id).
+   */
+  patchSection(sectionId: number, patch: { name?: string; price?: number; capacity?: number; category?: string; seatType?: string }): Observable<any> {
+    return this.http.patch<any>(`${this.baseUrl}/ticket/sections/${sectionId}`, patch);
+  }
+
   purchaseTickets(purchaseRequest: any): Observable<any[]> {
     return this.http.post<any[]>(`${this.baseUrl}/ticket/tickets/purchase`, purchaseRequest);
   }

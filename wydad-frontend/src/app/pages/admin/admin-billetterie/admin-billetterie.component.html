@@ -148,6 +148,54 @@
           <input type="number" min="0" [(ngModel)]="newEvent.totalCapacity" class="admin-input">
         </div>
       </div>
+
+      <!-- §Billetterie : sections & tarifs — gérées par l'ADMIN (in-place PATCH).
+           Pas de SQL : on laisse l'admin corriger le prix via l'UI sans casser
+           l'historique des billets vendus (PUT event supprime+recrée les
+           sections -> viole la FK tickets.section_id). -->
+      <div class="admin-field">
+        <div class="flex justify-between items-center mb-2">
+          <label class="admin-label !mb-0">Sections & Tarifs (DH)</label>
+          <span class="text-[10px] text-gray-500 uppercase tracking-wider">In-place PATCH</span>
+        </div>
+        <div *ngIf="!isEdit" class="text-xs text-gray-500 italic">
+          Les sections sont créées à la programmation initiale (via le back). Pour modifier la grille
+          tarifaire d'un match existant, passe en mode édition.
+        </div>
+        <div *ngIf="isEdit && (!newEvent.sections || newEvent.sections.length === 0)"
+             class="text-xs text-gray-500 italic">
+          Aucune section sur ce match.
+        </div>
+        <div *ngIf="isEdit && newEvent.sections && newEvent.sections.length > 0" class="space-y-2">
+          <div *ngFor="let s of newEvent.sections"
+               class="grid grid-cols-12 gap-2 items-center bg-white/5 border border-white/10 rounded px-3 py-2">
+            <div class="col-span-4">
+              <label class="text-[10px] text-gray-500 uppercase tracking-wider">Nom</label>
+              <input type="text" [(ngModel)]="s.name" class="admin-input !py-1 text-sm">
+            </div>
+            <div class="col-span-2">
+              <label class="text-[10px] text-gray-500 uppercase tracking-wider">Catégorie</label>
+              <input type="text" [(ngModel)]="s.category" class="admin-input !py-1 text-sm" readonly
+                     title="Catégorie immuable après création">
+            </div>
+            <div class="col-span-2">
+              <label class="text-[10px] text-gray-500 uppercase tracking-wider">Capacité</label>
+              <input type="number" min="0" [(ngModel)]="s.capacity" class="admin-input !py-1 text-sm">
+            </div>
+            <div class="col-span-2">
+              <label class="text-[10px] text-gray-500 uppercase tracking-wider">Prix (DH)<span class="req">*</span></label>
+              <input type="number" min="0.01" step="0.01" [(ngModel)]="s.price" class="admin-input !py-1 text-sm">
+            </div>
+            <div class="col-span-2 text-right">
+              <span class="text-[10px] text-gray-500 uppercase tracking-wider">Vendus</span>
+              <div class="text-white text-sm font-bold">{{ (s.capacity || 0) - (s.availableSeats || 0) }}</div>
+            </div>
+          </div>
+          <p class="text-[10px] text-gray-500">
+            La capacité ne peut pas être abaissée en dessous du nombre de billets déjà vendus.
+          </p>
+        </div>
+      </div>
     </div>
 
     <div class="admin-modal-footer">
