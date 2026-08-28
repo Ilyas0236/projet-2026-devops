@@ -6,10 +6,12 @@ import com.wydad.digital.auth.dto.subscription.SubscriptionResponse;
 import com.wydad.digital.auth.dto.subscription.SubscriptionZoneResponse;
 import com.wydad.digital.auth.exception.UserNotFoundException;
 import com.wydad.digital.auth.model.User;
+import com.wydad.digital.auth.model.subscription.SubscriptionPlan;
 import com.wydad.digital.auth.model.subscription.SubscriptionZoneCode;
 import com.wydad.digital.auth.model.subscription.UserSubscription;
 import com.wydad.digital.auth.model.subscription.UserSubscriptionStatus;
 import com.wydad.digital.auth.repository.UserRepository;
+import com.wydad.digital.auth.repository.subscription.SubscriptionPlanRepository;
 import com.wydad.digital.auth.repository.subscription.UserSubscriptionRepository;
 import com.wydad.digital.auth.service.PdfService;
 import com.wydad.digital.auth.service.QrCodeService;
@@ -21,7 +23,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.Year;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -29,16 +30,14 @@ import java.util.stream.Collectors;
 /**
  * Logique métier des abonnements saisonniers.
  *
- * Remplace l'ancien AuthService.upgradeLevel() qui ne demandait aucun
- * paiement (faille corrigée). Tout achat d'abonnement DOIT passer par
- * payment-service.
- *
  * Cycle :
  *   1. Vérification que l'utilisateur n'a pas déjà un abonnement ACTIF
- *   2. Calcul du prix selon le statut adhérent
- *   3. Appel payment-service /card (mock en démo, vrai plus tard)
- *   4. Sur succès : création UserSubscription(ACTIVE) + QR + PDF
- *   5. Sur échec : aucune trace en base, exception propagée
+ *   2. Résolution du plan (subscription_plans) par code, contrôle isActive
+ *   3. Calcul du prix selon le statut adhérent (MembershipLevel payant)
+ *   4. Appel payment-service /card (mock en démo, vrai plus tard)
+ *   5. Sur succès : création UserSubscription(ACTIVE) + QR + PDF
+ *      (FK plan_id + zone_code legacy dérivés du plan)
+ *   6. Sur échec : aucune trace en base, exception propagée
  */
 @Service
 @RequiredArgsConstructor
@@ -47,15 +46,18 @@ public class SubscriptionService {
 
     private final UserRepository userRepository;
     private final UserSubscriptionRepository subscriptionRepository;
+    private final SubscriptionPlanRepository planRepository;
     private final PaymentClient paymentClient;
     private final QrCodeService qrCodeService;
     private final PdfService pdfService;
 
     /**
      * Catalogue public des zones.
-     * On filtre SOLD_OUT si l'utilisateur n'est pas ADMIN (un admin doit
-     * pouvoir les voir pour les réactiver).
+     * @deprecated conservé pour la rétro-compat front le temps de la
+     *             bascule : tout passe désormais par {@code listPlans()}.
+     *             Le contrôleur public expose les deux endpoints.
      */
+    @Deprecated
     public List<SubscriptionZoneResponse> listZones(boolean includeSoldOut) {
         return Arrays.stream(SubscriptionZoneCode.values())
                 .filter(z -> includeSoldOut || !z.isSoldOut())
@@ -67,8 +69,10 @@ public class SubscriptionService {
      * Achat d'un abonnement saisonnier.
      *
      * @param email email du JWT (sécurité IDOR)
-     * @param request zone + carte simulée
+     * @param request planCode + carte simulée
      * @return l'abonnement créé (statut ACTIVE)
+     * @throws PlanNotFoundException si le code ne correspond à aucun plan
+     * @throws PlanNotActiveException si le plan existe mais est désactivé
      * @throws AlreadySubscribedException si l'utilisateur a déjà un abonnement ACTIF
      * @throws PaymentClient.PaymentException si le paiement échoue
      */
@@ -77,22 +81,24 @@ public class SubscriptionService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UserNotFoundException(email));
 
-        SubscriptionZoneCode zone = request.zoneCode();
-        if (zone.isSoldOut()) {
-            throw new IllegalArgumentException("Zone " + zone.getCode() + " n'est plus commercialisée");
+        // Résolution du plan par code (la source de vérité est désormais la table).
+        SubscriptionPlan plan = planRepository.findByCode(request.planCode())
+                .orElseThrow(() -> new PlanNotFoundException(request.planCode()));
+        if (Boolean.FALSE.equals(plan.getIsActive())) {
+            throw new PlanNotActiveException(request.planCode());
         }
 
         // Garde-fou : pas de doublon d'abonnement actif
         subscriptionRepository.findActiveByUser(user).ifPresent(s -> {
             throw new AlreadySubscribedException(
-                    "L'utilisateur a déjà un abonnement actif : " + s.getZoneCode().getCode());
+                    "L'utilisateur a déjà un abonnement actif : "
+                            + (s.getPlan() != null ? s.getPlan().getCode() : s.getZoneCode().getCode()));
         });
 
         // Calcul du prix selon que l'utilisateur est déjà adhérent ou pas.
-        // Pour cette V1, on utilise le prix "adhérent" si l'utilisateur a
-        // un MembershipLevel != LEGENDE et != JUNIOR. Cela permet de
-        // récompenser les anciens membres Rouge/Or/Diamant.
-        BigDecimal price = resolvePrice(zone, user);
+        // L'ancien MembershipLevel sert de "tampon" : Rouge/Or/Diamant
+        // (payants) bénéficient du tarif adhérent sur la nouvelle grille.
+        BigDecimal price = resolvePrice(plan, user);
 
         // 1) Paiement carte SIMULÉ
         String txRef = paymentClient.chargeCard(email, request, price);
@@ -105,7 +111,10 @@ public class SubscriptionService {
 
         UserSubscription sub = UserSubscription.builder()
                 .user(user)
-                .zoneCode(zone)
+                .plan(plan)
+                // Cohabitation : on dérive zoneCode du plan si possible, pour
+                // garder la colonne legacy alimentée (PDF, audit, SELECT ad hoc).
+                .zoneCode(toLegacyZone(plan.getCode()))
                 .season(season)
                 .paidAmount(price)
                 .transactionRef(txRef)
@@ -116,7 +125,7 @@ public class SubscriptionService {
                 .build();
 
         // 3) Génération QR + PDF
-        String qrPayload = buildQrPayload(sub, user);
+        String qrPayload = buildQrPayload(sub, user, plan);
         try {
             sub.setQrCodeBase64(qrCodeService.generateQrCode(qrPayload, 300, 300));
         } catch (Exception qrEx) {
@@ -127,8 +136,8 @@ public class SubscriptionService {
         sub.setPdfPath(pdfService.generateSubscriptionPdf(sub, user, qrPayload));
 
         UserSubscription saved = subscriptionRepository.save(sub);
-        log.info("Abonnement {} créé pour {} (zone {}, saison {}, {} DH)",
-                saved.getId(), email, zone.getCode(), season, price);
+        log.info("Abonnement {} créé pour {} (plan {}, saison {}, {} DH)",
+                saved.getId(), email, plan.getCode(), season, price);
 
         return SubscriptionResponse.from(saved);
     }
@@ -180,20 +189,31 @@ public class SubscriptionService {
 
     // -------- helpers --------
 
-    private BigDecimal resolvePrice(SubscriptionZoneCode zone, User user) {
-        // L'ancien MembershipLevel sert de "tampon" : Rouge/Or/Diamant
-        // (payants) bénéficient du tarif adhérent sur la nouvelle grille.
+    private BigDecimal resolvePrice(SubscriptionPlan plan, User user) {
         boolean isLegacyAdherent = user.getMembershipLevel() != null
                 && user.getMembershipLevel().getPrice() > 0;
-        int price = isLegacyAdherent ? zone.getPriceAdherent() : zone.getPriceRegular();
-        return BigDecimal.valueOf(price);
+        return isLegacyAdherent ? plan.getAdherentPrice() : plan.getRegularPrice();
     }
 
-    private String buildQrPayload(UserSubscription sub, User user) {
+    /**
+     * Mappe un code plan (ex. "PEL-6") vers l'enum legacy pour rétro-compat
+     * PDF/audit. Renvoie null si l'enum n'a pas d'équivalent (cas d'un plan
+     * 100% admin, sans legacy) — la colonne reste alors NULL, ce qui est
+     * toléré désormais (FK plan_id est la source de vérité).
+     */
+    private SubscriptionZoneCode toLegacyZone(String planCode) {
+        if (planCode == null) return null;
+        for (SubscriptionZoneCode z : SubscriptionZoneCode.values()) {
+            if (z.getCode().equals(planCode)) return z;
+        }
+        return null;
+    }
+
+    private String buildQrPayload(UserSubscription sub, User user, SubscriptionPlan plan) {
+        String code = plan != null ? plan.getCode() : sub.getZoneCode().getCode();
         // Payload minimaliste que le contrôle d'accès au stade pourra scanner.
         return "WAC-SUB|" + sub.getId() + "|" + user.getEmail() + "|"
-                + sub.getZoneCode().getCode() + "|" + sub.getSeason() + "|"
-                + sub.getValidTo().toLocalDate();
+                + code + "|" + sub.getSeason() + "|" + sub.getValidTo().toLocalDate();
     }
 
     private String currentSeason() {
@@ -214,6 +234,20 @@ public class SubscriptionService {
     public static class AlreadySubscribedException extends RuntimeException {
         public AlreadySubscribedException(String message) {
             super(message);
+        }
+    }
+
+    /** Plan introuvable. → 404. */
+    public static class PlanNotFoundException extends RuntimeException {
+        public PlanNotFoundException(String code) {
+            super("Plan d'abonnement introuvable : code=" + code);
+        }
+    }
+
+    /** Plan désactivé (isActive=false). → 409. */
+    public static class PlanNotActiveException extends RuntimeException {
+        public PlanNotActiveException(String code) {
+            super("Plan d'abonnement désactivé : code=" + code);
         }
     }
 }

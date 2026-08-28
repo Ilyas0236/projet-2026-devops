@@ -51,4 +51,11 @@ public interface UserSubscriptionRepository extends JpaRepository<UserSubscripti
             @Param("endDate") LocalDateTime endDate,
             @Param("userEmail") String userEmail,
             Pageable pageable);
+
+    /**
+     * TRUE si au moins un abonnement référence ce plan.
+     * Utilisé par {@code SubscriptionPlanService.delete()} pour refuser
+     * la suppression d'un plan encore utilisé (renvoyer 409 plutôt que 500).
+     */
+    boolean existsByPlan_Id(Long planId);
 }

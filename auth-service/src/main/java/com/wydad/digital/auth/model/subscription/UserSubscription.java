@@ -45,6 +45,22 @@ public class UserSubscription {
     @Column(name = "zone_code", nullable = false, length = 16)
     private SubscriptionZoneCode zoneCode;
 
+    /**
+     * Plan d'abonnement FK (B.12 dynamique). Nullable pour la cohabitation
+     * avec les lignes pré-migration : un backfill SQL (cf. A.11 du plan)
+     * remplit {@code plan_id} à partir de {@code zone_code} lors du passage
+     * en prod. ON DELETE SET NULL côté FK — supprimer un plan ne supprime
+     * pas l'historique des abonnements.
+     *
+     * <p>À terme, c'est ce champ qui pilote l'offre ; {@link #zoneCode}
+     * est conservé comme "legacy audit" (PDF + table user_subscriptions
+     * déjà en prod) et n'est plus alimenté pour les nouveaux achats que
+     * par dérivation du code du plan.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "plan_id")
+    private SubscriptionPlan plan;
+
     /** Saison sportive (ex. "2026-2027"). Calculée à l'achat. */
     @Column(name = "season", nullable = false, length = 16)
     private String season;

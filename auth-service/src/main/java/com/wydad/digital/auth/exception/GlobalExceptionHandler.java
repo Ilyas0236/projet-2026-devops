@@ -204,4 +204,65 @@ public class GlobalExceptionHandler {
         );
         return ResponseEntity.status(HttpStatus.PAYMENT_REQUIRED).body(error);
     }
+
+    /**
+     * Plan d'abonnement introuvable (id ou code) — 404.
+     * Couvre SubscriptionService.PlanNotFoundException et
+     * SubscriptionPlanService.PlanNotFoundException.
+     */
+    @ExceptionHandler({
+            com.wydad.digital.auth.service.subscription.SubscriptionService.PlanNotFoundException.class,
+            com.wydad.digital.auth.service.subscription.SubscriptionPlanService.PlanNotFoundException.class
+    })
+    public ResponseEntity<ErrorResponse> handlePlanNotFound(
+            RuntimeException ex, HttpServletRequest request) {
+
+        ErrorResponse error = new ErrorResponse(
+                LocalDateTime.now(),
+                HttpStatus.NOT_FOUND.value(),
+                "PLAN_NOT_FOUND",
+                ex.getMessage(),
+                request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+    }
+
+    /**
+     * Plan désactivé (isActive=false) ou plan référencé par des abonnements
+     * existants (delete impossible) — 409.
+     */
+    @ExceptionHandler({
+            com.wydad.digital.auth.service.subscription.SubscriptionService.PlanNotActiveException.class,
+            com.wydad.digital.auth.service.subscription.SubscriptionPlanService.PlanInUseException.class
+    })
+    public ResponseEntity<ErrorResponse> handlePlanConflict(
+            RuntimeException ex, HttpServletRequest request) {
+
+        ErrorResponse error = new ErrorResponse(
+                LocalDateTime.now(),
+                HttpStatus.CONFLICT.value(),
+                "PLAN_CONFLICT",
+                ex.getMessage(),
+                request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
+    /**
+     * Code de plan déjà utilisé (UNIQUE) — 409.
+     */
+    @ExceptionHandler(com.wydad.digital.auth.service.subscription.SubscriptionPlanService.DuplicatePlanCodeException.class)
+    public ResponseEntity<ErrorResponse> handleDuplicatePlanCode(
+            com.wydad.digital.auth.service.subscription.SubscriptionPlanService.DuplicatePlanCodeException ex,
+            HttpServletRequest request) {
+
+        ErrorResponse error = new ErrorResponse(
+                LocalDateTime.now(),
+                HttpStatus.CONFLICT.value(),
+                "DUPLICATE_PLAN_CODE",
+                ex.getMessage(),
+                request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
 }
