@@ -10,6 +10,7 @@ import { EffectifComponent } from './components/effectif/effectif.component';
 import { PalmaresComponent } from './pages/palmares/palmares.component';
 import { AdminBoutiqueComponent } from './pages/admin/admin-boutique/admin-boutique.component';
 import { AdminBilletterieComponent } from './pages/admin/admin-billetterie/admin-billetterie.component';
+import { AdminSubscriptionPlansComponent } from './pages/admin/admin-subscription-plans/admin-subscription-plans.component';
 import { AdminEffectifComponent } from './pages/admin/admin-effectif/admin-effectif.component';
 import { AdminUsersComponent } from './pages/admin/admin-users/admin-users.component';
 import { AdminDemandesComponent } from './pages/admin/admin-demandes/admin-demandes.component';
@@ -89,6 +90,7 @@ export const routes: Routes = [
       { path: 'commandes', component: AdminCommandesComponent },
       { path: 'achats', component: AdminAchatsComponent },
       { path: 'billetterie', component: AdminBilletterieComponent },
+      { path: 'abonnements/plans', component: AdminSubscriptionPlansComponent },
       { path: 'effectif', component: AdminEffectifComponent },
       { path: 'effectif-public', component: AdminJoueursPublicComponent },
       { path: 'palmares', component: AdminPalmaresComponent },

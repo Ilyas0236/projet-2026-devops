@@ -1,0 +1,219 @@
+<section class="p-6 max-w-7xl mx-auto">
+  <!-- En-tête -->
+  <header class="mb-6 flex flex-wrap items-end justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-bold text-ink-primary">Plans d'abonnement</h1>
+      <p class="text-sm text-ink-secondary mt-1">
+        Grille commerciale publiée sur la home et la page /abonnement.
+        Modifications effectives après enregistrement.
+      </p>
+    </div>
+    <button (click)="openAddModal()"
+            class="px-4 py-2.5 bg-wydad-red text-white rounded-lg font-semibold hover:bg-red-700 transition-colors">
+      + Nouveau plan
+    </button>
+  </header>
+
+  <!-- Filtres -->
+  <div class="mb-4 flex gap-2 text-sm">
+    <button (click)="filterActive = null"
+            [class.bg-wydad-red]="filterActive === null"
+            [class.text-white]="filterActive === null"
+            class="px-3 py-1.5 rounded-lg border border-paper-3 text-ink-secondary hover:bg-paper-1">
+      Tous ({{ plans.length }})
+    </button>
+    <button (click)="filterActive = true"
+            [class.bg-green-600]="filterActive === true"
+            [class.text-white]="filterActive === true"
+            class="px-3 py-1.5 rounded-lg border border-paper-3 text-ink-secondary hover:bg-paper-1">
+      Actifs ({{ countActive }})
+    </button>
+    <button (click)="filterActive = false"
+            [class.bg-gray-600]="filterActive === false"
+            [class.text-white]="filterActive === false"
+            class="px-3 py-1.5 rounded-lg border border-paper-3 text-ink-secondary hover:bg-paper-1">
+      Inactifs ({{ countInactive }})
+    </button>
+  </div>
+
+  <!-- Tableau -->
+  <div *ngIf="loading" class="text-center py-12 text-ink-secondary">
+    Chargement des plans…
+  </div>
+
+  <div *ngIf="!loading && filteredPlans.length === 0"
+       class="text-center py-12 bg-paper-1 rounded-2xl border border-paper-3 text-ink-secondary">
+    Aucun plan ne correspond à ce filtre.
+  </div>
+
+  <div *ngIf="!loading && filteredPlans.length > 0"
+       class="bg-white rounded-2xl border border-paper-3 overflow-hidden">
+    <table class="w-full text-sm">
+      <thead class="bg-paper-1 text-ink-secondary text-xs uppercase tracking-wider">
+        <tr>
+          <th class="text-left px-4 py-3">Ordre</th>
+          <th class="text-left px-4 py-3">Code</th>
+          <th class="text-left px-4 py-3">Nom</th>
+          <th class="text-right px-4 py-3">Régulier</th>
+          <th class="text-right px-4 py-3">Adhérent</th>
+          <th class="text-center px-4 py-3">État</th>
+          <th class="text-center px-4 py-3">⭐ 48h</th>
+          <th class="text-right px-4 py-3">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let plan of filteredPlans"
+            class="border-t border-paper-2 hover:bg-paper-1/40">
+          <td class="px-4 py-3 text-ink-secondary">{{ plan.displayOrder }}</td>
+          <td class="px-4 py-3 font-mono text-ink-primary">{{ plan.code }}</td>
+          <td class="px-4 py-3 text-ink-primary font-medium">{{ plan.name }}</td>
+          <td class="px-4 py-3 text-right text-ink-primary">
+            {{ plan.regularPrice | number:'1.0-0' }} MAD
+          </td>
+          <td class="px-4 py-3 text-right">
+            <span [class.text-green-700]="plan.adherentPrice < plan.regularPrice"
+                  [class.text-ink-secondary]="plan.adherentPrice >= plan.regularPrice">
+              {{ plan.adherentPrice | number:'1.0-0' }} MAD
+            </span>
+          </td>
+          <td class="px-4 py-3 text-center">
+            <span [class.bg-green-100]="plan.isActive"
+                  [class.text-green-800]="plan.isActive"
+                  [class.bg-gray-200]="!plan.isActive"
+                  [class.text-gray-600]="!plan.isActive"
+                  class="inline-block px-2 py-0.5 rounded text-xs font-semibold">
+              {{ plan.isActive ? 'Actif' : 'Inactif' }}
+            </span>
+          </td>
+          <td class="px-4 py-3 text-center">
+            <span *ngIf="plan.exceptionalPriority">⭐</span>
+          </td>
+          <td class="px-4 py-3 text-right whitespace-nowrap">
+            <button (click)="openEditModal(plan)"
+                    class="text-xs px-2 py-1 text-wydad-red hover:bg-wydad-red/10 rounded font-semibold mr-1">
+              Éditer
+            </button>
+            <button (click)="toggleActive(plan)"
+                    class="text-xs px-2 py-1 text-ink-secondary hover:bg-paper-2 rounded">
+              {{ plan.isActive ? 'Désactiver' : 'Activer' }}
+            </button>
+            <button (click)="deletePlan(plan)"
+                    class="text-xs px-2 py-1 text-red-700 hover:bg-red-50 rounded ml-1">
+              Suppr.
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- Modal édition/création -->
+<div *ngIf="showModal"
+     class="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4"
+     (click)="closeModal()">
+  <div (click)="$event.stopPropagation()"
+       class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+    <header class="px-6 py-4 border-b border-paper-3 flex justify-between items-center">
+      <h2 class="text-lg font-bold text-ink-primary">
+        {{ isEdit ? 'Modifier le plan' : 'Nouveau plan d\'abonnement' }}
+      </h2>
+      <button (click)="closeModal()" class="text-ink-tertiary hover:text-ink-primary text-2xl leading-none">×</button>
+    </header>
+
+    <form (ngSubmit)="save()" class="px-6 py-5 space-y-4">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-semibold text-ink-secondary uppercase tracking-wider mb-1">
+            Code <span class="text-wydad-red">*</span>
+          </label>
+          <input [(ngModel)]="newPlan.code" name="code" required maxlength="32"
+                 pattern="^[A-Z0-9_-]{1,32}$"
+                 [disabled]="isEdit"
+                 placeholder="VIP-A"
+                 class="w-full px-3 py-2 border border-paper-3 rounded-lg font-mono text-sm focus:ring-2 focus:ring-wydad-red focus:border-wydad-red disabled:bg-paper-1 disabled:text-ink-tertiary" />
+          <p class="text-xs text-ink-tertiary mt-1">MAJUSCULES, chiffres, _ et - uniquement. Non modifiable après création.</p>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-ink-secondary uppercase tracking-wider mb-1">
+            Nom affiché <span class="text-wydad-red">*</span>
+          </label>
+          <input [(ngModel)]="newPlan.name" name="name" required maxlength="128"
+                 placeholder="VIP Adhérent"
+                 class="w-full px-3 py-2 border border-paper-3 rounded-lg text-sm focus:ring-2 focus:ring-wydad-red focus:border-wydad-red" />
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-semibold text-ink-secondary uppercase tracking-wider mb-1">
+            Prix régulier (MAD) <span class="text-wydad-red">*</span>
+          </label>
+          <input type="number" [(ngModel)]="newPlan.regularPrice" name="regularPrice"
+                 min="0" step="0.01" required
+                 class="w-full px-3 py-2 border border-paper-3 rounded-lg text-sm focus:ring-2 focus:ring-wydad-red focus:border-wydad-red" />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-ink-secondary uppercase tracking-wider mb-1">
+            Prix adhérent (MAD) <span class="text-wydad-red">*</span>
+          </label>
+          <input type="number" [(ngModel)]="newPlan.adherentPrice" name="adherentPrice"
+                 min="0" step="0.01" required
+                 class="w-full px-3 py-2 border border-paper-3 rounded-lg text-sm focus:ring-2 focus:ring-wydad-red focus:border-wydad-red" />
+          <p class="text-xs text-ink-tertiary mt-1">Si égal au régulier, pas de remise adhérent.</p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div>
+          <label class="block text-xs font-semibold text-ink-secondary uppercase tracking-wider mb-1">
+            Ordre d'affichage
+          </label>
+          <input type="number" [(ngModel)]="newPlan.displayOrder" name="displayOrder"
+                 class="w-full px-3 py-2 border border-paper-3 rounded-lg text-sm focus:ring-2 focus:ring-wydad-red focus:border-wydad-red" />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-ink-secondary uppercase tracking-wider mb-1">
+            Saison
+          </label>
+          <input [(ngModel)]="newPlan.season" name="season" maxlength="16"
+                 placeholder="2026-2027"
+                 class="w-full px-3 py-2 border border-paper-3 rounded-lg text-sm focus:ring-2 focus:ring-wydad-red focus:border-wydad-red" />
+        </div>
+        <div class="flex flex-col gap-2 pt-5">
+          <label class="flex items-center gap-2 text-sm text-ink-primary cursor-pointer">
+            <input type="checkbox" [(ngModel)]="newPlan.isActive" name="isActive"
+                   class="w-4 h-4 accent-wydad-red" />
+            Plan actif
+          </label>
+          <label class="flex items-center gap-2 text-sm text-ink-primary cursor-pointer">
+            <input type="checkbox" [(ngModel)]="newPlan.exceptionalPriority" name="exceptionalPriority"
+                   class="w-4 h-4 accent-wydad-red" />
+            ⭐ Priorité 48h (matchs exceptionnels)
+          </label>
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-xs font-semibold text-ink-secondary uppercase tracking-wider mb-1">
+          Avantages (un par ligne, affiché sur la home)
+        </label>
+        <textarea [(ngModel)]="newPlan.benefits" name="benefits" rows="4"
+                  placeholder="✓ 15 matchs à domicile&#10;✓ QR code personnel&#10;✓ Place prioritaire"
+                  class="w-full px-3 py-2 border border-paper-3 rounded-lg text-sm focus:ring-2 focus:ring-wydad-red focus:border-wydad-red font-mono"></textarea>
+        <p class="text-xs text-ink-tertiary mt-1">Si vide, la home affiche la liste par défaut.</p>
+      </div>
+
+      <footer class="pt-4 border-t border-paper-3 flex justify-end gap-3">
+        <button type="button" (click)="closeModal()"
+                class="px-4 py-2 text-ink-secondary hover:bg-paper-1 rounded-lg">
+          Annuler
+        </button>
+        <button type="submit"
+                class="px-5 py-2 bg-wydad-red text-white rounded-lg font-semibold hover:bg-red-700">
+          {{ isEdit ? 'Enregistrer' : 'Créer le plan' }}
+        </button>
+      </footer>
+    </form>
+  </div>
+</div>
