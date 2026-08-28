@@ -6,9 +6,9 @@ import { ToastService } from '../../../services/toast.service';
 
 /**
  * Panneau d'administration des parametres club (source de verite metier).
- * Edition JSON des cles connues : membership_tiers (paliers d'adhesion)
- * et club_info (coordonnees). Toute modification impacte directement le
- * site public (homepage, adhesion, footer).
+ * Edition JSON des cles connues : club_info (coordonnees), competitions
+ * (libelles des classements / matchs / billetterie). Toute modification
+ * impacte directement le site public (footer, billetterie, classement).
  */
 @Component({
   selector: 'app-admin-settings',
@@ -19,7 +19,7 @@ import { ToastService } from '../../../services/toast.service';
       <div>
         <h2 class="text-2xl font-display font-bold uppercase tracking-wider text-white">Paramètres du Club</h2>
         <p class="text-sm text-gray-400 mt-1">
-          Configuration métier du site : paliers d'adhésion, coordonnées. Ces contenus alimentent la homepage, la page adhésion et le footer.
+          Configuration métier du site : coordonnées du club, libellés de compétitions. Ces contenus alimentent le footer, la billetterie et le classement.
         </p>
       </div>
 
@@ -38,7 +38,7 @@ import { ToastService } from '../../../services/toast.service';
 
           <textarea
             [(ngModel)]="drafts[s.key]"
-            rows="{{ s.key === 'membership_tiers' ? 14 : 8 }}"
+            rows="8"
             class="admin-input font-mono !text-sm"
             spellcheck="false"></textarea>
 
@@ -375,7 +375,6 @@ export class AdminSettingsComponent implements OnInit {
 
   labelFor(key: string): string {
     switch (key) {
-      case 'membership_tiers': return "Paliers d'adhésion";
       case 'club_info': return 'Coordonnées du club';
       case 'competitions': return 'Compétitions (classements, matchs, billetterie)';
       default: return key;

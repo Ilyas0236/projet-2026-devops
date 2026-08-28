@@ -176,28 +176,9 @@
           </div>
         </div>
 
-        <!-- ======== ADHÉSION (paliers, vitrine informative) ======== -->
         <h3 class="text-ink-primary font-display uppercase tracking-wider mb-4 border-b border-paper-3 pb-2 text-lg">
-          <span class="text-wydad-red mr-2">3.</span>Adhésion
+          <span class="text-wydad-red mr-2">3.</span>Code de parrainage
         </h3>
-        <!-- S3 : le niveau n'est plus choisi à l'inscription (le serveur force ROUGE).
-             Vitrine informative des paliers — la montée se fait après paiement. -->
-        <div class="form-group mb-4" *ngIf="selectedTier; else tiersInfo">
-          <label class="block mb-1 text-ink-secondary text-xs uppercase tracking-wider font-semibold">Formule sélectionnée depuis la page Adhésion</label>
-          <div class="w-full bg-paper-1 border border-paper-3 text-ink-primary rounded-lg px-4 py-2.5 text-sm">
-            {{ selectedTier.name }} — {{ selectedTier.price }} DH/an
-            <span class="block text-ink-tertiary text-xs mt-1">Votre compte démarre au niveau ROUGE ; cette formule sera activée après paiement.</span>
-          </div>
-        </div>
-        <ng-template #tiersInfo>
-          <div class="form-group mb-4">
-            <ul class="w-full bg-paper-1 border border-paper-3 text-ink-primary rounded-lg px-4 py-2.5 text-sm space-y-1">
-              <li *ngFor="let t of tiers" class="flex justify-between"><span>{{ t.name }}</span><span class="text-ink-tertiary">{{ t.price }} DH/an</span></li>
-            </ul>
-            <p class="text-ink-tertiary text-xs mt-1">Tout nouveau compte démarre au niveau ROUGE. Vous pourrez monter de niveau après paiement depuis votre profil.</p>
-          </div>
-        </ng-template>
-
         <div class="form-group mb-8">
           <label for="reg-referral" class="block mb-1 text-ink-secondary text-xs uppercase tracking-wider font-semibold">Code de parrainage (optionnel)</label>
           <input id="reg-referral" type="text" class="paper-input w-full rounded-lg px-4 py-2.5" [(ngModel)]="referralCode" name="referralCode" placeholder="Ex : WAC-REF-123">

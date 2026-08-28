@@ -132,9 +132,6 @@ export class AuthService {
     return this.http.delete(`${this.baseUrl}/me`, { responseType: 'text' });
   }
 
-  // NB : upgradeMembership vit dans ApiService (email explicite, utilisée
-  // par carte-membre). Ne pas la dupliquer ici.
-
   getSessions(): Observable<any> {
     return this.http.get(`${this.baseUrl}/sessions`);
   }

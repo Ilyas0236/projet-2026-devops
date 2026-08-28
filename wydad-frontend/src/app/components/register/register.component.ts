@@ -1,7 +1,7 @@
 import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router, ActivatedRoute } from '@angular/router';
+import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { ApiService } from '../../services/api.service';
 
@@ -33,17 +33,12 @@ export class RegisterComponent implements OnInit {
   firstName = '';
   lastName = '';
   referralCode = '';
-  /** Niveau pré-sélectionné depuis la page adhésion — informatif uniquement :
-   * le serveur attribue ROUGE à l'inscription ; la montée de niveau se fait
-   * après paiement (POST /upgrade). */
-  selectedTier: any = null;
   loading = false;
   error = '';
   success = false;
   /** Vrai quand l'inscription crée un compte EN_ATTENTE (statut privilégié) :
    * pas de session, message dédié "en attente de validation". */
   enAttente = false;
-  tiers: any[] = [];
 
   // ----- Choix du statut -----
   statut: StatutChoix = 'ADHERENT';
@@ -94,28 +89,15 @@ export class RegisterComponent implements OnInit {
   authService = inject(AuthService);
   api = inject(ApiService);
   router = inject(Router);
-  route = inject(ActivatedRoute);
-
-  private static readonly ALLOWED_LEVELS = ['JUNIOR', 'ROUGE', 'OR', 'DIAMANT', 'LEGENDE'];
 
   get estSportif(): boolean {
     return this.statut === 'JOUEUR' || this.statut === 'ENTRAINEUR' || this.statut === 'STAFF';
   }
 
   ngOnInit() {
-    // Paliers depuis la configuration club (source de verite ADMIN)
-    this.api.getClubSetting('membership_tiers').subscribe({
-      next: (tiers) => {
-        this.tiers = Array.isArray(tiers) ? tiers.filter(t => t.price != null) : [];
-        const level = this.route.snapshot.queryParamMap.get('level');
-        if (level && RegisterComponent.ALLOWED_LEVELS.includes(level)) {
-          this.selectedTier = this.tiers.find(t => t.level === level) || null;
-        }
-      },
-      error: () => {
-        this.tiers = [];
-      }
-    });
+    // L'inscription crée un compte sans palier pré-sélectionné.
+    // Les abonnements sont gérés par l'admin et s'achètent depuis l'espace
+    // personnel — voir la page /abonnement.
   }
 
   choisirStatut(valeur: StatutChoix) {

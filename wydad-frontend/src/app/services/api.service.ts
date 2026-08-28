@@ -28,10 +28,6 @@ export class ApiService {
     return this.http.get(`${this.baseUrl}/auth/presse/badge?email=${encodeURIComponent(email)}`, { responseType: 'blob' });
   }
 
-  upgradeMembership(email: string, newLevel: string): Observable<any> {
-    return this.http.post(`${this.baseUrl}/auth/upgrade`, { email, newLevel });
-  }
-
   // -------- B.12 — Abonnements saisonniers (carte adhérent) --------
 
   /** Catalogue public des zones. includeSoldOut réservé à l'admin. */

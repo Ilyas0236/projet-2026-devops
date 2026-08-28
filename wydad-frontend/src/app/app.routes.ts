@@ -23,7 +23,6 @@ import { AdminSettingsComponent } from './pages/admin/admin-settings/admin-setti
 import { AdminMediathequeComponent } from './pages/admin/admin-mediatheque/admin-mediatheque.component';
 import { AdminStaffComponent } from './pages/admin/admin-staff/admin-staff.component';
 import { AdminAcademieComponent } from './pages/admin/admin-academie/admin-academie.component';
-import { AdhesionComponent } from './pages/adhesion/adhesion.component';
 import { LoginComponent } from './components/login/login.component';
 import { RegisterComponent } from './components/register/register.component';
 import { ActualitesComponent } from './components/actualites/actualites.component';
@@ -170,7 +169,7 @@ export const routes: Routes = [
       { path: '', component: HomeComponent, pathMatch: 'full' },
       { path: 'login', component: LoginComponent },
       { path: 'register', component: RegisterComponent },
-      { path: 'adhesion', component: AdhesionComponent },
+      { path: 'adhesion', redirectTo: '/abonnement', pathMatch: 'full' },
       { path: 'actualites', component: ActualitesComponent },
       { path: 'actualites/:id', component: ActualiteDetailComponent },
       { path: 'matchs', component: MatchesComponent },
