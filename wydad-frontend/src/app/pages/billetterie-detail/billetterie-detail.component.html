@@ -23,6 +23,14 @@
           <h1 class="club-hero-title text-4xl md:text-5xl uppercase tracking-tight mb-2">
             {{ event.homeTeam }} <span class="text-white/50 mx-2">VS</span> {{ event.awayTeam }}
           </h1>
+          <!-- V1.1 — badge discret signalant que l'événement est adossé à un
+               match officiel du calendrier. Le lien n'est pas cliquable
+               publiquement (l'API content-service /matches/public n'existe
+               pas encore) : on se contente d'indiquer la cohérence des
+               données (même affiche, même date, même lieu). -->
+          <div *ngIf="event.matchId" class="mt-3 inline-block px-3 py-1 bg-blue-500/20 border border-blue-400/30 rounded-full text-blue-100 text-xs font-semibold">
+            🏟️ Adossé au match calendrier #{{ event.matchId }}
+          </div>
           <div class="flex flex-wrap items-center justify-center md:justify-start gap-4 text-white/85 text-sm mt-4">
             <span class="flex items-center gap-2">📅 {{ event.eventDate | date:'fullDate':'':'fr' }}</span>
             <span class="flex items-center gap-2">⏰ {{ event.eventDate | date:'HH:mm' }}</span>

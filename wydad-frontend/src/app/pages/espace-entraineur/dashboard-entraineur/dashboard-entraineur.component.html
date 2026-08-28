@@ -68,6 +68,11 @@
                   [class]="activeTab === 'matchs' ? 'bg-wydad-red text-white shadow-md' : 'paper-card text-ink-secondary hover:text-wydad-red'">
             Matchs ({{ matchs.length }})
           </button>
+          <button type="button" (click)="activeTab = 'messagerie'"
+                  class="px-6 py-3 rounded-2xl text-xs font-bold uppercase tracking-wider transition-all"
+                  [class]="activeTab === 'messagerie' ? 'bg-wydad-red text-white shadow-md' : 'paper-card text-ink-secondary hover:text-wydad-red'">
+            💬 Messagerie
+          </button>
           <button type="button" (click)="activeTab = 'video'"
                   class="px-6 py-3 rounded-2xl text-xs font-bold uppercase tracking-wider transition-all"
                   [class]="activeTab === 'video' ? 'bg-wydad-red text-white shadow-md' : 'paper-card text-ink-secondary hover:text-wydad-red'">
@@ -152,6 +157,16 @@
                   {{ m.statut || 'PROGRAMME' }}
                 </span>
               </div>
+              <!-- V1.2 — Convoquer les joueurs pour ce match (§8).
+                   Le match passe en statut "Joué" après publication ADMIN
+                   (cf. /admin/match/{id}/publish) : la feuille devient alors
+                   visible publiquement sur le site officiel. -->
+              <div class="mt-4 pt-4 border-t border-paper-3 flex justify-end">
+                <button type="button" (click)="openConvocation(m.id)"
+                        class="px-4 py-2 rounded-xl bg-wydad-red text-white text-xs font-bold uppercase tracking-wider hover:bg-red-700 transition-colors">
+                  📋 Convoquer
+                </button>
+              </div>
             </div>
             <div *ngIf="!matchs.length" class="md:col-span-2 paper-card rounded-3xl p-10 text-center">
               <p class="text-ink-tertiary text-sm">Aucun match de votre catégorie au calendrier.</p>
@@ -164,7 +179,127 @@
           <app-my-calls></app-my-calls>
           <app-schedule-call-form></app-schedule-call-form>
         </section>
+
+        <!-- ═══ V1.3 — MESSAGERIE (Phase 4 — TeamChat de groupe) ═══ -->
+        <!-- Le chat de groupe « WhatsApp » de la discipline+catégorie : même
+             composant que dans l'espace joueur/staff, isolation côté serveur.
+             L'entraîneur peut ainsi échanger avec les joueurs ET le staff de
+             sa catégorie. Texte uniquement (500 car.), temps réel STOMP. -->
+        <section *ngIf="activeTab === 'messagerie'" class="animate-fade-in-up">
+          <app-team-chat
+            *ngIf="staff?.sportType && (staff?.assignedCategory || staff?.category)"
+            [sportType]="staff.sportType"
+            [category]="staff.assignedCategory || staff.category">
+          </app-team-chat>
+          <p *ngIf="!staff?.sportType || !(staff?.assignedCategory || staff?.category)"
+             class="text-center text-ink-tertiary py-12">
+            Affectation en attente — la messagerie s'activera dès que votre
+            fiche staff sera rattachée à une discipline et une catégorie.
+          </p>
+        </section>
       </ng-container>
+
+      <!-- ═══ V1.2 — DRAWER CONVOCATION ═══ -->
+      <!-- Slide-over qui s'ouvre au clic sur "Convoquer" d'un match. Le back
+           a déjà tout l'isolation discipline+catégorie : on ne propose que
+           les joueurs de /selectable. À la soumission, la feuille passe
+           PENDING côté back, l'ADMIN publie ensuite sur le site public. -->
+      <div *ngIf="selectedMatchId" class="fixed inset-0 z-50 flex justify-end">
+        <div class="absolute inset-0 bg-black/40" (click)="closeConvocation()"></div>
+        <div class="relative w-full max-w-2xl bg-white shadow-2xl flex flex-col animate-fade-in">
+          <header class="px-6 py-5 border-b border-paper-3 flex items-center justify-between">
+            <div>
+              <p class="text-[10px] uppercase tracking-widest text-ink-tertiary">Feuille de match</p>
+              <h3 class="font-display font-black text-xl text-ink-primary uppercase tracking-wider">
+                Convoquer joueurs
+              </h3>
+            </div>
+            <button (click)="closeConvocation()"
+                    class="w-9 h-9 rounded-full hover:bg-paper-2 flex items-center justify-center text-ink-secondary text-xl">×</button>
+          </header>
+
+          <!-- Compteurs rapides -->
+          <div class="px-6 py-3 bg-paper-1 border-b border-paper-3 flex items-center gap-4 text-sm">
+            <span class="px-3 py-1 rounded-full bg-green-100 text-green-800 font-bold">
+              {{ countTitulaires() }} titulaire{{ countTitulaires() > 1 ? 's' : '' }}
+            </span>
+            <span class="px-3 py-1 rounded-full bg-blue-100 text-blue-800 font-bold">
+              {{ countRemplacants() }} remplaçant{{ countRemplacants() > 1 ? 's' : '' }}
+            </span>
+            <span *ngIf="existingSheet.length > 0"
+                  class="ml-auto text-[11px] text-ink-tertiary italic">
+              {{ existingSheet.length }} convocation(s) déjà enregistrée(s) sur ce match
+            </span>
+          </div>
+
+          <div class="flex-1 overflow-y-auto px-6 py-4">
+            <p *ngIf="loadingConvocations" class="text-center text-ink-tertiary py-12">
+              Chargement des joueurs sélectionnables…
+            </p>
+            <p *ngIf="!loadingConvocations && selectablePlayers.length === 0"
+               class="text-center text-ink-tertiary py-12">
+              Aucun joueur disponible pour ce match. Vérifiez que l'effectif de
+              votre catégorie est bien renseigné.
+            </p>
+
+            <ul *ngIf="!loadingConvocations && selectablePlayers.length > 0"
+                class="space-y-2">
+              <li *ngFor="let p of selectablePlayers"
+                  class="flex items-center gap-3 p-3 rounded-xl border border-paper-3 hover:bg-paper-1 transition-colors">
+                <div class="w-10 h-10 rounded-full bg-paper-2 border border-paper-3 flex items-center justify-center font-display font-bold text-ink-primary shrink-0">
+                  {{ p.shirtNumber ?? '?' }}
+                </div>
+                <div class="min-w-0 flex-1">
+                  <p class="font-bold text-ink-primary truncate">
+                    {{ p.fullName || (p.firstName + ' ' + p.lastName) }}
+                  </p>
+                  <p class="text-[11px] text-ink-tertiary">
+                    {{ p.position || '—' }}<span *ngIf="p.userId"> · id #{{ p.userId }}</span>
+                  </p>
+                </div>
+                <div class="flex gap-2 shrink-0">
+                  <button type="button"
+                          (click)="togglePlayerRole(p.userId, 'TITULAIRE')"
+                          [class.bg-green-600]="isPlayerSelected(p.userId, 'TITULAIRE')"
+                          [class.text-white]="isPlayerSelected(p.userId, 'TITULAIRE')"
+                          [class.text-ink-secondary]="!isPlayerSelected(p.userId, 'TITULAIRE')"
+                          class="px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider border border-paper-3 hover:bg-green-50 transition-colors">
+                    Titulaire
+                  </button>
+                  <button type="button"
+                          (click)="togglePlayerRole(p.userId, 'REMPLACANT')"
+                          [class.bg-blue-600]="isPlayerSelected(p.userId, 'REMPLACANT')"
+                          [class.text-white]="isPlayerSelected(p.userId, 'REMPLACANT')"
+                          [class.text-ink-secondary]="!isPlayerSelected(p.userId, 'REMPLACANT')"
+                          class="px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider border border-paper-3 hover:bg-blue-50 transition-colors">
+                    Remplaçant
+                  </button>
+                </div>
+              </li>
+            </ul>
+          </div>
+
+          <footer class="px-6 py-4 border-t border-paper-3 flex items-center justify-between gap-3">
+            <button type="button" (click)="closeConvocation()"
+                    class="px-4 py-2 rounded-xl text-ink-secondary hover:bg-paper-1 font-semibold">
+              Annuler
+            </button>
+            <div class="flex gap-2">
+              <button type="button" (click)="saveDraft()"
+                      [disabled]="convocationDraft.size === 0"
+                      class="px-4 py-2 rounded-xl border border-paper-3 text-ink-primary font-semibold hover:bg-paper-1 disabled:opacity-50">
+                💾 Enregistrer brouillon
+              </button>
+              <button type="button" (click)="submitSheet()"
+                      [disabled]="submittingSheet || convocationDraft.size === 0"
+                      class="px-5 py-2 rounded-xl bg-wydad-red text-white font-bold hover:bg-red-700 disabled:opacity-50">
+                <span *ngIf="!submittingSheet">📤 Soumettre à l'ADMIN</span>
+                <span *ngIf="submittingSheet">Envoi…</span>
+              </button>
+            </div>
+          </footer>
+        </div>
+      </div>
 
     </div>
   </div>

@@ -603,10 +603,36 @@
                        [ngClass]="auth.getCurrentUserId() == msg.senderUserId
                          ? 'bg-wydad-red/10 border-wydad-red/30'
                          : 'bg-paper-2 border-paper-3'">
-                    <p class="text-sm whitespace-pre-line break-words text-ink-primary">{{ msg.content }}</p>
+                    <p *ngIf="msg.content" class="text-sm whitespace-pre-line break-words text-ink-primary">{{ msg.content }}</p>
+                    <!-- V2.3 — pièce jointe (image affichée inline, ou lien pour les autres types).
+                         L'URL sécurisée est stockée par le serveur à l'envoi et reste valable ~1 h ;
+                         pour les conversations longues on pourra basculer sur /attachment/{id} qui
+                         renvoie une URL signée fraîche à la demande. -->
+                    <div *ngIf="msg.attachmentPublicId" class="mt-2">
+                      <img *ngIf="msg.attachmentResourceType === 'image' && msg.attachmentSecureUrl"
+                           [src]="msg.attachmentSecureUrl" alt="Pièce jointe"
+                           class="rounded-lg max-h-48 max-w-full border border-paper-3">
+                      <a *ngIf="msg.attachmentResourceType !== 'image' && msg.attachmentSecureUrl"
+                         [href]="msg.attachmentSecureUrl" target="_blank" rel="noopener"
+                         class="inline-flex items-center gap-2 text-xs text-wydad-red font-bold underline">
+                        <span>📎</span>
+                        <span>{{ msg.attachmentFileName || 'Pièce jointe' }}</span>
+                        <span *ngIf="msg.attachmentSizeBytes" class="text-ink-tertiary no-underline font-normal">
+                          ({{ (msg.attachmentSizeBytes / 1024) | number:'1.0-0' }} Ko)
+                        </span>
+                      </a>
+                      <p *ngIf="msg.attachmentResourceType !== 'image' && !msg.attachmentSecureUrl"
+                         class="text-xs text-ink-tertiary italic">📎 {{ msg.attachmentFileName || 'Pièce jointe' }}</p>
+                    </div>
                     <p class="text-[10px] uppercase tracking-widest text-ink-tertiary mt-1">{{ msg.createdAt | date:'dd/MM HH:mm' }}</p>
                   </div>
                 </div>
+              </div>
+              <!-- V2.3 — pièce jointe en attente -->
+              <div *ngIf="pendingAttachment" class="mb-2 flex items-center gap-2 px-3 py-2 rounded-xl bg-wydad-red/10 border border-wydad-red/30 text-xs">
+                <span>📎 {{ pendingAttachment.fileName }}</span>
+                <span class="text-ink-tertiary">({{ (pendingAttachment.sizeBytes / 1024) | number:'1.0-0' }} Ko)</span>
+                <button type="button" (click)="cancelAttachment()" class="ml-auto text-ink-tertiary hover:text-wydad-red" aria-label="Retirer la pièce jointe">✕</button>
               </div>
               <div class="flex gap-2">
                 <label class="sr-only" for="message-draft">Votre message</label>
@@ -614,7 +640,16 @@
                        (keyup.enter)="sendMessageToStaff()"
                        [placeholder]="conversationWith ? 'Écrire à ' + conversationWith.name + '…' : 'Écrire au staff de votre catégorie…'"
                        class="paper-input flex-1 rounded-xl px-4 py-3 text-sm">
-                <button (click)="sendMessageToStaff()" [disabled]="!messageDraft.trim() || sendingMessage"
+                <label class="bg-paper-2 hover:bg-paper-3 border border-paper-3 text-ink-secondary px-3 py-3 rounded-xl cursor-pointer flex items-center justify-center transition-colors"
+                       title="Joindre un fichier (max 10 Mo)"
+                       [class.opacity-50]="uploadingAttachment">
+                  <span *ngIf="!uploadingAttachment" aria-hidden="true">📎</span>
+                  <span *ngIf="uploadingAttachment" aria-hidden="true">⏳</span>
+                  <input type="file" class="hidden"
+                         accept="image/*,application/pdf,.doc,.docx,.txt"
+                         (change)="onAttachmentSelected($event)">
+                </label>
+                <button (click)="sendMessageToStaff()" [disabled]="(!messageDraft.trim() && !pendingAttachment) || sendingMessage"
                         class="bg-wydad-red hover:bg-wydad-red-dark disabled:opacity-40 text-white px-5 py-3 rounded-xl text-xs font-bold uppercase tracking-widest transition-colors">
                   {{ sendingMessage ? '…' : 'Envoyer' }}
                 </button>

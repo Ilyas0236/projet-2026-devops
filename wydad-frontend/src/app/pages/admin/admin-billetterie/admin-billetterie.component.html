@@ -40,6 +40,14 @@
             <span class="px-2 py-1 bg-wydad-red/20 text-wydad-red rounded text-[10px] font-bold uppercase">
               {{ event.eventType }} {{ event.category || '—' }}
             </span>
+            <!-- V1.1 — badge "Match calendrier" si l'event est adossé à un
+                 match officiel (matchId non null). Utile à l'admin pour
+                 retrouver l'origine côté site public. -->
+            <span *ngIf="event.matchId"
+                  class="ml-1 px-2 py-1 bg-blue-500/20 text-blue-300 rounded text-[10px] font-bold"
+                  title="Adossé au match calendrier #{{ event.matchId }}">
+              #{{ event.matchId }}
+            </span>
           </td>
           <td class="px-6 py-4 text-white font-bold">{{ event.basePrice }} DH</td>
           <td class="px-6 py-4">
@@ -80,6 +88,24 @@
     </div>
 
     <div class="admin-modal-body space-y-5">
+      <!-- V1.1 — option "Adosser à un match existant" : si l'admin a déjà
+           programmé le match dans la section Calendrier (content-service), il
+           peut le sélectionner ici. Les champs billetterie sont alors
+           pré-remplis (date, lieu, adversaire, compétition, discipline).
+           Sinon, il remplit librement (événement indépendant). -->
+      <div class="admin-field bg-wydad-red/5 border border-wydad-red/30 rounded-lg p-3">
+        <label class="admin-label !mb-1">📅 Adosser à un match du calendrier</label>
+        <select [(ngModel)]="newEvent.matchId" (change)="onMatchChange()" name="matchId" class="admin-input">
+          <option [ngValue]="null">— Aucun (événement libre) —</option>
+          <option *ngFor="let m of availableMatches" [ngValue]="m.id">
+            #{{ m.id }} · {{ m.date | date:'dd/MM/yyyy' }} {{ m.heure }} · {{ m.adversaire }} ({{ m.competition }})
+          </option>
+        </select>
+        <p class="text-[11px] text-gray-400 mt-1">
+          Sélectionner un match remplit automatiquement les champs ci-dessous. Vous gardez la main sur le prix et la capacité.
+        </p>
+      </div>
+
       <div class="grid grid-cols-2 gap-4">
         <div class="admin-field">
           <label class="admin-label">Équipe domicile<span class="req">*</span></label>
@@ -169,7 +195,7 @@
         <div *ngIf="isEdit && newEvent.sections && newEvent.sections.length > 0" class="space-y-2">
           <div *ngFor="let s of newEvent.sections"
                class="grid grid-cols-12 gap-2 items-center bg-white/5 border border-white/10 rounded px-3 py-2">
-            <div class="col-span-4">
+            <div class="col-span-3">
               <label class="text-[10px] text-gray-500 uppercase tracking-wider">Nom</label>
               <input type="text" [(ngModel)]="s.name" class="admin-input !py-1 text-sm">
             </div>
@@ -190,9 +216,61 @@
               <span class="text-[10px] text-gray-500 uppercase tracking-wider">Vendus</span>
               <div class="text-white text-sm font-bold">{{ (s.capacity || 0) - (s.availableSeats || 0) }}</div>
             </div>
+            <!-- V3.1 — suppression inline d'une section vide (refus si billets) -->
+            <div class="col-span-1 text-right">
+              <button type="button" (click)="deleteSection(s.id, s.name)"
+                      class="text-red-400 hover:text-red-300 text-xs font-bold uppercase"
+                      title="Supprimer cette section (refusé si billets vendus)">✕</button>
+            </div>
           </div>
           <p class="text-[10px] text-gray-500">
             La capacité ne peut pas être abaissée en dessous du nombre de billets déjà vendus.
+          </p>
+        </div>
+
+        <!-- V3.1 — bouton d'ajout d'une section (uniquement en mode édition) -->
+        <div *ngIf="isEdit" class="mt-3 flex justify-end">
+          <button type="button" *ngIf="!showAddSection" (click)="openAddSection()"
+                  class="text-xs bg-wydad-red/20 hover:bg-wydad-red/30 text-wydad-red px-3 py-1.5 rounded uppercase font-bold tracking-wider transition-colors">
+            + Ajouter une section
+          </button>
+        </div>
+
+        <!-- V3.1 — formulaire d'ajout d'une section -->
+        <div *ngIf="showAddSection"
+             class="mt-2 bg-wydad-red/5 border border-wydad-red/30 rounded p-3 space-y-2">
+          <div class="grid grid-cols-12 gap-2">
+            <div class="col-span-4">
+              <label class="text-[10px] text-gray-400 uppercase tracking-wider">Nom de la section</label>
+              <input type="text" [(ngModel)]="newSection.name" class="admin-input !py-1 text-sm" placeholder="ex : Virage Sud">
+            </div>
+            <div class="col-span-2">
+              <label class="text-[10px] text-gray-400 uppercase tracking-wider">Catégorie</label>
+              <select [(ngModel)]="newSection.category" class="admin-input !py-1 text-sm">
+                <option *ngFor="let c of sectionCategories" [value]="c">{{ c }}</option>
+              </select>
+            </div>
+            <div class="col-span-2">
+              <label class="text-[10px] text-gray-400 uppercase tracking-wider">Capacité</label>
+              <input type="number" min="1" [(ngModel)]="newSection.capacity" class="admin-input !py-1 text-sm">
+            </div>
+            <div class="col-span-2">
+              <label class="text-[10px] text-gray-400 uppercase tracking-wider">Prix (DH)</label>
+              <input type="number" min="0.01" step="0.01" [(ngModel)]="newSection.price" class="admin-input !py-1 text-sm">
+            </div>
+            <div class="col-span-2 flex items-end gap-1">
+              <button type="button" (click)="createSection()"
+                      class="bg-wydad-red hover:bg-red-700 text-white text-xs px-3 py-1.5 rounded uppercase font-bold tracking-wider">
+                Créer
+              </button>
+              <button type="button" (click)="cancelAddSection()"
+                      class="text-gray-400 hover:text-white text-xs px-2 py-1.5 uppercase font-bold tracking-wider">
+                Annuler
+              </button>
+            </div>
+          </div>
+          <p class="text-[10px] text-gray-500">
+            La catégorie doit être unique sur ce match (refus 409 sinon).
           </p>
         </div>
       </div>

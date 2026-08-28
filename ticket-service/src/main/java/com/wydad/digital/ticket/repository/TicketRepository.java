@@ -21,6 +21,8 @@ public interface TicketRepository extends JpaRepository<Ticket, Long> {
     Optional<Ticket> findByTicketNumber(String ticketNumber);
     Optional<Ticket> findByQrCodeData(String qrCodeData);
     long countByEventIdAndStatus(Long eventId, TicketStatus status);
+    /** V3.1 — Compte les billets d'une section pour bloquer la suppression. */
+    long countBySectionId(Long sectionId);
 
     /** Un joueur n'a qu'une salve VIP par événement : base de l'idempotence. */
     boolean existsByEventIdAndUserIdAndCategory(Long eventId, Long userId, TicketCategory category);

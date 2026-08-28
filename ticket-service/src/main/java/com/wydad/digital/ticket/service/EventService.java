@@ -8,6 +8,7 @@ import com.wydad.digital.ticket.model.Event;
 import com.wydad.digital.ticket.model.Section;
 import com.wydad.digital.ticket.repository.EventRepository;
 import com.wydad.digital.ticket.repository.SectionRepository;
+import com.wydad.digital.ticket.repository.TicketRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -22,6 +23,7 @@ public class EventService {
 
     private final EventRepository eventRepository;
     private final SectionRepository sectionRepository;
+    private final TicketRepository ticketRepository;
     private final VipTicketService vipTicketService;
 
     @Transactional
@@ -42,6 +44,11 @@ public class EventService {
                 .totalCapacity(request.getTotalCapacity())
                 .availableSeats(request.getTotalCapacity())
                 .posterUrl(request.getPosterUrl())
+                // V1.1 — FK logique vers le match de calendrier (content-service).
+                // On ne valide pas l'existence ici : l'admin saisit un id qu'il
+                // a copié/choisi dans le sélecteur, et un match supprimé laisse
+                // juste la valeur orpheline (dégradation douce, pas de 500).
+                .matchId(request.getMatchId())
                 .build();
 
         event = eventRepository.save(event);
@@ -133,6 +140,12 @@ public class EventService {
         if (request.getExceptional() != null) {
             event.setExceptional(request.getExceptional());
         }
+        // V1.1 — matchId : un null explicite détache l'événement du match,
+        // un id non-null le ré-adosse. Si le champ est absent du payload
+        // (champ JSON omis), on conserve l'identique (cohérence avec le
+        // pattern PUT des autres champs optionnels).
+        // Note : on autorise setMatchId(null) pour permettre un "détachement".
+        event.setMatchId(request.getMatchId());
 
         // totalCapacity : ne jamais descendre sous le nombre de places déjà vendues
         if (request.getTotalCapacity() != null) {
@@ -254,6 +267,82 @@ public class EventService {
                 .build();
     }
 
+    /**
+     * V3.1 — Crée une section sur un événement EXISTANT (ADMIN).
+     * Utile pour ajouter une catégorie de billets a posteriori (ex. : ouvrir
+     * une section « VIRAGE » pour un match déjà planifié).
+     *
+     * <p>Si l'événement a déjà une section de la même catégorie, le service
+     * renvoie 409 via IllegalStateException — l'admin doit d'abord
+     * supprimer ou modifier la section existante.</p>
+     */
+    @Transactional
+    public SectionResponse createSection(Long eventId, SectionRequest req) {
+        Event event = eventRepository.findById(eventId)
+                .orElseThrow(() -> new EntityNotFoundException("Événement " + eventId + " introuvable"));
+        if (sectionRepository.findByEventIdAndCategory(eventId, req.getCategory()).isPresent()) {
+            throw new IllegalStateException(
+                    "L'événement a déjà une section " + req.getCategory()
+                    + " — modifiez ou supprimez l'existante avant d'en créer une nouvelle.");
+        }
+        Section section = Section.builder()
+                .name(req.getName().trim())
+                .category(req.getCategory())
+                .seatType(req.getSeatType() != null ? req.getSeatType() : SeatType.STANDARD)
+                .capacity(req.getCapacity())
+                .availableSeats(req.getCapacity())
+                .price(req.getPrice())
+                .event(event)
+                .build();
+        section = sectionRepository.save(section);
+        // Recalcule le totalCapacity de l'événement = somme des capacités.
+        event.setTotalCapacity(event.getSections().stream()
+                .mapToInt(sec -> sec.getCapacity() != null ? sec.getCapacity() : 0).sum());
+        event.setAvailableSeats(event.getSections().stream()
+                .mapToInt(sec -> sec.getAvailableSeats() != null ? sec.getAvailableSeats() : 0).sum());
+        eventRepository.save(event);
+        return SectionResponse.builder()
+                .id(section.getId())
+                .name(section.getName())
+                .category(section.getCategory())
+                .seatType(section.getSeatType())
+                .capacity(section.getCapacity())
+                .availableSeats(section.getAvailableSeats())
+                .price(section.getPrice())
+                .build();
+    }
+
+    /**
+     * V3.1 — Supprime une section (ADMIN).
+     *
+     * <p>Refus si la section a déjà des billets vendus (FK {@code tickets.
+     * section_id} + intégrité historique). On ne fait pas de soft-delete :
+     * un admin peut explicitement supprimer une section vide via l'UI.</p>
+     */
+    @Transactional
+    public void deleteSection(Long sectionId) {
+        Section s = sectionRepository.findById(sectionId)
+                .orElseThrow(() -> new EntityNotFoundException("Section " + sectionId + " introuvable"));
+        long sold = ticketRepository.countBySectionId(sectionId);
+        if (sold > 0) {
+            throw new IllegalStateException(
+                    "Impossible de supprimer la section : " + sold
+                    + " billet(s) y sont rattachés. Annulez d'abord les billets ou modifiez la capacité à 0.");
+        }
+        Event event = s.getEvent();
+        sectionRepository.delete(s);
+        // Recalcule les totaux de l'événement après suppression.
+        if (event != null) {
+            int total = event.getSections().stream()
+                    .mapToInt(sec -> sec.getCapacity() != null ? sec.getCapacity() : 0).sum();
+            int available = event.getSections().stream()
+                    .mapToInt(sec -> sec.getAvailableSeats() != null ? sec.getAvailableSeats() : 0).sum();
+            event.setTotalCapacity(total);
+            event.setAvailableSeats(available);
+            eventRepository.save(event);
+        }
+    }
+
     private EventResponse mapToResponse(Event event) {
         List<SectionResponse> sections = event.getSections() != null
                 ? event.getSections().stream().map(s -> SectionResponse.builder()
@@ -289,6 +378,7 @@ public class EventService {
                 .adversaireLogoUrl(event.getAdversaireLogoUrl())
                 .sections(sections)
                 .createdAt(event.getCreatedAt())
+                .matchId(event.getMatchId())
                 .build();
     }
 }

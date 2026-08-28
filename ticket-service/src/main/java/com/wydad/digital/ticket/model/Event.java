@@ -90,4 +90,18 @@ public class Event {
 
     @CreationTimestamp private LocalDateTime createdAt;
     @UpdateTimestamp private LocalDateTime updatedAt;
+
+    /**
+     * V1.1 — FK logique vers la table {@code matches} de content-service (id
+     * uniquement, car les services sont indépendants : pas d'entité JPA
+     * croisée). Nullable : un événement de billetterie peut exister sans
+     * match de calendrier (ex. cérémonie, événement caritatif). L'admin
+     * renseigne ce champ quand il veut que la billetterie soit adossée à
+     * un match officiel (titre/date/lieu/adversaire seront alors pré-remplis
+     * depuis le match).
+     *
+     * <p>Migration manuelle : {@code ALTER TABLE events ADD COLUMN match_id BIGINT;
+     * CREATE INDEX idx_events_match ON events(match_id);}</p>
+     */
+    private Long matchId;
 }

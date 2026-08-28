@@ -178,19 +178,199 @@ public class PdfService {
     }
 
     /**
-     * Abonnement saisonnier WAC — carte A4 avec QR code d'accès au stade.
-     * Valable 15 matchs à domicile de la saison.
+     * Abonnement saisonnier WAC — carte d'accès au stade (format paysage
+     * type carte bancaire 85x54mm). Contient : nom/prénom de l'adhérent,
+     * code de plan, saison, validité, et QR code d'identification.
      *
-     * @return chemin de stockage du PDF (Cloudinary publicId ou local).
-     *         V1 : on retourne null + on stocke les bytes en base via le
-     *         service appelant si nécessaire. Le PDF complet sera uploadé
-     *         sur Cloudinary en V2.
+     * Le PDF est régénéré à la volée par l'endpoint
+     * {@code /api/auth/subscriptions/{id}/pdf} : pas de stockage Cloudinary
+     * (coût RAM VM 1 Go), les bytes sont calculés en quelques ms à partir
+     * des données persistées (UserSubscription.qrCodeBase64 + relations).
+     *
+     * @return chemin logique "subscription-{id}" (utilisé comme identifiant
+     *         dans UserSubscription.pdfPath pour audit)
      */
     public String generateSubscriptionPdf(UserSubscription sub, User user, String qrPayload) {
-        // V1 : on ne génère pas encore le PDF physique. Le QR code base64
-        // est déjà stocké sur UserSubscription.qrCodeBase64, suffisant pour
-        // le scan à l'entrée. On retournera un URL Cloudinary en V2.
-        // (Implémentation stub — voir tâche B.12-V2)
-        return "wydad://subscription/" + sub.getId();
+        // Signature historique : retourne un identifiant logique. Le PDF
+        // physique est généré par {@link #buildSubscriptionPdfBytes} au
+        // moment du téléchargement (cf. SubscriptionController).
+        return "subscription-" + sub.getId();
+    }
+
+    /**
+     * Génère les bytes PDF physiques de la carte d'abonnement à partir
+     * d'un UserSubscription persisté (donc avec qrCodeBase64 déjà en base).
+     * Utilisé par l'endpoint de téléchargement public-by-owner.
+     */
+    public byte[] buildSubscriptionPdfBytes(UserSubscription sub, User user) throws Exception {
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        // Format paysage carte bancaire (85x54mm = 240x153pt)
+        Document document = new Document(new RectangleReadOnly(360, 540));
+        PdfWriter.getInstance(document, outputStream);
+        document.open();
+
+        // Bande rouge supérieure — identité visuelle du club
+        Rectangle band = new Rectangle(0, 480, 360, 540);
+        band.setBackgroundColor(new Color(0xCC, 0x00, 0x00));
+        document.add(band);
+
+        Font clubFont = new Font(Font.HELVETICA, 14, Font.BOLD, Color.WHITE);
+        Paragraph club = new Paragraph("WYDAD ATHLETIC CLUB", clubFont);
+        club.setAlignment(Element.ALIGN_CENTER);
+        document.add(club);
+
+        Font subFont = new Font(Font.HELVETICA, 8, Font.NORMAL, Color.WHITE);
+        Paragraph subTitle = new Paragraph("CARTE ABONNEMENT SAISONNIER", subFont);
+        subTitle.setAlignment(Element.ALIGN_CENTER);
+        subTitle.setSpacingBefore(2);
+        document.add(subTitle);
+
+        document.add(Chunk.NEWLINE);
+
+        // Saison et plan
+        String planLabel = sub.getPlan() != null
+                ? sub.getPlan().getName() + " (" + sub.getPlan().getCode() + ")"
+                : (sub.getZoneCode() != null ? sub.getZoneCode().getDisplayName() : "—");
+        Font labelFont = new Font(Font.HELVETICA, 7, Font.BOLD, new Color(0x88, 0x88, 0x88));
+        Font valueFont = new Font(Font.HELVETICA, 11, Font.BOLD, new Color(0x1A, 0x1A, 0x2E));
+
+        Paragraph planLabelP = new Paragraph("FORMULE", labelFont);
+        planLabelP.setIndentationLeft(20);
+        document.add(planLabelP);
+        Paragraph planValueP = new Paragraph(planLabel, valueFont);
+        planValueP.setIndentationLeft(20);
+        planValueP.setSpacingAfter(8);
+        document.add(planValueP);
+
+        Paragraph nomLabel = new Paragraph("ADHÉRENT", labelFont);
+        nomLabel.setIndentationLeft(20);
+        document.add(nomLabel);
+        Paragraph nom = new Paragraph(user.getFirstName() + " " + user.getLastName(), valueFont);
+        nom.setIndentationLeft(20);
+        nom.setSpacingAfter(8);
+        document.add(nom);
+
+        Paragraph idLabel = new Paragraph("N° ADHÉRENT", labelFont);
+        idLabel.setIndentationLeft(20);
+        document.add(idLabel);
+        Paragraph idValue = new Paragraph(
+                "WAC-" + (user.getReferralCode() != null ? user.getReferralCode() : String.valueOf(user.getId())),
+                new Font(Font.HELVETICA, 11, Font.BOLD, new Color(0xCC, 0x00, 0x00)));
+        idValue.setIndentationLeft(20);
+        idValue.setSpacingAfter(8);
+        document.add(idValue);
+
+        Paragraph seasonLabel = new Paragraph("SAISON", labelFont);
+        seasonLabel.setIndentationLeft(20);
+        document.add(seasonLabel);
+        Paragraph seasonValue = new Paragraph(sub.getSeason(), valueFont);
+        seasonValue.setIndentationLeft(20);
+        seasonValue.setSpacingAfter(4);
+        document.add(seasonValue);
+
+        Paragraph validLabel = new Paragraph("VALIDITÉ", labelFont);
+        validLabel.setIndentationLeft(20);
+        document.add(validLabel);
+        Paragraph validValue = new Paragraph(
+                sub.getValidFrom().toLocalDate() + " → " + sub.getValidTo().toLocalDate(),
+                new Font(Font.HELVETICA, 9, Font.NORMAL, new Color(0x1A, 0x1A, 0x2E)));
+        validValue.setIndentationLeft(20);
+        document.add(validValue);
+
+        // QR code à droite : contient l'identité complète (cf. buildQrPayload)
+        if (sub.getQrCodeBase64() != null && !sub.getQrCodeBase64().isBlank()) {
+            try {
+                Image qr = Image.getInstance(java.util.Base64.getDecoder().decode(sub.getQrCodeBase64()));
+                qr.setAbsolutePosition(240, 80);
+                qr.scaleToFit(100, 100);
+                document.add(qr);
+            } catch (IllegalArgumentException e) {
+                // QR corrompu : on continue sans, l'identifiant texte reste valide
+            }
+        }
+
+        // Pied : référence interne
+        Font footFont = new Font(Font.HELVETICA, 6, Font.NORMAL, new Color(0x99, 0x99, 0x99));
+        Paragraph foot = new Paragraph(
+                "Carte n° WAC-SUB-" + sub.getId() + " · Document généré électroniquement — "
+                + "à présenter avec une pièce d'identité à l'entrée du stade.",
+                footFont);
+        foot.setAlignment(Element.ALIGN_CENTER);
+        foot.setSpacingBefore(40);
+        document.add(foot);
+
+        document.close();
+        return outputStream.toByteArray();
+    }
+
+    /**
+     * V2.2 — Facture PDF d'un abonnement saisonnier (vue "comptable" :
+     * A4, émetteur, ligne unique de prestation, total, mentions légales).
+     * Distincte de la carte d'abonnement (format carte bancaire 85x54mm).
+     */
+    public byte[] buildSubscriptionInvoicePdfBytes(UserSubscription sub, User user) throws Exception {
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        Document document = new Document(PageSize.A4);
+        PdfWriter.getInstance(document, outputStream);
+        document.open();
+
+        Font titleFont = new Font(Font.HELVETICA, 22, Font.BOLD, new Color(0xCC, 0x00, 0x00));
+        Paragraph club = new Paragraph("WYDAD ATHLETIC CLUB", titleFont);
+        club.setAlignment(Element.ALIGN_CENTER);
+        document.add(club);
+
+        Font subTitle = new Font(Font.HELVETICA, 14, Font.BOLD);
+        Paragraph invoiceTitle = new Paragraph("FACTURE", subTitle);
+        invoiceTitle.setAlignment(Element.ALIGN_CENTER);
+        document.add(invoiceTitle);
+
+        document.add(Chunk.NEWLINE);
+
+        Font label = new Font(Font.HELVETICA, 10, Font.BOLD);
+        Font value = new Font(Font.HELVETICA, 10, Font.NORMAL);
+
+        // Émetteur
+        document.add(new Paragraph("Wydad Athletic Club", label));
+        document.add(new Paragraph("Stade Mohammed V, Casablanca", value));
+        document.add(new Paragraph("Association — Maroc", value));
+        document.add(Chunk.NEWLINE);
+
+        // Bloc facture
+        document.add(new Paragraph("Facture n° : WAC-SUB-" + sub.getId(), label));
+        document.add(new Paragraph("Date : " + sub.getPaidAt().toLocalDate(), value));
+        document.add(new Paragraph("Saison : " + sub.getSeason(), value));
+        document.add(new Paragraph("Adhérent : " + user.getFirstName() + " " + user.getLastName()
+                + " (ID " + user.getId() + ")", value));
+        document.add(new Paragraph("Email : " + user.getEmail(), value));
+        document.add(Chunk.NEWLINE);
+
+        // Désignation
+        String planName = sub.getPlan() != null ? sub.getPlan().getName() : sub.getZoneCode().getDisplayName();
+        String planCode = sub.getPlan() != null ? sub.getPlan().getCode() : sub.getZoneCode().getCode();
+        document.add(new Paragraph("Abonnement saisonnier " + planName + " (" + planCode + ")", value));
+        document.add(new Paragraph("Validité : " + sub.getValidFrom().toLocalDate()
+                + " → " + sub.getValidTo().toLocalDate(), value));
+        document.add(new Paragraph("Référence paiement : " + sub.getTransactionRef(), value));
+        document.add(Chunk.NEWLINE);
+
+        // Total
+        Font totalFont = new Font(Font.HELVETICA, 12, Font.BOLD);
+        Paragraph total = new Paragraph("TOTAL TTC : " + sub.getPaidAmount() + " MAD", totalFont);
+        total.setAlignment(Element.ALIGN_RIGHT);
+        document.add(total);
+        document.add(new Paragraph("TVA non applicable — association loi 1901 / Maroc.", value));
+        document.add(Chunk.NEWLINE);
+
+        // Mentions
+        Font foot = new Font(Font.HELVETICA, 8, Font.NORMAL, new Color(0x99, 0x99, 0x99));
+        Paragraph mention = new Paragraph(
+                "Cette facture est générée électroniquement. Conservez-la comme justificatif "
+                + "de paiement. Référence interne : WAC-SUB-" + sub.getId() + ".",
+                foot);
+        mention.setAlignment(Element.ALIGN_CENTER);
+        document.add(mention);
+
+        document.close();
+        return outputStream.toByteArray();
     }
 }

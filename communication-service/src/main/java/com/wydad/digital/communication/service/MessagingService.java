@@ -38,20 +38,43 @@ public class MessagingService {
     private final AnnouncementRepository announcementRepository;
     private final RosterClient rosterClient;
     private final NotificationClient notificationClient;
+    private final MessageMediaService messageMediaService;
+
+    /** Pièce jointe optionnelle (V2.3). Tous champs nullables. */
+    public record Attachment(
+            String publicId,
+            String secureUrl,
+            String resourceType,
+            String fileName,
+            Long sizeBytes) {}
 
     // ─────────────────────────── MESSAGERIE ───────────────────────────
+
+    /** Surcharge rétro-compatible sans pièce jointe. */
+    @Transactional
+    public Message sendToStaffOrPlayer(Long recipientUserId, String content) {
+        return sendToStaffOrPlayer(recipientUserId, content, null);
+    }
 
     /**
      * Envoi d'un message. L'appariement autorisé est vérifié ici
      * (jamais côté client) selon le rôle de l'expéditeur.
+     *
+     * <p>Une pièce jointe est optionnelle : si {@code content} est vide
+     * mais qu'une {@code attachment} est fournie, on accepte (V2.3 — cas
+     * du partage de photo sans légende).</p>
      */
     @Transactional
-    public Message sendToStaffOrPlayer(Long recipientUserId, String content) {
+    public Message sendToStaffOrPlayer(Long recipientUserId, String content, Attachment attachment) {
         Long me = requireCurrentUserId();
         String myRole = UserContext.getCurrentUserRole();
-        if (content == null || content.isBlank()) {
-            throw new IllegalArgumentException("Le message ne peut pas être vide");
+        boolean hasContent = content != null && !content.isBlank();
+        boolean hasAttachment = attachment != null && attachment.publicId() != null
+                && !attachment.publicId().isBlank();
+        if (!hasContent && !hasAttachment) {
+            throw new IllegalArgumentException("Le message et la pièce jointe sont tous deux vides");
         }
+        String trimmedContent = hasContent ? content.trim() : "";
         if (recipientUserId.equals(me)) {
             throw new IllegalArgumentException("Impossible de s'écrire à soi-même");
         }
@@ -98,7 +121,12 @@ public class MessagingService {
                 .senderName(resolveName(me, myRole, mine))
                 .senderRole(myRole)
                 .recipientUserId(recipientUserId)
-                .content(content.trim())
+                .content(trimmedContent)
+                .attachmentPublicId(hasAttachment ? attachment.publicId() : null)
+                .attachmentSecureUrl(hasAttachment ? attachment.secureUrl() : null)
+                .attachmentResourceType(hasAttachment ? attachment.resourceType() : null)
+                .attachmentFileName(hasAttachment ? attachment.fileName() : null)
+                .attachmentSizeBytes(hasAttachment ? attachment.sizeBytes() : null)
                 .build());
 
         notifyRecipient(saved);

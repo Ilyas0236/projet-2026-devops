@@ -37,4 +37,12 @@ public class CreateEventRequest {
      * "non-exceptionnel" par défaut).
      */
     private Boolean exceptional;
+    /**
+     * V1.1 — Référence logique (id) au match de calendrier dans
+     * content-service. Nullable. L'admin peut soit créer un événement
+     * "indépendant" (cérémonie, gala), soit l'adosser à un match existant :
+     * dans ce second cas, le front pré-remplit titre/date/lieu/adversaire
+     * depuis {@code GET /api/content/matches}.
+     */
+    private Long matchId;
 }

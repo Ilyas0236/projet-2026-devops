@@ -32,10 +32,31 @@ function forceLogout(auth: AuthService, router: Router): void {
   router.navigate(['/login']);
 }
 
+/** Lit le token SANS déclencher de 401. Retourne null si expiré/absent/illisible. */
+function readValidToken(): string | null {
+  const t = localStorage.getItem('wydad_token');
+  if (!t) return null;
+  try {
+    const payload = JSON.parse(atob(t.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+    if (payload?.exp && payload.exp * 1000 < Date.now()) {
+      // Token expiré : on le purge et on continue SANS Bearer, comme
+      // un visiteur non authentifié. C'est ce qui évite la redirection
+      // systématique vers /login sur les pages publiques (matchs, …).
+      ['wydad_token', 'wydad_refresh_token', 'wydad_email',
+       'wydad_first_name', 'wydad_last_name', 'wydad_role', 'wydad_user_id']
+        .forEach((k) => localStorage.removeItem(k));
+      return null;
+    }
+  } catch {
+    return null;
+  }
+  return t;
+}
+
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const auth = inject(AuthService);
   const router = inject(Router);
-  let token = localStorage.getItem('wydad_token');
+  const token = readValidToken();
 
   // Les appels d'authentification partent toujours sans Bearer et ne
   // déclenchent jamais de refresh (sinon boucle infinie).

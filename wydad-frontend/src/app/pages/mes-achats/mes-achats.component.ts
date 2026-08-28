@@ -38,6 +38,14 @@ export class MesAchatsComponent implements OnInit {
   // QR pour billets
   private qrObjectUrls: Record<number, string> = {};
   downloadingId: number | null = null;
+  downloadingInvoiceTicketId: number | null = null;
+
+  // V2.1 — téléchargement carte abonnement PDF
+  downloadingSubId: number | null = null;
+  downloadingSubInvoiceId: number | null = null;
+
+  // V2.2 — téléchargement facture commande boutique
+  downloadingOrderInvoiceNumber: string | null = null;
 
   api = inject(ApiService);
   auth = inject(AuthService);
@@ -110,7 +118,88 @@ export class MesAchatsComponent implements OnInit {
     });
   }
 
+  /** V2.2 — Facture PDF d'un billet (vue "comptable"). */
+  downloadTicketInvoice(ticketId: number, ticketNumber: string) {
+    this.downloadingInvoiceTicketId = ticketId;
+    this.api.getTicketInvoice(ticketId).subscribe({
+      next: (blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `facture-billet-${ticketNumber}.pdf`;
+        a.click();
+        window.URL.revokeObjectURL(url);
+        this.downloadingInvoiceTicketId = null;
+      },
+      error: () => { this.toast.error('Facture indisponible.'); this.downloadingInvoiceTicketId = null; }
+    });
+  }
+
   // --- Abonnement ---
+
+  /**
+   * V2.1 — Téléchargement de la carte d'abonnement (PDF paysage + QR).
+   * Le back régénère le PDF à la volée à partir des données persistées
+   * (qrCodeBase64 + plan/user), pas de stockage Cloudinary.
+   */
+  downloadSubscriptionPdf(subscriptionId: number) {
+    this.downloadingSubId = subscriptionId;
+    this.api.getSubscriptionPdf(subscriptionId).subscribe({
+      next: (blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `carte-abonnement-wac-${subscriptionId}.pdf`;
+        a.click();
+        window.URL.revokeObjectURL(url);
+        this.downloadingSubId = null;
+      },
+      error: () => {
+        this.toast.error('Téléchargement de la carte impossible.');
+        this.downloadingSubId = null;
+      }
+    });
+  }
+
+  /** V2.2 — Facture PDF d'un abonnement saisonnier. */
+  downloadSubscriptionInvoice(subscriptionId: number) {
+    this.downloadingSubInvoiceId = subscriptionId;
+    this.api.getSubscriptionInvoice(subscriptionId).subscribe({
+      next: (blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `facture-abonnement-wac-${subscriptionId}.pdf`;
+        a.click();
+        window.URL.revokeObjectURL(url);
+        this.downloadingSubInvoiceId = null;
+      },
+      error: () => {
+        this.toast.error('Facture d\'abonnement indisponible.');
+        this.downloadingSubInvoiceId = null;
+      }
+    });
+  }
+
+  /** V2.2 — Facture PDF d'une commande boutique. */
+  downloadOrderInvoice(orderNumber: string) {
+    this.downloadingOrderInvoiceNumber = orderNumber;
+    this.api.getOrderInvoice(orderNumber).subscribe({
+      next: (blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `facture-${orderNumber}.pdf`;
+        a.click();
+        window.URL.revokeObjectURL(url);
+        this.downloadingOrderInvoiceNumber = null;
+      },
+      error: () => {
+        this.toast.error('Facture de commande indisponible.');
+        this.downloadingOrderInvoiceNumber = null;
+      }
+    });
+  }
 
   totalSaved(): number {
     if (!this.activeSubscription) return 0;

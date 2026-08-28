@@ -61,6 +61,28 @@ export class ApiService {
   }
 
   /**
+   * V2.1 — Carte d'abonnement PDF (paysage 85x54mm) avec QR code d'accès
+   * au stade. Régénéré à la volée côté back, le front n'a qu'à le télécharger.
+   */
+  getSubscriptionPdf(subscriptionId: number): Observable<Blob> {
+    return this.http.get(
+      `${this.baseUrl}/auth/subscriptions/${subscriptionId}/pdf`,
+      { responseType: 'blob' }
+    );
+  }
+
+  /**
+   * V2.2 — Facture PDF d'un abonnement saisonnier (vue "comptable"
+   * A4 distincte de la carte d'accès). Régénérée à la volée.
+   */
+  getSubscriptionInvoice(subscriptionId: number): Observable<Blob> {
+    return this.http.get(
+      `${this.baseUrl}/auth/subscriptions/${subscriptionId}/invoice`,
+      { responseType: 'blob' }
+    );
+  }
+
+  /**
    * Achat via paiement carte SIMULÉ. Le champ d'identification est
    * désormais {@code planCode} (code du plan, ex. "VIP") et non plus
    * {@code zoneCode} (valeur d'enum).
@@ -364,6 +386,18 @@ export class ApiService {
     return this.http.get<any>(`${this.baseUrl}/shop/orders/${orderNumber}`);
   }
 
+  /**
+   * V2.2 — Facture PDF d'une commande boutique (vue "comptable" A4,
+   * distincte du bordereau de livraison). Régénérée à la volée.
+   * La garde d'ownership est faite côté back (X-User-Email).
+   */
+  getOrderInvoice(orderNumber: string): Observable<Blob> {
+    return this.http.get(
+      `${this.baseUrl}/shop/orders/${orderNumber}/invoice`,
+      { responseType: 'blob' }
+    );
+  }
+
   /** Toutes les commandes (réservé ADMIN) */
   getAllOrders(): Observable<any> {
     return this.http.get<any>(`${this.baseUrl}/shop/orders/all`);
@@ -421,6 +455,24 @@ export class ApiService {
     return this.http.patch<any>(`${this.baseUrl}/ticket/sections/${sectionId}`, patch);
   }
 
+  /**
+   * V3.1 — création d'une section sur un événement existant (ADMIN).
+   * Refus si la catégorie est déjà présente (409 côté back).
+   */
+  createSection(eventId: number, body: { name: string; category: string; capacity: number; price: number; seatType?: string }): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/ticket/sections`, body, {
+      params: new HttpParams().set('eventId', String(eventId))
+    });
+  }
+
+  /**
+   * V3.1 — suppression d'une section (ADMIN). Refus si la section a des
+   * billets vendus (409 côté back).
+   */
+  deleteSection(sectionId: number): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/ticket/sections/${sectionId}`);
+  }
+
   purchaseTickets(purchaseRequest: any): Observable<any[]> {
     return this.http.post<any[]>(`${this.baseUrl}/ticket/tickets/purchase`, purchaseRequest);
   }
@@ -435,6 +487,14 @@ export class ApiService {
 
   getTicketPdf(ticketId: number): Observable<Blob> {
     return this.http.get(`${this.baseUrl}/ticket/tickets/${ticketId}/pdf`, { responseType: 'blob' });
+  }
+
+  /**
+   * V2.2 — Facture PDF d'un billet (vue "comptable" A4, distincte
+   * du billet d'entrée avec QR). Régénérée à la volée.
+   */
+  getTicketInvoice(ticketId: number): Observable<Blob> {
+    return this.http.get(`${this.baseUrl}/ticket/tickets/${ticketId}/invoice`, { responseType: 'blob' });
   }
 
   /** QR code genere cote backend (zxing) — aucun service externe. */
@@ -706,9 +766,57 @@ export class ApiService {
   // ==========================================
   // MESSAGERIE ET ANNONCES (B.5)
   // ==========================================
-  sendMessage(toUserId: number, content: string): Observable<any> {
+  sendMessage(
+    toUserId: number,
+    content: string,
+    attachment?: {
+      publicId: string;
+      secureUrl: string;
+      resourceType: string;
+      fileName: string;
+      sizeBytes: number;
+    }
+  ): Observable<any> {
     const params = new HttpParams().set('toUserId', String(toUserId));
-    return this.http.post<any>(`${this.baseUrl}/sports/messaging/send`, { content }, { params });
+    const body = attachment
+      ? {
+          content,
+          attachmentPublicId: attachment.publicId,
+          attachmentSecureUrl: attachment.secureUrl,
+          attachmentResourceType: attachment.resourceType,
+          attachmentFileName: attachment.fileName,
+          attachmentSizeBytes: attachment.sizeBytes
+        }
+      : { content };
+    return this.http.post<any>(`${this.baseUrl}/sports/messaging/send`, body, { params });
+  }
+
+  /**
+   * V2.3 — upload d'une pièce jointe de message (image / PDF / doc,
+   * max 10 Mo). Renvoie les métadonnées à passer ensuite à
+   * {@link sendMessage}.
+   */
+  uploadMessageAttachment(file: File): Observable<{
+    publicId: string;
+    secureUrl: string;
+    resourceType: string;
+    fileName: string;
+    sizeBytes: number;
+    cloud: boolean;
+  }> {
+    const fd = new FormData();
+    fd.append('file', file);
+    return this.http.post<any>(`${this.baseUrl}/sports/messaging/upload`, fd);
+  }
+
+  /**
+   * V2.3 — récupère une URL signée fraîche (1 h) pour afficher /
+   * télécharger une pièce jointe d'un message dont on est participant.
+   */
+  getMessageAttachmentUrl(messageId: number): Observable<{ url: string; resourceType: string }> {
+    return this.http.get<{ url: string; resourceType: string }>(
+      `${this.baseUrl}/sports/messaging/attachment/${messageId}`
+    );
   }
 
   getConversation(otherUserId: number): Observable<any[]> {

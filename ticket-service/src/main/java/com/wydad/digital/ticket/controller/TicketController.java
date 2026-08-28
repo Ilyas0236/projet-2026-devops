@@ -109,6 +109,23 @@ public class TicketController {
         return new ResponseEntity<>(pdf, headers, HttpStatus.OK);
     }
 
+    /**
+     * V2.2 — Facture PDF du billet (vue "comptable" : pas de QR, ligne
+     * unique, totaux, mentions). Même protection d'ownership que /pdf.
+     */
+    @GetMapping("/{ticketId}/invoice")
+    public ResponseEntity<byte[]> downloadTicketInvoice(@PathVariable Long ticketId) {
+        Ticket ticket = ticketRepository.findById(ticketId)
+                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException("Billet non trouvé"));
+        assertOwnership(ticket.getUserId());
+        byte[] pdf = ticketPdfService.generateInvoicePdf(ticket);
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_PDF);
+        headers.setContentDisposition(ContentDisposition.attachment()
+                .filename("facture-" + ticket.getTicketNumber() + ".pdf").build());
+        return new ResponseEntity<>(pdf, headers, HttpStatus.OK);
+    }
+
     /** Un utilisateur ne peut accéder qu'à ses billets ; ADMIN autorisé. */
     private void assertOwnership(Long ticketOwnerId) {
         if (!UserContext.isAdmin() && !ticketOwnerId.equals(UserContext.getCurrentUserId())) {

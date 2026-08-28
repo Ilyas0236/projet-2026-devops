@@ -3,6 +3,12 @@ package com.wydad.digital.auth.controller.subscription;
 import com.wydad.digital.auth.dto.subscription.PurchaseSubscriptionRequest;
 import com.wydad.digital.auth.dto.subscription.SubscriptionResponse;
 import com.wydad.digital.auth.dto.subscription.SubscriptionZoneResponse;
+import com.wydad.digital.auth.exception.UserNotFoundException;
+import com.wydad.digital.auth.model.User;
+import com.wydad.digital.auth.model.subscription.UserSubscription;
+import com.wydad.digital.auth.repository.UserRepository;
+import com.wydad.digital.auth.repository.subscription.UserSubscriptionRepository;
+import com.wydad.digital.auth.service.PdfService;
 import com.wydad.digital.auth.service.subscription.SubscriptionService;
 import com.wydad.digital.auth.util.JwtUtils;
 import jakarta.servlet.http.HttpServletRequest;
@@ -10,9 +16,11 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -24,6 +32,9 @@ public class SubscriptionController {
 
     private final SubscriptionService subscriptionService;
     private final JwtUtils jwtUtils;
+    private final UserSubscriptionRepository subscriptionRepository;
+    private final UserRepository userRepository;
+    private final PdfService pdfService;
 
     /**
      * Catalogue public des zones d'abonnement.
@@ -103,6 +114,78 @@ public class SubscriptionController {
             org.springframework.data.domain.Pageable pageable) {
         return subscriptionService.adminFilter(
                 startDate, endDate, userEmail, pageable);
+    }
+
+    /**
+     * Téléchargement de la carte d'abonnement (PDF carte bancaire 85x54mm)
+     * avec QR code d'accès au stade. Sécurisé par JWT : un utilisateur ne
+     * peut télécharger que SES abonnements (sauf ADMIN qui peut tout voir).
+     */
+    @GetMapping(value = "/{id}/pdf", produces = MediaType.APPLICATION_PDF_VALUE)
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<byte[]> downloadSubscriptionPdf(
+            @PathVariable Long id,
+            HttpServletRequest httpRequest) {
+        UserSubscription sub = loadOwnedSubscription(id, httpRequest);
+        // Génération à la volée (PDF bytes non stockés — économie RAM VM 1 Go)
+        try {
+            User owner = userRepository.findById(sub.getUser().getId())
+                    .orElseThrow(() -> new UserNotFoundException(sub.getUser().getEmail()));
+            byte[] pdf = pdfService.buildSubscriptionPdfBytes(sub, owner);
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_PDF);
+            headers.setContentDispositionFormData("attachment",
+                    "carte-abonnement-wac-" + sub.getId() + ".pdf");
+            return new ResponseEntity<>(pdf, headers, HttpStatus.OK);
+        } catch (Exception e) {
+            throw new ResponseStatusException(
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Impossible de générer la carte d'abonnement.");
+        }
+    }
+
+    /**
+     * V2.2 — Facture PDF d'un abonnement saisonnier (vue "comptable" A4,
+     * distincte de la carte d'accès). Mêmes protections d'ownership que /pdf.
+     */
+    @GetMapping(value = "/{id}/invoice", produces = MediaType.APPLICATION_PDF_VALUE)
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<byte[]> downloadSubscriptionInvoice(
+            @PathVariable Long id,
+            HttpServletRequest httpRequest) {
+        UserSubscription sub = loadOwnedSubscription(id, httpRequest);
+        try {
+            User owner = userRepository.findById(sub.getUser().getId())
+                    .orElseThrow(() -> new UserNotFoundException(sub.getUser().getEmail()));
+            byte[] pdf = pdfService.buildSubscriptionInvoicePdfBytes(sub, owner);
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_PDF);
+            headers.setContentDispositionFormData("attachment",
+                    "facture-abonnement-wac-" + sub.getId() + ".pdf");
+            return new ResponseEntity<>(pdf, headers, HttpStatus.OK);
+        } catch (Exception e) {
+            throw new ResponseStatusException(
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Impossible de générer la facture d'abonnement.");
+        }
+    }
+
+    /**
+     * Charge un UserSubscription par id en vérifiant que l'appelant en est
+     * le propriétaire (ou ADMIN). Centralise la protection IDOR partagée
+     * entre /pdf et /invoice.
+     */
+    private UserSubscription loadOwnedSubscription(Long id, HttpServletRequest httpRequest) {
+        String email = emailFromHeader(httpRequest);
+        UserSubscription sub = subscriptionRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Abonnement introuvable : id=" + id));
+        boolean isAdmin = httpRequest.isUserInRole("ADMIN");
+        if (!isAdmin && !sub.getUser().getEmail().equalsIgnoreCase(email)) {
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN, "Vous n'avez pas accès à cet abonnement.");
+        }
+        return sub;
     }
 
     private String emailFromHeader(HttpServletRequest httpRequest) {

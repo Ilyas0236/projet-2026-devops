@@ -14,6 +14,8 @@ import { ConfirmService } from '../../../services/confirm.service';
 export class AdminBilletterieComponent implements OnInit {
   events: any[] = [];
   competitions: any[] = [];
+  /** V1.1 — matchs de calendrier (content-service) proposés comme base billetterie. */
+  availableMatches: any[] = [];
   loading = true;
   showModal = false;
   isEdit = false;
@@ -33,7 +35,12 @@ export class AdminBilletterieComponent implements OnInit {
       adversaireLogoUrl: '',
       basePrice: 50,
       totalCapacity: 45000,
-      sections: []
+      sections: [],
+      // V1.1 — référence optionnelle à un match du calendrier.
+      // Si l'admin programme la billetterie d'un match existant, ce champ
+      // est rempli avec l'id du match : titre/date/lieu/adversaire sont
+      // alors pré-remplis automatiquement (cf. onMatchChange()).
+      matchId: null as number | null
     };
   }
 
@@ -49,7 +56,39 @@ export class AdminBilletterieComponent implements OnInit {
       next: (data) => this.competitions = Array.isArray(data) ? data : [],
       error: () => this.competitions = []
     });
+    // V1.1 — on charge les matchs de calendrier (content-service) pour le
+    // sélecteur "Adosser à un match existant". Si l'API n'est pas joignable,
+    // on laisse la liste vide : l'admin peut toujours créer un événement
+    // "indépendant" (matchId = null).
+    this.api.getMatches().subscribe({
+      next: (data) => this.availableMatches = Array.isArray(data) ? data : [],
+      error: () => this.availableMatches = []
+    });
     this.loadEvents();
+  }
+
+  /**
+   * V1.1 — Quand l'admin choisit un match existant dans le sélecteur, on
+   * pré-remplit les champs billetterie avec ses métadonnées (date, lieu,
+   * adversaire, compétition, discipline, catégorie). L'admin peut ensuite
+   * corriger le prix de base et la capacité. Le titre reste libre (le back
+   * le reconstitue à la sauvegarde : "Wydad AC vs Adversaire").
+   */
+  onMatchChange() {
+    if (!this.newEvent.matchId) return;
+    const m = this.availableMatches.find(x => x.id === Number(this.newEvent.matchId));
+    if (!m) return;
+    this.newEvent.homeTeam = 'Wydad AC';
+    this.newEvent.awayTeam = m.adversaire || this.newEvent.awayTeam;
+    this.newEvent.venue = m.lieu || this.newEvent.venue;
+    this.newEvent.competition = m.competition || this.newEvent.competition;
+    this.newEvent.eventType = (m.sport || 'FOOTBALL').toUpperCase();
+    this.newEvent.category = (m.categorie || 'SENIOR').toUpperCase();
+    this.newEvent.adversaireLogoUrl = m.adversaireLogoUrl || this.newEvent.adversaireLogoUrl;
+    if (m.date) {
+      const time = m.heure ? String(m.heure).slice(0, 5) : '20:00';
+      this.newEvent.eventDate = `${m.date}T${time}`;
+    }
   }
 
   loadEvents() {
@@ -88,7 +127,9 @@ export class AdminBilletterieComponent implements OnInit {
       adversaireLogoUrl: event.adversaireLogoUrl || '',
       basePrice: event.basePrice,
       totalCapacity: event.totalCapacity,
-      sections: event.sections || []
+      sections: event.sections || [],
+      // V1.1 — conserve la FK au match de calendrier lors d'une édition.
+      matchId: event.matchId ?? null
     };
     this.showModal = true;
   }
@@ -206,6 +247,94 @@ export class AdminBilletterieComponent implements OnInit {
       error: (err) => {
         console.error('Erreur suppression', err);
         this.toast.error(err.error?.message || 'Erreur lors de l\'annulation du match.');
+      }
+    });
+  }
+
+  // ─────────── V3.1 — CRUD sections billetterie (admin) ───────────
+
+  /** Catégories proposées pour une nouvelle section. */
+  readonly sectionCategories = ['STANDARD', 'VIP', 'TRIBUNE', 'ULTRA', 'VIRAGE'];
+
+  /** Formulaire d'une nouvelle section (rempli à partir de "Ajouter section"). */
+  newSection: any = this.emptySection();
+  showAddSection = false;
+
+  emptySection() {
+    return {
+      name: '',
+      category: 'STANDARD',
+      capacity: 100,
+      price: 50
+    };
+  }
+
+  openAddSection() {
+    this.newSection = this.emptySection();
+    this.showAddSection = true;
+  }
+
+  cancelAddSection() {
+    this.showAddSection = false;
+  }
+
+  /** V3.1 — POST /api/ticket/sections?eventId=... */
+  createSection() {
+    if (!this.editingId) {
+      this.toast.error('Aucun événement sélectionné.');
+      return;
+    }
+    if (!this.newSection.name?.trim() || !this.newSection.capacity || !this.newSection.price) {
+      this.toast.error('Nom, capacité et prix sont obligatoires.');
+      return;
+    }
+    this.api.createSection(this.editingId, {
+      name: this.newSection.name.trim(),
+      category: this.newSection.category,
+      capacity: Number(this.newSection.capacity),
+      price: Number(this.newSection.price)
+    }).subscribe({
+      next: () => {
+        this.toast.success('Section ajoutée.');
+        this.showAddSection = false;
+        // On recharge l'événement complet pour rafraîchir la grille.
+        this.api.getEventById(this.editingId!).subscribe({
+          next: (fullEvent) => {
+            this.newEvent.sections = fullEvent.sections || [];
+            this.newEvent.totalCapacity = fullEvent.totalCapacity;
+          },
+          error: () => {/* silencieux : on n'a pas réussi à rafraîchir */}
+        });
+      },
+      error: (err) => {
+        this.toast.error(err.error?.message || 'Erreur lors de l\'ajout de la section.');
+      }
+    });
+  }
+
+  /** V3.1 — DELETE /api/ticket/sections/{id} (refus si billets vendus). */
+  async deleteSection(sectionId: number, sectionName: string) {
+    const ok = await this.confirm.confirm({
+      title: 'Supprimer la section',
+      message: `Supprimer la section « ${sectionName} » ? Action impossible si des billets y sont rattachés.`,
+      confirmLabel: 'Supprimer',
+      danger: true
+    });
+    if (!ok) return;
+    this.api.deleteSection(sectionId).subscribe({
+      next: () => {
+        this.toast.success('Section supprimée.');
+        if (this.editingId) {
+          this.api.getEventById(this.editingId).subscribe({
+            next: (fullEvent) => {
+              this.newEvent.sections = fullEvent.sections || [];
+              this.newEvent.totalCapacity = fullEvent.totalCapacity;
+            }
+          });
+        }
+      },
+      error: (err) => {
+        this.toast.error(err.error?.message || 'Erreur lors de la suppression.');
       }
     });
   }

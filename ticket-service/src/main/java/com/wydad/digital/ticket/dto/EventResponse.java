@@ -41,4 +41,6 @@ public class EventResponse {
     private String adversaireLogoUrl;
     private List<SectionResponse> sections;
     private LocalDateTime createdAt;
+    /** V1.1 — id du match de calendrier (content-service) adossé à cet événement. */
+    private Long matchId;
 }

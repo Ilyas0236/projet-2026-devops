@@ -59,6 +59,12 @@ export class DashboardJoueurComponent implements OnInit {
   conversationWith: { id: number; name: string } | null = null;
   messageDraft = '';
   sendingMessage = false;
+  // V2.3 — pièce jointe en cours d'envoi
+  pendingAttachment: {
+    publicId: string; secureUrl: string; resourceType: string;
+    fileName: string; sizeBytes: number;
+  } | null = null;
+  uploadingAttachment = false;
 
   // Annonces visibles : club + ma catégorie (filtrage serveur)
   announcements: any[] = [];
@@ -323,22 +329,76 @@ export class DashboardJoueurComponent implements OnInit {
     this.conversationWith = null;
     this.conversation = [];
     this.messageDraft = '';
+    this.pendingAttachment = null;
+  }
+
+  /** V2.3 — sélection d'un fichier à joindre au prochain message. */
+  onAttachmentSelected(event: Event) {
+    const input = event.target as HTMLInputElement;
+    if (!input.files || input.files.length === 0) return;
+    const file = input.files[0];
+    if (file.size > 10 * 1024 * 1024) {
+      this.toast.error('Pièce jointe trop volumineuse (max. 10 Mo).');
+      input.value = '';
+      return;
+    }
+    this.uploadingAttachment = true;
+    this.api.uploadMessageAttachment(file).subscribe({
+      next: (res) => {
+        this.pendingAttachment = {
+          publicId: res.publicId,
+          secureUrl: res.secureUrl,
+          resourceType: res.resourceType,
+          fileName: res.fileName,
+          sizeBytes: res.sizeBytes
+        };
+        this.uploadingAttachment = false;
+        input.value = '';
+      },
+      error: (err) => {
+        this.toast.error(err?.error?.message || 'Upload impossible');
+        this.uploadingAttachment = false;
+        input.value = '';
+      }
+    });
+  }
+
+  /** V2.3 — annule la pièce jointe en attente. */
+  cancelAttachment() {
+    this.pendingAttachment = null;
+  }
+
+  /** V2.3 — récupère une URL signée fraîche pour afficher la pièce jointe. */
+  getAttachment(messageId: number, callback: (url: string) => void) {
+    this.api.getMessageAttachmentUrl(messageId).subscribe({
+      next: (r) => callback(r.url),
+      error: () => callback('')
+    });
   }
 
   sendMessageToStaff() {
-    if (!this.messageDraft.trim() || !this.conversationWith) { return; }
+    if (!this.conversationWith) { return; }
+    if (!this.messageDraft.trim() && !this.pendingAttachment) { return; }
     this.sendingMessage = true;
     const myId = Number(this.auth.getCurrentUserId());
-    this.api.sendMessage(this.conversationWith.id, this.messageDraft.trim()).subscribe({
+    const draft = this.messageDraft.trim();
+    const att = this.pendingAttachment || undefined;
+    this.api.sendMessage(this.conversationWith.id, draft, att).subscribe({
       next: () => {
         // Optimiste local : le serveur a validé l'appariement avant de persister
         this.conversation = [...this.conversation, {
           senderUserId: myId,
           recipientUserId: this.conversationWith!.id,
-          content: this.messageDraft.trim(),
+          content: draft,
+          attachmentPublicId: att?.publicId,
+          attachmentFileName: att?.fileName,
+          attachmentResourceType: att?.resourceType,
+          attachmentSecureUrl: att?.secureUrl,
+          attachmentSizeBytes: att?.sizeBytes,
           createdAt: new Date().toISOString()
         }];
         this.messageDraft = '';
+        this.pendingAttachment = null;
         this.sendingMessage = false;
       },
       error: (err) => {
