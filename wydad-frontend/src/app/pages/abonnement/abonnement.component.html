@@ -14,7 +14,8 @@
   <div *ngIf="activeSubscription" class="mb-8 bg-wydad-red/10 border border-wydad-red/40 rounded-2xl p-6 text-center">
     <p class="text-wydad-red font-display uppercase text-sm tracking-widest mb-1">Abonnement actif</p>
     <p class="text-white text-2xl font-bold">
-      {{ activeSubscription.zoneDisplayName }} — Saison {{ activeSubscription.season }}
+      {{ activeSubscription.planName || activeSubscription.zoneDisplayName }}
+      — Saison {{ activeSubscription.season }}
     </p>
     <p class="text-gray-300 text-sm mt-1">
       Valable du {{ activeSubscription.validFrom | date:'dd/MM/yyyy' }}
@@ -26,45 +27,67 @@
     </div>
   </div>
 
-  <!-- Grille des zones -->
-  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-    <div *ngFor="let zone of zones"
+  <!-- Grille des plans (gérés par l'admin) -->
+  <div *ngIf="loading" class="text-center text-gray-400 py-12">Chargement des plans…</div>
+  <div *ngIf="!loading && plans.length === 0"
+       class="text-center text-gray-400 py-12 bg-white/5 rounded-2xl border border-white/10">
+    Aucun plan d'abonnement n'est disponible pour le moment. Revenez bientôt.
+  </div>
+
+  <div *ngIf="!loading && plans.length > 0"
+       class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+    <div *ngFor="let plan of plans"
          class="zone-card bg-white/5 border border-white/10 rounded-2xl p-6 flex flex-col"
-         [class.opacity-50]="zone.soldOut">
+         [class.opacity-50]="!plan.isActive">
       <div class="flex justify-between items-start mb-3">
-        <h3 class="font-display text-xl text-white font-bold uppercase">{{ zone.displayName }}</h3>
-        <span *ngIf="zone.soldOut" class="text-xs bg-gray-700 text-gray-300 px-2 py-1 rounded">SOLD OUT</span>
+        <h3 class="font-display text-xl text-white font-bold uppercase">{{ plan.name }}</h3>
+        <span *ngIf="!plan.isActive"
+              class="text-xs bg-gray-700 text-gray-300 px-2 py-1 rounded">INDISPONIBLE</span>
+        <span *ngIf="plan.exceptionalPriority"
+              class="text-xs bg-amber-500/20 text-amber-300 px-2 py-1 rounded uppercase">
+          ⭐ Priorité 48h
+        </span>
       </div>
 
       <div class="my-4">
-        <p class="text-3xl font-bold text-wydad-red">{{ displayPrice(zone) }} <span class="text-sm text-gray-400 font-normal">MAD</span></p>
-        <p *ngIf="isAdherent && zone.priceAdherent < zone.priceRegular" class="text-xs text-green-400 mt-1">
-          Tarif adhérent appliqué (au lieu de {{ zone.priceRegular }} MAD)
+        <p class="text-3xl font-bold text-wydad-red">
+          {{ displayPrice(plan) }}
+          <span class="text-sm text-gray-400 font-normal">MAD / saison</span>
         </p>
-        <p class="text-xs text-gray-400 mt-1">
-          Économie vs 15 billets : jusqu'à {{ savings(zone) }} MAD
+        <p *ngIf="isAdherent && plan.adherentPrice < plan.regularPrice"
+           class="text-xs text-green-400 mt-1">
+          Tarif adhérent appliqué (−{{ adherentDiscountPct(plan) }}%,
+          au lieu de {{ plan.regularPrice }} MAD)
+        </p>
+        <p *ngIf="!isAdherent && plan.adherentPrice < plan.regularPrice"
+           class="text-xs text-amber-300/80 mt-1">
+          Déjà adhérent ? Profitez de −{{ adherentDiscountPct(plan) }}%
+          sur ce plan.
         </p>
       </div>
 
-      <ul class="text-sm text-gray-300 space-y-1 mb-4 flex-1">
+      <ul *ngIf="plan.benefits" class="text-sm text-gray-300 space-y-1 mb-4 flex-1 whitespace-pre-line">
+        <li *ngFor="let line of plan.benefits.split('\n')">{{ line }}</li>
+      </ul>
+      <ul *ngIf="!plan.benefits" class="text-sm text-gray-300 space-y-1 mb-4 flex-1">
         <li>✓ 15 matchs à domicile</li>
         <li>✓ QR code d'accès personnel</li>
         <li>✓ Carte PDF téléchargeable</li>
-        <li>✓ Priorité 48h sur les matchs exceptionnels</li>
+        <li *ngIf="plan.exceptionalPriority">✓ Priorité 48h sur les matchs exceptionnels</li>
       </ul>
 
-      <button *ngIf="!zone.soldOut && !activeSubscription"
-              (click)="openPaymentDialog(zone)"
+      <button *ngIf="plan.isActive && !activeSubscription"
+              (click)="openPaymentDialog(plan)"
               class="paper-btn-primary w-full py-3 rounded-xl font-display font-bold uppercase text-sm">
-        Acheter {{ zone.displayName }}
+        Acheter {{ plan.name }}
       </button>
       <button *ngIf="activeSubscription" disabled
               class="w-full py-3 rounded-xl bg-white/5 text-gray-500 font-display font-bold uppercase text-sm cursor-not-allowed">
         Vous avez déjà un abonnement actif
       </button>
-      <button *ngIf="zone.soldOut" disabled
+      <button *ngIf="!plan.isActive" disabled
               class="w-full py-3 rounded-xl bg-gray-800 text-gray-500 font-display font-bold uppercase text-sm cursor-not-allowed">
-        Épuisé
+        Indisponible
       </button>
     </div>
   </div>
@@ -74,10 +97,10 @@
 <div *ngIf="showPaymentDialog" class="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
   <div class="bg-[#1a1a2e] border border-white/10 rounded-2xl p-6 max-w-md w-full">
     <h3 class="font-display text-xl text-white font-bold uppercase mb-1">
-      Paiement — {{ selectedZone?.displayName }}
+      Paiement — {{ selectedPlan?.name }}
     </h3>
     <p class="text-wydad-red text-2xl font-bold mb-4">
-      {{ displayPrice(selectedZone) }} MAD
+      {{ displayPrice(selectedPlan) }} MAD
     </p>
 
     <div class="space-y-3">

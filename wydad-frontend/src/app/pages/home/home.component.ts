@@ -1,7 +1,8 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { ApiService } from '../../services/api.service';
+import { AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'app-home',
@@ -15,9 +16,20 @@ export class HomeComponent implements OnInit {
   articles: any[] = [];
   /** Saison en cours depuis la configuration club (source de verite ADMIN). */
   saison = '';
+  /** Plans d'abonnement commercialisés (gérés par l'admin via /admin/abonnements/plans). */
+  subscriptionPlans: any[] = [];
+  /** Vrai une fois la réponse de l'API reçue (succès OU erreur) — sert à
+   *  distinguer l'état "loading" de l'état "0 plan actif". */
+  plansLoaded = false;
+  /** Vrai si un JWT valide est en localStorage (utilisateur connecté). */
+  isLoggedIn = false;
   api = inject(ApiService);
+  auth = inject(AuthService);
+  router = inject(Router);
 
   ngOnInit() {
+    this.isLoggedIn = this.auth.isTokenValid();
+
     this.api.getClubSetting('club_info').subscribe({
       next: (info) => {
         this.saison = info?.saison || '';
@@ -50,5 +62,37 @@ export class HomeComponent implements OnInit {
         this.articles = [];
       }
     });
+
+    // Fetch plans d'abonnement actifs (catalogue public)
+    this.api.listSubscriptionPlans().subscribe({
+      next: (plans) => {
+        this.subscriptionPlans = (plans || []).filter(p => p.isActive);
+        this.plansLoaded = true;
+      },
+      error: () => {
+        this.subscriptionPlans = [];
+        this.plansLoaded = true;
+      }
+    });
+  }
+
+  /**
+   * CTA "S'abonner" — si l'utilisateur n'est pas connecté, on le renvoie
+   * vers /login avec returnUrl pour qu'il revienne ici après connexion.
+   * Sinon, directement sur la page catalogue pour finaliser.
+   */
+  subscribeTarget(): string {
+    return this.isLoggedIn ? '/abonnement' : '/login';
+  }
+
+  subscribeQuery(): { returnUrl: string } | null {
+    return this.isLoggedIn ? null : { returnUrl: this.router.url };
+  }
+
+  formatPrice(value: number | string): string {
+    const n = Number(value);
+    if (isNaN(n)) return '—';
+    // Format simple avec espace fine pour les milliers (5 000 pas 5000).
+    return n.toLocaleString('fr-FR', { maximumFractionDigits: 0 });
   }
 }

@@ -30,7 +30,21 @@ export class ApiService {
 
   // -------- B.12 — Abonnements saisonniers (carte adhérent) --------
 
-  /** Catalogue public des zones. includeSoldOut réservé à l'admin. */
+  /**
+   * Catalogue public des PLANS d'abonnement (gérés par l'admin).
+   * Remplace {@link listSubscriptionZones} — la grille n'est plus hardcodée.
+   * L'admin peut la modifier via /admin/abonnements/plans.
+   */
+  listSubscriptionPlans(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/auth/subscriptions/plans`);
+  }
+
+  /**
+   * @deprecated Conservé pour rétro-compat le temps de la bascule UI.
+   * Le contrôleur renvoie désormais aussi les plans via /zones, mais
+   * le format de réponse (SubscriptionZoneResponse enum) est distinct
+   * de /plans. Préférer {@link listSubscriptionPlans}.
+   */
   listSubscriptionZones(includeSoldOut = false): Observable<any[]> {
     const params = includeSoldOut ? `?includeSoldOut=true` : '';
     return this.http.get<any[]>(`${this.baseUrl}/auth/subscriptions/zones${params}`);
@@ -46,15 +60,48 @@ export class ApiService {
     return this.http.get<any[]>(`${this.baseUrl}/auth/subscriptions/me/history`);
   }
 
-  /** Achat via paiement carte SIMULÉ. */
+  /**
+   * Achat via paiement carte SIMULÉ. Le champ d'identification est
+   * désormais {@code planCode} (code du plan, ex. "VIP") et non plus
+   * {@code zoneCode} (valeur d'enum).
+   */
   purchaseSubscription(req: {
-    zoneCode: string;
+    planCode: string;
     cardNumber: string;
     expiryDate: string;
     cvv: string;
     otp: string;
   }): Observable<any> {
     return this.http.post(`${this.baseUrl}/auth/subscriptions/purchase`, req);
+  }
+
+  // -------- Admin CRUD des plans d'abonnement --------
+
+  /** Liste paginée (admin) — filtre optionnel par isActive. */
+  adminListSubscriptionPlans(page = 0, size = 20, active?: boolean): Observable<any> {
+    let url = `${this.baseUrl}/admin/subscription-plans?page=${page}&size=${size}`;
+    if (active !== undefined) url += `&active=${active}`;
+    return this.http.get<any>(url);
+  }
+
+  /** Détail d'un plan (admin). */
+  adminGetSubscriptionPlan(id: number): Observable<any> {
+    return this.http.get<any>(`${this.baseUrl}/admin/subscription-plans/${id}`);
+  }
+
+  /** Création (admin). Retourne 201 + plan créé. */
+  adminCreateSubscriptionPlan(plan: any): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/admin/subscription-plans`, plan);
+  }
+
+  /** Mise à jour complète (admin). */
+  adminUpdateSubscriptionPlan(id: number, plan: any): Observable<any> {
+    return this.http.put<any>(`${this.baseUrl}/admin/subscription-plans/${id}`, plan);
+  }
+
+  /** Suppression (admin). 409 si le plan est référencé par un abonnement. */
+  adminDeleteSubscriptionPlan(id: number): Observable<any> {
+    return this.http.delete<any>(`${this.baseUrl}/admin/subscription-plans/${id}`);
   }
 
   getArticles(): Observable<any[]> {

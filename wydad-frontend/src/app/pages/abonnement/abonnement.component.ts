@@ -7,13 +7,14 @@ import { ToastService } from '../../services/toast.service';
 
 /**
  * B.12 — Catalogue d'abonnements saisonniers WAC.
- * Affiche les 10 zones (Pelouse, Tribune, Premium, VIP, VVIP...) avec
- * les deux prix (regular / adherent) selon que l'utilisateur a déjà un
- * abonnement actif. Permet l'achat via un dialog de paiement SIMULÉ.
+ * Affiche les PLANS (Pelouse, Tribune, Premium, VIP, VVIP...) gérés par
+ * l'admin via l'entité SubscriptionPlan (plus de grille hardcodée).
+ * Prix regular / adherent selon que l'utilisateur a déjà un abonnement
+ * actif. Permet l'achat via un dialog de paiement SIMULÉ.
  *
- * Côté backend, c'est auth-service /api/auth/subscriptions/* qui pilote
- * (cf. feat/subscription-purchase-flow). Ce composant ne fait QUE
- * consommer ces endpoints.
+ * Côté backend, c'est auth-service /api/auth/subscriptions/plans qui
+ * pilote la grille (cf. Lot 2 SubscriptionPlan JPA). Ce composant ne
+ * fait QUE consommer ces endpoints.
  */
 @Component({
   selector: 'app-abonnement',
@@ -26,12 +27,12 @@ import { ToastService } from '../../services/toast.service';
   `]
 })
 export class AbonnementComponent implements OnInit {
-  zones: any[] = [];
+  plans: any[] = [];
   activeSubscription: any = null;
   isAdherent = false;
   loading = false;
   showPaymentDialog = false;
-  selectedZone: any = null;
+  selectedPlan: any = null;
   paymentForm = { cardNumber: '', expiryDate: '', cvv: '', otp: '' };
   paymentLoading = false;
   paymentError = '';
@@ -46,9 +47,15 @@ export class AbonnementComponent implements OnInit {
 
   loadData() {
     this.loading = true;
-    this.api.listSubscriptionZones().subscribe({
-      next: (zones) => this.zones = zones,
-      error: () => this.toast.error('Impossible de charger les zones d\'abonnement')
+    this.api.listSubscriptionPlans().subscribe({
+      next: (plans) => {
+        this.plans = plans;
+        this.loading = false;
+      },
+      error: () => {
+        this.toast.error('Impossible de charger les plans d\'abonnement');
+        this.loading = false;
+      }
     });
     const email = localStorage.getItem('wydad_email');
     if (email) {
@@ -63,29 +70,32 @@ export class AbonnementComponent implements OnInit {
         }
       });
     }
-    this.loading = false;
   }
 
-  /** Prix à afficher pour la zone : adherent si l'utilisateur a un abonnement actif. */
-  displayPrice(zone: any): number {
-    return this.isAdherent ? zone.priceAdherent : zone.priceRegular;
+  /** Prix à afficher pour le plan : adherent si l'utilisateur a déjà un abonnement actif. */
+  displayPrice(plan: any): number {
+    const regular = Number(plan.regularPrice);
+    const adherent = Number(plan.adherentPrice);
+    return this.isAdherent ? adherent : regular;
   }
 
-  /** Couleur du badge économie vs 15 billets unitaires. */
-  savings(zone: any): number {
-    // Estimation économie vs 15 billets à 50 DH chacun = 750 DH.
-    // On affichera le prix catalogue barré + économie.
-    return Math.max(0, 750 - zone.priceRegular);
+  /** Économie en % quand le prix adhérent est strictement inférieur. */
+  adherentDiscountPct(plan: any): number {
+    const regular = Number(plan.regularPrice);
+    const adherent = Number(plan.adherentPrice);
+    if (regular <= 0 || adherent >= regular) return 0;
+    return Math.round(((regular - adherent) / regular) * 100);
   }
 
-  openPaymentDialog(zone: any) {
+  openPaymentDialog(plan: any) {
     const email = localStorage.getItem('wydad_email');
     if (!email) {
       this.toast.info('Veuillez vous connecter pour acheter un abonnement.');
-      this.router.navigate(['/login']);
+      // returnUrl pour que le login ramène l'utilisateur ici.
+      this.router.navigate(['/login'], { queryParams: { returnUrl: this.router.url } });
       return;
     }
-    this.selectedZone = zone;
+    this.selectedPlan = plan;
     this.paymentForm = { cardNumber: '4242424242424242', expiryDate: '12/29', cvv: '123', otp: '123456' };
     this.paymentError = '';
     this.showPaymentDialog = true;
@@ -93,17 +103,17 @@ export class AbonnementComponent implements OnInit {
 
   closePaymentDialog() {
     this.showPaymentDialog = false;
-    this.selectedZone = null;
+    this.selectedPlan = null;
     this.paymentError = '';
   }
 
   submitPayment() {
-    if (!this.selectedZone) return;
+    if (!this.selectedPlan) return;
     this.paymentLoading = true;
     this.paymentError = '';
 
     this.api.purchaseSubscription({
-      zoneCode: this.selectedZone.code,
+      planCode: this.selectedPlan.code,
       cardNumber: this.paymentForm.cardNumber,
       expiryDate: this.paymentForm.expiryDate,
       cvv: this.paymentForm.cvv,
@@ -112,7 +122,8 @@ export class AbonnementComponent implements OnInit {
       next: (sub) => {
         this.paymentLoading = false;
         this.closePaymentDialog();
-        this.toast.success(`Abonnement ${sub.zoneDisplayName} confirmé pour la saison ${sub.season} !`);
+        const label = sub.planName || sub.zoneDisplayName;
+        this.toast.success(`Abonnement ${label} confirmé pour la saison ${sub.season} !`);
         this.loadData();
       },
       error: (err) => {
