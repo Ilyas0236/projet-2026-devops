@@ -24,7 +24,7 @@ public interface SubscriptionPlanRepository extends JpaRepository<SubscriptionPl
      *  testée avant l'insert/update). */
     boolean existsByCodeAndIdNot(String code, Long id);
 
-    /** TRUE si au moins un abonnement pointe encore sur ce plan. Utilisé
-     *  par {@code delete()} pour renvoyer 409 au lieu d'un 500 FK. */
-    boolean existsByPlan_Id(Long planId);
+    // existsByPlan_Id appartient à UserSubscriptionRepository (entité
+    // UserSubscription) — pas à ce repository, dont l'entité SubscriptionPlan
+    // n'a pas de propriété 'plan'. Voir UserSubscriptionRepository#existsByPlan_Id.
 }
