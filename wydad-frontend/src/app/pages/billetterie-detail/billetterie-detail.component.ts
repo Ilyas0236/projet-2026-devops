@@ -151,7 +151,9 @@ export class BilletterieDetailComponent implements OnInit, OnDestroy {
     if (!this.isLoggedIn) {
       // Pas connecté → invitation à se connecter (ou s'inscrire)
       this.processing = false;
-      this.router.navigate(['/connexion'], { queryParams: { returnUrl: this.router.url } });
+      // /login (et non /connexion qui n'existe pas — c'est un piège
+      // historique qui envoyait l'utilisateur sur une 404).
+      this.router.navigate(['/login'], { queryParams: { returnUrl: this.router.url } });
       return;
     }
     this.purchaseAsMember();
