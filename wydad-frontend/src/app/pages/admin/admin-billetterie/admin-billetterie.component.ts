@@ -253,8 +253,17 @@ export class AdminBilletterieComponent implements OnInit {
 
   // ─────────── V3.1 — CRUD sections billetterie (admin) ───────────
 
-  /** Catégories proposées pour une nouvelle section. */
-  readonly sectionCategories = ['STANDARD', 'VIP', 'TRIBUNE', 'ULTRA', 'VIRAGE'];
+  /**
+   * V3.1 — Catégories proposées pour une nouvelle section. Alignées sur
+   * l'enum {@code TicketCategory} du back (cf. ticket-service) : ce sont
+   * les seules valeurs que le serveur accepte, sinon Jackson renvoie 400.
+   * Toutes les valeurs de l'enum sont exposées pour que l'admin puisse
+   * choisir librement ; les 4 « legacy » (TRIBUNE_OFFICIELLE, TRIBUNE_HONNEUR,
+   * VIRAGE_NORD, VIRAGE_SUD) sont conservées par compatibilité historique.
+   */
+  readonly sectionCategories = [
+    'TRIBUNE_OFFICIELLE', 'TRIBUNE_HONNEUR', 'VIRAGE_NORD', 'VIRAGE_SUD', 'VIP', 'ULTRA'
+  ];
 
   /** Formulaire d'une nouvelle section (rempli à partir de "Ajouter section"). */
   newSection: any = this.emptySection();

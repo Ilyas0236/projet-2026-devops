@@ -103,5 +103,6 @@ public class Event {
      * <p>Migration manuelle : {@code ALTER TABLE events ADD COLUMN match_id BIGINT;
      * CREATE INDEX idx_events_match ON events(match_id);}</p>
      */
+    @Column(name = "match_id")
     private Long matchId;
 }
