@@ -14,6 +14,7 @@ import com.wydad.digital.sports.model.Staff;
 import com.wydad.digital.sports.repository.MatchConvocationRepository;
 import com.wydad.digital.sports.repository.PlayerRepository;
 import com.wydad.digital.sports.repository.StaffRepository;
+import com.wydad.digital.sports.util.TargetUrlResolver;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -93,10 +94,12 @@ public class MatchConvocationService {
                 convocations.add(toResponse(c));
 
                 // Notification in-app best-effort (§26 : notifications groupées).
+                // Quality-final — targetUrl résolu par rôle (le joueur reçoit
+                // /joueur/dashboard, pas de 404 si on notifie un staff/parent).
                 notificationClient.notifyUser(player.getUserId(), null,
                         "Convocation", "Vous êtes convoqué pour le match vs "
                                 + match.adversaire(),
-                        "/joueur/dashboard");
+                        TargetUrlResolver.resolve("JOUEUR", "/convocations"));
             } catch (IllegalArgumentException e) {
                 rejected.add("Joueur " + entry.joueurUserId() + " : " + e.getMessage());
             }

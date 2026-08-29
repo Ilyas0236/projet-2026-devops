@@ -436,13 +436,36 @@ public class AuthController {
      * Protege par le secret partage X-Internal-Secret ; jamais expose via la
      * gateway (route bloquee cote gateway pour /api/auth/internal/**).
      */
+    /**
+     * Récepteurs internes service-à-service.
+     *
+     * <p>Sans paramètre : tous les utilisateurs actifs (broadcast global —
+     * utilisé par notification-service).</p>
+     *
+     * <p>Avec {@code ?roles=USER,ADHERENT} : filtre sur la liste des rôles
+     * (CSV, insensible à la casse) — utilisé par les broadcasts ciblés
+     * « supporters uniquement » (ex. : nouveau match programmé côté
+     * ticket-service).</p>
+     */
     @GetMapping("/internal/recipients")
     public ResponseEntity<List<UserProfileResponse>> internalRecipients(
-            @RequestHeader(value = "X-Internal-Secret", required = false) String secret) {
+            @RequestHeader(value = "X-Internal-Secret", required = false) String secret,
+            @RequestParam(value = "roles", required = false) String roles) {
         if (!internalSecretValidator.isInternalCallAuthorized(secret)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
-        return ResponseEntity.ok(authService.getAllActiveUsers());
+        if (roles == null || roles.isBlank()) {
+            return ResponseEntity.ok(authService.getAllActiveUsers());
+        }
+        java.util.Set<String> wanted = java.util.Arrays.stream(roles.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .map(s -> s.toUpperCase(java.util.Locale.ROOT))
+                .collect(java.util.stream.Collectors.toSet());
+        java.util.List<UserProfileResponse> filtered = authService.getAllActiveUsers().stream()
+                .filter(u -> u.role() != null && wanted.contains(u.role().name().toUpperCase(java.util.Locale.ROOT)))
+                .collect(java.util.stream.Collectors.toList());
+        return ResponseEntity.ok(filtered);
     }
 
     private String getClientIp(HttpServletRequest request) {

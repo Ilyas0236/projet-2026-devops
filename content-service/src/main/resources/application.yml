@@ -30,6 +30,8 @@ wydad:
   internal-secret: ${WYDAD_INTERNAL_SECRET:}
   gamification-service-uri: ${GAMIFICATION_SERVICE_URI:http://localhost:8088}
   sports-service-uri: ${SPORTS_SERVICE_URI:http://localhost:8081}
+  notification-service-uri: ${NOTIFICATION_SERVICE_URI:http://notification-service:8086}
+  auth-service-uri: ${AUTH_SERVICE_URI:http://auth-service:8081}
 
 logging:
   level:

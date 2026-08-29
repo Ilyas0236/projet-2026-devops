@@ -95,6 +95,46 @@ public class NotificationController {
     }
 
     /**
+     * Broadcast interne service-a-service (élection -> notification, etc.).
+     * Même protection par secret partagé que /internal/send, mais fait un
+     * fan-out vers tous les utilisateurs actifs (préférences respectées).
+     * Réservé aux contextes où la notif doit toucher TOUT le club, pas un
+     * seul destinataire (résultats d'élections, articles officiels, etc.).
+     */
+    @PostMapping("/internal/broadcast")
+    public ResponseEntity<String> internalBroadcast(
+            @RequestHeader(value = "X-Internal-Secret", required = false) String secret,
+            @Valid @RequestBody NotificationRequest request) {
+        if (!internalSecretValidator.isInternalCallAuthorized(secret)) {
+            throw new AccessDeniedException("Secret interne invalide");
+        }
+        int created = orchestrator.broadcast(request);
+        return ResponseEntity.accepted().body("Broadcast interne effectué : " + created + " notification(s)");
+    }
+
+    /**
+     * Broadcast ciblé : fan-out vers une liste explicite d'utilisateurs
+     * (IDs). Utilisé quand l'appelant veut un sous-ensemble précis
+     * (ex. : supporters uniquement pour la notif « nouveau match », sans
+     * spammer les admins/présidents). Le payload inclut un champ
+     * {@code targetUserIds} (List&lt;Long&gt;). Si la liste est vide ou
+     * absente, comportement identique à {@code /internal/broadcast} (tous
+     * les utilisateurs actifs).
+     */
+    @PostMapping("/internal/broadcast-targeted")
+    public ResponseEntity<String> internalBroadcastTargeted(
+            @RequestHeader(value = "X-Internal-Secret", required = false) String secret,
+            @RequestBody NotificationRequest request) {
+        if (!internalSecretValidator.isInternalCallAuthorized(secret)) {
+            throw new AccessDeniedException("Secret interne invalide");
+        }
+        java.util.List<Long> targetIds = request.getTargetUserIds();
+        int created = orchestrator.broadcastTargeted(request, targetIds);
+        return ResponseEntity.accepted().body(
+                "Broadcast ciblé effectué : " + created + " notification(s) sur " + (targetIds == null ? 0 : targetIds.size()));
+    }
+
+    /**
      * Fonctionnalité 4/6 — Préférences de notification du membre connecté.
      * L'identité vient des en-têtes X-User-* (jamais du path/body) : chacun
      * ne lit et modifie QUE SES préférences.

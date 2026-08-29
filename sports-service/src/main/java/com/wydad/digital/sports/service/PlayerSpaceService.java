@@ -21,6 +21,7 @@ import com.wydad.digital.sports.repository.PlayerDocumentRepository;
 import com.wydad.digital.sports.repository.PlayerRepository;
 import com.wydad.digital.sports.repository.SessionRepository;
 import com.wydad.digital.sports.exception.MediaIndisponibleException;
+import com.wydad.digital.sports.util.TargetUrlResolver;
 import com.wydad.digital.sports.filter.SportsUserContext;
 import com.wydad.digital.sports.model.Staff;
 import jakarta.persistence.EntityNotFoundException;
@@ -100,7 +101,7 @@ public class PlayerSpaceService {
                 "Nouvelle convocation",
                 "Vous êtes convoqué" + (when.isEmpty() ? "" : " le " + when)
                         + ". Consultez votre espace joueur.",
-                "/joueur/dashboard");
+                TargetUrlResolver.resolve("JOUEUR", "/convocations"));
     }
 
     /** Convocations du joueur connecté — toujours filtrées par son userId JWT. */
@@ -334,7 +335,7 @@ public class PlayerSpaceService {
                         "Nouveau média de votre entraîneur",
                         title.trim() + (message != null && !message.isBlank()
                                 ? " — " + message : "") + ". Consultez votre espace joueur.",
-                        "/joueur/dashboard");
+                        TargetUrlResolver.resolve("JOUEUR", "/joueur/dashboard"));
             } catch (Exception e) {
                 org.slf4j.LoggerFactory.getLogger(PlayerSpaceService.class).warn(
                         "Notification média non envoyée a user {}: {}", uid, e.getMessage());

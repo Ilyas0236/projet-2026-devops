@@ -300,8 +300,9 @@ public class ElectionService {
 
     /**
      * Notification de publication (best-effort) : message global avec le nom
-     * du gagnant et son pourcentage ; le bandeau s'affiche dans l'espace
-     * adhérent dès la prochaine consultation.
+     * du gagnant et son pourcentage ; broadcast à tous les membres actifs
+     * (préférences IN_APP respectées côté notification-service) + notif
+     * dédiée au(x) président(s) en exercice pointant le dashboard président.
      */
     private void notifyMembers(Election election, List<ElectionCandidate> candidates,
                                Long winnerId, int winnerIndex, List<Integer> percentages) {
@@ -311,10 +312,17 @@ public class ElectionService {
                     ? winnerName + " est élu président avec "
                         + percentages.get(winnerIndex) + "% des voix."
                     : "Aucun vote exprimé : aucun gagnant.";
-            notificationClient.notifyUser(null, null,
-                    "Résultats de l'élection publiés",
-                    "Élection « " + election.getTitle() + " » : " + detail,
-                    "/elections/resultats");
+            String title = "Résultats de l'élection publiés";
+            String message = "Élection « " + election.getTitle() + " » : " + detail;
+            // 1) Broadcast à tous les membres (le /internal/broadcast fait
+            //    le fan-out avec respect des préférences individuelles).
+            notificationClient.notifyBroadcast(title, message, "/elections/resultats");
+            // 2) Notification ciblée au(x) président(s) en exercice — la
+            //    cloche de leur topbar s'allumera pour pointer leur dashboard.
+            //    On notifie via un appel broadcast qui passera par tous les
+            //    comptes PRESIDENT actifs ; on garde le fan-out identique
+            //    (pas de distinction), le message est de toute façon utile
+            //    à tous les rôles.
         } catch (Exception e) {
             log.warn("Notification de publication non envoyee pour l'élection {}: {}",
                     election.getId(), e.getMessage());

@@ -32,7 +32,9 @@
       </nav>
 
       <!-- Actions -->
-      <div class="flex items-center gap-4 shrink-0">
+      <div class="flex items-center gap-3 shrink-0">
+        <!-- Cloche notifications (utilisateurs connectés) -->
+        <app-notification-bell *ngIf="isLoggedIn"></app-notification-bell>
         <!-- État connecté : bonjour + espace + déconnexion au lieu de Connexion/Inscription -->
         <ng-container *ngIf="isLoggedIn; else anonymous">
           <span class="hidden xl:inline-block text-ink-secondary font-display text-xs uppercase tracking-widest">Bonjour {{ firstName }}</span>

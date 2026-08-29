@@ -52,4 +52,29 @@ public class NotificationClient {
             log.warn("Notification non envoyee a user {}: {}", userId, e.getMessage());
         }
     }
+
+    /**
+     * Broadcast IN_APP à TOUS les utilisateurs actifs du club (fan-out via
+     * notification-service). Préférences de chaque membre respectées côté back.
+     * Utilisé pour les annonces officielles (résultats d'élection, etc.).
+     */
+    public void notifyBroadcast(String title, String message, String targetUrl) {
+        try {
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            if (internalSecret != null && !internalSecret.isEmpty()) {
+                headers.set("X-Internal-Secret", internalSecret);
+            }
+            var body = new java.util.HashMap<String, Object>();
+            body.put("title", title);
+            body.put("message", message);
+            body.put("type", "IN_APP");
+            if (targetUrl != null) body.put("targetUrl", targetUrl);
+
+            restTemplate.postForEntity(baseUrl + "/internal/broadcast",
+                    new HttpEntity<>(body, headers), String.class);
+        } catch (RestClientException e) {
+            log.warn("Broadcast non envoye: {}", e.getMessage());
+        }
+    }
 }

@@ -11,6 +11,7 @@ import com.wydad.digital.sports.model.Staff;
 import com.wydad.digital.sports.repository.PlayerRepository;
 import com.wydad.digital.sports.repository.ScheduledCallRepository;
 import com.wydad.digital.sports.repository.StaffRepository;
+import com.wydad.digital.sports.util.TargetUrlResolver;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.AccessDeniedException;
@@ -282,10 +283,15 @@ public class ScheduledCallService {
             for (Long userId : call.getParticipantUserIds()) {
                 if (userId.equals(call.getOrganizerUserId())) continue;
                 boolean isPlayer = playerRepository.findByUserId(userId).isPresent();
+                // Quality-final — targetUrl par rôle (player → /joueur/dashboard,
+                // staff → /staff/dashboard). Fallback : dashboard joueur.
+                String targetUrl = isPlayer
+                        ? TargetUrlResolver.resolve("JOUEUR", "/joueur/dashboard")
+                        : TargetUrlResolver.resolve("STAFF",  "/staff/dashboard");
                 notificationClient.notifyUser(userId, null,
                         "Appel programmé : " + call.getTitle(),
                         "Par " + call.getOrganizerName() + " · " + quand,
-                        isPlayer ? "/joueur/dashboard" : "/staff/dashboard");
+                        targetUrl);
             }
         } catch (Exception e) {
             log.warn("Notifications d'appel non envoyées: {}", e.getMessage());

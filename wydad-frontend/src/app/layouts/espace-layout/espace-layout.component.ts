@@ -1,16 +1,17 @@
 import { Component, inject } from '@angular/core';
 import { Router, RouterOutlet } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { NotificationBellComponent } from '../../components/notification-bell/notification-bell.component';
 
 /**
  * Layout des espaces connectés (joueur, staff/entraîneur, président,
  * journaliste, parent) — remplace le header public par un bandeau fin :
- * logo club + nom de l'espace + retour au site + déconnexion.
+ * logo club + nom de l'espace + cloche de notification + retour au site + déconnexion.
  */
 @Component({
   selector: 'app-espace-layout',
   standalone: true,
-  imports: [RouterOutlet],
+  imports: [RouterOutlet, NotificationBellComponent],
   templateUrl: './espace-layout.component.html',
   styleUrls: ['./espace-layout.component.scss']
 })

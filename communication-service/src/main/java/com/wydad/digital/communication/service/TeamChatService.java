@@ -3,6 +3,7 @@ package com.wydad.digital.communication.service;
 import com.wydad.digital.communication.client.NotificationClient;
 import com.wydad.digital.communication.client.RosterClient;
 import com.wydad.digital.communication.filter.UserContext;
+import com.wydad.digital.communication.util.TargetUrlResolver;
 import com.wydad.digital.communication.model.TeamMessage;
 import com.wydad.digital.communication.repository.TeamMessageRepository;
 import lombok.RequiredArgsConstructor;
@@ -154,9 +155,14 @@ public class TeamChatService {
                 if (!online.contains(member.userId())
                         && !member.userId().equals(message.getSenderUserId())
                         && sent < MAX_NOTIFICATIONS) {
+                    // Quality-final — targetUrl dépend du rôle roster du membre :
+                    // JOUEUR → /joueur/dashboard, STAFF/ENTRAINEUR → dashboard staff.
+                    String targetUrl = "JOUEUR".equalsIgnoreCase(member.rosterRole())
+                            ? TargetUrlResolver.resolve("JOUEUR", "/joueur/dashboard")
+                            : TargetUrlResolver.resolve("STAFF",  "/staff/dashboard");
                     notificationClient.notifyUser(member.userId(), null,
                             message.getSenderName() + " · Groupe équipe", preview,
-                            "/joueur/dashboard");
+                            targetUrl);
                     sent++;
                 }
             }

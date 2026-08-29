@@ -1,5 +1,7 @@
 package com.wydad.digital.ticket.service;
 
+import com.wydad.digital.ticket.client.AuthClient;
+import com.wydad.digital.ticket.client.NotificationClient;
 import com.wydad.digital.ticket.dto.*;
 import com.wydad.digital.ticket.enums.EventStatus;
 import com.wydad.digital.ticket.enums.EventType;
@@ -11,12 +13,16 @@ import com.wydad.digital.ticket.repository.SectionRepository;
 import com.wydad.digital.ticket.repository.TicketRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class EventService {
@@ -25,6 +31,8 @@ public class EventService {
     private final SectionRepository sectionRepository;
     private final TicketRepository ticketRepository;
     private final VipTicketService vipTicketService;
+    private final NotificationClient notificationClient;
+    private final AuthClient authClient;
 
     @Transactional
     public EventResponse createEvent(CreateEventRequest request) {
@@ -74,7 +82,63 @@ public class EventService {
         // la création (relance manuelle possible via /internal/vip-generate).
         vipTicketService.autoGenerateIfHomeEvent(event);
 
+        // E.1 — Notification supporters : si le match est dans les 30 jours
+        // (donc pertinent pour l'achat de billets), on broadcast IN_APP à
+        // tous les supporters actifs (USER/ADHERENT). Best-effort : ne
+        // bloque jamais la création de l'événement.
+        notifySupportersIfRelevant(event);
+
         return mapToResponse(event);
+    }
+
+    /**
+     * E.1 — Broadcast IN_APP supporters si l'event est dans la fenêtre
+     * 30 jours (J-30 → J+0). En-deçà, on attend — un match dans 6 mois
+     * sera notifié par un futur scheduler. Au-delà, on ne spamme pas.
+     *
+     * <p>Deux étapes : (1) vérifier qu'il y a au moins un supporter actif ;
+     * (2) appeler le broadcast ciblé de notification-service avec la liste
+     * d'IDs supporters (USER/ADHERENT) — pas d'admin/-président/joueur,
+     * qui reçoivent leurs propres canaux. Toute erreur est journalisée et
+     * ignorée (best-effort).</p>
+     */
+    private void notifySupportersIfRelevant(Event event) {
+        try {
+            if (event.getEventDate() == null) return;
+            LocalDateTime now = LocalDateTime.now();
+            long daysUntil = ChronoUnit.DAYS.between(now.toLocalDate(), event.getEventDate().toLocalDate());
+            if (daysUntil < 0 || daysUntil > 30) {
+                log.debug("Event {} : date hors fenêtre 30j (J-{}), pas de notification supporters",
+                        event.getId(), daysUntil);
+                return;
+            }
+            var supporters = authClient.fetchActiveSupporters();
+            if (supporters.isEmpty()) {
+                log.info("Event {} : aucun supporter actif à notifier", event.getId());
+                return;
+            }
+            java.util.List<Long> supporterIds = supporters.stream()
+                    .map(AuthClient.PlayerRecipient::id)
+                    .filter(java.util.Objects::nonNull)
+                    .toList();
+            if (supporterIds.isEmpty()) {
+                log.info("Event {} : supporters sans id (anomalie), broadcast ignoré", event.getId());
+                return;
+            }
+            String title = "Nouveau match : " + event.getTitle();
+            String homeTeam = event.getHomeTeam() != null ? event.getHomeTeam() : "WAC";
+            String awayTeam = event.getAwayTeam() != null ? " vs " + event.getAwayTeam() : "";
+            String venue = event.getVenue() != null ? " @ " + event.getVenue() : "";
+            String message = homeTeam + awayTeam + venue
+                    + " le " + event.getEventDate().toLocalDate()
+                    + " — billets disponibles sur le site.";
+            notificationClient.notifyBroadcastTargeted(supporterIds, title, message, "/billetterie/" + event.getId());
+            log.info("Event {} : notification supporters ciblée envoyée ({} destinataires)",
+                    event.getId(), supporterIds.size());
+        } catch (Exception e) {
+            log.warn("Event {} : notification supporters échouée : {}",
+                    event.getId(), e.getMessage());
+        }
     }
 
     public List<EventResponse> getUpcomingEvents() {

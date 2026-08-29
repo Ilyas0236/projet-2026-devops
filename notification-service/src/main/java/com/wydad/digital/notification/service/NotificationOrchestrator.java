@@ -148,4 +148,45 @@ public class NotificationOrchestrator {
                 created, recipients.size());
         return created;
     }
+
+    /**
+     * Broadcast ciblé : fan-out vers une liste explicite d'utilisateurs
+     * (récupération de leurs emails via auth-service pour les notifs EMAIL).
+     * Si la liste est null ou vide, retombe sur le broadcast global.
+     *
+     * <p>Retourne le nombre de notifications effectivement créées (en
+     * respectant les préférences par destinataire).</p>
+     */
+    @org.springframework.transaction.annotation.Transactional
+    public int broadcastTargeted(NotificationRequest template, List<Long> targetUserIds) {
+        if (targetUserIds == null || targetUserIds.isEmpty()) {
+            log.debug("broadcastTargeted sans liste : fallback broadcast global");
+            return broadcast(template);
+        }
+        // Récupère les recipients (id + email) pour la whitelist, en filtrant
+        // les inactifs côté auth-service. Si l'appel échoue, on notifie par
+        // userId seul (EMAIL manquera, mais l'IN_APP tombera).
+        List<AuthServiceClient.Recipient> all = authServiceClient.fetchActiveRecipients();
+        java.util.Set<Long> wanted = new java.util.HashSet<>(targetUserIds);
+        List<AuthServiceClient.Recipient> recipients = all.stream()
+                .filter(r -> wanted.contains(r.userId()))
+                .toList();
+        int created = 0;
+        for (AuthServiceClient.Recipient recipient : recipients) {
+            NotificationRequest request = new NotificationRequest();
+            request.setUserId(recipient.userId());
+            request.setTitle(template.getTitle());
+            request.setMessage(template.getMessage());
+            request.setType(template.getType());
+            request.setUserEmail(recipient.email());
+            request.setTargetUrl(template.getTargetUrl());
+            request.setImageUrl(template.getImageUrl());
+            if (processNotification(request) != null) {
+                created++;
+            }
+        }
+        log.info("📢 Broadcast ciblé : {} notification(s) créée(s) sur {} ID(s) ciblé(s) ({} actif(s))",
+                created, targetUserIds.size(), recipients.size());
+        return created;
+    }
 }

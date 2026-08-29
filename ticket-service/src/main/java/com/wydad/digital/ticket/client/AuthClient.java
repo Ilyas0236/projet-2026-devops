@@ -58,6 +58,43 @@ public class AuthClient {
     }
 
     /**
+     * Liste des supporters actifs (rôles USER/ADHERENT, compte VALIDÉ, actif).
+     * Utilisée par la notification de match programmé pour ne cibler QUE les
+     * supporters — pas les admins/présidents/jouleurs (qui reçoivent leurs
+     * propres notifications spécifiques).
+     *
+     * <p>Best-effort : liste vide si auth-service est injoignable ou
+     * mal configuré. Le broadcast ne plante jamais la création d'event.</p>
+     */
+    public List<PlayerRecipient> fetchActiveSupporters() {
+        HttpHeaders headers = new HttpHeaders();
+        if (internalSecret != null && !internalSecret.isEmpty()) {
+            headers.set("X-Internal-Secret", internalSecret);
+        }
+
+        try {
+            ResponseEntity<List<PlayerRecipient>> response = restTemplate.exchange(
+                    recipientsUrl + "?roles=USER,ADHERENT",
+                    HttpMethod.GET,
+                    new HttpEntity<>(headers),
+                    new ParameterizedTypeReference<List<PlayerRecipient>>() {});
+
+            List<PlayerRecipient> supporters = response.getBody() == null
+                    ? Collections.emptyList()
+                    : response.getBody().stream()
+                            .filter(u -> u.active())
+                            .filter(u -> "VALIDE".equalsIgnoreCase(u.statutCompte()))
+                            .toList();
+            log.info("auth-service : {} supporter(s) actif(s) eligible(s) notification match", supporters.size());
+            return supporters;
+        } catch (Exception e) {
+            log.error("auth-service injoignable ({}) - notification supporters match impossible",
+                    recipientsUrl, e);
+            return Collections.emptyList();
+        }
+    }
+
+    /**
      * Liste des joueurs éligibles aux billets VIP : rôle JOUEUR, compte
      * actif et VALIDÉ. Liste vide si auth-service est injoignable ou mal
      * configuré (secret) — jamais d'exception vers l'appelant.

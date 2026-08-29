@@ -6,11 +6,12 @@ import { ApiService } from '../../services/api.service';
 import { AuthService } from '../../services/auth.service';
 import { ToastContainerComponent } from '../../components/toast-container/toast-container.component';
 import { ConfirmDialogComponent } from '../../components/confirm-dialog/confirm-dialog.component';
+import { NotificationBellComponent } from '../../components/notification-bell/notification-bell.component';
 
 @Component({
   selector: 'app-public-layout',
   standalone: true,
-  imports: [RouterOutlet, RouterModule, CommonModule, FormsModule, ToastContainerComponent, ConfirmDialogComponent],
+  imports: [RouterOutlet, RouterModule, CommonModule, FormsModule, ToastContainerComponent, ConfirmDialogComponent, NotificationBellComponent],
   templateUrl: './public-layout.component.html',
   styleUrls: ['./public-layout.component.scss']
 })

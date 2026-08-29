@@ -13,6 +13,8 @@ export const authGuard: CanActivateFn = (route, state) => {
   if (authService.currentUserValue && !authService.isTokenValid()) {
     authService.logout();
   }
-  router.navigate(['/login']);
+  // Quality-final — propage l'URL d'origine via returnUrl pour que LoginComponent
+  // y ramène l'utilisateur après authentification. Aligné sur role.guard.ts:15.
+  router.navigate(['/login'], { queryParams: { returnUrl: state.url } });
   return false;
 };

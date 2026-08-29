@@ -1,15 +1,20 @@
 package com.wydad.digital.content.service;
 
+import com.wydad.digital.content.client.AuthClient;
+import com.wydad.digital.content.client.NotificationClient;
 import com.wydad.digital.content.dto.*;
 import com.wydad.digital.content.model.*;
 import com.wydad.digital.content.repository.*;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ContentService {
@@ -20,6 +25,8 @@ public class ContentService {
     private final JoueurRepository joueurRepository;
     private final com.wydad.digital.content.client.GamificationClient gamificationClient;
     private final com.wydad.digital.content.client.SportsRosterClient rosterClient;
+    private final AuthClient authClient;
+    private final NotificationClient notificationClient;
 
     // ==================== ARTICLES ====================
     public ArticleResponse createArticle(ArticleRequest request) {
@@ -32,7 +39,47 @@ public class ContentService {
                 .published(true)
                 .build();
         Article saved = articleRepository.save(article);
+
+        // E.2 — Notification journalistes : un nouvel article publié est
+        // annoncé à TOUS les journalistes actifs (rôle JOURNALISTE, compte
+        // VALIDE). Best-effort : si auth-service ou notification-service est
+        // down, on log et on continue (l'article est créé, c'est l'essentiel).
+        notifyJournalistsOfNewArticle(saved);
+
         return mapToArticleResponse(saved);
+    }
+
+    /**
+     * E.2 — Broadcast IN_APP ciblé aux journalistes actifs à la publication
+     * d'un article. Le contenu du message contient le titre + l'auteur
+     * (suffisant pour inciter à aller lire, sans spoiler le contenu).
+     */
+    private void notifyJournalistsOfNewArticle(Article article) {
+        try {
+            var journalists = authClient.fetchActiveJournalists();
+            if (journalists.isEmpty()) {
+                log.info("Article {} : aucun journaliste actif à notifier", article.getId());
+                return;
+            }
+            List<Long> journalistIds = journalists.stream()
+                    .map(AuthClient.JournalistRecipient::id)
+                    .filter(Objects::nonNull)
+                    .toList();
+            if (journalistIds.isEmpty()) {
+                log.info("Article {} : journalistes sans id (anomalie), broadcast ignoré",
+                        article.getId());
+                return;
+            }
+            String title = "Nouvel article publié";
+            String message = "« " + article.getTitre() + " » par " + article.getAuteur();
+            notificationClient.notifyBroadcastTargeted(journalistIds, title, message,
+                    "/actualites/" + article.getId());
+            log.info("Article {} : notification journalistes ciblée envoyée ({} destinataires)",
+                    article.getId(), journalistIds.size());
+        } catch (Exception e) {
+            log.warn("Article {} : notification journalistes échouée : {}",
+                    article.getId(), e.getMessage());
+        }
     }
 
     public List<ArticleResponse> getAllArticles() {

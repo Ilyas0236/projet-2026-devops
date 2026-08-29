@@ -43,3 +43,10 @@ wydad:
     api-key: ${SENDGRID_API_KEY:mock_sendgrid_key_for_dev}
   firebase:
     credentials-path: ${FIREBASE_CREDENTIALS:classpath:firebase-mock.json}
+
+# EmailService : mode MOCK (log + sleep) ou réel (à implémenter).
+# Par défaut MOCK car la VM n'a pas de SMTP et le propriétaire n'a pas fourni
+# de credentials SendGrid/ SMTP. Mettre à false pour basculer.
+notification:
+  email:
+    mock: ${NOTIFICATION_EMAIL_MOCK:true}

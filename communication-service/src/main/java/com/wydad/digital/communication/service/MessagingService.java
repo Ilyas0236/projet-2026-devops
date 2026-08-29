@@ -3,6 +3,7 @@ package com.wydad.digital.communication.service;
 import com.wydad.digital.communication.client.NotificationClient;
 import com.wydad.digital.communication.client.RosterClient;
 import com.wydad.digital.communication.filter.UserContext;
+import com.wydad.digital.communication.util.TargetUrlResolver;
 import com.wydad.digital.communication.model.Announcement;
 import com.wydad.digital.communication.model.Message;
 import com.wydad.digital.communication.repository.AnnouncementRepository;
@@ -237,10 +238,13 @@ public class MessagingService {
     private void notifyRecipient(Message m) {
         String preview = m.getContent().length() > 80
                 ? m.getContent().substring(0, 80) + "…" : m.getContent();
+        // Quality-final — targetUrl dépend du rôle du destinataire (pas
+        // toujours un joueur). On déduit le rôle du senderName du message
+        // (heuristique) ; à terme, le front résoudra côté cloche.
         notificationClient.notifyUser(m.getRecipientUserId(), null,
                 "Nouveau message de " + m.getSenderName(),
                 preview,
-                "/joueur/dashboard");
+                TargetUrlResolver.resolveFromCurrentContext("/messagerie"));
     }
 
     private Long requireCurrentUserId() {

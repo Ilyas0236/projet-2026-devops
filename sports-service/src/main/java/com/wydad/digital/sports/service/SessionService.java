@@ -11,6 +11,7 @@ import com.wydad.digital.sports.model.Staff;
 import com.wydad.digital.sports.repository.PlayerRepository;
 import com.wydad.digital.sports.repository.SessionRepository;
 import com.wydad.digital.sports.repository.StaffRepository;
+import com.wydad.digital.sports.util.TargetUrlResolver;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.AccessDeniedException;
@@ -92,7 +93,7 @@ public class SessionService {
                         session.getTitle() + " le " + quand
                                 + (session.getLocation() != null ? " — " + session.getLocation() : "")
                                 + ". Consultez votre planning.",
-                        "/joueur/dashboard");
+                        TargetUrlResolver.resolve("JOUEUR", "/seances"));
             } catch (Exception e) {
                 log.warn("Notification séance non envoyée au joueur {}: {}",
                         player.getId(), e.getMessage());

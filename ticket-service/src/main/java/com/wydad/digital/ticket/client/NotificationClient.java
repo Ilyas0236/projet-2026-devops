@@ -51,4 +51,57 @@ public class NotificationClient {
             log.warn("Notification non envoyee a user {}: {}", userId, e.getMessage());
         }
     }
+
+    /**
+     * Broadcast IN_APP à tous les utilisateurs actifs du club (fan-out via
+     * notification-service). Best-effort : une panne de notification ne doit
+     * JAMAIS faire échouer la création d'un événement.
+     */
+    public void notifyBroadcast(String title, String message, String targetUrl) {
+        try {
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            if (internalSecret != null && !internalSecret.isEmpty()) {
+                headers.set("X-Internal-Secret", internalSecret);
+            }
+            var body = new java.util.HashMap<String, Object>();
+            body.put("title", title);
+            body.put("message", message);
+            body.put("type", "IN_APP");
+            if (targetUrl != null) body.put("targetUrl", targetUrl);
+
+            restTemplate.postForEntity(baseUrl + "/internal/broadcast",
+                    new HttpEntity<>(body, headers), String.class);
+        } catch (RestClientException e) {
+            log.warn("Broadcast non envoye: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * Broadcast IN_APP ciblé : fan-out vers une liste explicite d'utilisateurs
+     * (IDs). Utilisé pour ne notifier QUE les supporters (USER/ADHERENT) lors
+     * d'un nouveau match, sans spammer les admins/présidents/joueurs qui ont
+     * leurs propres canaux de notification.
+     */
+    public void notifyBroadcastTargeted(java.util.List<Long> targetUserIds,
+                                        String title, String message, String targetUrl) {
+        try {
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            if (internalSecret != null && !internalSecret.isEmpty()) {
+                headers.set("X-Internal-Secret", internalSecret);
+            }
+            var body = new java.util.HashMap<String, Object>();
+            body.put("title", title);
+            body.put("message", message);
+            body.put("type", "IN_APP");
+            if (targetUrl != null) body.put("targetUrl", targetUrl);
+            body.put("targetUserIds", targetUserIds);
+
+            restTemplate.postForEntity(baseUrl + "/internal/broadcast-targeted",
+                    new HttpEntity<>(body, headers), String.class);
+        } catch (RestClientException e) {
+            log.warn("Broadcast ciblé non envoye: {}", e.getMessage());
+        }
+    }
 }

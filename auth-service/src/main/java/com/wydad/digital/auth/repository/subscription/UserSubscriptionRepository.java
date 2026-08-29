@@ -58,4 +58,26 @@ public interface UserSubscriptionRepository extends JpaRepository<UserSubscripti
      * la suppression d'un plan encore utilisé (renvoyer 409 plutôt que 500).
      */
     boolean existsByPlan_Id(Long planId);
+
+    /**
+     * Backfill idempotent : pour chaque ligne {@code user_subscriptions}
+     * dont {@code plan_id IS NULL}, on remplit {@code plan_id} à partir de
+     * {@code zone_code} via la table {@code subscription_plans}. SQL natif
+     * (PostgreSQL) pour bénéficier du UPDATE...FROM.
+     *
+     * <p>Appelé par {@code SubscriptionPlanSeeder} après le seed initial.
+     * Idempotent : le {@code WHERE plan_id IS NULL} garantit qu'on n'écrase
+     * pas un FK déjà renseigné (ou réécrit manuellement par l'admin).</p>
+     *
+     * @return nombre de lignes mises à jour.
+     */
+    @org.springframework.data.jpa.repository.Modifying
+    @Query(value = """
+            UPDATE user_subscriptions us
+               SET plan_id = sp.id
+              FROM subscription_plans sp
+             WHERE sp.code = us.zone_code::text
+               AND us.plan_id IS NULL
+            """, nativeQuery = true)
+    int backfillPlanIdFromZoneCode();
 }

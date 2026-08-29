@@ -7,6 +7,7 @@ import com.wydad.digital.sports.model.Staff;
 import com.wydad.digital.sports.repository.PlayerRepository;
 import com.wydad.digital.sports.repository.StaffRepository;
 import com.wydad.digital.sports.filter.SportsUserContext;
+import com.wydad.digital.sports.util.TargetUrlResolver;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
@@ -110,6 +111,7 @@ public class MedicalService {
             case APT -> "Votre statut médical est APT : vous pouvez être convoqué normalement.";
         };
         notificationClient.notifyUser(p.getUserId(), null,
-                "Statut médical mis à jour", message, "/joueur/dashboard");
+                "Statut médical mis à jour", message,
+                TargetUrlResolver.resolve("JOUEUR", "/medical"));
     }
 }
