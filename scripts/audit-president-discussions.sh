@@ -108,7 +108,11 @@ ok "T5 OK : appel créé, audience = $COUNT membre(s)"
 # ───────────────────────────── T6 : notif reçue côté joueur ─────────────────────────────
 bold "T6 — Notification IN_APP reçue par un membre du groupe"
 sleep 2  # laisse le temps à la notif d'être persistée
-NOTIF_COUNT=$(curl -s "$GATEWAY/api/notifications/recent?userId=0&limit=20" \
+# Endpoint réel = /api/notification/user/{userId} (singular, pas /api/notifications/recent)
+# On cible userId=9 (premier joueur du groupe, présent dans T2 ci-dessus)
+PLAYER_ID=$(echo "$MEMBERS" | python3 -c "import sys,json; d=json.load(sys.stdin); print(next((m['userId'] for m in d if m.get('rosterRole')=='JOUEUR'), ''))")
+[ -n "$PLAYER_ID" ] || fail "T6 KO : aucun joueur trouvé dans le groupe"
+NOTIF_COUNT=$(curl -s "$GATEWAY/api/notification/user/$PLAYER_ID?limit=20" \
     -H "Authorization: Bearer $PRES_TOKEN" \
     | python3 -c "
 import sys, json
@@ -118,8 +122,8 @@ items = d if isinstance(d, list) else d.get('items', [])
 calls = [n for n in items if 'appel' in (n.get('title','')+n.get('message','')).lower() or 'briefing' in (n.get('title','')+n.get('message','')).lower()]
 print(len(calls))
 ")
-[ "$NOTIF_COUNT" -gt 0 ] || fail "T6 KO : aucune notification 'appel' reçue (vérifier NotificationClient côté sports-service)"
-ok "T6 OK : $NOTIF_COUNT notification(s) d'appel trouvée(s) dans le flux récent"
+[ "$NOTIF_COUNT" -gt 0 ] || fail "T6 KO : aucune notification 'appel' reçue par le joueur $PLAYER_ID (vérifier NotificationClient côté sports-service)"
+ok "T6 OK : $NOTIF_COUNT notification(s) d'appel reçue(s) par le joueur $PLAYER_ID"
 
 # ───────────────────────────── Résumé ─────────────────────────────
 bold "════════════════════════════════════════════════════════════════════"
