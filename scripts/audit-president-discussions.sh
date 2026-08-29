@@ -108,12 +108,18 @@ ok "T5 OK : appel créé, audience = $COUNT membre(s)"
 # ───────────────────────────── T6 : notif reçue côté joueur ─────────────────────────────
 bold "T6 — Notification IN_APP reçue par un membre du groupe"
 sleep 2  # laisse le temps à la notif d'être persistée
-# Endpoint réel = /api/notification/user/{userId} (singular, pas /api/notifications/recent)
-# On cible userId=9 (premier joueur du groupe, présent dans T2 ci-dessus)
+# Endpoint réel = /api/notification/user/{userId} (singular, pas /api/notifications/recent).
+# assertSelfOrAdmin() impose que le userId du path == userId du token, donc on doit
+# appeler avec le TOKEN DU JOUEUR 9, pas celui du président.
 PLAYER_ID=$(echo "$MEMBERS" | python3 -c "import sys,json; d=json.load(sys.stdin); print(next((m['userId'] for m in d if m.get('rosterRole')=='JOUEUR'), ''))")
 [ -n "$PLAYER_ID" ] || fail "T6 KO : aucun joueur trouvé dans le groupe"
+PLAYER_TOKEN=$(curl -s -X POST "$GATEWAY/api/auth/login" \
+    -H 'Content-Type: application/json' \
+    -d "{\"email\":\"$JOUEUR_EMAIL\",\"password\":\"Joueur2026!\"}" \
+    | python3 -c "import sys,json; print(json.load(sys.stdin).get('accessToken',''))")
+[ -n "$PLAYER_TOKEN" ] || fail "T6 KO : login joueur $JOUEUR_EMAIL impossible"
 NOTIF_COUNT=$(curl -s "$GATEWAY/api/notification/user/$PLAYER_ID?limit=20" \
-    -H "Authorization: Bearer $PRES_TOKEN" \
+    -H "Authorization: Bearer $PLAYER_TOKEN" \
     | python3 -c "
 import sys, json
 d = json.load(sys.stdin)
