@@ -3,7 +3,6 @@ package com.wydad.digital.auth.config;
 import com.wydad.digital.auth.model.subscription.SubscriptionPlan;
 import com.wydad.digital.auth.model.subscription.SubscriptionZoneCode;
 import com.wydad.digital.auth.repository.subscription.SubscriptionPlanRepository;
-import com.wydad.digital.auth.repository.subscription.UserSubscriptionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
@@ -22,14 +21,18 @@ import java.util.List;
  * {@link SubscriptionZoneCode} (source de vérité historique) :
  *  - crée un plan si manquant,
  *  - laisse intacts les plans édités par l'admin (les prix/bénéfices
- *    saisis manuellement ne sont jamais écrasés au redémarrage),
- *  - backfill {@code user_subscriptions.plan_id} depuis {@code zone_code}
- *    pour les lignes pré-migration (FK nullable, ON DELETE SET NULL).
+ *    saisis manuellement ne sont jamais écrasés au redémarrage).
  *
  * PEL-4 (sold out) est inséré en {@code isActive=false} pour mémoire.
  * Le tarif adhérent est strictement inférieur au tarif régulier uniquement
  * pour les zones ADHERENT (VIP-A, VVIP-A, VVIP-PA) — pour les autres, les
  * deux prix sont identiques (cf. enum).
+ *
+ * <p><b>Note :</b> le backfill {@code user_subscriptions.plan_id} a été
+ * déplacé dans {@link SubscriptionPlanBackfillRunner} : exécuté dans sa
+ * propre transaction (REQUIRES_NEW) sans rollback global, pour ne PAS
+ * faire crasher le service si la table historique n'existe pas (cas d'un
+ * reset VM où la base a été tronquée).</p>
  */
 @Component
 @RequiredArgsConstructor
@@ -37,7 +40,6 @@ import java.util.List;
 public class SubscriptionPlanSeeder {
 
     private final SubscriptionPlanRepository planRepository;
-    private final UserSubscriptionRepository userSubscriptionRepository;
 
     @EventListener(ApplicationReadyEvent.class)
     @Transactional
@@ -83,24 +85,6 @@ public class SubscriptionPlanSeeder {
         } else {
             log.info("SubscriptionPlanSeeder : {} plans créés ({}), {} déjà présents.",
                     created.size(), created, skipped.size());
-        }
-
-        // Backfill FK plan_id sur les user_subscriptions pré-migration.
-        // Idempotent grâce au WHERE plan_id IS NULL.
-        try {
-            int updated = userSubscriptionRepository.backfillPlanIdFromZoneCode();
-            if (updated > 0) {
-                log.info("SubscriptionPlanSeeder : backfill plan_id → {} ligne(s) mise(s) à jour.",
-                        updated);
-            } else {
-                log.debug("SubscriptionPlanSeeder : aucun backfill nécessaire (plan_id déjà renseigné).");
-            }
-        } catch (Exception ex) {
-            // Ne pas planter le démarrage du service si le backfill échoue :
-            // on log et on continue (les nouveaux achats fonctionneront, seul
-            // l'historique pré-migration restera avec plan_id=NULL).
-            log.warn("SubscriptionPlanSeeder : backfill plan_id a échoué ({}) — "
-                    + "l'historique pré-migration aura plan_id NULL.", ex.getMessage());
         }
     }
 }
