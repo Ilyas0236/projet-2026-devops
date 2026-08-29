@@ -50,6 +50,7 @@ import { DashboardParentComponent } from './pages/academie/dashboard-parent/dash
 import { DashboardJoueurComponent } from './pages/espace-joueur/dashboard-joueur/dashboard-joueur.component';
 import { DashboardStaffComponent } from './pages/espace-staff/dashboard-staff/dashboard-staff.component';
 import { PresidentDashboardComponent } from './pages/president/president-dashboard/president-dashboard.component';
+import { PresidentDiscussionsComponent } from './pages/president/president-discussions/president-discussions.component';
 import { DashboardEntraineurComponent } from './pages/espace-entraineur/dashboard-entraineur/dashboard-entraineur.component';
 import { DashboardJournalisteComponent } from './pages/espace-journaliste/dashboard-journaliste/dashboard-journaliste.component';
 import { EspaceFanComponent } from './pages/espace-fan/espace-fan.component';
@@ -143,7 +144,8 @@ export const routes: Routes = [
     component: EspaceLayoutComponent,
     canActivate: [presidentGuard],
     children: [
-      { path: 'dashboard', component: PresidentDashboardComponent }
+      { path: 'dashboard', component: PresidentDashboardComponent },
+      { path: 'discussions', component: PresidentDiscussionsComponent }
     ]
   },
   {

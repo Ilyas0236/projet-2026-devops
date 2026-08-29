@@ -1,0 +1,110 @@
+<div class="president-discussions">
+  <header class="page-header">
+    <h2>Discussions avec les équipes</h2>
+    <p class="muted">Sélectionnez une discipline, puis une catégorie. Le groupe inclut automatiquement l'entraîneur principal.</p>
+  </header>
+
+  <app-error-banner [error]="null"></app-error-banner>
+
+  <!-- ─────────────── ÉTAPE 1 — disciplines ─────────────── -->
+  <section class="toolbar">
+    <h3>Disciplines</h3>
+    <div class="chip-row">
+      <button
+        *ngFor="let d of disciplines"
+        type="button"
+        class="chip"
+        [class.active]="selectedDiscipline === d.code"
+        (click)="selectDiscipline(d.code)">
+        {{ d.label }}
+      </button>
+    </div>
+  </section>
+
+  <!-- ─────────────── ÉTAPE 2 — catégories (drill-down) ─────────────── -->
+  <section class="toolbar" *ngIf="selectedDiscipline">
+    <h3>Catégories — {{ selectedDiscipline }}</h3>
+    <div class="chip-row">
+      <button
+        *ngFor="let c of categories"
+        type="button"
+        class="chip"
+        [class.active]="selectedCategory === c.code"
+        (click)="selectCategory(c.code)">
+        {{ c.label }}
+      </button>
+    </div>
+  </section>
+
+  <!-- ─────────────── ÉTAPE 3 — équipe (membres + actions) ─────────────── -->
+  <section class="members-panel" *ngIf="selectedDiscipline && selectedCategory">
+    <div class="members-header">
+      <div>
+        <h3>Équipe {{ selectedDiscipline }} — {{ selectedCategory }}</h3>
+        <p class="muted">
+          {{ members.length }} membre(s).
+          <span *ngIf="hasCoach()">✓ Entraîneur principal inclus automatiquement.</span>
+          <span *ngIf="!hasCoach() && members.length > 0" class="warn">Aucun staff encadrant cette catégorie.</span>
+        </p>
+      </div>
+      <div class="actions">
+        <button
+          type="button"
+          class="btn-primary"
+          [disabled]="members.length === 0"
+          (click)="openCallDialog()">
+          📞 Démarrer un appel (tous)
+        </button>
+      </div>
+    </div>
+
+    <div *ngIf="membersLoading" class="loading">Chargement des membres…</div>
+
+    <div class="members-grid" *ngIf="!membersLoading && members.length > 0">
+      <div
+        *ngFor="let m of members"
+        class="member-card"
+        [class.is-coach]="m.rosterRole === 'STAFF'">
+        <div class="avatar">{{ m.fullName.charAt(0) }}</div>
+        <div class="info">
+          <div class="name">{{ m.fullName }}</div>
+          <div class="role">
+            <span *ngIf="m.rosterRole === 'STAFF'">🧑‍🏫 Entraîneur</span>
+            <span *ngIf="m.rosterRole === 'JOUEUR'">⚽ Joueur</span>
+          </div>
+        </div>
+        <button type="button" class="btn-secondary" (click)="openOneToOne(m)">1-1</button>
+      </div>
+    </div>
+
+    <div *ngIf="!membersLoading && members.length === 0" class="empty">
+      Aucun membre dans cette équipe pour le moment.
+    </div>
+
+    <!-- ─────────────── Chat de groupe (réutilisé) ─────────────── -->
+    <div class="chat-wrap" *ngIf="!membersLoading && members.length > 0">
+      <h3>Conversation de groupe</h3>
+      <app-team-chat
+        [sportType]="selectedDiscipline"
+        [category]="selectedCategory">
+      </app-team-chat>
+    </div>
+  </section>
+
+  <!-- ─────────────── Formulaire d'appel LiveKit (Phase 5) ─────────────── -->
+  <div *ngIf="callOpen" class="modal-backdrop" (click)="callOpen = false">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <header>
+        <h3>Appel vidéo/vocal — {{ selectedDiscipline }} {{ selectedCategory }}</h3>
+        <button type="button" class="btn-close" (click)="callOpen = false">✕</button>
+      </header>
+      <p class="muted">Tous les {{ members.length }} membres + l'entraîneur principal seront notifiés.</p>
+      <app-schedule-call-form
+        [lockedSportType]="selectedDiscipline"
+        [lockedCategory]="selectedCategory"
+        [lockedAudienceUserIds]="callAudience()"
+        (created)="onCallCreated()">
+      </app-schedule-call-form>
+    </div>
+  </div>
+</div>

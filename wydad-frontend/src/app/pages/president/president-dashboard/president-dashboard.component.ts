@@ -1,6 +1,7 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { ApiService } from '../../../services/api.service';
 import { ToastService } from '../../../services/toast.service';
 import { ErrorBannerComponent } from '../../../components/error-banner/error-banner.component';
@@ -23,7 +24,7 @@ import { ScheduleCallFormComponent } from '../../../components/my-calls/schedule
 @Component({
   selector: 'app-president-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, ErrorBannerComponent, MyCallsComponent, ScheduleCallFormComponent],
+  imports: [CommonModule, FormsModule, RouterLink, ErrorBannerComponent, MyCallsComponent, ScheduleCallFormComponent],
   templateUrl: './president-dashboard.component.html',
 })
 export class PresidentDashboardComponent implements OnInit {
