@@ -41,7 +41,7 @@ bold "T1 — Login président ($PRES_EMAIL)"
 PRES_TOKEN=$(curl -s -X POST "$GATEWAY/api/auth/login" \
     -H 'Content-Type: application/json' \
     -d "{\"email\":\"$PRES_EMAIL\",\"password\":\"$PRES_PASS\"}" \
-    | python -c "import sys,json; print(json.load(sys.stdin).get('accessToken',''))")
+    | python3 -c "import sys,json; print(json.load(sys.stdin).get('accessToken',''))")
 [ -n "$PRES_TOKEN" ] || fail "T1 KO : pas de token"
 ok "T1 OK : token président obtenu"
 
@@ -50,9 +50,9 @@ bold "T2 — Liste membres FOOTBALL SENIOR (vue président)"
 MEMBERS=$(curl -s "$GATEWAY/api/sports/team-chat/FOOTBALL/SENIOR/members" \
     -H "Authorization: Bearer $PRES_TOKEN")
 echo "$MEMBERS" > "$TMPDIR/members.json"
-COUNT=$(echo "$MEMBERS" | python -c "import sys,json; d=json.load(sys.stdin); print(len(d) if isinstance(d,list) else 0)")
+COUNT=$(echo "$MEMBERS" | python3 -c "import sys,json; d=json.load(sys.stdin); print(len(d) if isinstance(d,list) else 0)")
 [ "$COUNT" -gt 0 ] || fail "T2 KO : aucun membre dans FOOTBALL/SENIOR (vérifier seed)"
-HAS_COACH=$(echo "$MEMBERS" | python -c "import sys,json; d=json.load(sys.stdin); print(any(m.get('rosterRole')=='STAFF' for m in d))")
+HAS_COACH=$(echo "$MEMBERS" | python3 -c "import sys,json; d=json.load(sys.stdin); print(any(m.get('rosterRole')=='STAFF' for m in d))")
 [ "$HAS_COACH" = "True" ] || fail "T2 KO : aucun HEAD_COACH dans le groupe (exigence : coach toujours inclus)"
 ok "T2 OK : $COUNT membres, HEAD_COACH présent"
 
@@ -80,14 +80,14 @@ MEDIA_HTTP=$(curl -s -w '\n%{http_code}' -X POST \
 MEDIA_CODE=$(echo "$MEDIA_HTTP" | tail -1)
 MEDIA_BODY=$(echo "$MEDIA_HTTP" | head -1)
 [ "$MEDIA_CODE" = "201" ] || fail "T4 KO : HTTP $MEDIA_CODE (réponse : $MEDIA_BODY)"
-HAS_MEDIA=$(echo "$MEDIA_BODY" | python -c "import sys,json; d=json.load(sys.stdin); print(bool(d.get('mediaUrl')))")
+HAS_MEDIA=$(echo "$MEDIA_BODY" | python3 -c "import sys,json; d=json.load(sys.stdin); print(bool(d.get('mediaUrl')))")
 [ "$HAS_MEDIA" = "True" ] || fail "T4 KO : mediaUrl absent du message retourné"
 ok "T4 OK : message avec média persisté"
 
 # ───────────────────────────── T5 : appel président ─────────────────────────────
 bold "T5 — Démarrage appel LiveKit CATEGORIE_EQUIPE (FOOTBALL SENIOR)"
 # Audience = tous les membres du groupe (tous les userIds)
-AUDIENCE=$(echo "$MEMBERS" | python -c "import sys,json; d=json.load(sys.stdin); print(','.join(str(m['userId']) for m in d))")
+AUDIENCE=$(echo "$MEMBERS" | python3 -c "import sys,json; d=json.load(sys.stdin); print(','.join(str(m['userId']) for m in d))")
 CALL=$(curl -s -w '\n%{http_code}' -X POST \
     "$GATEWAY/api/sports/calls" \
     -H "Authorization: Bearer $PRES_TOKEN" \
@@ -110,7 +110,7 @@ bold "T6 — Notification IN_APP reçue par un membre du groupe"
 sleep 2  # laisse le temps à la notif d'être persistée
 NOTIF_COUNT=$(curl -s "$GATEWAY/api/notifications/recent?userId=0&limit=20" \
     -H "Authorization: Bearer $PRES_TOKEN" \
-    | python -c "
+    | python3 -c "
 import sys, json
 d = json.load(sys.stdin)
 items = d if isinstance(d, list) else d.get('items', [])
