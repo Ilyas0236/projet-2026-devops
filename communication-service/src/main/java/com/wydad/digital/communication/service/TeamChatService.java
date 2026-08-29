@@ -48,6 +48,28 @@ public class TeamChatService {
      * @return le message persisté (diffusion ensuite par le canal appelant)
      */
     public TeamMessage sendToGroup(String sportType, String category, String content) {
+        return sendToGroupInternal(sportType, category, content, null, null);
+    }
+
+    /**
+     * Variante avec pièce jointe (photo, etc.). Le contenu texte reste
+     * obligatoire : WhatsApp refuse un message « vide + image » et l'UI
+     * a besoin d'un aperçu. Si mediaUrl est fourni, content sert de
+     * légende (peut être une chaîne courte).
+     */
+    public TeamMessage sendToGroupWithMedia(String sportType, String category,
+                                            String content, String mediaUrl, String mediaType) {
+        if (mediaUrl == null || mediaUrl.isBlank()) {
+            throw new IllegalArgumentException("URL de média obligatoire pour un message avec pièce jointe");
+        }
+        if (mediaType == null || mediaType.isBlank()) {
+            throw new IllegalArgumentException("Type de média obligatoire (IMAGE/VIDEO/AUDIO/FILE)");
+        }
+        return sendToGroupInternal(sportType, category, content, mediaUrl, mediaType.toUpperCase());
+    }
+
+    private TeamMessage sendToGroupInternal(String sportType, String category,
+                                            String content, String mediaUrl, String mediaType) {
         Long me = requireCurrentUserId();
         String myRole = UserContext.getCurrentUserRole();
         if (content == null || content.isBlank()) {
@@ -65,6 +87,8 @@ public class TeamChatService {
                 .senderName(resolveName(me))
                 .senderRole(myRole != null ? myRole : "INCONNU")
                 .content(content.trim())
+                .mediaUrl(mediaUrl)
+                .mediaType(mediaType)
                 .build());
     }
 
@@ -90,12 +114,18 @@ public class TeamChatService {
     // ───────────────────────────── HELPERS ─────────────────────────────
 
     /**
-     * Adhésion au groupe : la fiche roster du connecté (joueur ou staff)
-     * doit correspondre au sport/catégorie demandés. L'ADMIN passe partout
-     * (supervision), comme pour la messagerie privée.
+     * Adhésion au groupe :
+     * <ul>
+     *   <li>ADMIN : passe partout (supervision) ;</li>
+     *   <li>PRESIDENT : passe partout — il a un rôle institutionnel de
+     *       communication transversale avec n'importe quelle équipe
+     *       (cf. exigence métier) ;</li>
+     *   <li>JOUEUR/STAFF/ENTRAINEUR : la fiche roster du connecté doit
+     *       correspondre au sport/catégorie demandés.</li>
+     * </ul>
      */
     private void requireMembership(String sportType, String category, Long userId, String role) {
-        if ("ADMIN".equals(role)) {
+        if ("ADMIN".equals(role) || "PRESIDENT".equals(role)) {
             return;
         }
         RosterClient.MembershipInfo mine = rosterClient.findMembership(userId);

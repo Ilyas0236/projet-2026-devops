@@ -41,6 +41,16 @@ public class TeamMessage {
     @Column(nullable = false, length = 500)
     private String content;
 
+    // ── Pièce jointe optionnelle (photo via Cloudinary) — ajoutée pour
+    //    permettre au président d'envoyer des visuels dans le chat groupe,
+    //    comme dans WhatsApp. Null si message texte pur.
+    @Column(name = "media_url", length = 500)
+    private String mediaUrl;
+
+    /** MIME ou catégorie logique : IMAGE, VIDEO, AUDIO, FILE. */
+    @Column(name = "media_type", length = 20)
+    private String mediaType;
+
     @CreationTimestamp
     private LocalDateTime createdAt;
 }
