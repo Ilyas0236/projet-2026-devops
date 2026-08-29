@@ -4,7 +4,11 @@
     <p class="muted">Sélectionnez une discipline, puis une catégorie. Le groupe inclut automatiquement l'entraîneur principal.</p>
   </header>
 
-  <app-error-banner [error]="null"></app-error-banner>
+  <app-error-banner
+    *ngIf="loadError"
+    [message]="loadErrorMessage"
+    (retry)="retryLoad()">
+  </app-error-banner>
 
   <!-- ─────────────── ÉTAPE 1 — disciplines ─────────────── -->
   <section class="toolbar">

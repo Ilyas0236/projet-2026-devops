@@ -63,6 +63,8 @@ export class PresidentDiscussionsComponent implements OnInit {
   members: Array<{ userId: number; fullName: string; rosterRole: string }> = [];
   membersLoading = false;
   callOpen = false;
+  loadError = false;
+  loadErrorMessage = '';
 
   api = inject(ApiService);
   private auth = inject(AuthService);
@@ -70,6 +72,14 @@ export class PresidentDiscussionsComponent implements OnInit {
 
   ngOnInit(): void {
     // Pas d'auto-sélection : le président choisit explicitement sa cible.
+  }
+
+  /** Bouton « Réessayer » du bandeau d'erreur. */
+  retryLoad(): void {
+    this.loadError = false;
+    if (this.selectedDiscipline && this.selectedCategory) {
+      this.loadMembers();
+    }
   }
 
   selectDiscipline(code: string): void {
