@@ -112,23 +112,6 @@
           </button>
         </div>
       </div>
-
-      <!-- Abonnement saisonnier : permet de remplacer la carte actuelle. -->
-      <div class="paper-card rounded-2xl p-6 relative overflow-hidden group">
-        <div class="absolute -right-4 -bottom-4 opacity-[0.04] group-hover:opacity-[0.08] transition-opacity pointer-events-none">
-          <svg class="w-32 h-32 text-ink-primary" fill="currentColor" viewBox="0 0 24 24"><path d="M13 7h-2v4H7v2h4v4h2v-4h4v-2h-4V7zm-1-5C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/></svg>
-        </div>
-        <div class="relative z-10">
-          <div class="w-12 h-12 bg-paper-2 border border-paper-3 rounded-xl flex items-center justify-center mb-4">
-            <svg class="w-6 h-6 text-wydad-red" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
-          </div>
-          <h3 class="section-title-light font-display font-bold text-xl uppercase tracking-wider mb-2">Changer de formule</h3>
-          <p class="text-ink-secondary text-sm mb-6 min-h-[40px]">Vous avez actuellement <span class="font-semibold text-ink-primary">{{ cardData.planName }}</span>. Choisissez une autre carte et remplacez celle-ci à tout moment.</p>
-          <a routerLink="/abonnement" class="paper-btn-primary w-full py-3 block text-center">
-            Voir les abonnements
-          </a>
-        </div>
-      </div>
     </div>
   </div>
 
