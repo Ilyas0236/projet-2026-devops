@@ -23,7 +23,8 @@
 #
 # Pré-requis : auth-service expose /api/auth/{member-card,attestation,
 # subscriptions/purchase,me/active,upgrade} et /api/admin/subscription-plans.
-# Le paiement est SIMULÉ (carte 4242... + OTP 123456).
+# Le paiement est SIMULÉ (carte 4242... + OTP 000000 — ChariBaasService
+# côté payment-service attend 000000, pas 123456).
 
 set +e
 
@@ -165,7 +166,7 @@ echo "=== 3. Achat TEST-CARTE (100 MAD) ==="
 PUR1_HTTP=$(curl -s -o /tmp/p1.json -w '%{http_code}' -X POST $BASE/api/auth/subscriptions/purchase \
   -H "Authorization: Bearer $U_TOK" -H "X-User-Id: $U_ID" -H "X-User-Email: $USER_EMAIL" \
   -H 'Content-Type: application/json' \
-  -d '{"planCode":"TEST-CARTE","cardNumber":"4242424242424242","expiryDate":"12/29","cvv":"123","otp":"123456"}')
+  -d '{"planCode":"TEST-CARTE","cardNumber":"4242424242424242","expiryDate":"12/29","cvv":"123","otp":"000000"}')
 echo "HTTP=$PUR1_HTTP body=$(cat /tmp/p1.json)"
 STATUS=$(python3 -c 'import json; print(json.load(open("/tmp/p1.json")).get("status",""))' 2>/dev/null)
 PLAN=$(python3 -c 'import json; print(json.load(open("/tmp/p1.json")).get("planCode",""))' 2>/dev/null)
@@ -238,7 +239,7 @@ echo "=== 6. Achat TEST-CARTE-2 (200 MAD) — l'ancien passe REPLACED ==="
 PUR2_HTTP=$(curl -s -o /tmp/p2.json -w '%{http_code}' -X POST $BASE/api/auth/subscriptions/purchase \
   -H "Authorization: Bearer $U_TOK" -H "X-User-Id: $U_ID" -H "X-User-Email: $USER_EMAIL" \
   -H 'Content-Type: application/json' \
-  -d '{"planCode":"TEST-CARTE-2","cardNumber":"4242424242424242","expiryDate":"12/29","cvv":"123","otp":"123456"}')
+  -d '{"planCode":"TEST-CARTE-2","cardNumber":"4242424242424242","expiryDate":"12/29","cvv":"123","otp":"000000"}')
 echo "HTTP=$PUR2_HTTP body=$(cat /tmp/p2.json)"
 STATUS=$(python3 -c 'import json; print(json.load(open("/tmp/p2.json")).get("status",""))' 2>/dev/null)
 PLAN=$(python3 -c 'import json; print(json.load(open("/tmp/p2.json")).get("planCode",""))' 2>/dev/null)
