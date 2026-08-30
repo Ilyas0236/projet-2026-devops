@@ -43,6 +43,7 @@ class AuthBadgePresseTest {
     @Mock PasswordEncoder passwordEncoder;
     @Mock JwtUtils jwtUtils;
     @Mock NotificationClientStub notificationClient;
+    @Mock com.wydad.digital.auth.repository.subscription.UserSubscriptionRepository userSubscriptionRepository;
     // QrCodeService réel : la génération ZXing est locale, sans réseau.
 
     private AuthService authService;
@@ -70,7 +71,7 @@ class AuthBadgePresseTest {
         authService = new AuthService(userRepository, kycDocumentRepository,
                 activeSessionRepository, passwordEncoder, jwtUtils,
                 new QrCodeService(), new PdfService(), null, null,
-                null, null, null);
+                null, null, null, userSubscriptionRepository);
         lenient().when(userRepository.findByEmail(anyString()))
                 .thenReturn(Optional.of(journaliste(StatutCompte.VALIDE)));
     }

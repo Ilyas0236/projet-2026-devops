@@ -23,6 +23,7 @@ import java.time.LocalDateTime;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -154,11 +155,13 @@ class AuthWave0SecurityTest {
     // ==================== S3 ====================
 
     /**
-     * L'inscription ignore le membershipLevel du client : même si on tente
-     * d'envoyer LEGENDE (prix 0) dans le body, le serveur attribue ROUGE.
+     * L'inscription ignore toute notion de niveau/carte — la carte de membre
+     * n'est plus attribuée à l'inscription. Elle est générée 100% à partir
+     * de l'abonnement saisonnier acheté (cf. refonte B.12). Pour un compte
+     * fraîchement créé, {@code membershipLevel} est donc {@code null}.
      */
     @Test
-    void s3InscriptionForceLeNiveauRougeQuelQueSoitLeNiveauEnvoye() throws Exception {
+    void s3InscriptionNeForcePlusDeNiveauLeMembreDoitAcheterUneCarte() throws Exception {
         mockMvc.perform(post("/api/auth/register")
                         .contentType("application/json")
                         .content("""
@@ -166,11 +169,11 @@ class AuthWave0SecurityTest {
                                  "password": "MotDePasse3", "firstName": "Pirate", "lastName": "Test"}
                                 """))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.membershipLevel").value("ROUGE"));
+                .andExpect(jsonPath("$.membershipLevel").doesNotExist())
+                .andExpect(jsonPath("$.planName").doesNotExist());
 
-        assertEquals(MembershipLevel.ROUGE,
-                userRepository.findByEmail("pirate@wydad.ma").orElseThrow().getMembershipLevel(),
-                "Le niveau d'inscription doit être forcé côté serveur");
+        assertNull(userRepository.findByEmail("pirate@wydad.ma").orElseThrow().getMembershipLevel(),
+                "L'inscription n'attribue plus de carte — la carte vient de l'abonnement acheté");
     }
 
     // ==================== S4 ====================
@@ -284,7 +287,11 @@ class AuthWave0SecurityTest {
                 .andExpect(status().isForbidden());
     }
 
-    /** Cas nominal : chacun accède à SA carte via les headers gateway. */
+    /**
+     * Cas nominal : un adhérent SANS abonnement actif reçoit 404 — la carte
+     * n'est générée qu'après l'achat (cf. refonte B.12). Le front doit alors
+     * proposer un CTA « Acheter mon abonnement ».
+     */
     @Test
     void s5MemberCardPropreFonctionneViaHeadersGateway() throws Exception {
         mockMvc.perform(get("/api/auth/member-card")
@@ -292,7 +299,10 @@ class AuthWave0SecurityTest {
                         .header("X-User-Email", "membre@wydad.ma")
                         .header("X-User-Role", "ADHERENT")
                         .with(user("membre@wydad.ma").roles("ADHERENT")))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.qrCodeBase64").isNotEmpty());
+                .andExpect(status().isNotFound())
+                // Le 404 vient du UserNotFoundException levé par getMemberCard
+                // (message « Aucun abonnement actif pour cet utilisateur »).
+                .andExpect(jsonPath("$.message",
+                        containsString("Aucun abonnement actif")));
     }
 }

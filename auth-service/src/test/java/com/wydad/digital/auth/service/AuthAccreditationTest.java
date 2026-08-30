@@ -47,6 +47,7 @@ class AuthAccreditationTest {
     @Mock NotificationClient notificationClient;
     @Mock ContentClient contentClient;
     @Mock com.wydad.digital.auth.client.SportsClient sportsClient;
+    @Mock com.wydad.digital.auth.repository.subscription.UserSubscriptionRepository userSubscriptionRepository;
 
     private AuthService authService;
 
@@ -54,7 +55,8 @@ class AuthAccreditationTest {
     void setUp() {
         authService = new AuthService(userRepository, kycDocumentRepository,
                 activeSessionRepository, passwordEncoder, jwtUtils,
-                null, null, null, null, notificationClient, contentClient, sportsClient);
+                null, null, null, null, notificationClient, contentClient, sportsClient,
+                userSubscriptionRepository);
     }
 
     /** Fabrique une demande complète ; les champs conditionnels sont null par défaut. */
@@ -219,7 +221,7 @@ class AuthAccreditationTest {
     // ---------- Flux historique ----------
 
     @Test
-    @DisplayName("sans demandeRole : flux ADHERENT historique inchangé")
+    @DisplayName("sans demandeRole : flux ADHERENT historique inchangé (mais plus de carte auto)")
     void sansDemande_fluxHistorique() {
         stubRegisterOk();
         authService.register(demande(null, null, null, null, null));
@@ -227,7 +229,10 @@ class AuthAccreditationTest {
         User saved = savedUser();
         assertEquals(Role.ADHERENT, saved.getRole());
         assertEquals(StatutCompte.VALIDE, saved.getStatutCompte());
-        assertEquals(MembershipLevel.ROUGE, saved.getMembershipLevel());
+        // Refonte B.12 : la carte n'est plus attribuée à l'inscription —
+        // elle est générée 100% à partir de l'abonnement saisonnier acheté.
+        assertNull(saved.getMembershipLevel(),
+                "Aucun membershipLevel à l'inscription : la carte vient de l'abonnement");
         assertNull(saved.getCategorieDemandee());
     }
 }

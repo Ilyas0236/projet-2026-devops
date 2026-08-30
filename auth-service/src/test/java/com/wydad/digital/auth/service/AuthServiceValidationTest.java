@@ -41,6 +41,7 @@ class AuthServiceValidationTest {
     @Mock PasswordEncoder passwordEncoder;
     @Mock JwtUtils jwtUtils;
     @Mock com.wydad.digital.auth.client.NotificationClient notificationClient;
+    @Mock com.wydad.digital.auth.repository.subscription.UserSubscriptionRepository userSubscriptionRepository;
 
     private AuthService authService;
 
@@ -62,7 +63,7 @@ class AuthServiceValidationTest {
     void setUp() {
         authService = new AuthService(userRepository, kycDocumentRepository,
                 activeSessionRepository, passwordEncoder, jwtUtils, null, null,
-                null, null, notificationClient, null, null);
+                null, null, notificationClient, null, null, userSubscriptionRepository);
     }
 
     // ---------- Login bloqué si compte non VALIDE ----------
