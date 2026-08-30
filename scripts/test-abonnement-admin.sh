@@ -85,12 +85,15 @@ PLAN_CODE=$(python3 -c 'import json; print(json.load(open("/tmp/plans.json"))[0]
 ok "Cible : plan id=$PLAN_ID code=$PLAN_CODE"
 
 # 4. Upload photo (multipart) en tant qu'admin
+# Préfixe = /api/admin/subscription-plans (cf. AdminSubscriptionPlanController
+# + route gateway dédiée). NE PAS utiliser /api/auth/admin/... : c'est
+# uniquement pour l'authentification.
 echo ""
-echo "=== 3. POST /api/auth/admin/subscription-plans/$PLAN_ID/card-image ==="
+echo "=== 3. POST /api/admin/subscription-plans/$PLAN_ID/card-image ==="
 UPLOAD=$(curl -s -o /tmp/upload.json -w '%{http_code}' \
   -X POST -H "Authorization: Bearer $A_TOK" \
   -F "file=@$PNG_FILE;type=image/png" \
-  "$BASE/api/auth/admin/subscription-plans/$PLAN_ID/card-image")
+  "$BASE/api/admin/subscription-plans/$PLAN_ID/card-image")
 echo "HTTP=$UPLOAD body=$(cat /tmp/upload.json)"
 if [ "$UPLOAD" != "200" ]; then
   ko "Upload photo carte" "HTTP=$UPLOAD"
@@ -123,10 +126,10 @@ fi
 
 # 6. Suppression de la photo
 echo ""
-echo "=== 5. DELETE /api/auth/admin/subscription-plans/$PLAN_ID/card-image ==="
+echo "=== 5. DELETE /api/admin/subscription-plans/$PLAN_ID/card-image ==="
 DELETE=$(curl -s -o /tmp/delete.json -w '%{http_code}' \
   -X DELETE -H "Authorization: Bearer $A_TOK" \
-  "$BASE/api/auth/admin/subscription-plans/$PLAN_ID/card-image")
+  "$BASE/api/admin/subscription-plans/$PLAN_ID/card-image")
 echo "HTTP=$DELETE body=$(cat /tmp/delete.json)"
 if [ "$DELETE" != "200" ]; then
   ko "Suppression photo" "HTTP=$DELETE"
