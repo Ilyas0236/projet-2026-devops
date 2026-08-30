@@ -245,7 +245,7 @@ PUR2_HTTP=$(curl -s -o /tmp/p2.json -w '%{http_code}' -X POST $BASE/api/auth/sub
   -H 'Content-Type: application/json' \
   -d '{"planCode":"TEST-CARTE-2","cardNumber":"4242424242424242","expiryDate":"12/29","cvv":"123","otp":"000000"}')
 echo "HTTP=$PUR2_HTTP body=$(cat /tmp/p2.json)"
-ERR_CODE=$(python3 -c 'import json; print(json.load(open("/tmp/p2.json")).get("code",""))' 2>/dev/null)
+ERR_CODE=$(python3 -c 'import json; print(json.load(open("/tmp/p2.json")).get("error",""))' 2>/dev/null)
 ERR_MSG=$(python3 -c 'import json; print(json.load(open("/tmp/p2.json")).get("message",""))' 2>/dev/null)
 if [ "$PUR2_HTTP" = "409" ] && [ "$ERR_CODE" = "ALREADY_SUBSCRIBED" ]; then
   ok "2e achat refuse avec 409 ALREADY_SUBSCRIBED"

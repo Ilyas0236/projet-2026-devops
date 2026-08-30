@@ -158,7 +158,7 @@ PUR2_HTTP=$(curl -s -o /tmp/p2.json -w '%{http_code}' -X POST $BASE/api/auth/sub
   -H 'Content-Type: application/json' \
   -d '{"planCode":"PEL-ONCE","cardNumber":"4242424242424242","expiryDate":"12/29","cvv":"123","otp":"000000"}')
 echo "HTTP=$PUR2_HTTP body=$(cat /tmp/p2.json)"
-ERR_CODE=$(python3 -c 'import json; print(json.load(open("/tmp/p2.json")).get("code",""))' 2>/dev/null)
+ERR_CODE=$(python3 -c 'import json; print(json.load(open("/tmp/p2.json")).get("error",""))' 2>/dev/null)
 ERR_MSG=$(python3 -c 'import json; print(json.load(open("/tmp/p2.json")).get("message",""))' 2>/dev/null)
 if [ "$PUR2_HTTP" = "409" ] && [ "$ERR_CODE" = "ALREADY_SUBSCRIBED" ]; then
   ok "2e achat MEME plan refuse avec 409 ALREADY_SUBSCRIBED"
@@ -179,7 +179,7 @@ PUR3_HTTP=$(curl -s -o /tmp/p3.json -w '%{http_code}' -X POST $BASE/api/auth/sub
   -H 'Content-Type: application/json' \
   -d '{"planCode":"PEL-ONCE-2","cardNumber":"4242424242424242","expiryDate":"12/29","cvv":"123","otp":"000000"}')
 echo "HTTP=$PUR3_HTTP body=$(cat /tmp/p3.json)"
-ERR_CODE2=$(python3 -c 'import json; print(json.load(open("/tmp/p3.json")).get("code",""))' 2>/dev/null)
+ERR_CODE2=$(python3 -c 'import json; print(json.load(open("/tmp/p3.json")).get("error",""))' 2>/dev/null)
 if [ "$PUR3_HTTP" = "409" ] && [ "$ERR_CODE2" = "ALREADY_SUBSCRIBED" ]; then
   ok "upgrade refuse avec 409 ALREADY_SUBSCRIBED (pas d'upgrade possible)"
 else
