@@ -1,13 +1,14 @@
 #!/bin/bash
-# Test E2E B.12 — Carte de membre 100% pilotée par l'abonnement
-# saisonnier (refonte : plus de MembershipLevel hardcodé, plus de carte
-# rouge auto-générée à l'inscription).
+# Test E2E B.12 + règle « un abonnement par saison » (30/08/2026)
+# Carte de membre 100% pilotée par l'abonnement saisonnier (refonte :
+# plus de MembershipLevel hardcodé, plus de carte rouge auto-générée
+# à l'inscription).
 #
 # Scénario : un utilisateur neuf (sans abonnement) ne peut PAS obtenir
 # de carte de membre. Dès qu'il achète un plan (TEST-CARTE, 100 MAD),
-# la carte est générée par le backend. S'il rachète (TEST-CARTE-2),
-# l'ancienne carte passe REPLACED, la nouvelle devient ACTIVE, et la
-# carte de membre affiche désormais le nouveau plan.
+# la carte est générée par le backend. S'il tente de re-acheter
+# (TEST-CARTE-2), l'API renvoie 409 ALREADY_SUBSCRIBED : pas
+# d'upgrade, pas de remplacement, l'ancien TEST-CARTE reste ACTIF.
 #
 # Étapes :
 #   1. Login user NEUF (sans abonnement) → /api/auth/member-card → 404
@@ -15,11 +16,11 @@
 #   3. Login user → POST /api/auth/subscriptions/purchase {TEST-CARTE} → 201 ACTIVE
 #   4. GET /api/auth/member-card → 200, planCode=TEST-CARTE, QR présent
 #   5. GET /api/auth/attestation → 200, PDF contient TEST-CARTE, pas "Rouge"
-#   6. POST /api/auth/subscriptions/purchase {TEST-CARTE-2} → 201, l'ancien
-#      passe REPLACED, le nouveau ACTIVE (résolu via /me/active)
-#   7. GET /api/auth/member-card → 200, planCode=TEST-CARTE-2
+#   6. POST /api/auth/subscriptions/purchase {TEST-CARTE-2} → 409 ALREADY_SUBSCRIBED
+#      (l'ancien TEST-CARTE reste ACTIVE, pas de remplacement)
+#   7. GET /api/auth/member-card → 200, planCode=TEST-CARTE (toujours)
 #   8. POST /api/auth/upgrade → 404 (endpoint supprimé)
-#   9. Cleanup admin : DELETE les 2 plans
+#   9. Cleanup admin : DELETE les 2 plans (P2 jamais utilisé, cleanup idempotent)
 #
 # Pré-requis : auth-service expose /api/auth/{member-card,attestation,
 # subscriptions/purchase,me/active,upgrade} et /api/admin/subscription-plans.
@@ -233,48 +234,56 @@ else
   ko "PDF KO (HTTP=$ATT_HTTP size=$PDF_SIZE)"
 fi
 
-# ─── 6. Achat TEST-CARTE-2 → 201, l'ancien REPLACED, le nouveau ACTIVE
+# ─── 6. Achat TEST-CARTE-2 → 409 ALREADY_SUBSCRIBED (règle « un par saison »)
+#         Avant (B.12) : 201 + ancien REPLACED, nouveau ACTIVE.
+#         Maintenant (30/08/2026) : 409, l'ancien TEST-CARTE reste ACTIF,
+#         aucun débit, pas d'upgrade possible.
 echo ""
-echo "=== 6. Achat TEST-CARTE-2 (200 MAD) — l'ancien passe REPLACED ==="
+echo "=== 6. Achat TEST-CARTE-2 (200 MAD) — doit etre 409 ALREADY_SUBSCRIBED ==="
 PUR2_HTTP=$(curl -s -o /tmp/p2.json -w '%{http_code}' -X POST $BASE/api/auth/subscriptions/purchase \
   -H "Authorization: Bearer $U_TOK" -H "X-User-Id: $U_ID" -H "X-User-Email: $USER_EMAIL" \
   -H 'Content-Type: application/json' \
   -d '{"planCode":"TEST-CARTE-2","cardNumber":"4242424242424242","expiryDate":"12/29","cvv":"123","otp":"000000"}')
 echo "HTTP=$PUR2_HTTP body=$(cat /tmp/p2.json)"
-STATUS=$(python3 -c 'import json; print(json.load(open("/tmp/p2.json")).get("status",""))' 2>/dev/null)
-PLAN=$(python3 -c 'import json; print(json.load(open("/tmp/p2.json")).get("planCode",""))' 2>/dev/null)
-PAID=$(python3 -c 'import json; print(json.load(open("/tmp/p2.json")).get("paidAmount",0))' 2>/dev/null)
-if [ "$PUR2_HTTP" = "201" ] && [ "$STATUS" = "ACTIVE" ] && [ "$PLAN" = "TEST-CARTE-2" ] && [ "$PAID" = "160.0" ]; then
-  ok "achat 2 OK (201 ACTIVE plan=TEST-CARTE-2 paid=160 — tarif adherent car 1er achat deja fait)"
+ERR_CODE=$(python3 -c 'import json; print(json.load(open("/tmp/p2.json")).get("code",""))' 2>/dev/null)
+ERR_MSG=$(python3 -c 'import json; print(json.load(open("/tmp/p2.json")).get("message",""))' 2>/dev/null)
+if [ "$PUR2_HTTP" = "409" ] && [ "$ERR_CODE" = "ALREADY_SUBSCRIBED" ]; then
+  ok "2e achat refuse avec 409 ALREADY_SUBSCRIBED"
+  # Verif que le message mentionne bien la saison et la règle
+  if echo "$ERR_MSG" | grep -q "déjà un abonnement" && echo "$ERR_MSG" | grep -q "saison"; then
+    ok "message 409 explicite (saison + 'deja un abonnement')"
+  else
+    ko "message 409 peu clair: $ERR_MSG"
+  fi
 else
-  ko "achat 2 KO (HTTP=$PUR2_HTTP status=$STATUS plan=$PLAN paid=$PAID, attendu 160)"
+  ko "2e achat aurait du etre 409 ALREADY_SUBSCRIBED (HTTP=$PUR2_HTTP code=$ERR_CODE)"
 fi
 
-# /me/active doit maintenant retourner TEST-CARTE-2
+# /me/active doit toujours retourner TEST-CARTE (l'ancien, pas remplacé)
 ME2_HTTP=$(curl -s -o /tmp/me2.json -w '%{http_code}' \
   -H "Authorization: Bearer $U_TOK" -H "X-User-Id: $U_ID" -H "X-User-Email: $USER_EMAIL" \
   "$BASE/api/auth/subscriptions/me/active")
 ME2_PLAN=$(python3 -c 'import json; print(json.load(open("/tmp/me2.json")).get("planCode",""))' 2>/dev/null)
 ME2_STATUS=$(python3 -c 'import json; print(json.load(open("/tmp/me2.json")).get("status",""))' 2>/dev/null)
 echo "/me/active HTTP=$ME2_HTTP plan=$ME2_PLAN status=$ME2_STATUS"
-if [ "$ME2_HTTP" = "200" ] && [ "$ME2_PLAN" = "TEST-CARTE-2" ] && [ "$ME2_STATUS" = "ACTIVE" ]; then
-  ok "/me/active affiche bien TEST-CARTE-2 ACTIVE (le 2e achat a remplace le 1er)"
+if [ "$ME2_HTTP" = "200" ] && [ "$ME2_PLAN" = "TEST-CARTE" ] && [ "$ME2_STATUS" = "ACTIVE" ]; then
+  ok "/me/active reste sur TEST-CARTE ACTIVE (le 2e achat a ete refuse, pas de remplacement)"
 else
-  ko "/me/active devrait etre TEST-CARTE-2 ACTIVE (HTTP=$ME2_HTTP plan=$ME2_PLAN)"
+  ko "/me/active devrait etre TEST-CARTE ACTIVE (HTTP=$ME2_HTTP plan=$ME2_PLAN)"
 fi
 
-# ─── 7. /member-card → planCode=TEST-CARTE-2 ────────────────────────
+# ─── 7. /member-card → planCode=TEST-CARTE (toujours) ───────────────
 echo ""
-echo "=== 7. /member-card apres achat 2 — doit afficher TEST-CARTE-2 ==="
+echo "=== 7. /member-card apres tentative 2 — doit toujours afficher TEST-CARTE ==="
 CARD2_HTTP=$(curl -s -o /tmp/card2.json -w '%{http_code}' \
   -H "Authorization: Bearer $U_TOK" -H "X-User-Id: $U_ID" -H "X-User-Email: $USER_EMAIL" -H "X-User-Role: $U_ROLE" \
   "$BASE/api/auth/member-card?email=$USER_EMAIL")
 PLAN2=$(python3 -c 'import json; print(json.load(open("/tmp/card2.json")).get("planCode",""))' 2>/dev/null)
 echo "HTTP=$CARD2_HTTP planCode=$PLAN2"
-if [ "$CARD2_HTTP" = "200" ] && [ "$PLAN2" = "TEST-CARTE-2" ]; then
-  ok "carte de membre reflete le NOUVEAU plan (TEST-CARTE-2)"
+if [ "$CARD2_HTTP" = "200" ] && [ "$PLAN2" = "TEST-CARTE" ]; then
+  ok "carte de membre reflete toujours TEST-CARTE (2e achat refuse, pas de switch)"
 else
-  ko "/member-card devrait etre TEST-CARTE-2 (HTTP=$CARD2_HTTP plan=$PLAN2)"
+  ko "/member-card devrait etre TEST-CARTE (HTTP=$CARD2_HTTP plan=$PLAN2)"
 fi
 
 # ─── 8. /api/auth/upgrade → 404 (supprime) ─────────────────────────

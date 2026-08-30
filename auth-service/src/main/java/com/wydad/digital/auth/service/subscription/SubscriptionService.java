@@ -32,8 +32,10 @@ import java.util.stream.Collectors;
  *
  * Cycle :
  *   1. Résolution du plan (subscription_plans) par code, contrôle isActive
- *   2. Si l'utilisateur a déjà un abonnement ACTIF → on l'expire
- *      (pas de doublon facturé) avant de continuer
+ *   2. Vérification de l'invariant « un seul abonnement par saison » :
+ *      si l'utilisateur a déjà un ACTIVE ou REPLACED pour la saison
+ *      courante, on refuse l'achat (409 ALREADY_SUBSCRIBED) — pas
+ *      d'upgrade, pas de ré-achat.
  *   3. Calcul du prix (tarif adhérent si l'utilisateur a déjà payé
  *      au moins 1 abonnement par le passé — peu importe la saison)
  *   4. Appel payment-service /card (mock en démo, vrai plus tard)
@@ -70,16 +72,23 @@ public class SubscriptionService {
     /**
      * Achat d'un abonnement saisonnier.
      *
-     * <p>Si l'utilisateur a déjà un abonnement ACTIF, il est passé à
-     * {@code EXPIRED} (statut REPLACED) <strong>avant</strong> l'appel
-     * paiement — l'invariant « un seul abonnement ACTIF par utilisateur »
-     * est respecté, et le nouveau paiement n'est jamais facturé en double.</p>
+     * <p>Un utilisateur ne peut acheter qu'<strong>un seul</strong> abonnement
+     * par saison (règle métier « un seul par saison », pas d'upgrade, pas de
+     * ré-achat). Si l'utilisateur a déjà un abonnement {@code ACTIVE} ou
+     * {@code REPLACED} pour la saison courante, l'achat est refusé en
+     * {@link AlreadySubscribedException} (HTTP 409). Un {@code EXPIRED}
+     * (saison précédente) ou aucun historique autorise l'achat.</p>
+     *
+     * <p>Le check est effectué <strong>avant</strong> l'appel paiement
+     * pour ne jamais débiter le wallet d'un user qui n'a pas le droit
+     * d'acheter (sinon on devrait faire un refund).</p>
      *
      * @param email email du JWT (sécurité IDOR)
      * @param request planCode + carte simulée
      * @return l'abonnement créé (statut ACTIVE)
      * @throws PlanNotFoundException si le code ne correspond à aucun plan
      * @throws PlanNotActiveException si le plan existe mais est désactivé
+     * @throws AlreadySubscribedException si l'user a déjà un abonnement pour la saison
      * @throws PaymentClient.PaymentException si le paiement échoue
      */
     @Transactional
@@ -94,12 +103,19 @@ public class SubscriptionService {
             throw new PlanNotActiveException(request.planCode());
         }
 
-        // Remplacement : si l'utilisateur a déjà un abonnement ACTIF, on le
-        // passe en REPLACED AVANT de facturer le nouveau. Garantit l'invariant
-        // « au plus 1 abonnement ACTIF par utilisateur » sans doublon facturé.
-        // (L'ancienne garde-fou AlreadySubscribedException a été supprimée :
-        // l'UX attendue est « remplacer ma carte » — pas un 409 bloquant.)
-        replaceActiveSubscription(user);
+        // Calcul de la saison courante (logique métier : août → juillet)
+        // et check de l'invariant « un seul abonnement par saison » :
+        // si l'utilisateur a déjà un ACTIVE ou REPLACED, on refuse AVANT
+        // de débiter. EXPIRED et CANCELLED n'empêchent pas l'achat.
+        String season = currentSeason();
+        List<UserSubscription> alreadyThere = subscriptionRepository
+                .findByUserAndSeasonAndStatusIn(user, season,
+                        List.of(UserSubscriptionStatus.ACTIVE, UserSubscriptionStatus.REPLACED));
+        if (!alreadyThere.isEmpty()) {
+            log.info("Achat refusé pour {} (saison {}) : déjà {} abonnement(s) ACTIVE/REPLACED",
+                    email, season, alreadyThere.size());
+            throw new AlreadySubscribedException(season);
+        }
 
         // Calcul du prix : tarif adhérent si l'utilisateur a déjà payé au
         // moins 1 abonnement par le passé (toutes saisons, ACTIVE ou EXPIRED),
@@ -117,7 +133,6 @@ public class SubscriptionService {
 
         // 2) Création de l'abonnement
         LocalDateTime now = LocalDateTime.now();
-        String season = currentSeason();
         LocalDateTime validFrom = now;
         LocalDateTime validTo = seasonEnd(season);
 
@@ -220,37 +235,6 @@ public class SubscriptionService {
     }
 
     /**
-     * Expire tous les abonnements ACTIF d'un utilisateur.
-     *
-     * <p>Appelé par {@link #purchase(String, PurchaseSubscriptionRequest)}
-     * <strong>avant</strong> l'appel paiement pour garantir l'invariant
-     * « un seul abonnement ACTIF par utilisateur ». Le statut choisi est
-     * {@code REPLACED} (distinct de {@code EXPIRED} qui marque la fin
-     * naturelle d'une saison) — permet aux rapports financiers de séparer
-     * « fin de saison » et « l'utilisateur a racheté une autre carte ».</p>
-     *
-     * <p>Silencieux si l'utilisateur n'a aucun abonnement actif : c'est
-     * le cas normal pour un premier achat.</p>
-     */
-    private void replaceActiveSubscription(User user) {
-        List<UserSubscription> actives = subscriptionRepository.findByUserAndStatus(
-                user, UserSubscriptionStatus.ACTIVE);
-        if (actives.isEmpty()) {
-            return;
-        }
-        LocalDateTime now = LocalDateTime.now();
-        for (UserSubscription s : actives) {
-            s.setStatus(UserSubscriptionStatus.REPLACED);
-            // La fin réelle de la carte remplacée = maintenant (cohérent
-            // avec l'usage immédiat de la nouvelle carte à l'achat).
-            s.setValidTo(now);
-        }
-        subscriptionRepository.saveAll(actives);
-        log.info("Abonnement(s) ACTIF de {} passé(s) en REPLACED avant nouvel achat (count={})",
-                user.getEmail(), actives.size());
-    }
-
-    /**
      * Mappe un code plan (ex. "PEL-6") vers l'enum legacy pour rétro-compat
      * PDF/audit. Renvoie null si l'enum n'a pas d'équivalent (cas d'un plan
      * 100% admin, sans legacy) — la colonne reste alors NULL, ce qui est
@@ -296,6 +280,22 @@ public class SubscriptionService {
     public static class PlanNotActiveException extends RuntimeException {
         public PlanNotActiveException(String code) {
             super("Plan d'abonnement désactivé : code=" + code);
+        }
+    }
+
+    /**
+     * L'utilisateur a déjà un abonnement (ACTIVE ou REPLACED) pour la
+     * saison courante : la règle « un seul abonnement par saison » refuse
+     * l'achat, l'upgrade ou le ré-achat. → 409 ALREADY_SUBSCRIBED.
+     *
+     * <p>Le message est en français et directement affichable côté front
+     * (le composant abonnement l'affiche tel quel dans le bandeau d'erreur
+     * du dialog de paiement).</p>
+     */
+    public static class AlreadySubscribedException extends RuntimeException {
+        public AlreadySubscribedException(String season) {
+            super("Vous avez déjà un abonnement pour la saison " + season
+                    + " — un seul abonnement par saison est autorisé.");
         }
     }
 }

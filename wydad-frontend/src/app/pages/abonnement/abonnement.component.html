@@ -97,20 +97,16 @@
         <li *ngFor="let line of plan.benefits.split('\n')">{{ line }}</li>
       </ul>
 
-      <!-- CTA plein largeur. -->
+      <!-- CTA plein largeur. Règle « un seul abonnement par saison » :
+           si l'utilisateur a déjà un abonnement ACTIF, le bouton Acheter
+           est masqué — seul le bandeau « Abonnement actif » + QR + dates
+           reste visible en haut de la page. Pas d'upgrade, pas de
+           ré-achat (le back renverrait 409 ALREADY_SUBSCRIBED). -->
       <div class="px-6 pb-6 mt-auto">
         <button *ngIf="plan.isActive && !activeSubscription"
                 (click)="openPaymentDialog(plan)"
                 class="paper-btn-primary w-full py-3 rounded-xl font-display font-bold uppercase text-sm">
           Acheter {{ plan.name }}
-        </button>
-        <!-- Refonte B.12 : si l'utilisateur a déjà un abonnement actif, on
-             permet le remplacement (l'ancienne carte passe REPLACED, la
-             nouvelle devient ACTIVE — pas de doublon facturé). -->
-        <button *ngIf="plan.isActive && activeSubscription"
-                (click)="openPaymentDialog(plan)"
-                class="paper-btn-primary w-full py-3 rounded-xl font-display font-bold uppercase text-sm">
-          Remplacer par {{ plan.name }}
         </button>
         <button *ngIf="!plan.isActive" disabled
                 class="w-full py-3 rounded-xl bg-gray-800 text-gray-500 font-display font-bold uppercase text-sm cursor-not-allowed">

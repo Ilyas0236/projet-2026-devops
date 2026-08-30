@@ -95,24 +95,12 @@ export class AbonnementComponent implements OnInit {
       this.router.navigate(['/login'], { queryParams: { returnUrl: this.router.url } });
       return;
     }
-    // Si l'utilisateur a déjà un abonnement ACTIF, on lui demande de
-    // confirmer le remplacement AVANT d'ouvrir le dialog de paiement
-    // (refonte B.12 : l'achat remplace l'ancien, pas de doublon facturé).
-    if (this.activeSubscription) {
-      const current = this.activeSubscription.planName
-        || this.activeSubscription.zoneDisplayName
-        || this.activeSubscription.planCode
-        || 'carte actuelle';
-      const target = plan.name || plan.code;
-      const ok = window.confirm(
-        `Vous avez déjà la carte « ${current} » (saison ${this.activeSubscription.season}).\n\n` +
-        `Confirmez-vous le remplacement par « ${target} » ?\n` +
-        `L'ancienne carte sera désactivée immédiatement, la nouvelle prend effet de suite.`
-      );
-      if (!ok) {
-        return;
-      }
-    }
+    // Règle métier « un seul abonnement par saison » : si l'utilisateur a
+    // déjà un abonnement ACTIF, le bouton « Acheter X » est masqué dans
+    // le HTML (bandeau « Abonnement actif » + QR restent affichés). Cette
+    // garde est defensive au cas où l'UI serait bypassed (F5, deep link) :
+    // le back renverra 409 ALREADY_SUBSCRIBED et le dialog affichera le
+    // message d'erreur retourné (cf. submitPayment error handler).
     this.selectedPlan = plan;
     this.paymentForm = { cardNumber: '4242424242424242', expiryDate: '12/29', cvv: '123', otp: '123456' };
     this.paymentError = '';

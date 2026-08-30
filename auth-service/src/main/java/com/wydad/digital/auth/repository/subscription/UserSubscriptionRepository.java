@@ -11,6 +11,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -35,6 +36,25 @@ public interface UserSubscriptionRepository extends JpaRepository<UserSubscripti
 
     /** Historique complet d'un utilisateur, plus récent d'abord. */
     List<UserSubscription> findByUserOrderByPaidAtDesc(User user);
+
+    /**
+     * Abonnements d'un utilisateur pour une saison donnée, dont le statut
+     * appartient à la collection fournie. Utilisé par
+     * {@code SubscriptionService.purchase()} pour appliquer la règle
+     * « un seul abonnement par saison » : si l'utilisateur a déjà un
+     * ACTIVE ou REPLACED pour la saison courante, on refuse l'achat
+     * (409 ALREADY_SUBSCRIBED) — pas d'upgrade, pas de ré-achat.
+     *
+     * <p>EXPIRÉ et CANCELLED sont exclus volontairement : un EXPIRÉ
+     * (saison précédente) autorise un nouvel achat, un CANCELLED
+     * (paiement échoué) n'a jamais été validé.</p>
+     */
+    @Query("SELECT s FROM UserSubscription s " +
+            "WHERE s.user = :user AND s.season = :season AND s.status IN :statuses")
+    List<UserSubscription> findByUserAndSeasonAndStatusIn(
+            @Param("user") User user,
+            @Param("season") String season,
+            @Param("statuses") Collection<UserSubscriptionStatus> statuses);
 
     /**
      * Nombre d'abonnements payés (toutes saisons, tous statuts) pour un

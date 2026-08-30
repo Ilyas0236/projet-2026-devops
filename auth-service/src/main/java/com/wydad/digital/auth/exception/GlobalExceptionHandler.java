@@ -246,4 +246,29 @@ public class GlobalExceptionHandler {
         );
         return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
     }
+
+    /**
+     * Règle « un seul abonnement par saison » : l'utilisateur a déjà un
+     * abonnement ACTIVE ou REPLACED pour la saison courante, on refuse
+     * l'achat, l'upgrade ou le ré-achat. — 409 ALREADY_SUBSCRIBED.
+     *
+     * <p>Code retour 409 Conflict plutôt que 400 : c'est un état de
+     * ressource, pas une faute de saisie. Le message d'erreur est
+     * directement affichable côté front (le dialog de paiement
+     * abonnement.component l'affiche tel quel).</p>
+     */
+    @ExceptionHandler(com.wydad.digital.auth.service.subscription.SubscriptionService.AlreadySubscribedException.class)
+    public ResponseEntity<ErrorResponse> handleAlreadySubscribed(
+            com.wydad.digital.auth.service.subscription.SubscriptionService.AlreadySubscribedException ex,
+            HttpServletRequest request) {
+
+        ErrorResponse error = new ErrorResponse(
+                LocalDateTime.now(),
+                HttpStatus.CONFLICT.value(),
+                "ALREADY_SUBSCRIBED",
+                ex.getMessage(),
+                request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
 }
