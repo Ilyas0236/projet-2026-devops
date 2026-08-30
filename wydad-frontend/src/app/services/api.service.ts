@@ -466,6 +466,17 @@ export class ApiService {
     return this.http.get<any[]>(`${this.baseUrl}/ticket/events`);
   }
 
+  /**
+   * Grille tarifaire des catégories de billets (TRIBUNE_OFFICIELLE, VIP, etc.)
+   * pilotée par le back — alimentée par l'enum enrichi {@code TicketCategory}.
+   * Alimente les <select> du formulaire admin billetterie : l'admin n'a plus
+   * à saisir la valeur enum à la main, et le prix par défaut est pré-rempli.
+   */
+  getTicketCategories(): Observable<{ code: string; label: string; defaultPrice: number }[]> {
+    return this.http.get<{ code: string; label: string; defaultPrice: number }[]>(
+      `${this.baseUrl}/ticket/categories`);
+  }
+
   getEventById(id: number): Observable<any> {
     return this.http.get<any>(`${this.baseUrl}/ticket/events/${id}`);
   }

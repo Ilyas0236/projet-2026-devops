@@ -39,6 +39,18 @@ export class BilletterieDetailComponent implements OnInit, OnDestroy {
   router = inject(Router);
 
   ngOnInit() {
+    // Garde-fou B.12 : un visiteur non connecté ne doit PAS pouvoir voir
+    // la page détail (sections, prix, plan du stade) — il est renvoyé
+    // vers /login avec returnUrl. C'était le "bug grave" remonté par
+    // l'utilisateur : "cliquer Acheter m'emmène dans une autre page".
+    if (!this.auth.isTokenValid()) {
+      const eventId = this.route.snapshot.paramMap.get('id');
+      this.router.navigate(['/login'], {
+        queryParams: { returnUrl: eventId ? `/billetterie/${eventId}` : '/billetterie' }
+      });
+      return;
+    }
+
     const eventId = this.route.snapshot.paramMap.get('id');
     if (eventId) {
       this.loadEvent(Number(eventId));

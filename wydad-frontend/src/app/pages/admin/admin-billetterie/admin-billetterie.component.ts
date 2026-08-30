@@ -16,6 +16,13 @@ export class AdminBilletterieComponent implements OnInit {
   competitions: any[] = [];
   /** V1.1 — matchs de calendrier (content-service) proposés comme base billetterie. */
   availableMatches: any[] = [];
+  /**
+   * Grille tarifaire BDD (GET /api/ticket/categories).
+   * Pilote les <select> "Catégorie" du formulaire admin : l'admin
+   * pioche dans la liste au lieu de saisir le code enum à la main,
+   * et le prix par défaut est pré-rempli.
+   */
+  ticketCategories: { code: string; label: string; defaultPrice: number }[] = [];
   loading = true;
   showModal = false;
   isEdit = false;
@@ -63,6 +70,11 @@ export class AdminBilletterieComponent implements OnInit {
     this.api.getMatches().subscribe({
       next: (data) => this.availableMatches = Array.isArray(data) ? data : [],
       error: () => this.availableMatches = []
+    });
+    // Grille tarifaire BDD (alimente les <select> du formulaire admin).
+    this.api.getTicketCategories().subscribe({
+      next: (data) => this.ticketCategories = Array.isArray(data) ? data : [],
+      error: () => this.ticketCategories = []
     });
     this.loadEvents();
   }
@@ -253,34 +265,51 @@ export class AdminBilletterieComponent implements OnInit {
 
   // ─────────── V3.1 — CRUD sections billetterie (admin) ───────────
 
-  /**
-   * V3.1 — Catégories proposées pour une nouvelle section. Alignées sur
-   * l'enum {@code TicketCategory} du back (cf. ticket-service) : ce sont
-   * les seules valeurs que le serveur accepte, sinon Jackson renvoie 400.
-   * Toutes les valeurs de l'enum sont exposées pour que l'admin puisse
-   * choisir librement ; les 4 « legacy » (TRIBUNE_OFFICIELLE, TRIBUNE_HONNEUR,
-   * VIRAGE_NORD, VIRAGE_SUD) sont conservées par compatibilité historique.
-   */
-  readonly sectionCategories = [
-    'TRIBUNE_OFFICIELLE', 'TRIBUNE_HONNEUR', 'VIRAGE_NORD', 'VIRAGE_SUD', 'VIP', 'ULTRA'
-  ];
-
   /** Formulaire d'une nouvelle section (rempli à partir de "Ajouter section"). */
   newSection: any = this.emptySection();
   showAddSection = false;
 
   emptySection() {
+    // Catégorie par défaut = première de la grille BDD (VIP par défaut
+    // si la grille n'est pas encore chargée). Le prix par défaut est
+    // renseigné dynamiquement par onNewSectionCategoryChange() dès que
+    // l'admin choisit une valeur dans le <select>.
+    const firstCode = this.ticketCategories[0]?.code || 'TRIBUNE_OFFICIELLE';
+    const firstDefaultPrice = this.ticketCategories[0]?.defaultPrice || 100;
     return {
       name: '',
-      category: 'STANDARD',
+      category: firstCode,
       capacity: 100,
-      price: 50
+      price: firstDefaultPrice
     };
   }
 
   openAddSection() {
     this.newSection = this.emptySection();
     this.showAddSection = true;
+  }
+
+  /**
+   * Quand l'admin change la catégorie dans le <select> du formulaire
+   * d'ajout d'une section : on pré-remplit le prix avec le prix par
+   * défaut de la grille BDD. L'admin peut ensuite l'écraser.
+   */
+  onNewSectionCategoryChange() {
+    const cat = this.ticketCategories.find(c => c.code === this.newSection.category);
+    if (cat) {
+      this.newSection.price = cat.defaultPrice;
+    }
+  }
+
+  /**
+   * Idem pour les sections existantes (en mode édition) : changer la
+   * catégorie dans le <select> ré-initialise le prix sur le défaut BDD.
+   */
+  onExistingSectionCategoryChange(s: any) {
+    const cat = this.ticketCategories.find(c => c.code === s.category);
+    if (cat) {
+      s.price = cat.defaultPrice;
+    }
   }
 
   cancelAddSection() {

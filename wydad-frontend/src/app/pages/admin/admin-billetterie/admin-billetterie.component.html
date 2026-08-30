@@ -201,8 +201,11 @@
             </div>
             <div class="col-span-2">
               <label class="text-[10px] text-gray-500 uppercase tracking-wider">Catégorie</label>
-              <input type="text" [(ngModel)]="s.category" class="admin-input !py-1 text-sm" readonly
-                     title="Catégorie immuable après création">
+              <select [(ngModel)]="s.category" (change)="onExistingSectionCategoryChange(s)"
+                      class="admin-input !py-1 text-sm"
+                      title="Catégorie (modifiable : ré-initialise le prix au défaut BDD)">
+                <option *ngFor="let c of ticketCategories" [value]="c.code">{{ c.label }} ({{ c.defaultPrice }} DH)</option>
+              </select>
             </div>
             <div class="col-span-2">
               <label class="text-[10px] text-gray-500 uppercase tracking-wider">Capacité</label>
@@ -246,8 +249,10 @@
             </div>
             <div class="col-span-2">
               <label class="text-[10px] text-gray-400 uppercase tracking-wider">Catégorie</label>
-              <select [(ngModel)]="newSection.category" class="admin-input !py-1 text-sm">
-                <option *ngFor="let c of sectionCategories" [value]="c">{{ c }}</option>
+              <select [(ngModel)]="newSection.category"
+                      (change)="onNewSectionCategoryChange()"
+                      class="admin-input !py-1 text-sm">
+                <option *ngFor="let c of ticketCategories" [value]="c.code">{{ c.label }} ({{ c.defaultPrice }} DH)</option>
               </select>
             </div>
             <div class="col-span-2">
