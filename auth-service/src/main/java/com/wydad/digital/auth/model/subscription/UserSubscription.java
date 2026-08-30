@@ -88,7 +88,7 @@ public class UserSubscription {
 
     /** QR code (base64 PNG) — généré après confirmation paiement. */
     @Lob
-    @Column(name = "qr_code_base64", columnDefinition = "LONGTEXT")
+    @Column(name = "qr_code_base64", columnDefinition = "TEXT")
     private String qrCodeBase64;
 
     /** Chemin du PDF généré (Cloudinary publicId ou stockage local). */
