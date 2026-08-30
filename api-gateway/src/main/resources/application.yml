@@ -91,6 +91,14 @@ spring:
           uri: ${AUTH_SERVICE_URI:http://localhost:8081}
           predicates:
             - Path=/api/auth/**
+        # CRUD admin des plans d'abonnement saisonnier (B.12 refonte) :
+        # le contrôleur est @RequestMapping("/api/admin/subscription-plans")
+        # côté auth-service. On étend donc la route auth-service pour
+        # exposer ce préfixe (les @PreAuthorize côté back filtrent ADMIN).
+        - id: auth-admin-subscription-plans
+          uri: ${AUTH_SERVICE_URI:http://localhost:8081}
+          predicates:
+            - Path=/api/admin/subscription-plans/**
         - id: content-service
           uri: ${CONTENT_SERVICE_URI:http://localhost:8082}
           predicates:
