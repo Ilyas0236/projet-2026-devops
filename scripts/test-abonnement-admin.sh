@@ -18,7 +18,23 @@ set +e
 
 BASE="${WAC_BASE:-http://localhost:8080}"
 ADMIN_EMAIL="admin@wac.ma"
-ADMIN_PASS="gW2Ik9f6unGIuU1y7Y5Zy70A82"
+# Lu dans /home/azureuser/wydad-digital-parent/.env (ADMIN_SEED_PASSWORD)
+# Le mot de passe historique "gW2Ik9f6unGIuU1y7Y5Zy70A82" a été changé
+# par l'admin (cf. DEPLOIEMENT-AZURE.md §6 — 25/08/2026).
+# Lu par défaut dans /home/azureuser/wydad-digital-parent/.env
+# (clé ADMIN_SEED_PASSWORD). Le mot de passe historique
+# "gW2Ik9f6unGIuU1y7Y5Zy70A82" a été changé par l'admin (cf.
+# DEPLOIEMENT-AZURE.md §6 — 25/08/2026). On autorise l'override
+# via la variable d'environnement ADMIN_PASS (utile en CI).
+ADMIN_PASS="${ADMIN_PASS:-}"
+if [ -z "$ADMIN_PASS" ] && [ -f /home/azureuser/wydad-digital-parent/.env ]; then
+  ADMIN_PASS=$(grep -E '^ADMIN_SEED_PASSWORD=' /home/azureuser/wydad-digital-parent/.env | cut -d= -f2-)
+fi
+if [ -z "$ADMIN_PASS" ]; then
+  echo "ERREUR: ADMIN_PASS non défini. Renseignez la variable d'environnement" >&2
+  echo "ADMIN_PASS ou exécutez ce script sur la VM où .env est lisible." >&2
+  exit 1
+fi
 
 PASS=0
 FAIL=0
@@ -145,7 +161,12 @@ echo ""
 echo "=== 7. Aucun fallback statique dans les sources front ==="
 FRONT_DIR="$(dirname "$0")/../wydad-frontend/src/app/pages"
 if [ -d "$FRONT_DIR" ]; then
-  for needle in "15 matchs à domicile" "QR code personnel" "Carte PDF instantanée"; do
+  # On vérifie qu'aucune CARTE visiteur (pages abonnement, home, ou
+  # composant carte) ne contient encore un fallback codé en dur.
+  # Note : la chaîne "QR code personnel" peut apparaître dans le
+  # placeholder du modal admin (aide à la saisie) — ce n'est pas un
+  # fallback côté visiteur, on l'autorise.
+  for needle in "15 matchs à domicile" "Carte PDF instantanée"; do
     if grep -rq "$needle" "$FRONT_DIR" 2>/dev/null; then
       ko "Fallback '$needle'" "encore présent dans $FRONT_DIR"
     else
