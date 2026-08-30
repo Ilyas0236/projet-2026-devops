@@ -86,8 +86,10 @@ public class UserSubscription {
     @Column(name = "status", nullable = false, length = 16)
     private UserSubscriptionStatus status = UserSubscriptionStatus.PENDING_PAYMENT;
 
-    /** QR code (base64 PNG) — généré après confirmation paiement. */
-    @Lob
+    /** QR code (base64 PNG) — généré après confirmation paiement.
+     * Pas de @Lob : sur PostgreSQL la colonne TEXT est gérée nativement
+     * (Hibernate 6 plante 'Unable to access lob stream' sur @Lob+TEXT
+     * car il tente un stream SQL qu'il n'arrive pas à matérialiser). */
     @Column(name = "qr_code_base64", columnDefinition = "TEXT")
     private String qrCodeBase64;
 

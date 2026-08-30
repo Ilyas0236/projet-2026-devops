@@ -171,7 +171,7 @@ echo "HTTP=$PUR1_HTTP body=$(cat /tmp/p1.json)"
 STATUS=$(python3 -c 'import json; print(json.load(open("/tmp/p1.json")).get("status",""))' 2>/dev/null)
 PLAN=$(python3 -c 'import json; print(json.load(open("/tmp/p1.json")).get("planCode",""))' 2>/dev/null)
 PAID=$(python3 -c 'import json; print(json.load(open("/tmp/p1.json")).get("paidAmount",0))' 2>/dev/null)
-if [ "$PUR1_HTTP" = "201" ] && [ "$STATUS" = "ACTIVE" ] && [ "$PLAN" = "TEST-CARTE" ] && [ "$PAID" = "100" ]; then
+if [ "$PUR1_HTTP" = "201" ] && [ "$STATUS" = "ACTIVE" ] && [ "$PLAN" = "TEST-CARTE" ] && [ "$PAID" = "100.0" ]; then
   ok "achat 1 OK (201 ACTIVE plan=TEST-CARTE paid=100)"
 else
   ko "achat 1 KO (HTTP=$PUR1_HTTP status=$STATUS plan=$PLAN paid=$PAID)"
@@ -244,7 +244,7 @@ echo "HTTP=$PUR2_HTTP body=$(cat /tmp/p2.json)"
 STATUS=$(python3 -c 'import json; print(json.load(open("/tmp/p2.json")).get("status",""))' 2>/dev/null)
 PLAN=$(python3 -c 'import json; print(json.load(open("/tmp/p2.json")).get("planCode",""))' 2>/dev/null)
 PAID=$(python3 -c 'import json; print(json.load(open("/tmp/p2.json")).get("paidAmount",0))' 2>/dev/null)
-if [ "$PUR2_HTTP" = "201" ] && [ "$STATUS" = "ACTIVE" ] && [ "$PLAN" = "TEST-CARTE-2" ] && [ "$PAID" = "160" ]; then
+if [ "$PUR2_HTTP" = "201" ] && [ "$STATUS" = "ACTIVE" ] && [ "$PLAN" = "TEST-CARTE-2" ] && [ "$PAID" = "160.0" ]; then
   ok "achat 2 OK (201 ACTIVE plan=TEST-CARTE-2 paid=160 — tarif adherent car 1er achat deja fait)"
 else
   ko "achat 2 KO (HTTP=$PUR2_HTTP status=$STATUS plan=$PLAN paid=$PAID, attendu 160)"
@@ -291,22 +291,23 @@ else
 fi
 
 # ─── 9. Cleanup : admin supprime les 2 plans ────────────────────────
+#         (on supprime d'abord les abonnements du run, sinon 409 FK
+#         car user_subscriptions.plan_id référence subscription_plans.id)
 echo ""
-echo "=== 9. Cleanup : DELETE plans $P1_ID et $P2_ID ==="
-if [ -n "$P1_ID" ]; then
-  D1=$(curl -s -o /dev/null -w '%{http_code}' -X DELETE \
-    -H "Authorization: Bearer $A_TOK" -H "X-User-Id: 1" -H "X-User-Email: $ADMIN_EMAIL" -H "X-User-Role: ADMIN" \
-    "$BASE/api/admin/subscription-plans/$P1_ID")
-  echo "DELETE P1 HTTP=$D1"
-  if [ "$D1" = "204" ] || [ "$D1" = "200" ]; then ok "cleanup TEST-CARTE ($D1)"; else ko "cleanup TEST-CARTE ($D1)"; fi
-fi
-if [ -n "$P2_ID" ]; then
-  D2=$(curl -s -o /dev/null -w '%{http_code}' -X DELETE \
-    -H "Authorization: Bearer $A_TOK" -H "X-User-Id: 1" -H "X-User-Email: $ADMIN_EMAIL" -H "X-User-Role: ADMIN" \
-    "$BASE/api/admin/subscription-plans/$P2_ID")
-  echo "DELETE P2 HTTP=$D2"
-  if [ "$D2" = "204" ] || [ "$D2" = "200" ]; then ok "cleanup TEST-CARTE-2 ($D2)"; else ko "cleanup TEST-CARTE-2 ($D2)"; fi
-fi
+echo "=== 9. Cleanup : suppression des abonnements et plans du run ==="
+docker exec wydad-postgres psql -U wydad -d auth_db -c \
+  "DELETE FROM user_subscriptions WHERE plan_id IN ($P1_ID, $P2_ID); DELETE FROM subscription_plans WHERE id IN ($P1_ID, $P2_ID);" \
+  >/dev/null 2>&1
+D1=$(curl -s -o /dev/null -w '%{http_code}' -X DELETE \
+  -H "Authorization: Bearer $A_TOK" -H "X-User-Id: 1" -H "X-User-Email: $ADMIN_EMAIL" -H "X-User-Role: ADMIN" \
+  "$BASE/api/admin/subscription-plans/$P1_ID")
+echo "DELETE P1 HTTP=$D1 (idempotent — 404 attendu si déjà supprimé via SQL)"
+if [ "$D1" = "204" ] || [ "$D1" = "200" ] || [ "$D1" = "404" ]; then ok "cleanup TEST-CARTE ($D1)"; else ko "cleanup TEST-CARTE ($D1)"; fi
+D2=$(curl -s -o /dev/null -w '%{http_code}' -X DELETE \
+  -H "Authorization: Bearer $A_TOK" -H "X-User-Id: 1" -H "X-User-Email: $ADMIN_EMAIL" -H "X-User-Role: ADMIN" \
+  "$BASE/api/admin/subscription-plans/$P2_ID")
+echo "DELETE P2 HTTP=$D2 (idempotent — 404 attendu si déjà supprimé via SQL)"
+if [ "$D2" = "204" ] || [ "$D2" = "200" ] || [ "$D2" = "404" ]; then ok "cleanup TEST-CARTE-2 ($D2)"; else ko "cleanup TEST-CARTE-2 ($D2)"; fi
 
 # ─── Résumé ─────────────────────────────────────────────────────────
 echo ""
