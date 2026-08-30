@@ -89,6 +89,20 @@ else
   ko "/me/active devrait etre vide (HTTP=$ME0_HTTP)"
 fi
 
+# ─── 1a. Créditeur le wallet E-cash du user (sinon payment-service refuse en 402) ─
+echo ""
+echo "=== 1a. Admin crédite 500 DH E-cash sur le user $USER_EMAIL ==="
+CRED_HTTP=$(curl -s -o /tmp/cred.json -w '%{http_code}' -X POST $BASE/api/payment/credit \
+  -H "Authorization: Bearer $A_TOK" -H "X-User-Id: 1" -H "X-User-Email: $ADMIN_EMAIL" -H "X-User-Role: ADMIN" \
+  -H 'Content-Type: application/json' \
+  -d "{\"email\":\"$USER_EMAIL\",\"amount\":500,\"description\":\"Seed test abonnement once\"}")
+echo "credit HTTP=$CRED_HTTP body=$(cat /tmp/cred.json)"
+if [ "$CRED_HTTP" = "200" ] || [ "$CRED_HTTP" = "201" ]; then
+  ok "wallet crédité de 500 DH"
+else
+  ko "credit wallet KO (HTTP=$CRED_HTTP)"
+fi
+
 # ─── 1b. Cleanup préventif des plans PEL-ONCE(-2) d'un run precedent ─
 echo ""
 echo "=== 1b. Cleanup préventif des plans PEL-ONCE(-2) éventuels ==="
