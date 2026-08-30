@@ -126,6 +126,24 @@ export class ApiService {
     return this.http.delete<any>(`${this.baseUrl}/admin/subscription-plans/${id}`);
   }
 
+  /**
+   * Upload de la photo de carte d'un plan (multipart, max 5 Mo, PNG/JPG).
+   * Renvoie le plan complet avec le nouveau {@code cardImageUrl}.
+   */
+  adminUploadPlanCardImage(planId: number, file: File): Observable<any> {
+    const form = new FormData();
+    form.append('file', file);
+    return this.http.post<any>(`${this.baseUrl}/admin/subscription-plans/${planId}/card-image`, form);
+  }
+
+  /**
+   * Retire la photo de carte d'un plan (met {@code cardImageUrl = null}).
+   * Renvoie le plan complet mis à jour.
+   */
+  adminDeletePlanCardImage(planId: number): Observable<any> {
+    return this.http.delete<any>(`${this.baseUrl}/admin/subscription-plans/${planId}/card-image`);
+  }
+
   getArticles(): Observable<any[]> {
     return this.http.get<any[]>(`${this.baseUrl}/content/articles`);
   }

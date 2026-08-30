@@ -37,19 +37,44 @@
   <div *ngIf="!loading && plans.length > 0"
        class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
     <div *ngFor="let plan of plans"
-         class="zone-card bg-white/5 border border-white/10 rounded-2xl p-6 flex flex-col"
+         class="zone-card bg-white/5 border border-white/10 rounded-2xl overflow-hidden flex flex-col"
          [class.opacity-50]="!plan.isActive">
-      <div class="flex justify-between items-start mb-3">
-        <h3 class="font-display text-xl text-white font-bold uppercase">{{ plan.name }}</h3>
-        <span *ngIf="!plan.isActive"
-              class="text-xs bg-gray-700 text-gray-300 px-2 py-1 rounded">INDISPONIBLE</span>
+
+      <!-- En-tête visuel : photo Cloudinary si renseignée, sinon bandeau rouge avec nom. -->
+      <div *ngIf="plan.cardImageUrl; else noPhoto"
+           class="relative h-40 bg-cover bg-center"
+           [style.backgroundImage]="'url(' + plan.cardImageUrl + ')'">
         <span *ngIf="plan.exceptionalPriority"
-              class="text-xs bg-amber-500/20 text-amber-300 px-2 py-1 rounded uppercase">
+              class="absolute top-2 right-2 text-xs bg-amber-500 text-black px-2 py-1 rounded font-bold uppercase shadow">
           ⭐ Priorité 48h
         </span>
+        <span *ngIf="!plan.isActive"
+              class="absolute top-2 left-2 text-xs bg-gray-800 text-white px-2 py-1 rounded font-bold uppercase">
+          Indisponible
+        </span>
       </div>
+      <ng-template #noPhoto>
+        <div class="relative h-20 bg-wydad-red flex items-center px-5">
+          <h3 class="font-display text-xl text-white font-bold uppercase">{{ plan.name }}</h3>
+          <span *ngIf="plan.exceptionalPriority"
+                class="absolute top-2 right-2 text-xs bg-amber-500 text-black px-2 py-1 rounded font-bold uppercase shadow">
+            ⭐ Priorité 48h
+          </span>
+          <span *ngIf="!plan.isActive"
+                class="absolute top-2 left-2 text-xs bg-gray-800 text-white px-2 py-1 rounded font-bold uppercase">
+            Indisponible
+          </span>
+        </div>
+      </ng-template>
 
-      <div class="my-4">
+      <!-- Titre (si photo, on l'affiche ici ; sinon déjà dans le bandeau rouge). -->
+      <h3 *ngIf="plan.cardImageUrl"
+          class="font-display text-xl text-white font-bold uppercase mt-4 px-6">
+        {{ plan.name }}
+      </h3>
+
+      <!-- Prix. -->
+      <div class="px-6 mt-3">
         <p class="text-3xl font-bold text-wydad-red">
           {{ displayPrice(plan) }}
           <span class="text-sm text-gray-400 font-normal">MAD / saison</span>
@@ -66,29 +91,28 @@
         </p>
       </div>
 
-      <ul *ngIf="plan.benefits" class="text-sm text-gray-300 space-y-1 mb-4 flex-1 whitespace-pre-line">
+      <!-- Avantages : un par ligne, UNIQUEMENT si l'admin en a saisis. Pas de fallback. -->
+      <ul *ngIf="plan.benefits"
+          class="text-sm text-gray-300 space-y-1 px-6 mt-4 mb-4 flex-1 whitespace-pre-line">
         <li *ngFor="let line of plan.benefits.split('\n')">{{ line }}</li>
       </ul>
-      <ul *ngIf="!plan.benefits" class="text-sm text-gray-300 space-y-1 mb-4 flex-1">
-        <li>✓ 15 matchs à domicile</li>
-        <li>✓ QR code d'accès personnel</li>
-        <li>✓ Carte PDF téléchargeable</li>
-        <li *ngIf="plan.exceptionalPriority">✓ Priorité 48h sur les matchs exceptionnels</li>
-      </ul>
 
-      <button *ngIf="plan.isActive && !activeSubscription"
-              (click)="openPaymentDialog(plan)"
-              class="paper-btn-primary w-full py-3 rounded-xl font-display font-bold uppercase text-sm">
-        Acheter {{ plan.name }}
-      </button>
-      <button *ngIf="activeSubscription" disabled
-              class="w-full py-3 rounded-xl bg-white/5 text-gray-500 font-display font-bold uppercase text-sm cursor-not-allowed">
-        Vous avez déjà un abonnement actif
-      </button>
-      <button *ngIf="!plan.isActive" disabled
-              class="w-full py-3 rounded-xl bg-gray-800 text-gray-500 font-display font-bold uppercase text-sm cursor-not-allowed">
-        Indisponible
-      </button>
+      <!-- CTA plein largeur. -->
+      <div class="px-6 pb-6 mt-auto">
+        <button *ngIf="plan.isActive && !activeSubscription"
+                (click)="openPaymentDialog(plan)"
+                class="paper-btn-primary w-full py-3 rounded-xl font-display font-bold uppercase text-sm">
+          Acheter {{ plan.name }}
+        </button>
+        <button *ngIf="activeSubscription" disabled
+                class="w-full py-3 rounded-xl bg-white/5 text-gray-500 font-display font-bold uppercase text-sm cursor-not-allowed">
+          Vous avez déjà un abonnement actif
+        </button>
+        <button *ngIf="!plan.isActive" disabled
+                class="w-full py-3 rounded-xl bg-gray-800 text-gray-500 font-display font-bold uppercase text-sm cursor-not-allowed">
+          Indisponible
+        </button>
+      </div>
     </div>
   </div>
 </section>

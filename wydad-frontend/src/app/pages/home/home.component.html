@@ -239,55 +239,65 @@
       <div *ngIf="subscriptionPlans.length > 0"
            class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <div *ngFor="let plan of subscriptionPlans.slice(0, 4)"
-             class="paper-card red-band p-6 flex flex-col hover:translate-y-[-4px] transition-transform duration-300">
+             class="paper-card overflow-hidden flex flex-col hover:translate-y-[-4px] transition-transform duration-300 p-0">
 
-          <!-- Bandeau priorité -->
-          <div *ngIf="plan.exceptionalPriority"
-               class="self-start paper-badge mb-3 text-[10px]">
-            ⭐ Priorité 48h
+          <!-- En-tête visuel : photo Cloudinary si renseignée, sinon bandeau rouge. -->
+          <div *ngIf="plan.cardImageUrl; else noPhoto"
+               class="relative h-32 bg-cover bg-center"
+               [style.backgroundImage]="'url(' + plan.cardImageUrl + ')'">
+            <span *ngIf="plan.exceptionalPriority"
+                  class="absolute top-2 right-2 text-[10px] bg-amber-500 text-black px-2 py-0.5 rounded font-bold uppercase shadow">
+              ⭐ Priorité 48h
+            </span>
           </div>
-
-          <!-- Titre -->
-          <h3 class="font-display font-bold text-2xl uppercase text-ink-primary mb-2">
-            {{ plan.name }}
-          </h3>
-          <p class="text-xs text-ink-tertiary uppercase tracking-wider mb-4">
-            {{ plan.code }}
-          </p>
-
-          <!-- Prix -->
-          <div class="mb-4">
-            <div class="flex items-baseline gap-2">
-              <span class="font-display font-bold text-3xl text-wydad-red">
-                {{ formatPrice(plan.regularPrice) }}
+          <ng-template #noPhoto>
+            <div class="relative h-14 bg-wydad-red flex items-center px-4">
+              <h3 class="font-display font-bold text-lg uppercase text-white">
+                {{ plan.name }}
+              </h3>
+              <span *ngIf="plan.exceptionalPriority"
+                    class="absolute top-2 right-2 text-[10px] bg-amber-500 text-black px-2 py-0.5 rounded font-bold uppercase shadow">
+                ⭐ Priorité 48h
               </span>
-              <span class="text-sm text-ink-secondary">MAD</span>
             </div>
-            <p *ngIf="plan.adherentPrice < plan.regularPrice"
-               class="text-xs text-green-700 mt-1">
-              Adhérent : {{ formatPrice(plan.adherentPrice) }} MAD
-            </p>
+          </ng-template>
+
+          <!-- Titre (si photo, le titre est sous l'image). -->
+          <div *ngIf="plan.cardImageUrl" class="px-5 pt-4">
+            <h3 class="font-display font-bold text-xl uppercase text-ink-primary">
+              {{ plan.name }}
+            </h3>
           </div>
 
-          <!-- Avantages (extracts si multi-ligne, sinon liste générique) -->
-          <ul *ngIf="plan.benefits" class="text-sm text-ink-secondary space-y-1 mb-6 flex-1 whitespace-pre-line">
-            <li *ngFor="let line of (plan.benefits.length > 200 ? plan.benefits.substring(0, 200) + '…' : plan.benefits).split('\n')">
-              {{ line }}
-            </li>
-          </ul>
-          <ul *ngIf="!plan.benefits" class="text-sm text-ink-secondary space-y-1 mb-6 flex-1">
-            <li>✓ 15 matchs à domicile</li>
-            <li>✓ QR code d'accès personnel</li>
-            <li>✓ Carte PDF téléchargeable</li>
-            <li *ngIf="plan.exceptionalPriority">✓ Priorité 48h sur les matchs exceptionnels</li>
-          </ul>
+          <div class="px-5 pt-3 flex-1 flex flex-col">
+            <!-- Prix -->
+            <div class="mb-3">
+              <div class="flex items-baseline gap-2">
+                <span class="font-display font-bold text-3xl text-wydad-red">
+                  {{ formatPrice(plan.regularPrice) }}
+                </span>
+                <span class="text-sm text-ink-secondary">MAD</span>
+              </div>
+              <p *ngIf="plan.adherentPrice < plan.regularPrice"
+                 class="text-xs text-green-700 mt-1">
+                Adhérent : {{ formatPrice(plan.adherentPrice) }} MAD
+              </p>
+            </div>
 
-          <!-- CTA : redirige vers /login?returnUrl=... si non connecté -->
-          <a [routerLink]="subscribeTarget()"
-             [queryParams]="subscribeQuery()"
-             class="paper-btn-primary w-full text-center text-sm py-2.5">
-            S'abonner
-          </a>
+            <!-- Avantages : un par ligne, UNIQUEMENT si l'admin en a saisis. Pas de fallback. -->
+            <ul *ngIf="plan.benefits" class="text-sm text-ink-secondary space-y-1 mb-4 flex-1 whitespace-pre-line">
+              <li *ngFor="let line of (plan.benefits.length > 200 ? plan.benefits.substring(0, 200) + '…' : plan.benefits).split('\n')">
+                {{ line }}
+              </li>
+            </ul>
+
+            <!-- CTA : redirige vers /login?returnUrl=... si non connecté -->
+            <a [routerLink]="subscribeTarget()"
+               [queryParams]="subscribeQuery()"
+               class="paper-btn-primary w-full text-center text-sm py-2.5 mt-auto">
+              S'abonner
+            </a>
+          </div>
         </div>
       </div>
     </div>

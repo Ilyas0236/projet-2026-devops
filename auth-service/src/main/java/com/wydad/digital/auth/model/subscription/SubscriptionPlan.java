@@ -83,6 +83,14 @@ public class SubscriptionPlan {
     @Column(name = "season", length = 16)
     private String season;
 
+    /** URL Cloudinary (publique, type=upload) de la photo de la carte. Optionnelle :
+     *  si null, le front visiteurs affiche une bande rouge avec juste le nom.
+     *  Longueur 512 = marge x2 sur la longueur typique d'une URL Cloudinary
+     *  https sécurisée avec transformations + version (~200-250 chars).
+     *  L'admin upload la photo via POST /api/admin/subscription-plans/{id}/card-image. */
+    @Column(name = "card_image_url", length = 512)
+    private String cardImageUrl;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

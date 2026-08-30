@@ -5,13 +5,16 @@ import com.wydad.digital.auth.dto.subscription.SubscriptionPlanUpsertRequest;
 import com.wydad.digital.auth.model.subscription.SubscriptionPlan;
 import com.wydad.digital.auth.repository.subscription.SubscriptionPlanRepository;
 import com.wydad.digital.auth.repository.subscription.UserSubscriptionRepository;
+import com.wydad.digital.auth.service.CloudinaryService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -30,6 +33,7 @@ public class SubscriptionPlanService {
 
     private final SubscriptionPlanRepository planRepository;
     private final UserSubscriptionRepository subscriptionRepository;
+    private final CloudinaryService cloudinaryService;
 
     /** Catalogue public (home + page /abonnement). */
     @Transactional(readOnly = true)
@@ -110,6 +114,51 @@ public class SubscriptionPlanService {
         }
         planRepository.deleteById(id);
         log.info("Plan d'abonnement {} supprimé", id);
+    }
+
+    /**
+     * Upload (ou remplacement) de la photo de la carte d'un plan.
+     * Le fichier part sur Cloudinary (type=upload public) et l'URL sécurisée
+     * est stockée dans {@code plan.cardImageUrl}.
+     *
+     * <p>Endpoint séparé de l'upsert JSON pour éviter de mélanger multipart
+     * et JSON dans la même requête. Si Cloudinary n'est pas configuré (mode
+     * dégradé local), l'URL reste null et le front affichera le bandeau
+     * sans photo — mais le circuit admin reste fonctionnel.</p>
+     */
+    @Transactional
+    public SubscriptionPlanResponse setCardImage(Long id, MultipartFile file) throws IOException {
+        SubscriptionPlan p = planRepository.findById(id)
+                .orElseThrow(() -> new PlanNotFoundException(id));
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("Fichier vide.");
+        }
+        CloudinaryService.UploadResult result = cloudinaryService.uploadPlanCardImage(file, p.getCode());
+        // En mode dégradé sans clés Cloudinary, secureUrl est null : on n'écrit
+        // pas l'URL en BDD pour ne pas stocker un placeholder.
+        if (result.secureUrl() != null) {
+            p.setCardImageUrl(result.secureUrl());
+        } else {
+            log.warn("Cloudinary non configuré : cardImageUrl non persisté pour le plan {}", p.getCode());
+        }
+        SubscriptionPlan saved = planRepository.save(p);
+        log.info("Photo de carte mise à jour pour le plan {} (id={})", saved.getCode(), saved.getId());
+        return SubscriptionPlanResponse.from(saved);
+    }
+
+    /**
+     * Supprime l'URL de la photo de carte en BDD. L'image Cloudinary
+     * n'est PAS détruite côté Cloudinary (sera nettoyée par le job de
+     * maintenance Cloudinary si on en installe un — pragmatique pour V1).
+     */
+    @Transactional
+    public SubscriptionPlanResponse clearCardImage(Long id) {
+        SubscriptionPlan p = planRepository.findById(id)
+                .orElseThrow(() -> new PlanNotFoundException(id));
+        p.setCardImageUrl(null);
+        SubscriptionPlan saved = planRepository.save(p);
+        log.info("Photo de carte retirée pour le plan {} (id={})", saved.getCode(), saved.getId());
+        return SubscriptionPlanResponse.from(saved);
     }
 
     /** Levée quand un plan référencé empêche le delete. → 409. */

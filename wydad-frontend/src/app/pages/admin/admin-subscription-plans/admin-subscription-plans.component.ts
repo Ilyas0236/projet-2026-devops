@@ -42,7 +42,8 @@ export class AdminSubscriptionPlansComponent implements OnInit {
       isActive: true,
       displayOrder: 0,
       exceptionalPriority: false,
-      season: ''
+      season: '',
+      cardImageUrl: null
     };
   }
 
@@ -107,7 +108,8 @@ export class AdminSubscriptionPlansComponent implements OnInit {
       isActive: plan.isActive,
       displayOrder: plan.displayOrder ?? 0,
       exceptionalPriority: plan.exceptionalPriority ?? false,
-      season: plan.season ?? ''
+      season: plan.season ?? '',
+      cardImageUrl: plan.cardImageUrl ?? null
     };
     this.showModal = true;
   }
@@ -210,6 +212,56 @@ export class AdminSubscriptionPlansComponent implements OnInit {
           this.toast.error('Suppression échouée : ' + (err.error?.message || err.message));
         }
       }
+    });
+  }
+
+  // ============================================================
+  // PHOTO DE CARTE
+  // ============================================================
+  /** Validation client : on refuse > 5 Mo ou type non image. */
+  onCardImageSelected(plan: any, event: any) {
+    const file: File = event.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      this.toast.error('Image trop volumineuse (max 5 Mo).');
+      event.target.value = '';
+      return;
+    }
+    if (!['image/png', 'image/jpeg', 'image/jpg', 'image/webp'].includes(file.type)) {
+      this.toast.error('Format non supporté. Utilisez PNG, JPG ou WebP.');
+      event.target.value = '';
+      return;
+    }
+    this.api.adminUploadPlanCardImage(plan.id, file).subscribe({
+      next: (updated) => {
+        this.toast.success('Photo de carte mise à jour.');
+        // Met à jour l'aperçu local (la liste brute sera rechargée pour la grid admin).
+        if (plan === this.newPlan) {
+          this.newPlan.cardImageUrl = updated.cardImageUrl;
+        }
+        this.loadPlans();
+        event.target.value = '';
+      },
+      error: (err) => {
+        this.toast.error('Échec de l\'upload : ' + (err.error?.message || err.message));
+        event.target.value = '';
+      }
+    });
+  }
+
+  /** Retire la photo de carte d'un plan (utilisable en édition comme en visualisation). */
+  removeCardImage(plan: any, event?: Event) {
+    if (event) event.stopPropagation();
+    if (!plan.cardImageUrl) return;
+    this.api.adminDeletePlanCardImage(plan.id).subscribe({
+      next: (updated) => {
+        this.toast.success('Photo de carte retirée.');
+        if (plan === this.newPlan) {
+          this.newPlan.cardImageUrl = null;
+        }
+        this.loadPlans();
+      },
+      error: (err) => this.toast.error('Échec : ' + (err.error?.message || err.message))
     });
   }
 }

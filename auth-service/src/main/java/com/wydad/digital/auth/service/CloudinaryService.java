@@ -86,6 +86,54 @@ public class CloudinaryService {
     }
 
     /**
+     * Upload d'une photo de carte d'abonnement (PNG/JPG, max 5 Mo) dans le
+     * folder public {@code subscription-cards/<code-plan>}. Le résultat
+     * est une URL directement consultable par les visiteurs (pas d'URL signée).
+     *
+     * <p>Différent de {@link #uploadKycDocument} : le type de livraison est
+     * {@code upload} (public) et non {@code authenticated}, parce que la photo
+     * doit être visible sur la home et la page /abonnement sans authentification.
+     * Le folder est préfixé par le code du plan (sanitisé) pour pouvoir
+     * éventuellement écraser l'image d'un même plan en re-uploadant.</p>
+     */
+    @SuppressWarnings("unchecked")
+    public UploadResult uploadPlanCardImage(MultipartFile file, String planCode) throws IOException {
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("Fichier vide.");
+        }
+        byte[] data = file.getBytes();
+        if (data.length > 5 * 1024 * 1024) {
+            throw new IllegalArgumentException("Fichier trop volumineux (max. 5 Mo).");
+        }
+
+        // Mode dégradé sans clés (dev local) : on garde la même signature
+        // (publicId+secureUrl) pour ne pas coupler l'API au fait qu'on ait
+        // des clés Cloudinary. secureUrl=null → le front saura qu'il n'y a
+        // pas d'image réelle.
+        if (!configured) {
+            return new UploadResult("local:plan:" + planCode, null, false);
+        }
+
+        String safeCode = planCode == null ? "unknown"
+                : planCode.replaceAll("[^A-Z0-9_-]", "_");
+        String folder = "subscription-cards/" + safeCode;
+        Uploader uploader = cloudinary.uploader();
+        Map<String, Object> result = uploader.upload(data, ObjectUtils.asMap(
+                "folder", folder,
+                "resource_type", "image",
+                // Public : la photo est servie directement par Cloudinary.
+                "type", "upload",
+                // Écrase l'image précédente du même folder pour que l'admin
+                // puisse remplacer la photo sans créer d'orphelins.
+                "overwrite", true
+        ));
+        return new UploadResult(
+                String.valueOf(result.get("public_id")),
+                String.valueOf(result.get("secure_url")),
+                true);
+    }
+
+    /**
      * URL signée temporaire (1 h) pour consulter un justificatif — utilisée par
      * l'admin lors de la validation du compte. Retourne null en mode dégradé.
      */

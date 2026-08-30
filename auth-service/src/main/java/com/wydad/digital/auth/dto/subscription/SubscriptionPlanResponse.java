@@ -22,6 +22,7 @@ public record SubscriptionPlanResponse(
         int displayOrder,
         boolean exceptionalPriority,
         String season,
+        String cardImageUrl,
         LocalDateTime updatedAt
 ) {
     public static SubscriptionPlanResponse from(SubscriptionPlan p) {
@@ -36,6 +37,7 @@ public record SubscriptionPlanResponse(
                 p.getDisplayOrder() == null ? 0 : p.getDisplayOrder(),
                 Boolean.TRUE.equals(p.getExceptionalPriority()),
                 p.getSeason(),
+                p.getCardImageUrl(),
                 p.getUpdatedAt()
         );
     }
