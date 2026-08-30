@@ -166,14 +166,24 @@ FRONT_DIR="$(dirname "$0")/../wydad-frontend/src/app/pages"
 if [ -d "$FRONT_DIR" ]; then
   # On vérifie qu'aucune CARTE visiteur (pages abonnement, home, ou
   # composant carte) ne contient encore un fallback codé en dur.
-  # Note : la chaîne "QR code personnel" peut apparaître dans le
-  # placeholder du modal admin (aide à la saisie) — ce n'est pas un
-  # fallback côté visiteur, on l'autorise.
+  # Les chaînes "15 matchs à domicile" et "QR code personnel"
+  # peuvent apparaître dans le placeholder du modal admin (aide à la
+  # saisie) — c'est légitime, on l'autorise. Le test vise
+  # strictement les fichiers qui rendent les cartes visiteurs.
+  VISITOR_PAGES=(
+    "$FRONT_DIR/abonnement"
+    "$FRONT_DIR/home"
+  )
   for needle in "15 matchs à domicile" "Carte PDF instantanée"; do
-    if grep -rq "$needle" "$FRONT_DIR" 2>/dev/null; then
-      ko "Fallback '$needle'" "encore présent dans $FRONT_DIR"
-    else
-      ok "Pas de fallback statique '$needle'"
+    found=0
+    for dir in "${VISITOR_PAGES[@]}"; do
+      if [ -d "$dir" ] && grep -rq "$needle" "$dir" 2>/dev/null; then
+        ko "Fallback '$needle'" "présent dans $dir"
+        found=1
+      fi
+    done
+    if [ "$found" = "0" ]; then
+      ok "Pas de fallback statique '$needle' sur les cartes visiteurs"
     fi
   done
 else
