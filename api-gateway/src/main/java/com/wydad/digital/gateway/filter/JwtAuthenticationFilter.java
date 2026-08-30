@@ -127,7 +127,12 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         if ("GET".equals(method)
                 && (path.equals("/api/shop/products")
                     || path.matches("/api/shop/products/\\d+")
-                    || path.startsWith("/api/ticket/events"))) {
+                    || path.startsWith("/api/ticket/events")
+                    // Grille tarifaire BDD (TRIBUNE_OFFICIELLE, VIP, etc.) :
+                    // alimente le <select> du formulaire admin et la home
+                    // publique (Billetterie-fix). C'est une donnée catalogue,
+                    // lue sans compte.
+                    || path.equals("/api/ticket/categories"))) {
             String catalogAuthHeader = request.getHeaders().getFirst("Authorization");
             if (catalogAuthHeader != null && catalogAuthHeader.startsWith("Bearer ")) {
                 return validateAndForward(exchange, chain);
