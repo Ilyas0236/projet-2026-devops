@@ -17,6 +17,15 @@ import java.math.BigDecimal;
 import java.util.Map;
 
 /**
+ * Note B.12 (post-correction) : le paiement de l'abonnement est désormais
+ * un DÉBIT E-Cash (paiement-service simulé). On ne demande plus de carte
+ * bleue à l'utilisateur pour acheter son abonnement saisonnier — le user
+ * recharge son wallet E-Cash, puis l'achat débite ce wallet. Le champ
+ * cardNumber/expiryDate/cvv/otp reste accepté en DTO pour rétro-compat
+ * front (formulaire inchangé) mais est ignoré côté serveur.
+ */
+
+/**
  * Client HTTP vers payment-service.
  * Utilisé par SubscriptionService pour valider un paiement carte SIMULÉ
  * avant d'enregistrer l'abonnement.
@@ -38,9 +47,64 @@ public class PaymentClient {
     private String internalSecret;
 
     /**
+     * Appelle payment-service /api/payment/internal/debit pour débiter le
+     * wallet E-Cash de l'utilisateur. C'est le mode de paiement utilisé pour
+     * l'achat d'un abonnement saisonnier (B.12) : on ne demande plus la carte
+     * bleue, on débite directement le solde E-Cash du supporter.
+     *
+     * <p>Endpoint protégé par X-Internal-Secret (la gateway bloque l'accès
+     * direct à /api/payment/internal/** depuis l'extérieur). Renvoie
+     * 402 Payment Required si le solde est insuffisant — l'exception est
+     * propagée telle quelle par {@code RestTemplate} (HttpClientErrorException
+     * avec status 402 et le message métier dans le body).
+     *
+     * @return la référence de la transaction E-Cash (à stocker sur UserSubscription)
+     * @throws InsufficientBalanceException si le solde est insuffisant
+     */
+    public String debitEcash(String email, BigDecimal amount, String reference) {
+        String url = paymentServiceUrl + "/api/payment/internal/debit";
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        if (internalSecret != null && !internalSecret.isBlank()) {
+            headers.set("X-Internal-Secret", internalSecret);
+        }
+
+        Map<String, Object> body = Map.of(
+                "email", email,
+                "amount", amount,
+                "reference", reference
+        );
+
+        try {
+            ResponseEntity<Map> response = restTemplate.postForEntity(
+                    url, new HttpEntity<>(body, headers), Map.class);
+            Object ref = response.getBody() == null ? null : response.getBody().get("reference");
+            if (ref == null) {
+                throw new PaymentException("payment-service n'a pas renvoyé de référence");
+            }
+            return ref.toString();
+        } catch (HttpClientErrorException e) {
+            // 402 Payment Required = solde insuffisant. On lève PaymentException
+            // avec le message métier tel quel (déjà mappé en 402 par GlobalExceptionHandler).
+            if (e.getStatusCode().value() == 402) {
+                String msg = e.getResponseBodyAsString();
+                log.warn("Solde E-Cash insuffisant pour {} : {} MAD demandés", email, amount);
+                throw new PaymentException(
+                        msg != null && !msg.isBlank() ? msg : "Solde E-Cash insuffisant");
+            }
+            log.warn("Débit E-Cash refusé pour {} : {}", email, e.getResponseBodyAsString());
+            throw new PaymentException("Débit E-Cash refusé : " + e.getResponseBodyAsString());
+        } catch (Exception e) {
+            log.error("Erreur d'appel payment-service (debit) pour {}", email, e);
+            throw new PaymentException("Service de paiement indisponible");
+        }
+    }
+
+    /**
      * Appelle payment-service /api/payment/card pour débiter le montant.
-     * Lève une exception si le paiement échoue (carte refusée, montant
-     * incorrect, etc.). Le service appelant fait le rollback.
+     * Conservé pour rétro-compat (souscriptions legacy / debug) mais PLUS
+     * UTILISÉ par le flow B.12 (remplacé par {@link #debitEcash}).
      *
      * <p>Le contrôleur payment-service /api/payment/card est annoté
      * {@code @PreAuthorize("isAuthenticated()")} et lit l'utilisateur via

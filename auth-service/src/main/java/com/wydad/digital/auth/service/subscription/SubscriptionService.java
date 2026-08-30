@@ -107,8 +107,13 @@ public class SubscriptionService {
         // jamais valorisé pour les nouveaux comptes depuis la refonte B.12).
         BigDecimal price = resolvePrice(plan, user);
 
-        // 1) Paiement carte SIMULÉ
-        String txRef = paymentClient.chargeCard(email, request, price);
+        // 1) Débit E-Cash (paiement simulé via payment-service). Le user doit
+        // avoir rechargé son wallet au préalable — si le solde est insuffisant,
+        // payment-service renvoie 402 et on propage l'exception.
+        // Référence interne = "B12-{planCode}-{userId}-{tsEpochMs}" pour
+        // permettre le rapprochement côté payment_db.transactions.
+        String reference = "B12-" + plan.getCode() + "-" + user.getId() + "-" + System.currentTimeMillis();
+        String txRef = paymentClient.debitEcash(email, price, reference);
 
         // 2) Création de l'abonnement
         LocalDateTime now = LocalDateTime.now();

@@ -48,13 +48,13 @@ public class SubscriptionController {
     }
 
     /**
-     * Achat d'un abonnement saisonnier — exige un compte VALIDE.
+     * Achat d'un abonnement saisonnier — réservé aux supporters.
+     * Seuls JOUEUR, ADHERENT et PARENT peuvent acheter (séparation des rôles :
+     * ADMIN/PRESIDENT gèrent, ENTRAINEUR/STAFF/JOURNALISTE ne sont pas clients).
      * Remplace l'ancien /api/auth/upgrade qui ne demandait aucun paiement.
      */
     @PostMapping("/purchase")
-    @PreAuthorize("hasRole('ADHERENT') or hasRole('JOUEUR') or hasRole('ENTRAINEUR') "
-            + "or hasRole('JOURNALISTE') or hasRole('STAFF') or hasRole('PARENT') "
-            + "or hasRole('PRESIDENT') or hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADHERENT') or hasRole('JOUEUR') or hasRole('PARENT')")
     public ResponseEntity<SubscriptionResponse> purchase(
             @Valid @RequestBody PurchaseSubscriptionRequest request,
             HttpServletRequest httpRequest) {
