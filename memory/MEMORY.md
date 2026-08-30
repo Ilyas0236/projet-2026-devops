@@ -5,4 +5,5 @@
 - [Admin UI grille tarifaire sections 27/08](admin-ui-section-pricing-2026-08-27.md) — commit 15dae9a, PATCH /sections/{id} in-place ; VIP=300, TRIBUNE=100, ULTRA=80, VIRAGE=50
 - [B.12 photo carte + privileges admin 30/08](abonnement-admin-photo-2026-08-30.md) — déployé E2E 9/9, commits ef82d9a/ba901a2/ac3f606 ; piège gateway `/api/admin/**` non routé, `mvn clean package` obligatoire (pas juste `package`)
 - [PUT/DELETE admin CORS 30/08](admin-put-delete-cors-2026-08-30.md) — fix Éditer/Suppr qui plantaient en silence (commit d715b25) ; piège `CORS_ALLOWED_ORIGINS` .env pas relu sans `--force-recreate`, origine doit matcher le site réel (https://VM, pas http://VM:4200)
+- [Block-*-internal manquant 30/08](gateway-internal-block-regression-2026-08-30.md) — 7 runs CI rouge car `block-admin-internal` manquant après ajout route B.12 (commit 20bae5d) ; test structurel `InternalRoutesBlockedTest` impose 1 block-*-internal par préfixe `/api/X/` ajouté
 - [Rapport PFA 27/08](rapport-pfa-2026-08-27.md) — \documentclass{report} FR, chapitres 1-9, figures TikZ, livré dans `rapport-pfa/`
