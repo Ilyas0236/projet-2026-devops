@@ -29,7 +29,11 @@ set +e
 
 BASE="${WAC_BASE:-http://localhost:8080}"
 ADMIN_EMAIL="admin@wac.ma"
-ADMIN_PASS="gW2Ik9f6unGIuU1y7Y5Zy70A82"
+# Mot de passe admin : DOIT être fourni via $ADMIN_PASSWORD (sourcing
+# .env du serveur qui contient $ADMIN_SEED_PASSWORD). Aucun fallback
+# en dur dans le repo — le mot de passe a changé après le 25/08.
+: "${ADMIN_PASSWORD:?ADMIN_PASSWORD doit etre defini (source .env du serveur)}"
+ADMIN_PASS="$ADMIN_PASSWORD"
 USER_PASSWORD="TestPass123!"
 
 # Compteurs de tests
