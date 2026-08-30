@@ -1,6 +1,7 @@
 package com.wydad.digital.auth.client;
 
 import com.wydad.digital.auth.dto.subscription.PurchaseSubscriptionRequest;
+import com.wydad.digital.auth.filter.UserContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -30,7 +31,7 @@ public class PaymentClient {
 
     private final RestTemplate restTemplate = new RestTemplate();
 
-    @Value("${wydad.services.payment-url:http://payment-service:8085}")
+    @Value("${wydad.services.payment-url:http://payment-service:8083}")
     private String paymentServiceUrl;
 
     @Value("${wydad.internal-secret:}")
@@ -41,6 +42,14 @@ public class PaymentClient {
      * Lève une exception si le paiement échoue (carte refusée, montant
      * incorrect, etc.). Le service appelant fait le rollback.
      *
+     * <p>Le contrôleur payment-service /api/payment/card est annoté
+     * {@code @PreAuthorize("isAuthenticated()")} et lit l'utilisateur via
+     * son {@code UserContextFilter}, qui exige les en-têtes
+     * {@code X-User-Email}, {@code X-User-Role} et {@code X-User-Id}
+     * (la gateway les injecte à chaque requête entrante). On doit donc
+     * les retransmettre tels quels à payment-service — sans quoi
+     * l'appel est rejeté en 403 « Utilisateur non authentifié ».
+     *
      * @return la référence de la transaction (à stocker sur UserSubscription)
      */
     public String chargeCard(String email, PurchaseSubscriptionRequest request, BigDecimal amount) {
@@ -50,6 +59,19 @@ public class PaymentClient {
         headers.setContentType(MediaType.APPLICATION_JSON);
         if (internalSecret != null && !internalSecret.isBlank()) {
             headers.set("X-Internal-Secret", internalSecret);
+        }
+        // Propagation du contexte utilisateur (injecté par la gateway).
+        String currentEmail = UserContext.getCurrentUserEmail();
+        String currentRole = UserContext.getCurrentUserRole();
+        Long currentUserId = UserContext.getCurrentUserId();
+        if (currentEmail != null) {
+            headers.set("X-User-Email", currentEmail);
+        }
+        if (currentRole != null) {
+            headers.set("X-User-Role", currentRole);
+        }
+        if (currentUserId != null) {
+            headers.set("X-User-Id", currentUserId.toString());
         }
 
         Map<String, Object> body = Map.of(

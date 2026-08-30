@@ -25,6 +25,7 @@ public class UserContextFilter extends OncePerRequestFilter {
 
         String email = request.getHeader("X-User-Email");
         String role = request.getHeader("X-User-Role");
+        String userIdHeader = request.getHeader("X-User-Id");
 
         if (email != null && role != null) {
             List<GrantedAuthority> authorities = Collections.singletonList(
@@ -34,6 +35,20 @@ public class UserContextFilter extends OncePerRequestFilter {
             SecurityContextHolder.getContext().setAuthentication(auth);
         }
 
-        chain.doFilter(request, response);
+        // Expose l'id/email/rôle pour les clients internes (ex: PaymentClient
+        // qui appelle payment-service et doit retransmettre X-User-*).
+        try {
+            if (userIdHeader != null) {
+                UserContext.setCurrentUserId(Long.parseLong(userIdHeader));
+            }
+        } catch (NumberFormatException ignore) { /* header mal formé : on ignore */ }
+        UserContext.setCurrentUserEmail(email);
+        UserContext.setCurrentUserRole(role);
+
+        try {
+            chain.doFilter(request, response);
+        } finally {
+            UserContext.clear();
+        }
     }
 }
