@@ -30,7 +30,11 @@ public class SecurityConfig {
                         .requestMatchers(org.springframework.http.HttpMethod.GET,
                                 "/api/ticket/events", "/api/ticket/events/{id}",
                                 "/api/ticket/events/upcoming",
-                                "/api/ticket/events/type/{type}").permitAll()
+                                "/api/ticket/events/type/{type}",
+                                // Grille tarifaire BDD (TRIBUNE_OFFICIELLE, VIP, etc.)
+                                // — alimente le <select> du formulaire admin et la
+                                // home publique (Billetterie-fix).
+                                "/api/ticket/categories").permitAll()
                         // Routes internes service-à-service : protégées par le
                         // secret partagé X-Internal-Secret (validé dans le
                         // contrôleur) ; la gateway les bloque en amont.
