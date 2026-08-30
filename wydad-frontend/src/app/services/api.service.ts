@@ -3,6 +3,25 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 
+/**
+ * Forme de la réponse du GET /api/auth/member-card (cf. refonte B.12).
+ * La carte est 100% dérivée de l'abonnement saisonnier ACTIF. Si pas
+ * d'abonnement actif, le backend renvoie 404 et le front affiche un
+ * CTA d'achat.
+ */
+export interface MemberCardResponse {
+  email: string;
+  firstName: string;
+  lastName: string;
+  planCode: string;
+  planName: string;
+  season: string;
+  validFrom: string;
+  validTo: string;
+  referralCode: string;
+  qrCodeBase64: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -15,8 +34,8 @@ export class ApiService {
     return this.http.post(`${this.baseUrl}/auth/login`, { email, password });
   }
 
-  getMemberCard(email: string): Observable<any> {
-    return this.http.get(`${this.baseUrl}/auth/member-card?email=${email}`);
+  getMemberCard(email: string): Observable<MemberCardResponse> {
+    return this.http.get<MemberCardResponse>(`${this.baseUrl}/auth/member-card?email=${email}`);
   }
 
   getAttestation(email: string): Observable<Blob> {

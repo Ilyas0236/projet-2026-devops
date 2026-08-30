@@ -1,34 +1,47 @@
 <!-- ═══════════════════════════════════════════════════════════ -->
-<!-- WYDAD DIGITAL — CARTE MEMBRE (thème clair)                -->
+<!-- WYDAD DIGITAL — CARTE ABONNEMENT (pilotée par plan)       -->
 <!-- ═══════════════════════════════════════════════════════════ -->
+<!-- Refonte B.12 : la carte est 100% dérivée de l'abonnement
+     saisonnier ACTIF. Couleur unique (rouge Wydad) — le
+     MembershipLevel legacy n'est plus utilisé. -->
 <div class="min-h-screen bg-paper-1 light-page pt-28 pb-24">
 
   <!-- Header -->
   <div class="container-wydad mb-12 text-center relative">
     <span class="text-wydad-red font-bold tracking-[0.3em] uppercase text-xs mb-3 block relative z-10 animate-fade-in-up" style="animation-delay: 0.1s; opacity: 0;">Passeport Digital</span>
     <h1 class="section-title-light font-display font-black text-4xl md:text-5xl uppercase tracking-tighter relative z-10 animate-fade-in-up" style="animation-delay: 0.2s; opacity: 0;">
-      Carte <span class="text-wydad-red">Membre</span>
+      Carte <span class="text-wydad-red">Abonnement</span>
     </h1>
     <p class="text-ink-secondary mt-4 max-w-2xl mx-auto relative z-10 animate-fade-in-up" style="animation-delay: 0.3s; opacity: 0;">
-      Votre passeport Wydad AC, toujours dans votre poche.
+      Votre passeport Wydad AC, généré à partir de votre abonnement saisonnier.
     </p>
   </div>
 
-  <div class="container-wydad max-w-4xl" *ngIf="cardData; else notConnected">
+  <!-- 404 — aucun abonnement actif : CTA d'achat -->
+  <div *ngIf="noSubscription" class="container-wydad flex justify-center py-20 animate-fade-in-up">
+    <div class="paper-card rounded-3xl p-12 max-w-md w-full text-center">
+      <div class="w-20 h-20 bg-paper-2 border border-paper-3 rounded-full flex items-center justify-center mx-auto mb-6">
+        <svg class="w-10 h-10 text-wydad-red" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+      </div>
+      <h2 class="section-title-light font-display font-bold text-2xl uppercase tracking-wider mb-3">Aucun abonnement actif</h2>
+      <p class="text-ink-secondary text-sm mb-8">
+        Votre carte d'abonnement est générée dès l'achat d'un plan saisonnier.
+        Choisissez la formule qui vous correspond et accédez à tous les avantages WAC.
+      </p>
+      <button (click)="goAbonnement()" class="paper-btn-primary w-full py-3.5">
+        Acheter mon abonnement
+      </button>
+    </div>
+  </div>
+
+  <div class="container-wydad max-w-4xl" *ngIf="cardData; else notConnectedOrLoading">
 
     <!-- ─── CARD VISUAL ───────────────────────────────────────── -->
-    <!-- Élément de marque type carte bancaire : volontairement riche/foncé, indépendant du thème. -->
+    <!-- Bande rouge unique (couleur du club) — indépendante du MembershipLevel
+         qui n'est plus valorisé pour les nouveaux comptes. -->
     <div class="relative w-full max-w-2xl mx-auto aspect-[1.586/1] rounded-2xl md:rounded-[2rem] overflow-hidden shadow-paper-card-hover group animate-fade-in-up mb-12" style="animation-delay: 0.4s; opacity: 0; perspective: 1000px;">
 
-      <!-- Card inner wrapper (for flip effect if wanted, or just styled container) -->
-      <div class="absolute inset-0 transition-all duration-500 bg-gradient-to-br border border-white/20 p-6 md:p-10 flex flex-col justify-between"
-           [ngClass]="{
-             'from-[#d32f2f] via-[#b71c1c] to-[#7f0000]': cardData.membershipLevel === 'ROUGE',
-             'from-[#ffd54f] via-[#ffc107] to-[#ff6f00] text-black': cardData.membershipLevel === 'OR',
-             'from-[#e0f7fa] via-[#b2ebf2] to-[#80deea] text-black': cardData.membershipLevel === 'DIAMANT',
-             'from-[#9c27b0] via-[#7b1fa2] to-[#4a148c]': cardData.membershipLevel === 'LEGENDE',
-             'from-surface-2 via-surface-3 to-surface-1': !cardData.membershipLevel || cardData.membershipLevel === 'JUNIOR'
-           }">
+      <div class="absolute inset-0 transition-all duration-500 bg-gradient-to-br from-[#d32f2f] via-[#b71c1c] to-[#7f0000] border border-white/20 p-6 md:p-10 flex flex-col justify-between">
 
         <!-- Glow / Light reflection -->
         <div class="absolute -inset-[100%] bg-gradient-to-tr from-transparent via-white/10 to-transparent group-hover:translate-x-full group-hover:translate-y-full transition-transform duration-1000"></div>
@@ -36,15 +49,14 @@
         <!-- Top Row -->
         <div class="flex justify-between items-start relative z-10">
           <div class="flex flex-col">
-            <span class="font-display font-black text-2xl md:text-3xl tracking-wider" [ngClass]="{'text-white': cardData.membershipLevel !== 'OR' && cardData.membershipLevel !== 'DIAMANT', 'text-black': cardData.membershipLevel === 'OR' || cardData.membershipLevel === 'DIAMANT'}">WYDAD AC</span>
-            <span class="text-xs md:text-sm font-semibold tracking-[0.2em] uppercase opacity-70">Supporter Officiel</span>
+            <span class="font-display font-black text-2xl md:text-3xl tracking-wider text-white">WYDAD AC</span>
+            <span class="text-xs md:text-sm font-semibold tracking-[0.2em] uppercase text-white opacity-70">Supporter Officiel</span>
           </div>
 
           <!-- NFC Icon -->
-          <svg class="w-8 h-8 opacity-50" [ngClass]="{'text-white': cardData.membershipLevel !== 'OR' && cardData.membershipLevel !== 'DIAMANT', 'text-black': cardData.membershipLevel === 'OR' || cardData.membershipLevel === 'DIAMANT'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="w-8 h-8 opacity-50 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5a3 3 0 013-3 3 3 0 013 3v6a3 3 0 01-3 3 3 3 0 01-3-3V5z" /> <!-- Approximate Wi-Fi/NFC curves -->
-            <!-- Real NFC -->
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5a3 3 0 013-3 3 3 0 013 3v6a3 3 0 01-3 3 3 3 0 01-3-3V5z" />
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
           </svg>
         </div>
@@ -52,21 +64,30 @@
         <!-- Middle Row (User Info & QR) -->
         <div class="flex justify-between items-end relative z-10">
           <div class="flex flex-col">
-            <span class="text-[10px] md:text-xs font-bold uppercase tracking-[0.1em] opacity-60 mb-1">Titulaire de la carte</span>
-            <span class="font-sans text-xl md:text-3xl font-bold uppercase tracking-widest mb-1">{{ cardData.firstName }} {{ cardData.lastName }}</span>
-            <span class="font-mono text-sm opacity-80 mt-2">ID: {{ cardData.referralCode || 'WAC-0000' }}</span>
+            <span class="text-[10px] md:text-xs font-bold uppercase tracking-[0.1em] text-white opacity-60 mb-1">Titulaire de la carte</span>
+            <span class="font-sans text-xl md:text-3xl font-bold uppercase tracking-widest mb-1 text-white">{{ cardData.firstName }} {{ cardData.lastName }}</span>
+            <span class="font-mono text-sm text-white opacity-80 mt-2">ID: {{ cardData.referralCode || 'WAC-0000' }}</span>
           </div>
 
           <!-- QR Code Container -->
-          <div class="bg-white p-2 rounded-xl shadow-lg border-2" [ngClass]="{'border-black/10': cardData.membershipLevel === 'OR' || cardData.membershipLevel === 'DIAMANT', 'border-white/20': cardData.membershipLevel !== 'OR' && cardData.membershipLevel !== 'DIAMANT'}">
+          <div class="bg-white p-2 rounded-xl shadow-lg border-2 border-white/20">
             <img [src]="'data:image/png;base64,' + cardData.qrCodeBase64" alt="QR Code" class="w-16 h-16 md:w-24 md:h-24 object-contain rounded-lg">
           </div>
         </div>
 
-        <!-- Bottom Row (Level) -->
-        <div class="absolute bottom-6 right-6 md:bottom-10 md:right-10 z-10">
-          <span class="font-display font-black text-4xl md:text-6xl opacity-10 uppercase tracking-tighter mix-blend-overlay">
-            {{ cardData.membershipLevel }}
+        <!-- Bottom Row (Plan + Season) -->
+        <div class="flex justify-between items-end relative z-10">
+          <div class="flex flex-col">
+            <span class="text-[10px] md:text-xs font-bold uppercase tracking-[0.1em] text-white opacity-60 mb-1">Formule</span>
+            <span class="font-display font-black text-lg md:text-2xl uppercase tracking-wider text-white">
+              {{ cardData.planName }}
+            </span>
+            <span class="text-[10px] md:text-xs text-white opacity-70 mt-1">
+              Saison {{ cardData.season }} · {{ cardData.validFrom | date:'dd/MM/yyyy' }} → {{ cardData.validTo | date:'dd/MM/yyyy' }}
+            </span>
+          </div>
+          <span class="font-display font-black text-2xl md:text-4xl text-white opacity-25 uppercase tracking-tighter">
+            {{ cardData.planCode }}
           </span>
         </div>
       </div>
@@ -85,14 +106,14 @@
             <svg class="w-6 h-6 text-wydad-red" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
           </div>
           <h3 class="section-title-light font-display font-bold text-xl uppercase tracking-wider mb-2">Attestation Officielle</h3>
-          <p class="text-ink-secondary text-sm mb-6 min-h-[40px]">Téléchargez votre certificat officiel d'adhésion au Wydad Athletic Club au format PDF signé.</p>
+          <p class="text-ink-secondary text-sm mb-6 min-h-[40px]">Téléchargez votre certificat d'abonnement saisonnier au Wydad Athletic Club au format PDF.</p>
           <button (click)="downloadAttestation()" [disabled]="pdfLoading" class="paper-btn-primary w-full py-3">
             {{ pdfLoading ? 'Génération...' : 'Télécharger le PDF' }}
           </button>
         </div>
       </div>
 
-      <!-- Abonnement saisonnier : remplace l'ancien système de paliers d'adhésion. -->
+      <!-- Abonnement saisonnier : permet de remplacer la carte actuelle. -->
       <div class="paper-card rounded-2xl p-6 relative overflow-hidden group">
         <div class="absolute -right-4 -bottom-4 opacity-[0.04] group-hover:opacity-[0.08] transition-opacity pointer-events-none">
           <svg class="w-32 h-32 text-ink-primary" fill="currentColor" viewBox="0 0 24 24"><path d="M13 7h-2v4H7v2h4v4h2v-4h4v-2h-4V7zm-1-5C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/></svg>
@@ -101,8 +122,8 @@
           <div class="w-12 h-12 bg-paper-2 border border-paper-3 rounded-xl flex items-center justify-center mb-4">
             <svg class="w-6 h-6 text-wydad-red" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
           </div>
-          <h3 class="section-title-light font-display font-bold text-xl uppercase tracking-wider mb-2">Mon abonnement</h3>
-          <p class="text-ink-secondary text-sm mb-6 min-h-[40px]">Souscrivez un abonnement saisonnier pour suivre toutes les rencontres du WAC avec vos avantages.</p>
+          <h3 class="section-title-light font-display font-bold text-xl uppercase tracking-wider mb-2">Changer de formule</h3>
+          <p class="text-ink-secondary text-sm mb-6 min-h-[40px]">Vous avez actuellement <span class="font-semibold text-ink-primary">{{ cardData.planName }}</span>. Choisissez une autre carte et remplacez celle-ci à tout moment.</p>
           <a routerLink="/abonnement" class="paper-btn-primary w-full py-3 block text-center">
             Voir les abonnements
           </a>
@@ -112,14 +133,14 @@
   </div>
 
   <!-- NOT CONNECTED STATE -->
-  <ng-template #notConnected>
-    <div class="container-wydad flex justify-center py-20 animate-fade-in-up">
+  <ng-template #notConnectedOrLoading>
+    <div *ngIf="!noSubscription && !cardLoading" class="container-wydad flex justify-center py-20 animate-fade-in-up">
       <div class="paper-card rounded-3xl p-12 max-w-md w-full text-center">
         <div class="w-20 h-20 bg-paper-2 border border-paper-3 rounded-full flex items-center justify-center mx-auto mb-6">
           <svg class="w-10 h-10 text-wydad-red" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
         </div>
         <h2 class="section-title-light font-display font-bold text-2xl uppercase tracking-wider mb-3">Espace Réservé</h2>
-        <p class="text-ink-secondary text-sm mb-8">Connectez-vous pour accéder à votre carte membre digitale et profiter de vos avantages exclusifs.</p>
+        <p class="text-ink-secondary text-sm mb-8">Connectez-vous pour accéder à votre carte d'abonnement digitale et profiter de vos avantages exclusifs.</p>
         <button (click)="goLogin()" class="paper-btn-primary w-full py-3.5">
           Se connecter
         </button>

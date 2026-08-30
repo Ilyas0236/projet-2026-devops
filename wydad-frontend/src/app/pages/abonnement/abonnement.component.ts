@@ -95,6 +95,24 @@ export class AbonnementComponent implements OnInit {
       this.router.navigate(['/login'], { queryParams: { returnUrl: this.router.url } });
       return;
     }
+    // Si l'utilisateur a déjà un abonnement ACTIF, on lui demande de
+    // confirmer le remplacement AVANT d'ouvrir le dialog de paiement
+    // (refonte B.12 : l'achat remplace l'ancien, pas de doublon facturé).
+    if (this.activeSubscription) {
+      const current = this.activeSubscription.planName
+        || this.activeSubscription.zoneDisplayName
+        || this.activeSubscription.planCode
+        || 'carte actuelle';
+      const target = plan.name || plan.code;
+      const ok = window.confirm(
+        `Vous avez déjà la carte « ${current} » (saison ${this.activeSubscription.season}).\n\n` +
+        `Confirmez-vous le remplacement par « ${target} » ?\n` +
+        `L'ancienne carte sera désactivée immédiatement, la nouvelle prend effet de suite.`
+      );
+      if (!ok) {
+        return;
+      }
+    }
     this.selectedPlan = plan;
     this.paymentForm = { cardNumber: '4242424242424242', expiryDate: '12/29', cvv: '123', otp: '123456' };
     this.paymentError = '';

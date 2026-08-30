@@ -104,9 +104,13 @@
                 class="paper-btn-primary w-full py-3 rounded-xl font-display font-bold uppercase text-sm">
           Acheter {{ plan.name }}
         </button>
-        <button *ngIf="activeSubscription" disabled
-                class="w-full py-3 rounded-xl bg-white/5 text-gray-500 font-display font-bold uppercase text-sm cursor-not-allowed">
-          Vous avez déjà un abonnement actif
+        <!-- Refonte B.12 : si l'utilisateur a déjà un abonnement actif, on
+             permet le remplacement (l'ancienne carte passe REPLACED, la
+             nouvelle devient ACTIVE — pas de doublon facturé). -->
+        <button *ngIf="plan.isActive && activeSubscription"
+                (click)="openPaymentDialog(plan)"
+                class="paper-btn-primary w-full py-3 rounded-xl font-display font-bold uppercase text-sm">
+          Remplacer par {{ plan.name }}
         </button>
         <button *ngIf="!plan.isActive" disabled
                 class="w-full py-3 rounded-xl bg-gray-800 text-gray-500 font-display font-bold uppercase text-sm cursor-not-allowed">
