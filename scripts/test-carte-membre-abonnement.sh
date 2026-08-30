@@ -127,7 +127,15 @@ else
   ko "/me/active devrait etre 204/404 (HTTP=$ME_HTTP)"
 fi
 
-# ─── 2. Admin cree 2 plans de test ──────────────────────────────────
+# ─── 1e. Cleanup préventif : supprimer d'éventuels plans de test
+#         reliques d'un précédent run (le script n'est pas réentrant si
+#         la session précédente a planté après la création).
+echo ""
+echo "=== 1e. Cleanup préventif des plans TEST-CARTE(-2) éventuels ==="
+docker exec wydad-postgres psql -U wydad -d auth_db -c \
+  "DELETE FROM user_subscriptions WHERE plan_id IN (SELECT id FROM subscription_plans WHERE code IN ('TEST-CARTE','TEST-CARTE-2')); DELETE FROM subscription_plans WHERE code IN ('TEST-CARTE','TEST-CARTE-2');" \
+  >/dev/null 2>&1
+echo "  (cleanup OK ou aucun plan à supprimer)"
 echo ""
 echo "=== 2. Admin cree TEST-CARTE (100/80) et TEST-CARTE-2 (200/160) ==="
 P1=$(curl -s -X POST "$BASE/api/admin/subscription-plans" \

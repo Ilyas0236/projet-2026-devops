@@ -43,6 +43,11 @@ wydad:
   # URIs des services frères (réseau docker interne) — clients internes
   content-service-uri: ${CONTENT_SERVICE_URI:http://content-service:8082}
   sports-service-uri: ${SPORTS_SERVICE_URI:http://sports-service:8087}
+  # payment-service tourne sur 8083 dans docker-compose (le client avait un
+  # fallback 8085 hérité d'une ancienne config — corrigé pour matcher
+  # l'env var injectée par compose).
+  services:
+    payment-url: ${PAYMENT_SERVICE_URI:http://payment-service:8083}
 
 app:
   otp:
