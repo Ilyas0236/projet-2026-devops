@@ -87,6 +87,18 @@ spring:
             - name: SetStatus
               args:
                 status: FORBIDDEN
+        # /api/admin/** = préfixe des routes admin du auth-service
+        # (AdminSubscriptionPlanController, B.12). On bloque l'accès
+        # externe à /api/admin/internal/** comme pour les autres
+        # services, sinon InternalRoutesBlockedTest échoue.
+        - id: block-admin-internal
+          uri: no://op
+          predicates:
+            - Path=/api/admin/internal/**
+          filters:
+            - name: SetStatus
+              args:
+                status: FORBIDDEN
         - id: auth-service
           uri: ${AUTH_SERVICE_URI:http://localhost:8081}
           predicates:
