@@ -167,25 +167,6 @@ public class GlobalExceptionHandler {
     }
 
     /**
-     * B.12 — tentative d'achat d'un 2e abonnement alors qu'un est déjà
-     * actif : 409 Conflict, plus parlant que 400.
-     */
-    @ExceptionHandler(com.wydad.digital.auth.service.subscription.SubscriptionService.AlreadySubscribedException.class)
-    public ResponseEntity<ErrorResponse> handleAlreadySubscribed(
-            com.wydad.digital.auth.service.subscription.SubscriptionService.AlreadySubscribedException ex,
-            HttpServletRequest request) {
-
-        ErrorResponse error = new ErrorResponse(
-                LocalDateTime.now(),
-                HttpStatus.CONFLICT.value(),
-                "ALREADY_SUBSCRIBED",
-                ex.getMessage(),
-                request.getRequestURI()
-        );
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
-    }
-
-    /**
      * B.12 — paiement refusé par payment-service : on propage 402 Payment
      * Required (code HTTP non standard mais clair) plutôt que 400.
      */

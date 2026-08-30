@@ -12,7 +12,12 @@ import java.io.ByteArrayOutputStream;
 @Service
 public class PdfService {
 
-    public byte[] generateAttestation(User user) throws Exception {
+    /**
+     * Attestation PDF — 100% dérivée de l'abonnement saisonnier ACTIF.
+     * Affiche le nom du plan (pas un MembershipLevel legacy), la saison
+     * et la période de validité de l'abonnement acheté.
+     */
+    public byte[] generateAttestation(UserSubscription sub, User user) throws Exception {
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         Document document = new Document(PageSize.A4);
         PdfWriter.getInstance(document, outputStream);
@@ -21,7 +26,7 @@ public class PdfService {
 
         // Titre
         Font titleFont = new Font(Font.HELVETICA, 24, Font.BOLD, new Color(0xCC, 0x00, 0x00));
-        Paragraph title = new Paragraph("ATTESTATION D'ADHESION", titleFont);
+        Paragraph title = new Paragraph("ATTESTATION D'ABONNEMENT", titleFont);
         title.setAlignment(Element.ALIGN_CENTER);
         document.add(title);
         document.add(Chunk.NEWLINE);
@@ -38,7 +43,10 @@ public class PdfService {
         Font normalFont = new Font(Font.HELVETICA, 12);
         Font boldFont = new Font(Font.HELVETICA, 12, Font.BOLD);
 
-        document.add(new Paragraph("Attestation n° WAC-" + user.getId() + "-" + user.getReferralCode(), normalFont));
+        String planCode = sub.getPlan() != null ? sub.getPlan().getCode() : sub.getZoneCode().getCode();
+        String planName = sub.getPlan() != null ? sub.getPlan().getName() : sub.getZoneCode().getDisplayName();
+
+        document.add(new Paragraph("Attestation n° WAC-SUB-" + sub.getId(), normalFont));
         document.add(Chunk.NEWLINE);
 
         document.add(new Paragraph("Le Wydad Athletic Club certifie que :", normalFont));
@@ -54,15 +62,21 @@ public class PdfService {
         emailPara.add(new Chunk(user.getEmail(), normalFont));
         document.add(emailPara);
 
-        Paragraph phonePara = new Paragraph();
-        phonePara.add(new Chunk("Telephone : ", boldFont));
-        phonePara.add(new Chunk(user.getPhone(), normalFont));
-        document.add(phonePara);
+        Paragraph planPara = new Paragraph();
+        planPara.add(new Chunk("Abonnement actif : ", boldFont));
+        planPara.add(new Chunk(planName + " (" + planCode + ")", normalFont));
+        document.add(planPara);
 
-        Paragraph levelPara = new Paragraph();
-        levelPara.add(new Chunk("Niveau d'adhesion : ", boldFont));
-        levelPara.add(new Chunk(user.getMembershipLevel().getDisplayName() + " (" + user.getMembershipLevel().getPrice() + " DH)", normalFont));
-        document.add(levelPara);
+        Paragraph seasonPara = new Paragraph();
+        seasonPara.add(new Chunk("Saison : ", boldFont));
+        seasonPara.add(new Chunk(sub.getSeason(), normalFont));
+        document.add(seasonPara);
+
+        Paragraph validPara = new Paragraph();
+        validPara.add(new Chunk("Valable du ", boldFont));
+        validPara.add(new Chunk(sub.getValidFrom().toLocalDate().toString()
+                + " au " + sub.getValidTo().toLocalDate().toString(), normalFont));
+        document.add(validPara);
 
         Paragraph codePara = new Paragraph();
         codePara.add(new Chunk("Code adherent : ", boldFont));
@@ -70,7 +84,7 @@ public class PdfService {
         document.add(codePara);
 
         document.add(Chunk.NEWLINE);
-        document.add(new Paragraph("Cette attestation est delivree a titre de preuve d'adhesion au club.", normalFont));
+        document.add(new Paragraph("Cette attestation est delivree a titre de preuve d'abonnement saisonnier au club.", normalFont));
         document.add(Chunk.NEWLINE);
 
         Paragraph datePara = new Paragraph();

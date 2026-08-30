@@ -36,7 +36,12 @@ public class User {
     private String lastName;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    // nullable : depuis la refonte B.12, l'inscription n'attribue plus de
+    // MembershipLevel (la carte est 100% pilotée par l'abonnement saisonnier
+    // acheté). Les comptes historiques conservent leur valeur (ROUGE/OR/etc.)
+    // pour rétro-compat du front, mais les nouveaux comptes restent NULL
+    // tant qu'aucun abonnement n'est souscrit.
+    @Column
     private MembershipLevel membershipLevel;
 
     @Enumerated(EnumType.STRING)

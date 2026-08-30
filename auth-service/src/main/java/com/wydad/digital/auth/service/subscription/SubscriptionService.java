@@ -31,9 +31,11 @@ import java.util.stream.Collectors;
  * Logique métier des abonnements saisonniers.
  *
  * Cycle :
- *   1. Vérification que l'utilisateur n'a pas déjà un abonnement ACTIF
- *   2. Résolution du plan (subscription_plans) par code, contrôle isActive
- *   3. Calcul du prix selon le statut adhérent (MembershipLevel payant)
+ *   1. Résolution du plan (subscription_plans) par code, contrôle isActive
+ *   2. Si l'utilisateur a déjà un abonnement ACTIF → on l'expire
+ *      (pas de doublon facturé) avant de continuer
+ *   3. Calcul du prix (tarif adhérent si l'utilisateur a déjà payé
+ *      au moins 1 abonnement par le passé — peu importe la saison)
  *   4. Appel payment-service /card (mock en démo, vrai plus tard)
  *   5. Sur succès : création UserSubscription(ACTIVE) + QR + PDF
  *      (FK plan_id + zone_code legacy dérivés du plan)
@@ -68,12 +70,16 @@ public class SubscriptionService {
     /**
      * Achat d'un abonnement saisonnier.
      *
+     * <p>Si l'utilisateur a déjà un abonnement ACTIF, il est passé à
+     * {@code EXPIRED} (statut REPLACED) <strong>avant</strong> l'appel
+     * paiement — l'invariant « un seul abonnement ACTIF par utilisateur »
+     * est respecté, et le nouveau paiement n'est jamais facturé en double.</p>
+     *
      * @param email email du JWT (sécurité IDOR)
      * @param request planCode + carte simulée
      * @return l'abonnement créé (statut ACTIVE)
      * @throws PlanNotFoundException si le code ne correspond à aucun plan
      * @throws PlanNotActiveException si le plan existe mais est désactivé
-     * @throws AlreadySubscribedException si l'utilisateur a déjà un abonnement ACTIF
      * @throws PaymentClient.PaymentException si le paiement échoue
      */
     @Transactional
@@ -88,16 +94,17 @@ public class SubscriptionService {
             throw new PlanNotActiveException(request.planCode());
         }
 
-        // Garde-fou : pas de doublon d'abonnement actif
-        subscriptionRepository.findActiveByUser(user).ifPresent(s -> {
-            throw new AlreadySubscribedException(
-                    "L'utilisateur a déjà un abonnement actif : "
-                            + (s.getPlan() != null ? s.getPlan().getCode() : s.getZoneCode().getCode()));
-        });
+        // Remplacement : si l'utilisateur a déjà un abonnement ACTIF, on le
+        // passe en REPLACED AVANT de facturer le nouveau. Garantit l'invariant
+        // « au plus 1 abonnement ACTIF par utilisateur » sans doublon facturé.
+        // (L'ancienne garde-fou AlreadySubscribedException a été supprimée :
+        // l'UX attendue est « remplacer ma carte » — pas un 409 bloquant.)
+        replaceActiveSubscription(user);
 
-        // Calcul du prix selon que l'utilisateur est déjà adhérent ou pas.
-        // L'ancien MembershipLevel sert de "tampon" : Rouge/Or/Diamant
-        // (payants) bénéficient du tarif adhérent sur la nouvelle grille.
+        // Calcul du prix : tarif adhérent si l'utilisateur a déjà payé au
+        // moins 1 abonnement par le passé (toutes saisons, ACTIVE ou EXPIRED),
+        // sinon tarif régulier. On ne lit plus MembershipLevel (champ legacy
+        // jamais valorisé pour les nouveaux comptes depuis la refonte B.12).
         BigDecimal price = resolvePrice(plan, user);
 
         // 1) Paiement carte SIMULÉ
@@ -189,10 +196,53 @@ public class SubscriptionService {
 
     // -------- helpers --------
 
+    /**
+     * Calcule le prix d'un plan pour un utilisateur donné.
+     *
+     * <p>Logique : si l'utilisateur a déjà au moins un abonnement payé
+     * (toutes saisons, ACTIVE/EXPIRED/REPLACED), il est considéré comme
+     * « adhérent fidèle » et bénéficie du tarif {@code adherentPrice} ;
+     * sinon il paye le tarif {@code regularPrice}.</p>
+     *
+     * <p>Remplace l'ancien test sur {@code MembershipLevel.getPrice() > 0}
+     * qui n'a plus de sens : la carte est 100% pilotée par l'abonnement
+     * (cf. refonte B.12), et {@code MembershipLevel} n'est plus valorisé
+     * pour les nouveaux comptes.</p>
+     */
     private BigDecimal resolvePrice(SubscriptionPlan plan, User user) {
-        boolean isLegacyAdherent = user.getMembershipLevel() != null
-                && user.getMembershipLevel().getPrice() > 0;
-        return isLegacyAdherent ? plan.getAdherentPrice() : plan.getRegularPrice();
+        boolean isFaithful = subscriptionRepository.countByUser(user) > 0;
+        return isFaithful ? plan.getAdherentPrice() : plan.getRegularPrice();
+    }
+
+    /**
+     * Expire tous les abonnements ACTIF d'un utilisateur.
+     *
+     * <p>Appelé par {@link #purchase(String, PurchaseSubscriptionRequest)}
+     * <strong>avant</strong> l'appel paiement pour garantir l'invariant
+     * « un seul abonnement ACTIF par utilisateur ». Le statut choisi est
+     * {@code REPLACED} (distinct de {@code EXPIRED} qui marque la fin
+     * naturelle d'une saison) — permet aux rapports financiers de séparer
+     * « fin de saison » et « l'utilisateur a racheté une autre carte ».</p>
+     *
+     * <p>Silencieux si l'utilisateur n'a aucun abonnement actif : c'est
+     * le cas normal pour un premier achat.</p>
+     */
+    private void replaceActiveSubscription(User user) {
+        List<UserSubscription> actives = subscriptionRepository.findByUserAndStatus(
+                user, UserSubscriptionStatus.ACTIVE);
+        if (actives.isEmpty()) {
+            return;
+        }
+        LocalDateTime now = LocalDateTime.now();
+        for (UserSubscription s : actives) {
+            s.setStatus(UserSubscriptionStatus.REPLACED);
+            // La fin réelle de la carte remplacée = maintenant (cohérent
+            // avec l'usage immédiat de la nouvelle carte à l'achat).
+            s.setValidTo(now);
+        }
+        subscriptionRepository.saveAll(actives);
+        log.info("Abonnement(s) ACTIF de {} passé(s) en REPLACED avant nouvel achat (count={})",
+                user.getEmail(), actives.size());
     }
 
     /**
@@ -228,13 +278,6 @@ public class SubscriptionService {
         int startYear = Integer.parseInt(season.substring(0, 4));
         // Fin de saison : 31 juillet de l'année de fin
         return LocalDateTime.of(startYear + 1, 7, 31, 23, 59, 59);
-    }
-
-    /** Levée quand l'utilisateur tente d'acheter un 2e abonnement actif. */
-    public static class AlreadySubscribedException extends RuntimeException {
-        public AlreadySubscribedException(String message) {
-            super(message);
-        }
     }
 
     /** Plan introuvable. → 404. */

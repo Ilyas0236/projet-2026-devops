@@ -37,6 +37,17 @@ public interface UserSubscriptionRepository extends JpaRepository<UserSubscripti
     List<UserSubscription> findByUserOrderByPaidAtDesc(User user);
 
     /**
+     * Nombre d'abonnements payés (toutes saisons, tous statuts) pour un
+     * utilisateur. Sert à déterminer le tarif « adhérent » dans
+     * {@code SubscriptionService.resolvePrice} : un membre fidèle
+     * (au moins 1 abonnement déjà payé) bénéficie automatiquement du
+     * prix réduit sur ses futurs achats. Remplace l'ancien test sur
+     * {@code MembershipLevel.getPrice() > 0} qui n'a plus de sens
+     * depuis la refonte B.12 (la carte est 100% pilotée par l'abonnement).
+     */
+    long countByUser(User user);
+
+    /**
      * B.12 — Inventaire admin des abonnements. Filtre par date + email.
      */
     @Query("""

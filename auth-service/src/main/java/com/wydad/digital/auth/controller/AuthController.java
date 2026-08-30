@@ -192,20 +192,12 @@ public class AuthController {
         return ResponseEntity.ok("Compte supprimé avec succès");
     }
 
-    @PostMapping("/upgrade")
-    @PreAuthorize("hasRole('ADHERENT') or hasRole('JOUEUR') or hasRole('ENTRAINEUR') or hasRole('JOURNALISTE') or hasRole('STAFF') or hasRole('PARENT') or hasRole('PRESIDENT') or hasRole('ADMIN')")
-    public ResponseEntity<AuthResponse> upgradeLevel(
-            @Valid @RequestBody UpgradeRequest request,
-            @RequestHeader(HttpHeaders.AUTHORIZATION) String authHeader) {
-        // IDOR : l'upgrade s'applique au compte du JWT ; seul l'ADMIN peut
-        // upgrader un autre compte en le ciblant explicitement.
-        String tokenEmail = jwtUtils.getEmailFromToken(token(authHeader));
-        boolean isAdmin = "ADMIN".equals(jwtUtils.getRoleFromToken(token(authHeader)));
-        UpgradeRequest effective = (!isAdmin && !tokenEmail.equalsIgnoreCase(request.email()))
-                ? new UpgradeRequest(tokenEmail, request.newLevel())
-                : request;
-        return ResponseEntity.ok(authService.upgradeLevel(effective));
-    }
+    /**
+     * NOTE : l'ancienne route POST /api/auth/upgrade (changer le MembershipLevel
+     * à la main, sans paiement) a été supprimée. La seule façon d'obtenir
+     * une carte de membre est désormais d'acheter un abonnement via
+     * POST /api/auth/subscriptions/purchase.
+     */
 
     @GetMapping("/membership-status")
     public ResponseEntity<MembershipStatusResponse> checkMembershipStatus(

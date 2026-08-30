@@ -46,9 +46,7 @@ public class AuthService {
     private final com.wydad.digital.auth.client.NotificationClient notificationClient;
     private final com.wydad.digital.auth.client.ContentClient contentClient;
     private final com.wydad.digital.auth.client.SportsClient sportsClient;
-
-    /** Niveau attribué à l'inscription : le plus bas payant (S3). */
-    private static final MembershipLevel NIVEAU_INSCRIPTION = MembershipLevel.ROUGE;
+    private final com.wydad.digital.auth.repository.subscription.UserSubscriptionRepository userSubscriptionRepository;
 
     /** Catégories sportives sollicitables à l'inscription (joueur/staff). */
     private static final java.util.Set<String> CATEGORIES_VALIDES =
@@ -137,7 +135,9 @@ public class AuthService {
                 .password(passwordEncoder.encode(request.password()))
                 .firstName(request.firstName())
                 .lastName(request.lastName())
-                .membershipLevel(NIVEAU_INSCRIPTION)
+                // Pas de membershipLevel à l'inscription : l'utilisateur n'a
+                // de carte QUE s'il achète un abonnement. Tant qu'il n'a pas
+                // d'abonnement actif, getMemberCard() renvoie 404.
                 .role(roleDemande)
                 // Toute demande de statut passe par la file admin.
                 .statutCompte(roleDemande == Role.ADHERENT ? StatutCompte.VALIDE : StatutCompte.EN_ATTENTE)
@@ -146,7 +146,8 @@ public class AuthService {
                 .organismePresse(organisme)
                 .matchId(matchIdDemande)
                 .matchSouhaite(match)
-                .membershipExpiresAt(LocalDateTime.now().plusYears(1))
+                // membershipExpiresAt reste NULL à l'inscription : la date
+                // d'expiration est portée par UserSubscription.validTo.
                 .referralCode(UUID.randomUUID().toString().substring(0, 8).toUpperCase())
                 .referredBy(request.referralCode())
                 .active(true)
@@ -219,38 +220,60 @@ public class AuthService {
         );
     }
 
+    /**
+     * Carte de membre — pilotée par l'abonnement saisonnier ACTIF.
+     *
+     * <p>Si l'utilisateur n'a aucun abonnement actif, lève
+     * {@link UserNotFoundException} (→ 404 côté contrôleur). L'utilisateur
+     * ne reçoit pas de carte tant qu'il n'a pas acheté de plan.</p>
+     *
+     * <p>Le QR code encode l'identifiant de l'abonnement, l'email, le code
+     * du plan et la saison — c'est ce qui sera scanné à l'entrée du stade.</p>
+     */
     public MemberCardResponse getMemberCard(String email) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UserNotFoundException(email));
 
-        String qrData = String.format("WAC-%s|%s|%s|%s",
-                user.getMembershipLevel(),
-                user.getEmail(),
-                user.getReferralCode(),
-                user.getId());
+        com.wydad.digital.auth.model.subscription.UserSubscription sub =
+                userSubscriptionRepository.findActiveByUser(user)
+                        .orElseThrow(() -> new UserNotFoundException(
+                                "Aucun abonnement actif pour " + email
+                                + " — achetez une carte pour obtenir votre carte de membre."));
 
-        String qrCodeBase64;
-        try {
-            qrCodeBase64 = qrCodeService.generateQrCode(qrData, 300, 300);
-        } catch (Exception e) {
-            throw new RuntimeException("Erreur génération QR Code", e);
+        // QR code : on réutilise le qrCodeBase64 stocké à l'achat
+        // (cohérent avec le PDF d'abonnement et le scan à l'entrée du stade).
+        String qrCodeBase64 = sub.getQrCodeBase64();
+        if (qrCodeBase64 == null || qrCodeBase64.isBlank()) {
+            // Fallback best-effort : regénération à la volée si la base a
+            // été régénérée. Ne devrait pas arriver en pratique (QR posé à
+            // l'achat par SubscriptionService).
+            String qrData = String.format("WAC-SUB|%s|%s|%s|%s|%s",
+                    sub.getId(), user.getEmail(),
+                    sub.getPlan() != null ? sub.getPlan().getCode() : sub.getZoneCode().getCode(),
+                    sub.getSeason(), sub.getValidTo().toLocalDate());
+            try {
+                qrCodeBase64 = qrCodeService.generateQrCode(qrData, 300, 300);
+            } catch (Exception e) {
+                throw new RuntimeException("Erreur génération QR Code", e);
+            }
         }
 
-        return new MemberCardResponse(
-                user.getEmail(),
-                user.getFirstName(),
-                user.getLastName(),
-                user.getMembershipLevel(),
-                user.getReferralCode(),
-                qrCodeBase64
-        );
+        return MemberCardResponse.from(sub, qrCodeBase64);
     }
 
+    /**
+     * Attestation PDF — 100% dérivée de l'abonnement ACTIF.
+     * 404 si aucun abonnement (l'utilisateur n'a rien à attester).
+     */
     public byte[] generateAttestation(String email) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UserNotFoundException(email));
+        com.wydad.digital.auth.model.subscription.UserSubscription sub =
+                userSubscriptionRepository.findActiveByUser(user)
+                        .orElseThrow(() -> new UserNotFoundException(
+                                "Aucun abonnement actif pour " + email));
         try {
-            return pdfService.generateAttestation(user);
+            return pdfService.generateAttestation(sub, user);
         } catch (Exception e) {
             throw new RuntimeException("Erreur génération PDF", e);
         }
@@ -327,22 +350,6 @@ public class AuthService {
     public User getUserByEmail(String email) {
         return userRepository.findByEmail(email)
                 .orElseThrow(() -> new UserNotFoundException(email));
-    }
-
-    /**
-     * B.12 — DEPRECATED : cet endpoint ne demandait aucun paiement
-     * (faille corrigée). Il est conservé temporairement pour les scripts
-     * de migration et l'admin CLI. Toute nouvelle utilisation DOIT passer
-     * par /api/auth/subscriptions/purchase qui exige un vrai paiement.
-     *
-     * Comportement modifié : retourne maintenant une erreur explicite
-     * plutôt que d'appliquer le changement en silence.
-     */
-    @Deprecated
-    public AuthResponse upgradeLevel(UpgradeRequest request) {
-        throw new UnsupportedOperationException(
-                "Cet endpoint est désactivé. Utilisez POST /api/auth/subscriptions/purchase "
-                + "pour acheter un abonnement avec paiement.");
     }
 
     public MembershipStatusResponse checkMembershipStatus(String email) {
@@ -818,7 +825,9 @@ public class AuthService {
         }
 
         Role role = Role.valueOf(request.role().toUpperCase());
-        MembershipLevel level = request.membershipLevel() != null ? request.membershipLevel() : MembershipLevel.ROUGE;
+        // Pas de membershipLevel : l'admin crée un compte vide. La carte
+        // viendra après l'achat d'un abonnement. Le champ reste en BDD
+        // pour rétro-compat avec les anciens comptes migrés.
 
         User user = User.builder()
                 .email(request.email())
@@ -826,7 +835,6 @@ public class AuthService {
                 .password(passwordEncoder.encode(request.password()))
                 .firstName(request.firstName())
                 .lastName(request.lastName())
-                .membershipLevel(level)
                 .role(role)
                 .membershipExpiresAt(LocalDateTime.now().plusYears(1))
                 .referralCode(UUID.randomUUID().toString().substring(0, 8).toUpperCase())
