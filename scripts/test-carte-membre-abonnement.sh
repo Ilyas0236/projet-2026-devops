@@ -138,6 +138,20 @@ docker exec wydad-postgres psql -U wydad -d auth_db -c \
   "DELETE FROM user_subscriptions WHERE plan_id IN (SELECT id FROM subscription_plans WHERE code IN ('TEST-CARTE','TEST-CARTE-2')); DELETE FROM subscription_plans WHERE code IN ('TEST-CARTE','TEST-CARTE-2');" \
   >/dev/null 2>&1
 echo "  (cleanup OK ou aucun plan à supprimer)"
+
+# ─── 1f. Créditeur le wallet E-cash du user (sinon payment-service refuse en 402) ─
+echo ""
+echo "=== 1f. Admin crédite 500 DH E-cash sur le user $USER_EMAIL ==="
+CRED_HTTP=$(curl -s -o /tmp/cred.json -w '%{http_code}' -X POST $BASE/api/payment/credit \
+  -H "Authorization: Bearer $A_TOK" -H "X-User-Id: 1" -H "X-User-Email: $ADMIN_EMAIL" -H "X-User-Role: ADMIN" \
+  -H 'Content-Type: application/json' \
+  -d "{\"email\":\"$USER_EMAIL\",\"amount\":500,\"description\":\"Seed test carte membre\"}")
+echo "credit HTTP=$CRED_HTTP body=$(cat /tmp/cred.json)"
+if [ "$CRED_HTTP" = "200" ] || [ "$CRED_HTTP" = "201" ]; then
+  ok "wallet crédité de 500 DH"
+else
+  ko "credit wallet KO (HTTP=$CRED_HTTP)"
+fi
 echo ""
 echo "=== 2. Admin cree TEST-CARTE (100/80) et TEST-CARTE-2 (200/160) ==="
 P1=$(curl -s -X POST "$BASE/api/admin/subscription-plans" \
