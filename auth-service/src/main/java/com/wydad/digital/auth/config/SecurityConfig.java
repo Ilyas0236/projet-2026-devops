@@ -61,8 +61,16 @@ public class SecurityConfig {
                         // Dispatch d erreur Spring : le laisser passer pour renvoyer le vrai code
                         // (400/500) ; sinon /error est re-securise et renvoie 403 qui masque la cause.
                         .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
+                        // Preflight CORS : laisser passer sans auth (OPTIONS sans JWT). Sans
+                        // ça, les PUT/DELETE/PATCH du front renvoient 403 sur le preflight
+                        // et l'action "Éditer / Supprimer" du CRUD admin échoue en silence.
+                        .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/actuator/**").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
+                        // Endpoints admin : on laisse passer la requête ici, le contrôleur
+                        // re-valide via @PreAuthorize("hasRole('ADMIN')") — sinon on aurait
+                        // un 401 sur la passerelle gateway qui masquerait le vrai 403 RBAC.
+                        .requestMatchers("/api/admin/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .httpBasic(AbstractHttpConfigurer::disable)

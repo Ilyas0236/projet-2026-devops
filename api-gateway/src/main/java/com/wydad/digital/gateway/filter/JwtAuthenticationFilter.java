@@ -46,9 +46,24 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         String path = request.getURI().getPath();
         String method = request.getMethod().name();
 
-        // Bypass OPTIONS requests for CORS preflight
+        // Bypass OPTIONS requests for CORS preflight : on pose nous-mêmes les
+        // headers CORS ici, car ce filtre tourne avec un ordre -1 (avant le
+        // CorsWebFilter de Spring), et sans ça le preflight arrive nu en aval
+        // et le navigateur reçoit 403 vide — cf. bug "PUT/DELETE impossible
+        // depuis le dashboard admin" (30/08/2026).
         if ("OPTIONS".equals(method)) {
-            return chain.filter(exchange);
+            org.springframework.http.HttpHeaders cors = new org.springframework.http.HttpHeaders();
+            cors.add("Access-Control-Allow-Origin", request.getHeaders().getOrigin() != null
+                ? request.getHeaders().getOrigin() : "*");
+            cors.add("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, PATCH, OPTIONS");
+            cors.add("Access-Control-Allow-Headers", request.getHeaders().getFirst("Access-Control-Request-Headers") != null
+                ? request.getHeaders().getFirst("Access-Control-Request-Headers") : "*");
+            cors.add("Access-Control-Allow-Credentials", "true");
+            cors.add("Access-Control-Max-Age", "3600");
+            cors.add("Vary", "Origin, Access-Control-Request-Method, Access-Control-Request-Headers");
+            exchange.getResponse().getHeaders().putAll(cors);
+            exchange.getResponse().setStatusCode(org.springframework.http.HttpStatus.OK);
+            return exchange.getResponse().setComplete();
         }
 
         // Phase 4 — handshake SockJS du chat de groupe : un upgrade WebSocket
