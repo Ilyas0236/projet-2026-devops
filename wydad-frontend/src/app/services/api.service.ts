@@ -1201,8 +1201,8 @@ export class ApiService {
     );
   }
 
-  /** Upload / remplacement de la photo de profil (multipart). */
-  uploadMyPhoto(file: File): Observable<{ photoUrl: string; mode: 'cloudinary' | 'degraded' }> {
+  /** Upload / remplacement de la photo de profil (multipart, tout user authentifié) — B.17. */
+  uploadMyProfilePhoto(file: File): Observable<{ photoUrl: string; mode: 'cloudinary' | 'degraded' }> {
     const form = new FormData();
     form.append('photo', file);
     return this.http.post<{ photoUrl: string; mode: 'cloudinary' | 'degraded' }>(

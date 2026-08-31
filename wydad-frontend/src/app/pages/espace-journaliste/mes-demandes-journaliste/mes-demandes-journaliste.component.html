@@ -1,0 +1,91 @@
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- WYDAD DIGITAL — MES DEMANDES D'ACCRÉDITATION (B.17)      -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="min-h-screen bg-paper-1 light-page text-ink-primary pt-28 pb-24">
+  <div class="container-wydad max-w-4xl">
+
+    <div class="mb-6 flex items-center gap-4">
+      <a routerLink="/journaliste/accueil" class="text-ink-secondary hover:text-wydad-red text-sm font-semibold inline-flex items-center gap-1">
+        ← Mon espace
+      </a>
+    </div>
+
+    <div class="mb-8">
+      <p class="text-[11px] font-bold uppercase tracking-[0.3em] text-wydad-red mb-2">Wydad Athletic Club</p>
+      <h1 class="font-display font-black text-3xl md:text-4xl uppercase tracking-wider text-ink-primary mb-2">
+        Mes demandes d'accréditation
+      </h1>
+      <p class="text-ink-secondary text-sm">
+        Suivi de toutes vos demandes d'accréditation presse. Vous pouvez télécharger le badge dès qu'une
+        demande est validée par le club.
+      </p>
+    </div>
+
+    <!-- LOADING -->
+    <div *ngIf="loading" class="flex justify-center py-20 animate-fade-in">
+      <div class="w-10 h-10 border-4 border-wydad-red border-t-transparent rounded-full animate-spin"></div>
+    </div>
+
+    <app-error-banner *ngIf="!loading && !demandes.length && !loading"
+                      message="Aucune demande pour le moment."
+                      detail="Vous pouvez demander une accréditation depuis l'onglet « Matchs à couvrir » de votre espace."
+                      (retry)="retry()"></app-error-banner>
+
+    <div *ngIf="!loading && demandes.length > 0" class="space-y-4">
+      <div *ngFor="let d of demandes" class="paper-card rounded-2xl p-6">
+        <div class="flex flex-wrap items-start justify-between gap-4">
+          <div class="min-w-0 flex-1">
+            <h3 class="font-display font-bold text-ink-primary text-lg">
+              {{ d.matchLabel || ('Match #' + d.matchId) }}
+            </h3>
+            <p *ngIf="d.matchDate" class="text-ink-tertiary text-xs uppercase tracking-widest mt-1">
+              Match : {{ formatDate(d.matchDate) }}
+            </p>
+            <p class="text-ink-tertiary text-xs mt-1">
+              Demande envoyée le {{ formatDate(d.createdAt) }}
+            </p>
+
+            <div class="mt-3">
+              <span *ngIf="d.statut === 'EN_ATTENTE'"
+                    class="inline-block px-3 py-1 rounded-full bg-amber-100 text-amber-800 text-[10px] font-bold uppercase tracking-wider">
+                ⏳ En attente
+              </span>
+              <span *ngIf="d.statut === 'VALIDE'"
+                    class="inline-block px-3 py-1 rounded-full bg-success/15 text-success text-[10px] font-bold uppercase tracking-wider">
+                ✓ Validée
+              </span>
+              <span *ngIf="d.statut === 'REFUSE'"
+                    class="inline-block px-3 py-1 rounded-full bg-wydad-red/10 text-wydad-red text-[10px] font-bold uppercase tracking-wider">
+                ✗ Refusée
+              </span>
+            </div>
+
+            <div *ngIf="d.statut === 'REFUSE' && d.motifRefus"
+                 class="mt-4 rounded-xl bg-wydad-red/5 border border-wydad-red/20 p-4">
+              <p class="text-[10px] uppercase tracking-widest text-wydad-red font-bold mb-1">Motif du refus</p>
+              <p class="text-ink-secondary text-sm leading-relaxed">{{ d.motifRefus }}</p>
+            </div>
+
+            <p *ngIf="d.statut === 'VALIDE' && d.decidedAt" class="mt-3 text-ink-tertiary text-xs">
+              Validé le {{ formatDate(d.decidedAt) }}
+            </p>
+          </div>
+
+          <button *ngIf="d.statut === 'VALIDE'" type="button"
+                  (click)="telechargerBadge(d.id)"
+                  [disabled]="busyId === d.id"
+                  class="wydad-btn-primary disabled:opacity-50 disabled:cursor-not-allowed shrink-0">
+            {{ busyId === d.id ? 'Préparation…' : '🎫 Télécharger le badge' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div *ngIf="!loading && demandes.length === 0" class="mt-6 text-center">
+      <a routerLink="/journaliste/accueil" class="text-wydad-red underline font-semibold text-sm">
+        Retour à mon espace
+      </a>
+    </div>
+
+  </div>
+</div>

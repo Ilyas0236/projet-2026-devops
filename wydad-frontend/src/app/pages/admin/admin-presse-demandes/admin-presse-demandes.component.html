@@ -1,0 +1,129 @@
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- WYDAD DIGITAL — ADMIN : ACCRÉDITATIONS PRESSE (B.17)    -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="min-h-screen bg-paper-1 light-page text-ink-primary pt-28 pb-24">
+  <div class="container-wydad">
+
+    <div class="mb-8 flex flex-wrap items-end justify-between gap-4">
+      <div>
+        <p class="text-[11px] font-bold uppercase tracking-[0.3em] text-wydad-red mb-2">Administration</p>
+        <h1 class="font-display font-black text-3xl md:text-4xl uppercase tracking-wider text-ink-primary">
+          Accréditations presse
+        </h1>
+        <p class="text-ink-secondary text-sm mt-2 max-w-2xl">
+          Validez ou refusez les demandes d'accréditation des journalistes. Une demande validée
+          génère automatiquement un badge PDF officiel avec QR code, envoyé au journaliste.
+        </p>
+      </div>
+      <button type="button" (click)="showHistorique = !showHistorique"
+              class="text-ink-secondary hover:text-wydad-red text-sm font-semibold">
+        {{ showHistorique ? '← Retour à la file' : 'Voir l\'historique' }}
+      </button>
+    </div>
+
+    <!-- LOADING -->
+    <div *ngIf="loading" class="flex justify-center py-20">
+      <div class="w-10 h-10 border-4 border-wydad-red border-t-transparent rounded-full animate-spin"></div>
+    </div>
+
+    <!-- FILE D'ATTENTE -->
+    <ng-container *ngIf="!loading && !showHistorique">
+      <app-error-banner *ngIf="!demandes.length"
+                        message="Aucune demande en attente."
+                        detail="Les journalistes peuvent soumettre des demandes depuis leur espace."
+                        (retry)="retry()"></app-error-banner>
+
+      <div *ngIf="demandes.length > 0" class="space-y-4">
+        <div *ngFor="let d of demandes" class="paper-card rounded-2xl p-6">
+          <div class="flex flex-col md:flex-row gap-5">
+            <!-- Photo du journaliste -->
+            <div class="w-20 h-20 rounded-full overflow-hidden border-2 border-paper-3 bg-paper-2 shrink-0">
+              <img *ngIf="d.userPhotoUrl" [src]="d.userPhotoUrl" alt="Photo" class="w-full h-full object-cover"/>
+              <div *ngIf="!d.userPhotoUrl" class="w-full h-full flex items-center justify-center font-display font-black text-ink-tertiary text-2xl">
+                {{ d.userFirstName?.charAt(0) }}{{ d.userLastName?.charAt(0) }}
+              </div>
+            </div>
+
+            <div class="flex-1 min-w-0">
+              <h3 class="font-display font-bold text-ink-primary text-lg">
+                {{ d.userFirstName }} {{ d.userLastName }}
+              </h3>
+              <p class="text-ink-tertiary text-xs mt-0.5">
+                <a *ngIf="d.userEmail" [href]="'mailto:' + d.userEmail" class="hover:text-wydad-red">{{ d.userEmail }}</a>
+              </p>
+              <p class="text-ink-secondary text-sm mt-2">
+                <span class="font-semibold text-ink-primary">Organe :</span> {{ d.organismePresse || '—' }}
+              </p>
+              <p *ngIf="d.numeroCartePresse" class="text-ink-secondary text-sm">
+                <span class="font-semibold text-ink-primary">Carte de presse n° :</span> {{ d.numeroCartePresse }}
+              </p>
+              <p class="text-ink-secondary text-sm mt-3">
+                <span class="font-semibold text-ink-primary">Match demandé :</span>
+                {{ d.matchLabel || ('Match #' + d.matchId) }}
+              </p>
+              <p *ngIf="d.matchDate" class="text-ink-tertiary text-xs mt-0.5">
+                Date du match : {{ formatDate(d.matchDate) }}
+              </p>
+              <p class="text-ink-tertiary text-xs mt-2">
+                Demande reçue le {{ formatDate(d.createdAt) }}
+              </p>
+            </div>
+
+            <div class="flex flex-row md:flex-col gap-2 shrink-0">
+              <button type="button" (click)="valider(d)" [disabled]="busyId === d.id"
+                      class="wydad-btn-primary !py-2 !px-4 text-xs disabled:opacity-50">
+                {{ busyId === d.id ? '…' : '✓ Valider' }}
+              </button>
+              <button type="button" (click)="ouvrirRefus(d)" [disabled]="busyId === d.id"
+                      class="wydad-btn-secondary !py-2 !px-4 text-xs border-wydad-red text-wydad-red hover:bg-wydad-red hover:text-white disabled:opacity-50">
+                ✗ Refuser
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </ng-container>
+
+    <!-- HISTORIQUE (placeholder) -->
+    <ng-container *ngIf="!loading && showHistorique">
+      <div class="paper-card rounded-2xl p-10 text-center">
+        <p class="text-ink-tertiary text-sm">
+          L'historique détaillé des demandes validées / refusées sera affiché ici.<br>
+          Pour l'instant, suivez les notifications envoyées au journaliste à chaque décision.
+        </p>
+        <button type="button" (click)="showHistorique = false"
+                class="mt-4 text-wydad-red underline font-semibold text-sm">← Retour à la file d'attente</button>
+      </div>
+    </ng-container>
+
+    <!-- MODAL DE REFUS -->
+    <div *ngIf="refuseTarget" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 animate-fade-in">
+      <div class="paper-card rounded-2xl p-6 max-w-md w-full">
+        <h3 class="font-display font-bold text-ink-primary text-lg mb-2">Refuser la demande</h3>
+        <p class="text-ink-secondary text-sm mb-4">
+          Vous allez refuser la demande de
+          <strong class="text-ink-primary">{{ refuseTarget.userFirstName }} {{ refuseTarget.userLastName }}</strong>
+          pour le match « {{ refuseTarget.matchLabel }} ».<br>
+          Le motif sera envoyé au journaliste.
+        </p>
+        <label class="block mb-1 text-ink-secondary text-xs uppercase tracking-wider font-semibold">
+          Motif de refus *
+        </label>
+        <textarea [(ngModel)]="motif" name="motif" rows="4"
+                  placeholder="Ex : quota presse atteint pour ce match, document non conforme, etc."
+                  class="paper-input w-full rounded-lg px-4 py-2.5 text-sm"></textarea>
+        <div class="flex gap-2 mt-4 justify-end">
+          <button type="button" (click)="annulerRefus()" [disabled]="refusing"
+                  class="text-ink-secondary hover:text-ink-primary text-sm font-semibold !py-2 !px-4">
+            Annuler
+          </button>
+          <button type="button" (click)="confirmerRefus()" [disabled]="refusing || !motif || motif.trim().length < 3"
+                  class="wydad-btn-primary !py-2 !px-4 text-xs bg-wydad-red disabled:opacity-50">
+            {{ refusing ? 'Refus…' : 'Confirmer le refus' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>

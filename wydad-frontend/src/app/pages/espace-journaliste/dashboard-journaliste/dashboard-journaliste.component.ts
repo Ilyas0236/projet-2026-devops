@@ -108,7 +108,7 @@ export class DashboardJournalisteComponent implements OnInit {
   uploaderPhoto() {
     if (!this.photoFile) return;
     this.uploadingPhoto = true;
-    this.api.uploadMyPhoto(this.photoFile).subscribe({
+    this.api.uploadMyProfilePhoto(this.photoFile).subscribe({
       next: (res) => {
         this.uploadingPhoto = false;
         this.photoFile = null;
