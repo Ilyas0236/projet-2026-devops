@@ -16,6 +16,7 @@
 #  10. Cleanup
 
 set -u
+declare -a BUGS
 BASE=${BASE:-http://localhost:8080}
 TS=$(date +%s)
 JOURNALIST_EMAIL="presse-b17-${TS}@wac.ma"
@@ -23,7 +24,6 @@ JOURNALIST_PASS="B17Presse!2026"
 MATCH_LABEL="B17-MATCH-TEST-${TS}"
 PASS=0
 FAIL=0
-declare -a BUGS
 
 # Couleurs
 GREEN="\033[0;32m"; RED="\033[0;31m"; YELLOW="\033[1;33m"; CYAN="\033[0;36m"; NC="\033[0m"
