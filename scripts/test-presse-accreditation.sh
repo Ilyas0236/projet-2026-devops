@@ -140,16 +140,23 @@ REGISTER_JSON="{
 REG_RESP=$(curl -s -X POST "$BASE/api/auth/register-press" \
   -F "register=${REGISTER_JSON};type=application/json" \
   -F "photo=@/tmp/press-photo.jpg;type=image/jpeg")
-# L'endpoint register-press renvoie {status, message} sans id -- on le récupère
-# directement en BDD (auth_db) pour pouvoir l'utiliser ensuite.
-JOURNALIST_ID=$(PGPASSWORD=$(grep POSTGRES_PASSWORD .env | cut -d= -f2) \
-  psql -h localhost -U $(grep POSTGRES_USER .env | cut -d= -f2) -d auth_db -tA \
-  -c "SELECT id FROM users WHERE email='$JOURNALIST_EMAIL' LIMIT 1;" 2>/dev/null \
-  | tr -d '[:space:]')
+# L'endpoint register-press renvoie {status, message} sans id -- on récupère
+# l'id via l'admin : GET /api/auth/admin/accounts/pending liste les comptes
+# EN_ATTENTE avec leur id, on cherche le nôtre.
+JOURNALIST_ID=$(curl -s "$BASE/api/auth/admin/accounts/pending" \
+  -H "Authorization: Bearer $ADMIN_TOK" | python3 -c "
+import sys, json
+try:
+    arr = json.load(sys.stdin)
+    for u in arr:
+        if u.get('email') == '$JOURNALIST_EMAIL':
+            print(u.get('id', ''))
+            break
+except Exception: pass" 2>/dev/null)
 if [ -n "$JOURNALIST_ID" ]; then
   ok "Journaliste créé id=$JOURNALIST_ID (statut EN_ATTENTE) — $REG_RESP"
 else
-  fail "Inscription journaliste : $REG_RESP"
+  fail "Inscription journaliste : $REG_RESP (id introuvable dans /admin/accounts/pending)"
   exit 1
 fi
 
