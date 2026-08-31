@@ -3,6 +3,7 @@ package com.wydad.digital.auth.controller;
 import com.wydad.digital.auth.dto.*;
 import com.wydad.digital.auth.model.User;
 import com.wydad.digital.auth.service.AuthService;
+import com.wydad.digital.auth.service.CloudinaryService;
 import com.wydad.digital.auth.util.JwtUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -25,6 +26,7 @@ public class AuthController {
     private final AuthService authService;
     private final JwtUtils jwtUtils;
     private final com.wydad.digital.auth.config.InternalSecretValidator internalSecretValidator;
+    private final CloudinaryService cloudinaryService;
 
     @PostMapping("/register")
     public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest request) {
@@ -36,6 +38,55 @@ public class AuthController {
             return ResponseEntity.accepted().build();
         }
         return ResponseEntity.ok(response);
+    }
+
+    /**
+     * B.17 — Inscription journaliste en multipart : 1 seule requête
+     * contenant la photo + tous les champs (email, password, nom, etc.).
+     * Le bouton « S'inscrire » côté front envoie un FormData avec :
+     *   - photo (MultipartFile, optionnel mais recommandé)
+     *   - register (JSON RegisterRequest) — tous les champs texte
+     *
+     * Flux :
+     *   1. Parse le RegisterRequest (les annotations @Valid s'appliquent)
+     *   2. Crée l'utilisateur (authService.register) qui force le rôle
+     *      JOURNALISTE + EN_ATTENTE.
+     *   3. Si une photo est fournie, on l'upload via CloudinaryService
+     *      et on stocke l'URL sur l'utilisateur. Le journaliste peut
+     *      aussi téléverser sa photo APRÈS via /api/auth/me/photo.
+     *
+     * Le retour est 202 Accepted (EN_ATTENTE) — aucun token n'est émis.
+     */
+    @PostMapping(value = "/register-press", consumes = "multipart/form-data")
+    public ResponseEntity<?> registerPress(
+            @RequestPart("register") @Valid RegisterRequest register,
+            @RequestPart(value = "photo", required = false) org.springframework.web.multipart.MultipartFile photo) {
+        if (register.demandeRole() == null || !"JOURNALISTE".equalsIgnoreCase(register.demandeRole())) {
+            return ResponseEntity.badRequest().body(java.util.Map.of(
+                    "error", "Cet endpoint est réservé à l'inscription journaliste (demandeRole=JOURNALISTE)"));
+        }
+        AuthResponse response = authService.register(register);
+        // 1) upload photo si présente — best-effort : ne doit JAMAIS faire
+        // échouer l'inscription (le journaliste peut re-téléverser via /me/photo)
+        if (photo != null && !photo.isEmpty() && response == null) {
+            try {
+                User created = authService.findByEmailOrThrow(register.email());
+                CloudinaryService.UploadResult res =
+                        cloudinaryService.uploadProfilePhoto(photo, created.getId());
+                if (res != null && res.secureUrl() != null) {
+                    created.setPhotoUrl(res.secureUrl());
+                }
+            } catch (Exception e) {
+                org.slf4j.LoggerFactory.getLogger(AuthController.class)
+                        .warn("Upload photo à l'inscription journaliste a échoué pour {}: {}",
+                                register.email(), e.getMessage());
+            }
+        }
+        // 2) retourne 202 (compte EN_ATTENTE, aucun token)
+        return ResponseEntity.accepted().body(java.util.Map.of(
+                "status", "EN_ATTENTE",
+                "message", "Votre demande a été envoyée. Vous serez notifié après validation par l'administration."
+        ));
     }
 
     @PostMapping("/login")
@@ -152,6 +203,8 @@ public class AuthController {
                 user.getDisciplineDemandee(),
                 user.getCategorieDemandee(),
                 user.getOrganismePresse(),
+                user.getNumeroCartePresse(),
+                user.getPhotoUrl(),
                 user.getMatchId(),
                 user.getMatchSouhaite(),
                 user.getMotifRefus()

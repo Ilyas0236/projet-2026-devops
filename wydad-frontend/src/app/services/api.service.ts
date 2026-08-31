@@ -1170,4 +1170,61 @@ export class ApiService {
     return this.http.get(`${this.baseUrl}/auth/salary-receipts/${receiptId}/pdf`,
       { responseType: 'blob' });
   }
+
+  // ==========================================
+  // B.17 — ACCRÉDITATIONS PRESSE (multi-matchs)
+  // ==========================================
+  /**
+   * Inscription journaliste en multipart (photo + champs texte).
+   * Le backend force demandeRole=JOURNALISTE et crée le compte
+   * EN_ATTENTE dans la file admin. Aucun token n'est émis.
+   */
+  registerPress(form: FormData): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/auth/register-press`, form);
+  }
+
+  /** Crée une demande d'accréditation pour un match (journaliste). */
+  createPressAccreditation(matchId: number): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/auth/presse/accreditations`, { matchId });
+  }
+
+  /** Liste des demandes du journaliste connecté (toutes, tri desc). */
+  getMyPressAccreditations(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/auth/presse/accreditations/me`);
+  }
+
+  /** Téléchargement du badge PDF pour une demande VALIDÉE. */
+  getPressAccreditationBadge(accreditationId: number): Observable<Blob> {
+    return this.http.get(
+      `${this.baseUrl}/auth/presse/accreditations/${accreditationId}/badge`,
+      { responseType: 'blob' }
+    );
+  }
+
+  /** Upload / remplacement de la photo de profil (multipart). */
+  uploadMyPhoto(file: File): Observable<{ photoUrl: string; mode: 'cloudinary' | 'degraded' }> {
+    const form = new FormData();
+    form.append('photo', file);
+    return this.http.post<{ photoUrl: string; mode: 'cloudinary' | 'degraded' }>(
+      `${this.baseUrl}/auth/me/photo`, form);
+  }
+
+  // -------- Admin — file des demandes d'accréditation --------
+
+  /** Liste des demandes EN_ATTENTE (vue admin). */
+  adminGetPendingPressAccreditations(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/auth/admin/press/accreditations/pending`);
+  }
+
+  /** Valide une demande d'accréditation → badge généré. */
+  adminValidatePressAccreditation(id: number): Observable<any> {
+    return this.http.patch<any>(
+      `${this.baseUrl}/auth/admin/press/accreditations/${id}/validate`, {});
+  }
+
+  /** Refuse une demande avec motif écrit (obligatoire). */
+  adminRefusePressAccreditation(id: number, motif: string): Observable<any> {
+    return this.http.patch<any>(
+      `${this.baseUrl}/auth/admin/press/accreditations/${id}/refuse`, { motif });
+  }
 }

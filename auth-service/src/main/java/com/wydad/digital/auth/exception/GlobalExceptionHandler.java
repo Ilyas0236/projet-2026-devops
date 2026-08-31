@@ -271,4 +271,91 @@ public class GlobalExceptionHandler {
         );
         return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
     }
+
+    // ──────────────────── B.17 — Workflow accréditation presse ────────────────────
+
+    /**
+     * B.17 — Le journaliste n'a pas de photo de profil alors qu'il tente
+     * de créer une demande d'accréditation. 400 dédié (et non 400
+     * générique) pour que le front puisse afficher un message précis
+     * (« Téléversez votre photo avant de demander une accréditation »).
+     */
+    @ExceptionHandler(com.wydad.digital.auth.service.press.PressAccreditationService.PhotoRequiredException.class)
+    public ResponseEntity<ErrorResponse> handlePhotoRequired(
+            com.wydad.digital.auth.service.press.PressAccreditationService.PhotoRequiredException ex,
+            HttpServletRequest request) {
+
+        ErrorResponse error = new ErrorResponse(
+                LocalDateTime.now(),
+                HttpStatus.BAD_REQUEST.value(),
+                "PHOTO_REQUIRED",
+                ex.getMessage(),
+                request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+    }
+
+    /**
+     * B.17 — Le journaliste a déjà une demande (en cours, validée ou
+     * refusée) pour le couple (user, matchId). 409 Conflict (état de
+     * ressource, pas faute de saisie). Le bouton « Demander une
+     * accréditation » doit être désactivé côté front si une demande
+     * existe déjà pour ce match.
+     */
+    @ExceptionHandler(com.wydad.digital.auth.service.press.PressAccreditationService.DuplicateAccreditationException.class)
+    public ResponseEntity<ErrorResponse> handleDuplicateAccreditation(
+            com.wydad.digital.auth.service.press.PressAccreditationService.DuplicateAccreditationException ex,
+            HttpServletRequest request) {
+
+        ErrorResponse error = new ErrorResponse(
+                LocalDateTime.now(),
+                HttpStatus.CONFLICT.value(),
+                "DUPLICATE_ACCREDITATION",
+                ex.getMessage(),
+                request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
+    /**
+     * B.17 — Aucune demande d'accréditation ne correspond à l'id
+     * fourni. Couvre aussi la garde « un journaliste ne peut pas
+     * voir/télécharger la demande d'un autre » : on renvoie
+     * intentionnellement 404 plutôt que 403 pour ne pas révéler
+     * l'existence d'une demande.
+     */
+    @ExceptionHandler(com.wydad.digital.auth.service.press.PressAccreditationService.AccreditationNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleAccreditationNotFound(
+            com.wydad.digital.auth.service.press.PressAccreditationService.AccreditationNotFoundException ex,
+            HttpServletRequest request) {
+
+        ErrorResponse error = new ErrorResponse(
+                LocalDateTime.now(),
+                HttpStatus.NOT_FOUND.value(),
+                "ACCREDITATION_NOT_FOUND",
+                ex.getMessage(),
+                request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+    }
+
+    /**
+     * B.17 — Le matchId fourni ne correspond à aucun match du calendrier
+     * content-service. 400 (faute de saisie : le journaliste a copié un
+     * id inexistant, ou l'admin a supprimé le match depuis).
+     */
+    @ExceptionHandler(com.wydad.digital.auth.service.press.PressAccreditationService.MatchNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleMatchNotFound(
+            com.wydad.digital.auth.service.press.PressAccreditationService.MatchNotFoundException ex,
+            HttpServletRequest request) {
+
+        ErrorResponse error = new ErrorResponse(
+                LocalDateTime.now(),
+                HttpStatus.BAD_REQUEST.value(),
+                "MATCH_NOT_FOUND",
+                ex.getMessage(),
+                request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+    }
 }

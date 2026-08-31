@@ -14,6 +14,7 @@ import { AdminSubscriptionPlansComponent } from './pages/admin/admin-subscriptio
 import { AdminEffectifComponent } from './pages/admin/admin-effectif/admin-effectif.component';
 import { AdminUsersComponent } from './pages/admin/admin-users/admin-users.component';
 import { AdminDemandesComponent } from './pages/admin/admin-demandes/admin-demandes.component';
+import { AdminPresseDemandesComponent } from './pages/admin/admin-presse-demandes/admin-presse-demandes.component';
 import { AdminRapportsComponent } from './pages/admin/admin-rapports/admin-rapports.component';
 import { AdminActualitesComponent } from './pages/admin/admin-actualites/admin-actualites.component';
 import { AdminMatchsComponent } from './pages/admin/admin-matchs/admin-matchs.component';
@@ -53,6 +54,7 @@ import { PresidentDashboardComponent } from './pages/president/president-dashboa
 import { PresidentDiscussionsComponent } from './pages/president/president-discussions/president-discussions.component';
 import { DashboardEntraineurComponent } from './pages/espace-entraineur/dashboard-entraineur/dashboard-entraineur.component';
 import { DashboardJournalisteComponent } from './pages/espace-journaliste/dashboard-journaliste/dashboard-journaliste.component';
+import { MesDemandesJournalisteComponent } from './pages/espace-journaliste/mes-demandes-journaliste/mes-demandes-journaliste.component';
 import { EspaceFanComponent } from './pages/espace-fan/espace-fan.component';
 import { SondagesComponent } from './pages/sondages/sondages.component';
 import { AdminSondagesComponent } from './pages/admin/admin-sondages/admin-sondages.component';
@@ -81,6 +83,7 @@ export const routes: Routes = [
     children: [
       { path: '', component: DashboardComponent, pathMatch: 'full' },
       { path: 'demandes', component: AdminDemandesComponent },
+      { path: 'presse/demandes', component: AdminPresseDemandesComponent },
       { path: 'rapports-financiers', component: AdminRapportsComponent },
       { path: 'utilisateurs', component: AdminUsersComponent },
       { path: 'actualites', component: AdminActualitesComponent },
@@ -154,7 +157,8 @@ export const routes: Routes = [
     component: EspaceLayoutComponent,
     canActivate: [journalisteGuard],
     children: [
-      { path: 'accueil', component: DashboardJournalisteComponent }
+      { path: 'accueil', component: DashboardJournalisteComponent },
+      { path: 'demandes', component: MesDemandesJournalisteComponent }
     ]
   },
   {

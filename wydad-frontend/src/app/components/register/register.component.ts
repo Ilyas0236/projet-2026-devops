@@ -16,9 +16,12 @@ interface StatutOption {
 
 /**
  * Inscription multi-statuts : l'utilisateur choisit son statut (adhérent,
- * journaliste, joueur, entraîneur, staff). Les statuts privilégiés créent un
- * compte EN_ATTENTE validé par l'ADMIN — catégorie sportive obligatoire pour
- * les rôles sportifs, organe de presse + match souhaité pour les journalistes.
+ * journaliste, joueur, entraîneur, staff). Les statuts privilégiés créent
+ * un compte EN_ATTENTE validé par l'ADMIN.
+ *
+ * B.17 — Le journaliste renseigne désormais : média, n° carte de presse,
+ * photo de profil. PAS de match à l'inscription (le choix des matchs se
+ * fait depuis l'espace, après validation du compte).
  */
 @Component({
   selector: 'app-register',
@@ -65,12 +68,17 @@ export class RegisterComponent implements OnInit {
   readonly categories = ['U15', 'U17', 'U18', 'U20', 'SENIOR'];
   disciplineDemandee = '';
   categorieDemandee = '';
+
+  // ----- B.17 : Champs journaliste (média + n° carte + photo) -----
   organismePresse = '';
-  /** §17 : l'accréditation presse vise un match RÉEL du calendrier
-   * (id vérifié par le serveur auprès du content-service). */
-  matchId: number | null = null;
-  matchsDisponibles: any[] = [];
-  matchsLoading = false;
+  /** Numéro de carte de presse — obligatoire pour le rôle JOURNALISTE. */
+  numeroCartePresse = '';
+  /** Photo de profil (JPEG/PNG/WebP, max 5 Mo). Optionnelle mais
+   * recommandée : sans photo, le journaliste ne peut pas envoyer de
+   * demande d'accréditation. */
+  photoFile: File | null = null;
+  photoFileName = '';
+  photoPreview = '';
 
   // ----- Justificatif d'identité (KYC) -----
   /** Pièce d'identité exigée pour les statuts validés par le club :
@@ -84,6 +92,20 @@ export class RegisterComponent implements OnInit {
     const input = event.target as HTMLInputElement;
     this.kycFile = input.files && input.files.length ? input.files[0] : null;
     this.kycFileName = this.kycFile?.name || '';
+  }
+
+  onPhotoSelected(event: any) {
+    const input = event.target as HTMLInputElement;
+    this.photoFile = input.files && input.files.length ? input.files[0] : null;
+    this.photoFileName = this.photoFile?.name || '';
+    // Génère un aperçu local (le serveur hébergera ensuite sur Cloudinary).
+    if (this.photoFile) {
+      const reader = new FileReader();
+      reader.onload = (e: any) => this.photoPreview = e.target.result;
+      reader.readAsDataURL(this.photoFile);
+    } else {
+      this.photoPreview = '';
+    }
   }
 
   authService = inject(AuthService);
@@ -106,36 +128,13 @@ export class RegisterComponent implements OnInit {
     this.disciplineDemandee = '';
     this.categorieDemandee = '';
     this.organismePresse = '';
-    this.matchId = null;
-    // La pièce d'identité est exigée pour les statuts validés par le club.
+    this.numeroCartePresse = '';
+    this.photoFile = null;
+    this.photoFileName = '';
+    this.photoPreview = '';
     this.kycFile = null;
     this.kycFileName = '';
     this.kycDocNumber = '';
-    if (valeur === 'JOURNALISTE') {
-      this.chargerMatchs();
-    }
-  }
-
-  /** §17 : le journaliste choisit parmi les matchs RÉELS du calendrier. */
-  chargerMatchs() {
-    if (this.matchsDisponibles.length || this.matchsLoading) return;
-    this.matchsLoading = true;
-    this.api.getMatches().subscribe({
-      next: (list) => {
-        this.matchsDisponibles = list;
-        this.matchsLoading = false;
-      },
-      error: () => {
-        this.matchsDisponibles = [];
-        this.matchsLoading = false;
-      }
-    });
-  }
-
-  /** Libellé lisible d'un match du calendrier. */
-  matchLabel(m: any): string {
-    const date = m.date ? new Date(m.date).toLocaleDateString('fr-FR') : '';
-    return `Wydad vs ${m.adversaire}${m.competition ? ' — ' + m.competition : ''}${date ? ', le ' + date : ''}`;
   }
 
   isValidForm(): boolean {
@@ -149,9 +148,11 @@ export class RegisterComponent implements OnInit {
       return false;
     }
     if (this.estSportif && (!this.disciplineDemandee || !this.categorieDemandee)) return false;
-    if (this.statut === 'JOURNALISTE' && this.organismePresse.trim().length === 0) return false;
-    // §17 : un match réel du calendrier est obligatoire pour la presse.
-    if (this.statut === 'JOURNALISTE' && !this.matchId) return false;
+    if (this.statut === 'JOURNALISTE') {
+      if (this.organismePresse.trim().length === 0) return false;
+      // B.17 : n° carte de presse obligatoire pour JOURNALISTE.
+      if (this.numeroCartePresse.trim().length === 0) return false;
+    }
     // Pièce d'identité exigée pour les statuts soumis à validation du club.
     if (this.statut !== 'ADHERENT' && (!this.kycFile || this.kycDocNumber.trim().length === 0)) return false;
     return true;
@@ -162,6 +163,13 @@ export class RegisterComponent implements OnInit {
     this.error = '';
     this.success = false;
     this.enAttente = false;
+
+    // B.17 — Le journaliste passe par un endpoint multipart qui accepte
+    // la photo dans la même requête (auth-service.register-press).
+    if (this.statut === 'JOURNALISTE') {
+      this.registerPressMultipart();
+      return;
+    }
 
     // Pas de membershipLevel dans la requête : le serveur force le niveau de
     // départ — la montée passe par /upgrade après paiement.
@@ -174,36 +182,62 @@ export class RegisterComponent implements OnInit {
       referralCode: this.referralCode ? this.referralCode : null
     };
 
-    // Demande de statut : envoyée seulement si différente d'adhérent.
     if (this.statut !== 'ADHERENT') {
       requestData.demandeRole = this.statut;
       if (this.estSportif) {
         requestData.disciplineDemandee = this.disciplineDemandee;
         requestData.categorieDemandee = this.categorieDemandee;
       }
-      if (this.statut === 'JOURNALISTE') {
-        requestData.organismePresse = this.organismePresse.trim();
-        // §17 : id du match réel choisi — le serveur vérifie son existence.
-        requestData.matchId = this.matchId;
-      }
     }
 
     this.authService.register(requestData).subscribe({
       next: (res) => {
         if (res && res.accessToken) {
-          // Adhérent : compte VALIDE, session ouverte immédiatement.
           this.loading = false;
           this.success = true;
           setTimeout(() => this.router.navigate(['/login']), 2500);
         } else {
-          // Statut privilégié : 202 sans corps — compte EN_ATTENTE.
-          // On dépose ensuite le justificatif d'identité (auth par
-          // email+password, pas de session nécessaire).
           this.deposerKyc();
         }
       },
       error: (err) => {
         this.error = err.error?.message || "Erreur lors de la création du compte. Veuillez vérifier vos informations.";
+        this.loading = false;
+      }
+    });
+  }
+
+  /**
+   * B.17 — Inscription journaliste en multipart : on envoie en une seule
+   * requête le RegisterRequest (JSON dans la part "register") et la photo
+   * (part "photo"). L'endpoint auth-service.register-press crée le compte
+   * EN_ATTENTE, upload la photo (best-effort), puis dépose le KYC si
+   * fourni.
+   */
+  private registerPressMultipart() {
+    const registerPayload: any = {
+      email: this.email,
+      phone: this.phone,
+      password: this.password,
+      firstName: this.firstName,
+      lastName: this.lastName,
+      referralCode: this.referralCode ? this.referralCode : null,
+      demandeRole: 'JOURNALISTE',
+      organismePresse: this.organismePresse.trim(),
+      numeroCartePresse: this.numeroCartePresse.trim()
+    };
+    const form = new FormData();
+    form.append('register', new Blob([JSON.stringify(registerPayload)],
+      { type: 'application/json' }));
+    if (this.photoFile) {
+      form.append('photo', this.photoFile, this.photoFile.name);
+    }
+    this.api.registerPress(form).subscribe({
+      next: () => this.deposerKyc(),
+      error: (err) => {
+        this.error = err.error?.message
+          || err.error?.error
+          || "Erreur lors de la création du compte journaliste.";
         this.loading = false;
       }
     });

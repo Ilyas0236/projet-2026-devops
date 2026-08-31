@@ -87,6 +87,24 @@ public class User {
     private String organismePresse;
 
     /**
+     * B.17 — Numéro de carte de presse du journaliste (obligatoire à
+     * l'inscription pour le rôle JOURNALISTE). Stocké pour traçabilité et
+     * affiché sur le badge d'accréditation.
+     */
+    @Column(name = "numero_carte_presse", length = 64)
+    private String numeroCartePresse;
+
+    /**
+     * B.17 — URL publique de la photo de profil (Cloudinary, folder
+     * {@code profile-photos/journalist-{userId}}). Obligatoire pour qu'un
+     * journaliste puisse créer une demande d'accréditation (sinon 400
+     * PHOTO_REQUIRED côté PressAccreditationService). Nullable pour les
+     * comptes non-journalistes (pas de photo requise à ce stade).
+     */
+    @Column(name = "photo_url", length = 512)
+    private String photoUrl;
+
+    /**
      * §17 — accréditation presse liée à un match RÉEL du calendrier
      * content-service (id vérifié à l'inscription par appel interne).
      * matchCouvreLabel en est le libellé figé affiché sur le badge.

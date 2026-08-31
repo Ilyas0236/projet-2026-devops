@@ -133,26 +133,35 @@
           </p>
         </div>
 
-        <!-- Journaliste : accréditation presse -->
+        <!-- Journaliste : accréditation presse (B.17 — photo + média + n° carte, PAS de match à l'inscription) -->
         <div *ngIf="statut === 'JOURNALISTE'" class="mb-6 p-4 rounded-xl bg-paper-1 border border-paper-3 animate-fade-in space-y-4">
           <p class="text-ink-secondary text-xs leading-relaxed">
-            <strong class="text-ink-primary">Accréditation presse.</strong> Après validation par le club, un badge officiel
-            avec QR code sera généré à votre nom.
+            <strong class="text-ink-primary">Accréditation presse.</strong> Après validation par votre compte, vous
+            pourrez choisir les matchs à couvrir depuis votre espace. Renseignez ici votre média, votre n° de carte
+            de presse et votre photo (obligatoire pour générer le badge officiel).
           </p>
           <div class="form-group">
             <label for="reg-organe" class="block mb-1 text-ink-secondary text-xs uppercase tracking-wider font-semibold">Organe / site de presse *</label>
             <input id="reg-organe" type="text" class="paper-input w-full rounded-lg px-4 py-2.5" [(ngModel)]="organismePresse" name="organismePresse" placeholder="Ex : Le Matin, SportsDZ.ma...">
           </div>
-          <div class="form-group !mb-0">
-            <label for="reg-match" class="block mb-1 text-ink-secondary text-xs uppercase tracking-wider font-semibold">Match à couvrir *</label>
-            <select id="reg-match" class="paper-input w-full rounded-lg px-4 py-2.5"
-                    [(ngModel)]="matchId" name="matchId" [disabled]="matchsLoading">
-              <option [ngValue]="null">{{ matchsLoading ? 'Chargement du calendrier…' : '— Choisir un match du calendrier —' }}</option>
-              <option *ngFor="let m of matchsDisponibles" [ngValue]="m.id">{{ matchLabel(m) }}</option>
-            </select>
+          <div class="form-group">
+            <label for="reg-carte-presse" class="block mb-1 text-ink-secondary text-xs uppercase tracking-wider font-semibold">Numéro de carte de presse *</label>
+            <input id="reg-carte-presse" type="text" class="paper-input w-full rounded-lg px-4 py-2.5" [(ngModel)]="numeroCartePresse" name="numeroCartePresse" placeholder="Ex : 12345/A">
             <p class="text-ink-tertiary text-xs mt-1 !mb-0">
-              Votre accréditation est liée à un match réel du calendrier officiel (§17) — elle sera vérifiée par le club.
+              Numéro délivré par votre organe de presse ou l'autorité de régulation. Vérifié par le club.
             </p>
+          </div>
+          <div class="form-group !mb-0">
+            <label for="reg-photo" class="block mb-1 text-ink-secondary text-xs uppercase tracking-wider font-semibold">Photo de profil *</label>
+            <input id="reg-photo" type="file" accept="image/jpeg,image/png,image/webp" class="paper-input w-full rounded-lg px-4 py-2.5 text-sm"
+                   (change)="onPhotoSelected($event)">
+            <p class="text-ink-tertiary text-xs mt-1 !mb-0">
+              {{ photoFileName ? 'Fichier choisi : ' + photoFileName : 'JPEG, PNG ou WebP — 5 Mo max. Visage dégagé, fond uni.' }}
+            </p>
+            <div *ngIf="photoPreview" class="mt-3 flex items-center gap-3">
+              <img [src]="photoPreview" alt="Aperçu photo" class="w-20 h-20 rounded-full object-cover border-2 border-wydad-red">
+              <span class="text-xs text-ink-secondary">Aperçu de la photo qui sera utilisée sur votre badge.</span>
+            </div>
           </div>
         </div>
 

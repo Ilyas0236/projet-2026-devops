@@ -134,6 +134,62 @@ public class CloudinaryService {
     }
 
     /**
+     * B.17 — Upload d'une photo de profil journaliste (JPEG/PNG/WebP, max 5 Mo)
+     * dans le folder public {@code profile-photos/journalist-{userId}}.
+     *
+     * <p>Type {@code upload} (public, pas d'URL signée) car la photo est
+     * destinée à être affichée sur le badge d'accréditation et dans
+     * l'espace admin. Le folder est préfixé par l'id utilisateur (pas
+     * l'email) pour qu'un re-upload écrase proprement la photo précédente
+     * sans laisser d'orphelins.</p>
+     *
+     * <p>Référence : {@code MediaStorageService.uploadProfilePhoto}
+     * (sports-service l. 99-137) qui applique les mêmes contraintes
+     * (5 Mo, JPEG/PNG/WebP, type image public).</p>
+     */
+    @SuppressWarnings("unchecked")
+    public UploadResult uploadProfilePhoto(MultipartFile file, Long userId) throws IOException {
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("Fichier photo vide.");
+        }
+        byte[] data = file.getBytes();
+        if (data.length > 5 * 1024 * 1024) {
+            throw new IllegalArgumentException("Photo trop volumineuse (max. 5 Mo).");
+        }
+        String contentType = file.getContentType();
+        if (contentType == null
+                || !(contentType.equalsIgnoreCase("image/jpeg")
+                  || contentType.equalsIgnoreCase("image/jpg")
+                  || contentType.equalsIgnoreCase("image/png")
+                  || contentType.equalsIgnoreCase("image/webp"))) {
+            throw new IllegalArgumentException("Format de photo non supporté (JPEG, PNG ou WebP uniquement).");
+        }
+
+        // Mode dégradé sans clés : même signature que KYC, on garde la
+        // trace locale pour que le back reste fonctionnel en dev.
+        if (!configured) {
+            return new UploadResult("local:profile:" + userId, null, false);
+        }
+
+        String folder = "profile-photos/journalist-" + userId;
+        Uploader uploader = cloudinary.uploader();
+        Map<String, Object> result = uploader.upload(data, ObjectUtils.asMap(
+                "folder", folder,
+                "resource_type", "image",
+                "type", "upload",
+                "overwrite", true,
+                // Transformation à la volée : on cadre la photo en carré
+                // 400x400 pour l'affichage badge / espace admin, sans
+                // dégrader la qualité perçue.
+                "transformation", "c_fill,g_face,w_400,h_400,q_auto,f_auto"
+        ));
+        return new UploadResult(
+                String.valueOf(result.get("public_id")),
+                String.valueOf(result.get("secure_url")),
+                true);
+    }
+
+    /**
      * URL signée temporaire (1 h) pour consulter un justificatif — utilisée par
      * l'admin lors de la validation du compte. Retourne null en mode dégradé.
      */

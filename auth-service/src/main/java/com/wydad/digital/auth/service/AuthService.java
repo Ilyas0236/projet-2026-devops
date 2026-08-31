@@ -91,24 +91,24 @@ public class AuthService {
             }
             roleDemande = Role.valueOf(demande);
             if ("JOURNALISTE".equals(demande)) {
+                // B.17 — l'inscription journaliste n'exige PLUS de matchId :
+                // le journaliste choisit ses matchs depuis son espace
+                // après validation de son compte (cf. workflow B.17).
+                // On exige en revanche l'organe de presse et le n° carte
+                // de presse (nouveau champ obligatoire) — la photo est
+                // gérée à part par /api/auth/me/photo ou à l'inscription
+                // via /api/auth/register-press (multipart).
                 if (request.organismePresse() == null || request.organismePresse().isBlank()) {
                     throw new IllegalArgumentException("L'organe de presse (site/média) est obligatoire");
                 }
-                // §17 : l'accréditation vise un match RÉEL du calendrier —
-                // jamais un texte libre. L'id est vérifié auprès du
-                // content-service ; sans correspondance la demande est refusée.
-                if (request.matchId() == null) {
-                    throw new IllegalArgumentException(
-                            "Le choix d'un match réel du calendrier est obligatoire pour l'accréditation");
+                if (request.numeroCartePresse() == null || request.numeroCartePresse().isBlank()) {
+                    throw new IllegalArgumentException("Le numéro de carte de presse est obligatoire");
                 }
-                String label = contentClient.fetchMatchLabel(request.matchId());
-                if (label == null) {
-                    throw new IllegalArgumentException(
-                            "Match introuvable dans le calendrier du club : accréditation impossible");
-                }
-                matchIdDemande = request.matchId();
-                match = label;
                 organisme = request.organismePresse().trim();
+                // matchId et matchSouhaite restent NULL — le journaliste
+                // fera des demandes d'accréditation plus tard.
+                matchIdDemande = null;
+                match = null;
             } else {
                 // Rôle sportif : le couple DISCIPLINE + CATÉGORIE est obligatoire —
                 // c'est ce couple qui isole les groupes dans toute la plateforme.
@@ -144,6 +144,9 @@ public class AuthService {
                 .disciplineDemandee(discipline)
                 .categorieDemandee(categorie)
                 .organismePresse(organisme)
+                .numeroCartePresse("JOURNALISTE".equalsIgnoreCase(
+                        request.demandeRole() == null ? "" : request.demandeRole())
+                        ? request.numeroCartePresse().trim() : null)
                 .matchId(matchIdDemande)
                 .matchSouhaite(match)
                 // membershipExpiresAt reste NULL à l'inscription : la date
@@ -176,6 +179,17 @@ public class AuthService {
                 user.getReferralCode(),
                 user.getRole().name()
         );
+    }
+
+    /**
+     * B.17 — Helper : récupère un User par son email ou jette une
+     * exception si introuvable. Utilisé par
+     * {@code AuthController.registerPress} pour appliquer l'URL de la
+     * photo après création du compte journaliste.
+     */
+    public User findByEmailOrThrow(String email) {
+        return userRepository.findByEmailIgnoreCase(email)
+                .orElseThrow(() -> new IllegalArgumentException("Utilisateur introuvable : " + email));
     }
 
     public AuthResponse login(LoginRequest request, String ipAddress, String userAgent) {
@@ -688,6 +702,8 @@ public class AuthService {
                 user.getDisciplineDemandee(),
                 user.getCategorieDemandee(),
                 user.getOrganismePresse(),
+                user.getNumeroCartePresse(),
+                user.getPhotoUrl(),
                 user.getMatchId(),
                 user.getMatchSouhaite(),
                 user.getMotifRefus()
@@ -860,6 +876,8 @@ public class AuthService {
                 user.getDisciplineDemandee(),
                 user.getCategorieDemandee(),
                 user.getOrganismePresse(),
+                user.getNumeroCartePresse(),
+                user.getPhotoUrl(),
                 user.getMatchId(),
                 user.getMatchSouhaite(),
                 user.getMotifRefus()

@@ -21,12 +21,19 @@ public record UserProfileResponse(
         boolean kycVerified,
         LocalDateTime createdAt,
         // Demande d'inscription multi-statuts : discipline + catégorie sportive
-        // sollicitées (JOUEUR/ENTRAINEUR/STAFF), organe de presse + match
-        // (JOURNALISTE), et motif de refus éventuel — affichés dans l'écran
-        // admin des demandes.
+        // sollicitées (JOUEUR/ENTRAINEUR/STAFF), organe de presse + n° carte
+        // de presse (JOURNALISTE), et motif de refus éventuel — affichés dans
+        // l'écran admin des demandes.
         String disciplineDemandee,
         String categorieDemandee,
         String organismePresse,
+        // B.17 — n° carte de presse + URL photo de profil (toutes deux
+        // obligatoires pour le rôle JOURNALISTE post-validation).
+        String numeroCartePresse,
+        String photoUrl,
+        // B.17 — match d'inscription historique (rétro-compat badge actuel).
+        // Les nouveaux journalistes ne renseignent plus de match à l'inscription ;
+        // ils choisissent leurs matchs depuis leur espace via /api/auth/presse/accreditations.
         Long matchId,
         String matchSouhaite,
         String motifRefus

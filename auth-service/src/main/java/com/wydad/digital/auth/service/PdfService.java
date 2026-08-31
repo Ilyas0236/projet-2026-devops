@@ -3,14 +3,22 @@ package com.wydad.digital.auth.service;
 import com.lowagie.text.*;
 import com.lowagie.text.pdf.PdfWriter;
 import com.wydad.digital.auth.model.User;
+import com.wydad.digital.auth.model.press.PressAccreditation;
 import com.wydad.digital.auth.model.subscription.UserSubscription;
+import com.wydad.digital.auth.service.QrCodeService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.awt.Color;
 import java.io.ByteArrayOutputStream;
+import java.net.URL;
 
 @Service
 public class PdfService {
+
+    /** B.17 — utilisé pour générer le QR du badge presse (identité journaliste + accréditation). */
+    @Autowired
+    private QrCodeService qrCodeService;
 
     /**
      * Attestation PDF — 100% dérivée de l'abonnement saisonnier ACTIF.
@@ -386,5 +394,166 @@ public class PdfService {
 
         document.close();
         return outputStream.toByteArray();
+    }
+
+    /**
+     * B.17 — Badge d'accréditation presse MULTI-MATCHS, généré APRÈS
+     * validation par l'admin (statut VALIDE). Le badge PDF contient :
+     *   - la photo de profil du journaliste (URL Cloudinary, ou aucune
+     *     si jamais uploadée — cas dégradé rare) ;
+     *   - nom + prénom + média (organisme) + n° carte de presse ;
+     *   - le match couvert (label figé à la création de la demande) ;
+     *   - un QR code d'identité (nom + email + n° accréditation) ;
+     *   - la référence interne « WAC-PRESS-ACC-{id} ».
+     *
+     * Différent du {@link #generateBadgePresse(User, String)} historique
+     * qui s'appuyait sur user.matchSouhaite (un seul match).
+     */
+    public byte[] generatePressBadge(PressAccreditation acc, User journalist) throws Exception {
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        // Format paysage carte (badge officiel 85x54mm agrandi)
+        Document document = new Document(new RectangleReadOnly(620, 380));
+        PdfWriter.getInstance(document, outputStream);
+        document.open();
+
+        // Bande rouge supérieure — identité visuelle du club
+        Rectangle band = new Rectangle(0, 320, 620, 380);
+        band.setBackgroundColor(new Color(0xDC, 0x14, 0x3C));
+        document.add(band);
+
+        Font clubFont = new Font(Font.HELVETICA, 20, Font.BOLD, Color.WHITE);
+        Paragraph club = new Paragraph("WYDAD ATHLETIC CLUB", clubFont);
+        club.setAlignment(Element.ALIGN_CENTER);
+        document.add(club);
+
+        Font accFont = new Font(Font.HELVETICA, 12, Font.NORMAL, Color.WHITE);
+        Paragraph accTitle = new Paragraph("ACCREDITATION PRESSE — MATCH OFFICIEL", accFont);
+        accTitle.setAlignment(Element.ALIGN_CENTER);
+        accTitle.setSpacingBefore(4);
+        document.add(accTitle);
+
+        document.add(Chunk.NEWLINE);
+
+        // ─── Photo du journaliste (colonne gauche) ───
+        float photoX = 30f;
+        float photoY = 60f;
+        float photoW = 130f;
+        float photoH = 160f;
+        Image photo = loadProfilePhoto(journalist.getPhotoUrl());
+        if (photo != null) {
+            photo.setAbsolutePosition(photoX, photoY);
+            photo.scaleToFit(photoW, photoH);
+            document.add(photo);
+            // Cadre autour de la photo
+            Rectangle frame = new Rectangle(photoX, photoY, photoX + photoW, photoY + photoH);
+            frame.setBorder(Rectangle.BOX);
+            frame.setBorderWidth(1f);
+            frame.setBorderColor(new Color(0xCC, 0xCC, 0xCC));
+            document.add(frame);
+        } else {
+            // Placeholder si la photo n'est pas accessible (mode dégradé Cloudinary)
+            Rectangle frame = new Rectangle(photoX, photoY, photoX + photoW, photoY + photoH);
+            frame.setBorder(Rectangle.BOX);
+            frame.setBorderWidth(1f);
+            frame.setBorderColor(new Color(0xCC, 0xCC, 0xCC));
+            document.add(frame);
+            Font placeholderFont = new Font(Font.HELVETICA, 10, Font.ITALIC, new Color(0x99, 0x99, 0x99));
+            Paragraph placeholder = new Paragraph("Photo non\ndisponible", placeholderFont);
+            placeholder.setAlignment(Element.ALIGN_CENTER);
+            // Positionnement approximatif au centre du cadre
+            float phTextX = photoX + photoW / 2f - 30f;
+            float phTextY = photoY + photoH / 2f;
+            placeholder.setIndentationLeft(phTextX);
+            placeholder.setSpacingBefore(phTextY);
+            // (iText n'accepte pas le positionnement absolu d'un paragraphe
+            // simple — on l'ajoute dans le flux, l'alignement CENTER reste ok)
+            document.add(placeholder);
+        }
+
+        // ─── Bloc identité (au centre) ───
+        Font labelFont = new Font(Font.HELVETICA, 8, Font.BOLD, new Color(0x88, 0x88, 0x88));
+        Font valueFont = new Font(Font.HELVETICA, 13, Font.BOLD, new Color(0x1A, 0x1A, 0x2E));
+
+        Paragraph nomLabel = new Paragraph("JOURNALISTE", labelFont);
+        nomLabel.setIndentationLeft(180);
+        nomLabel.setSpacingBefore(-150f); // remonte le bloc à hauteur de la photo
+        document.add(nomLabel);
+        Paragraph nom = new Paragraph(journalist.getFirstName() + " " + journalist.getLastName(), valueFont);
+        nom.setIndentationLeft(180);
+        nom.setSpacingAfter(8);
+        document.add(nom);
+
+        if (journalist.getOrganismePresse() != null && !journalist.getOrganismePresse().isBlank()) {
+            Paragraph organeLabel = new Paragraph("ORGANE DE PRESSE", labelFont);
+            organeLabel.setIndentationLeft(180);
+            document.add(organeLabel);
+            Paragraph organe = new Paragraph(journalist.getOrganismePresse(), valueFont);
+            organe.setIndentationLeft(180);
+            organe.setSpacingAfter(8);
+            document.add(organe);
+        }
+
+        if (journalist.getNumeroCartePresse() != null && !journalist.getNumeroCartePresse().isBlank()) {
+            Paragraph ncpLabel = new Paragraph("N° CARTE DE PRESSE", labelFont);
+            ncpLabel.setIndentationLeft(180);
+            document.add(ncpLabel);
+            Paragraph ncp = new Paragraph(journalist.getNumeroCartePresse(),
+                    new Font(Font.HELVETICA, 12, Font.BOLD, new Color(0xCC, 0x00, 0x00)));
+            ncp.setIndentationLeft(180);
+            ncp.setSpacingAfter(8);
+            document.add(ncp);
+        }
+
+        Paragraph matchLabel = new Paragraph("MATCH COUVERT", labelFont);
+        matchLabel.setIndentationLeft(180);
+        document.add(matchLabel);
+        Paragraph matchValue = new Paragraph(acc.getMatchLabel(),
+                new Font(Font.HELVETICA, 11, Font.BOLD, new Color(0x1A, 0x1A, 0x2E)));
+        matchValue.setIndentationLeft(180);
+        matchValue.setSpacingAfter(6);
+        document.add(matchValue);
+
+        // ─── QR code (colonne droite) ───
+        String qrPayload = "WAC-PRESS-ACC-" + acc.getId()
+                + "|" + journalist.getEmail()
+                + "|" + journalist.getFirstName() + " " + journalist.getLastName()
+                + "|" + (acc.getMatchId() != null ? acc.getMatchId() : "n/a");
+        String qrBase64 = qrCodeService.generateQrCode(qrPayload, 160, 160);
+        try {
+            Image qr = Image.getInstance(java.util.Base64.getDecoder().decode(qrBase64));
+            qr.setAbsolutePosition(470, 60);
+            qr.scaleToFit(120, 120);
+            document.add(qr);
+        } catch (Exception e) {
+            // QR indisponible — on continue sans, l'identifiant texte reste valide
+        }
+
+        // ─── Pied : référence interne et mention légale ───
+        Font footFont = new Font(Font.HELVETICA, 7, Font.NORMAL, new Color(0x66, 0x66, 0x66));
+        Paragraph foot = new Paragraph(
+                "Accréditation n° WAC-PRESS-ACC-" + acc.getId()
+                        + " · Saison " + java.time.LocalDate.now().getYear()
+                        + " · Document généré électroniquement — à présenter avec une pièce d'identité et la carte de presse.",
+                footFont);
+        foot.setAlignment(Element.ALIGN_CENTER);
+        foot.setSpacingBefore(20);
+        document.add(foot);
+
+        document.close();
+        return outputStream.toByteArray();
+    }
+
+    /**
+     * Tente de charger la photo de profil depuis l'URL Cloudinary.
+     * Renvoie null si l'URL est nulle, inatteignable ou invalide — le
+     * PDF affichera alors un placeholder au lieu de planter.
+     */
+    private Image loadProfilePhoto(String photoUrl) {
+        if (photoUrl == null || photoUrl.isBlank()) return null;
+        try {
+            return Image.getInstance(new URL(photoUrl));
+        } catch (Exception e) {
+            return null;
+        }
     }
 }
