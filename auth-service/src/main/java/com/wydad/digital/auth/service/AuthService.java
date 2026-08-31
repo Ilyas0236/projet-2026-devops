@@ -61,7 +61,7 @@ public class AuthService {
 
     /** Rôles que le public peut solliciter à l'inscription. */
     private static final java.util.Set<String> ROLES_SOLICITABLES =
-            java.util.Set.of("JOURNALISTE", "JOUEUR", "ENTRAINEUR", "STAFF");
+            java.util.Set.of("JOURNALISTE", "JOUEUR", "ENTRAINEUR", "STAFF", "PARENT");
 
     /**
      * Choix du statut à l'inscription : JOURNALISTE, JOUEUR, ENTRAINEUR ou

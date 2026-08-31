@@ -5,7 +5,7 @@ import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { ApiService } from '../../services/api.service';
 
-type StatutChoix = 'ADHERENT' | 'JOURNALISTE' | 'JOUEUR' | 'ENTRAINEUR' | 'STAFF';
+type StatutChoix = 'ADHERENT' | 'JOURNALISTE' | 'JOUEUR' | 'ENTRAINEUR' | 'STAFF' | 'PARENT';
 
 interface StatutOption {
   valeur: StatutChoix;
@@ -47,6 +47,7 @@ export class RegisterComponent implements OnInit {
   statut: StatutChoix = 'ADHERENT';
   readonly options: StatutOption[] = [
     { valeur: 'ADHERENT',    titre: 'Supporter / Adhérent', description: 'Accès immédiat à l\'espace fan, sondages et billetterie.', icone: '❤' },
+    { valeur: 'PARENT',      titre: 'Parent',               description: 'Inscrivez votre enfant à l\'académie Wydad — validé par le club.', icone: '👨‍👩‍👧' },
     { valeur: 'JOURNALISTE', titre: 'Journaliste',          description: 'Demande d\'accréditation presse — validée par le club.', icone: '📰' },
     { valeur: 'JOUEUR',      titre: 'Joueur',               description: 'Intégration à une catégorie — validée par le club.', icone: '⚽' },
     { valeur: 'ENTRAINEUR',  titre: 'Entraîneur',           description: 'Encadrement d\'une catégorie — validé par le club.', icone: '📋' },
