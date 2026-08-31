@@ -471,8 +471,12 @@ public class PdfService {
         }
 
         // ─── Bloc identité (au centre) ───
+        // Tout le texte du corps est en NOIR (couleur par défaut) — seules
+        // la bande rouge du header et les mentions de pied restent colorées.
+        // Les labels en gris clair, les valeurs en noir (#000000) pour une
+        // lisibilité maximale à l'impression du badge.
         Font labelFont = new Font(Font.HELVETICA, 8, Font.BOLD, new Color(0x88, 0x88, 0x88));
-        Font valueFont = new Font(Font.HELVETICA, 13, Font.BOLD, new Color(0x1A, 0x1A, 0x2E));
+        Font valueFont = new Font(Font.HELVETICA, 13, Font.BOLD, Color.BLACK);
 
         Paragraph nomLabel = new Paragraph("JOURNALISTE", labelFont);
         nomLabel.setIndentationLeft(180);
@@ -498,7 +502,7 @@ public class PdfService {
             ncpLabel.setIndentationLeft(180);
             document.add(ncpLabel);
             Paragraph ncp = new Paragraph(journalist.getNumeroCartePresse(),
-                    new Font(Font.HELVETICA, 12, Font.BOLD, new Color(0xCC, 0x00, 0x00)));
+                    new Font(Font.HELVETICA, 12, Font.BOLD, Color.BLACK));
             ncp.setIndentationLeft(180);
             ncp.setSpacingAfter(8);
             document.add(ncp);
@@ -508,7 +512,7 @@ public class PdfService {
         matchLabel.setIndentationLeft(180);
         document.add(matchLabel);
         Paragraph matchValue = new Paragraph(acc.getMatchLabel(),
-                new Font(Font.HELVETICA, 11, Font.BOLD, new Color(0x1A, 0x1A, 0x2E)));
+                new Font(Font.HELVETICA, 11, Font.BOLD, Color.BLACK));
         matchValue.setIndentationLeft(180);
         matchValue.setSpacingAfter(6);
         document.add(matchValue);
