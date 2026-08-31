@@ -76,7 +76,8 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         }
 
         // Auth-service : public endpoints (member-card et attestation exigent désormais un JWT)
-        if (path.equals("/api/auth/login") || path.equals("/api/auth/register") || path.equals("/api/auth/refresh") || path.equals("/api/auth/otp/send") || path.equals("/api/auth/otp/verify")
+        if (path.equals("/api/auth/login") || path.equals("/api/auth/register") || path.equals("/api/auth/register-press")
+                || path.equals("/api/auth/refresh") || path.equals("/api/auth/otp/send") || path.equals("/api/auth/otp/verify")
                 || path.equals("/api/auth/password/reset")
                 || path.equals("/api/auth/kyc/register-upload")
                 // Catalogue public des abonnements (l'admin pilote, le visiteur consulte).
