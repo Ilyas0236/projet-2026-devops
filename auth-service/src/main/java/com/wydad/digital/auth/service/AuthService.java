@@ -187,9 +187,25 @@ public class AuthService {
      * {@code AuthController.registerPress} pour appliquer l'URL de la
      * photo après création du compte journaliste.
      */
+    @Transactional
     public User findByEmailOrThrow(String email) {
         return userRepository.findByEmailIgnoreCase(email)
                 .orElseThrow(() -> new IllegalArgumentException("Utilisateur introuvable : " + email));
+    }
+
+    /**
+     * Met à jour la photoUrl d'un utilisateur (B.17 — upload photo profil
+     * journaliste après inscription). Encapsule load + set + save dans une
+     * seule transaction, sinon le setPhotoUrl sur l'objet retourné par
+     * findByEmailOrThrow se ferait hors session Hibernate et ne serait pas
+     * persisté (dirty checking ne s'applique qu'aux entités managées).
+     */
+    @Transactional
+    public void setPhotoUrlByEmail(String email, String photoUrl) {
+        User u = userRepository.findByEmailIgnoreCase(email)
+                .orElseThrow(() -> new IllegalArgumentException("Utilisateur introuvable : " + email));
+        u.setPhotoUrl(photoUrl);
+        userRepository.save(u);
     }
 
     public AuthResponse login(LoginRequest request, String ipAddress, String userAgent) {

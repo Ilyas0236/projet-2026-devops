@@ -80,7 +80,11 @@ public class AuthController {
                 if (res != null) {
                     String photoUrl = res.secureUrl() != null ? res.secureUrl() : res.publicId();
                     if (photoUrl != null) {
-                        created.setPhotoUrl(photoUrl);
+                        // setPhotoUrlByEmail encapsule load+set+save dans une
+                        // transaction -- sinon le setPhotoUrl sur l'objet
+                        // retourné par findByEmailOrThrow (déjà hors session)
+                        // ne serait pas persisté.
+                        authService.setPhotoUrlByEmail(register.email(), photoUrl);
                     }
                 }
             } catch (Exception e) {
