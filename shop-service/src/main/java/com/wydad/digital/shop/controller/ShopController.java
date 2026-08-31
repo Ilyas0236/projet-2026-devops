@@ -72,14 +72,14 @@ public class ShopController {
 
     // ========== PANIER ==========
     @GetMapping("/cart")
-    @PreAuthorize("hasRole('ADHERENT') or hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADHERENT') or hasRole('PARENT') or hasRole('ADMIN')")
     public ResponseEntity<List<CartItemDto>> getCart(
             @RequestHeader("X-User-Email") String userEmail) {
         return ResponseEntity.ok(cartService.getCart(userEmail));
     }
 
     @PostMapping("/cart")
-    @PreAuthorize("hasRole('ADHERENT') or hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADHERENT') or hasRole('PARENT') or hasRole('ADMIN')")
     public ResponseEntity<CartItemDto> addToCart(
             @RequestHeader("X-User-Email") String userEmail,
             @Valid @RequestBody CartItemDto dto) {
@@ -87,7 +87,7 @@ public class ShopController {
     }
 
     @PutMapping("/cart/{cartItemId}")
-    @PreAuthorize("hasRole('ADHERENT') or hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADHERENT') or hasRole('PARENT') or hasRole('ADMIN')")
     public ResponseEntity<Void> updateCartQuantity(
             @RequestHeader("X-User-Email") String userEmail,
             @PathVariable Long cartItemId,
@@ -97,7 +97,7 @@ public class ShopController {
     }
 
     @DeleteMapping("/cart/{cartItemId}")
-    @PreAuthorize("hasRole('ADHERENT') or hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADHERENT') or hasRole('PARENT') or hasRole('ADMIN')")
     public ResponseEntity<Void> removeFromCart(
             @RequestHeader("X-User-Email") String userEmail,
             @PathVariable Long cartItemId) {

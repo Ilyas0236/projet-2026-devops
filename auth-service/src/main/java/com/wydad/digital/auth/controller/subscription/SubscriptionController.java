@@ -54,7 +54,7 @@ public class SubscriptionController {
      * Remplace l'ancien /api/auth/upgrade qui ne demandait aucun paiement.
      */
     @PostMapping("/purchase")
-    @PreAuthorize("hasRole('ADHERENT') or hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADHERENT') or hasRole('PARENT') or hasRole('ADMIN')")
     public ResponseEntity<SubscriptionResponse> purchase(
             @Valid @RequestBody PurchaseSubscriptionRequest request,
             HttpServletRequest httpRequest) {

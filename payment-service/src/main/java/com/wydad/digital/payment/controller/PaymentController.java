@@ -55,7 +55,7 @@ public class PaymentController {
     }
 
     @PostMapping("/don")
-    @PreAuthorize("hasRole('ADHERENT') or hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADHERENT') or hasRole('PARENT') or hasRole('ADMIN')")
     public ResponseEntity<?> don(@Valid @RequestBody DonRequest request) {
         // IDOR : l'email du wallet débité est TOUJOURS dérivé du JWT.
         // Un utilisateur ne peut faire un don que depuis son propre wallet ;
@@ -78,7 +78,7 @@ public class PaymentController {
     }
 
     @PostMapping("/card")
-    @PreAuthorize("hasRole('ADHERENT') or hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADHERENT') or hasRole('PARENT') or hasRole('ADMIN')")
     public ResponseEntity<TransactionResponse> payByCard(
             @RequestParam(required = false) String email,
             @Valid @RequestBody CardPaymentRequest request) {
