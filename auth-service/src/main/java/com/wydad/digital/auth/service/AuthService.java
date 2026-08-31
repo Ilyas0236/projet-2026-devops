@@ -109,6 +109,12 @@ public class AuthService {
                 // fera des demandes d'accréditation plus tard.
                 matchIdDemande = null;
                 match = null;
+            } else if ("PARENT".equals(demande)) {
+                // C.3 — Parent d'enfant(s) à l'académie : pas de discipline
+                // ni de catégorie sportive, on enregistre juste l'identité
+                // et le compte passe EN_ATTENTE pour validation admin.
+                // L'inscription d'un enfant à l'académie se fait depuis
+                // /academie/inscription (espace parent post-login).
             } else {
                 // Rôle sportif : le couple DISCIPLINE + CATÉGORIE est obligatoire —
                 // c'est ce couple qui isole les groupes dans toute la plateforme.
