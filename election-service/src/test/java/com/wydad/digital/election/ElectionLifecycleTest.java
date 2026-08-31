@@ -1,5 +1,6 @@
 package com.wydad.digital.election;
 
+import com.wydad.digital.election.client.AuthSubscriptionClient;
 import com.wydad.digital.election.model.Election;
 import com.wydad.digital.election.model.ElectionStatus;
 import com.wydad.digital.election.repository.ElectionRepository;
@@ -9,10 +10,14 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
+
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.when;
 
 import java.time.LocalDateTime;
 
@@ -40,6 +45,15 @@ class ElectionLifecycleTest {
     @Autowired ElectionRepository electionRepository;
     @Autowired com.wydad.digital.election.service.ElectionService electionService;
 
+    /**
+     * B.18 — ElectionService.vote() appelle désormais
+     * {@code AuthSubscriptionClient.isActiveSubscriber(email)} pour vérifier
+     * l'éligibilité. On mocke ce client ici pour que les tests legacy
+     * considèrent tous les votants comme adhérents (le sujet du test est
+     * la mécanique électorale, pas l'éligibilité supporter).
+     */
+    @MockBean AuthSubscriptionClient authSubscriptionClient;
+
     private static final String ADMIN_EMAIL = "president.bureau@wydad.ma";
 
     @Autowired com.wydad.digital.election.repository.ElectionVoteRepository voteRepository;
@@ -52,6 +66,11 @@ class ElectionLifecycleTest {
         voteRepository.deleteAll();
         candidateRepository.deleteAll();
         electionRepository.deleteAll();
+        // B.18 — par défaut on considère tous les votants comme adhérents
+        // (les tests ElectionLifecycle portent sur la mécanique électorale,
+        // pas sur l'éligibilité supporter). Un test dédié (cf.
+        // ElectionMembershipRequiredTest) couvre le cas inverse.
+        when(authSubscriptionClient.isActiveSubscriber(anyString())).thenReturn(true);
     }
 
     // ------------------------------------------------------------------
