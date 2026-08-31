@@ -71,8 +71,13 @@ public class ShopController {
     }
 
     // ========== PANIER ==========
+    // GET /cart (lecture) : tous les rôles MEMBRES peuvent consulter leur
+    // propre panier — STAFF, JOUEUR, ENTRAINEUR, JOURNALISTE, PRESIDENT
+    // peuvent avoir ajouté des articles avant une éventuelle restriction
+    // d'achat (cf. B.4 audit 26/08). On refuse toujours les non-membres
+    // (VISITEUR, anonyme) pour rester cohérent avec B.12.a.
     @GetMapping("/cart")
-    @PreAuthorize("hasRole('ADHERENT') or hasRole('PARENT') or hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADHERENT','PARENT','JOUEUR','STAFF','ENTRAINEUR','JOURNALISTE','PRESIDENT','ADMIN')")
     public ResponseEntity<List<CartItemDto>> getCart(
             @RequestHeader("X-User-Email") String userEmail) {
         return ResponseEntity.ok(cartService.getCart(userEmail));
