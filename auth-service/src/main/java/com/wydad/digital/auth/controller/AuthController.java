@@ -73,8 +73,15 @@ public class AuthController {
                 User created = authService.findByEmailOrThrow(register.email());
                 CloudinaryService.UploadResult res =
                         cloudinaryService.uploadProfilePhoto(photo, created.getId());
-                if (res != null && res.secureUrl() != null) {
-                    created.setPhotoUrl(res.secureUrl());
+                // En mode dégradé (pas de clés Cloudinary) secureUrl est null
+                // mais publicId est renseigné ("local:profile:N") -- on l'utilise
+                // comme identifiant local pour que la garde PHOTO_REQUIRED passe.
+                // En mode Cloudinary configuré, secureUrl est prioritaire.
+                if (res != null) {
+                    String photoUrl = res.secureUrl() != null ? res.secureUrl() : res.publicId();
+                    if (photoUrl != null) {
+                        created.setPhotoUrl(photoUrl);
+                    }
                 }
             } catch (Exception e) {
                 org.slf4j.LoggerFactory.getLogger(AuthController.class)
