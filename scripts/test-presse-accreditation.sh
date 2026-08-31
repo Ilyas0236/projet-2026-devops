@@ -140,12 +140,14 @@ REGISTER_JSON="{
 REG_RESP=$(curl -s -X POST "$BASE/api/auth/register-press" \
   -F "register=${REGISTER_JSON};type=application/json" \
   -F "photo=@/tmp/press-photo.jpg;type=image/jpeg")
-JOURNALIST_ID=$(echo "$REG_RESP" | python3 -c "import sys,json
-try:
-  d=json.load(sys.stdin); print(d.get('id') or d.get('userId') or '')
-except Exception: print('')" 2>/dev/null)
+# L'endpoint register-press renvoie {status, message} sans id -- on le récupère
+# directement en BDD (auth_db) pour pouvoir l'utiliser ensuite.
+JOURNALIST_ID=$(PGPASSWORD=$(grep POSTGRES_PASSWORD .env | cut -d= -f2) \
+  psql -h localhost -U $(grep POSTGRES_USER .env | cut -d= -f2) -d auth_db -tA \
+  -c "SELECT id FROM users WHERE email='$JOURNALIST_EMAIL' LIMIT 1;" 2>/dev/null \
+  | tr -d '[:space:]')
 if [ -n "$JOURNALIST_ID" ]; then
-  ok "Journaliste créé id=$JOURNALIST_ID (statut EN_ATTENTE)"
+  ok "Journaliste créé id=$JOURNALIST_ID (statut EN_ATTENTE) — $REG_RESP"
 else
   fail "Inscription journaliste : $REG_RESP"
   exit 1
