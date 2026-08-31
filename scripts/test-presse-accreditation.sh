@@ -128,7 +128,7 @@ ls -la /tmp/press-photo.jpg >/dev/null
 
 REGISTER_JSON="{
   \"email\":\"$JOURNALIST_EMAIL\",
-  \"phone\":\"+212600${TS:0:6}\",
+  \"phone\":\"+2126${TS}\",
   \"password\":\"$JOURNALIST_PASS\",
   \"firstName\":\"B17\",
   \"lastName\":\"PresseTest\",
