@@ -69,9 +69,9 @@ MATCH_RESP=$(curl -s -X POST "$BASE/api/content/matches" \
     \"competition\":\"Botola B17 Test\",
     \"date\":\"2026-12-15\",
     \"heure\":\"20:00\",
-    \"stade\":\"Stade B17\",
-    \"statut\":\"PROGRAMME\",
-    \"saison\":\"2026-2027\"
+    \"lieu\":\"Stade B17\",
+    \"sport\":\"FOOTBALL\",
+    \"statut\":\"PROGRAMME\"
   }")
 MATCH_ID=$(echo "$MATCH_RESP" | python3 -c "import sys,json
 try:
@@ -93,9 +93,9 @@ MATCH2_RESP=$(curl -s -X POST "$BASE/api/content/matches" \
     \"competition\":\"Coupe B17 Test\",
     \"date\":\"2026-12-22\",
     \"heure\":\"18:00\",
-    \"stade\":\"Stade B17\",
-    \"statut\":\"PROGRAMME\",
-    \"saison\":\"2026-2027\"
+    \"lieu\":\"Stade B17\",
+    \"sport\":\"FOOTBALL\",
+    \"statut\":\"PROGRAMME\"
   }")
 MATCH2_ID=$(echo "$MATCH2_RESP" | python3 -c "import sys,json
 try:
