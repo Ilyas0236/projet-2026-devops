@@ -16,7 +16,9 @@
       </a>
 
       <!-- Center: Navigation (xl pour éviter le chevauchement TRANSPARENCE/CONNEXION à 1024px) -->
-      <nav class="hidden xl:flex items-center gap-4 2xl:gap-6 font-display text-[11px] font-medium tracking-wider xl:tracking-widest uppercase whitespace-nowrap">
+      <!-- Rôles internes (joueur, journaliste, entraîneur, staff, parent, président) : navbar masquée
+           pour qu'ils restent dans leur espace dédié. Seul le bouton Déconnexion reste accessible. -->
+      <nav *ngIf="!isInternalRole" class="hidden xl:flex items-center gap-4 2xl:gap-6 font-display text-[11px] font-medium tracking-wider xl:tracking-widest uppercase whitespace-nowrap">
         <a routerLink="/" class="nav-link" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">Accueil</a>
         <a routerLink="/actualites" class="nav-link" routerLinkActive="active">Actualités</a>
         <a routerLink="/matchs" class="nav-link" routerLinkActive="active">Matchs</a>
@@ -35,10 +37,14 @@
       <div class="flex items-center gap-3 shrink-0">
         <!-- Cloche notifications (utilisateurs connectés) -->
         <app-notification-bell *ngIf="isLoggedIn"></app-notification-bell>
-        <!-- État connecté : bonjour + espace + déconnexion au lieu de Connexion/Inscription -->
+        <!-- État connecté : bonjour + espace + déconnexion au lieu de Connexion/Inscription.
+             Rôles internes : on cache "Bonjour" et "Mon espace" (ils sont déjà dans leur espace)
+             mais on garde "Déconnexion" comme seule sortie vers le site public. -->
         <ng-container *ngIf="isLoggedIn; else anonymous">
-          <span class="hidden xl:inline-block text-ink-secondary font-display text-xs uppercase tracking-widest">Bonjour {{ firstName }}</span>
-          <a [routerLink]="espaceLink" class="hidden xl:inline-block text-wydad-red hover:opacity-80 font-display text-xs uppercase tracking-widest transition-colors">Mon espace</a>
+          <ng-container *ngIf="!isInternalRole">
+            <span class="hidden xl:inline-block text-ink-secondary font-display text-xs uppercase tracking-widest">Bonjour {{ firstName }}</span>
+            <a [routerLink]="espaceLink" class="hidden xl:inline-block text-wydad-red hover:opacity-80 font-display text-xs uppercase tracking-widest transition-colors">Mon espace</a>
+          </ng-container>
           <button type="button" (click)="logout()" class="hidden xl:inline-block text-ink-secondary hover:text-wydad-red font-display text-xs uppercase tracking-widest transition-colors cursor-pointer bg-transparent border-none">Déconnexion</button>
         </ng-container>
         <ng-template #anonymous>
@@ -61,7 +67,7 @@
 
   <!-- Mobile Menu Overlay -->
   <div *ngIf="isMobileMenuOpen" class="fixed inset-0 z-40 bg-white flex flex-col pt-24 px-6 pb-6 animate-fade-in xl:hidden overflow-y-auto">
-    <nav class="flex flex-col gap-5 font-display text-xl tracking-widest uppercase mt-8">
+    <nav *ngIf="!isInternalRole" class="flex flex-col gap-5 font-display text-xl tracking-widest uppercase mt-8">
       <a routerLink="/" (click)="toggleMobileMenu()" class="text-ink-secondary hover:text-wydad-red" routerLinkActive="text-wydad-red" [routerLinkActiveOptions]="{exact: true}">Accueil</a>
       <a routerLink="/actualites" (click)="toggleMobileMenu()" class="text-ink-secondary hover:text-wydad-red" routerLinkActive="text-wydad-red">Actualités</a>
       <a routerLink="/matchs" (click)="toggleMobileMenu()" class="text-ink-secondary hover:text-wydad-red" routerLinkActive="text-wydad-red">Matchs</a>
@@ -76,16 +82,19 @@
       <a routerLink="/boutique" (click)="toggleMobileMenu()" class="text-ink-secondary hover:text-wydad-red" routerLinkActive="text-wydad-red">Boutique</a>
       <a routerLink="/transparence" (click)="toggleMobileMenu()" class="text-ink-secondary hover:text-wydad-red" routerLinkActive="text-wydad-red">Transparence</a>
       <div class="h-px w-full bg-paper-3 my-4"></div>
-      <ng-container *ngIf="isLoggedIn; else anonymousMobile">
+    </nav>
+    <!-- Bloc auth (commun à tous rôles) — rôles internes : juste Déconnexion -->
+    <ng-container *ngIf="isLoggedIn; else anonymousMobile">
+      <ng-container *ngIf="!isInternalRole">
         <span class="text-ink-secondary">Bonjour {{ firstName }}</span>
         <a [routerLink]="espaceLink" (click)="toggleMobileMenu()" class="text-wydad-red hover:text-ink-primary">Mon espace</a>
-        <button type="button" (click)="logout(); toggleMobileMenu()" class="text-left text-ink-secondary hover:text-wydad-red cursor-pointer bg-transparent border-none p-0 font-inherit">Déconnexion</button>
       </ng-container>
-      <ng-template #anonymousMobile>
-        <a routerLink="/login" (click)="toggleMobileMenu()" class="text-ink-secondary hover:text-wydad-red">Connexion</a>
-        <a routerLink="/register" (click)="toggleMobileMenu()" class="text-wydad-red hover:text-ink-primary">Inscription</a>
-      </ng-template>
-    </nav>
+      <button type="button" (click)="logout(); toggleMobileMenu()" class="text-left text-ink-secondary hover:text-wydad-red cursor-pointer bg-transparent border-none p-0 font-inherit">Déconnexion</button>
+    </ng-container>
+    <ng-template #anonymousMobile>
+      <a routerLink="/login" (click)="toggleMobileMenu()" class="text-ink-secondary hover:text-wydad-red">Connexion</a>
+      <a routerLink="/register" (click)="toggleMobileMenu()" class="text-wydad-red hover:text-ink-primary">Inscription</a>
+    </ng-template>
   </div>
 
   <!-- Main Content -->

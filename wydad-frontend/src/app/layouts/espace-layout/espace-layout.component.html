@@ -1,19 +1,18 @@
 <div class="espace-shell">
   <header class="espace-topbar">
-    <button class="brand" type="button" (click)="goHome()" title="Retour au site">
+    <div class="brand" aria-label="Wydad AC — espace connecté">
       <img src="assets/images/logos/wydad-logo.png" alt="Wydad AC" class="brand-logo">
       <span class="brand-text">
         <span class="brand-club">WYDAD AC</span>
         <span class="brand-espace">{{ espaceLabel }}</span>
       </span>
-    </button>
+    </div>
 
     <div class="topbar-actions">
       <app-notification-bell></app-notification-bell>
       @if (firstName) {
         <span class="hello">Bonjour, {{ firstName }}</span>
       }
-      <a class="btn-site" routerLink="/"><span class="btn-site-long">← Retour au site</span><span class="btn-site-short">← Site</span></a>
       <button class="btn-logout" type="button" (click)="logout()"><span class="btn-site-long">Se déconnecter</span><span class="btn-site-short">Quitter</span></button>
     </div>
   </header>

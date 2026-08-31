@@ -23,6 +23,20 @@ export class PublicLayoutComponent implements OnInit {
   isLoggedIn = false;
   firstName: string | null = null;
 
+  /**
+   * Rôles internes (joueur / journaliste / entraîneur / staff / parent /
+   * président) : ils n'ont pas accès à l'expérience "supporter" (billetterie,
+   * abonnement, boutique, dons). On leur cache la navbar publique et le bloc
+   * auth pour qu'ils restent dans leur espace dédié — seule la déconnexion
+   * leur permet de revenir au site public. ADMIN conserve la navbar.
+   */
+  get isInternalRole(): boolean {
+    const role = this.auth.getTokenRole();
+    return role === 'JOUEUR' || role === 'JOURNALISTE'
+        || role === 'ENTRAINEUR' || role === 'STAFF'
+        || role === 'PARENT' || role === 'PRESIDENT';
+  }
+
   // Coordonnees du club — source de verite : configuration club (ADMIN)
   clubInfo: any = null;
 

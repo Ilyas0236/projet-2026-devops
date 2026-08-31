@@ -6,7 +6,8 @@ import { NotificationBellComponent } from '../../components/notification-bell/no
 /**
  * Layout des espaces connectés (joueur, staff/entraîneur, président,
  * journaliste, parent) — remplace le header public par un bandeau fin :
- * logo club + nom de l'espace + cloche de notification + retour au site + déconnexion.
+ * logo club + nom de l'espace + cloche de notification + déconnexion (seule
+ * sortie possible vers le site public).
  */
 @Component({
   selector: 'app-espace-layout',
@@ -35,10 +36,6 @@ export class EspaceLayoutComponent {
   get firstName(): string | null {
     const n = localStorage.getItem('wydad_first_name');
     return n && n !== 'null' ? n : null;
-  }
-
-  goHome(): void {
-    this.router.navigate(['/']);
   }
 
   logout(): void {
