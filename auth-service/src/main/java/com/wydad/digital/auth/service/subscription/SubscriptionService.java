@@ -1,6 +1,7 @@
 package com.wydad.digital.auth.service.subscription;
 
 import com.wydad.digital.auth.client.PaymentClient;
+import com.wydad.digital.auth.client.SportsClient;
 import com.wydad.digital.auth.dto.subscription.PurchaseSubscriptionRequest;
 import com.wydad.digital.auth.dto.subscription.SubscriptionResponse;
 import com.wydad.digital.auth.dto.subscription.SubscriptionZoneResponse;
@@ -13,6 +14,7 @@ import com.wydad.digital.auth.model.subscription.UserSubscriptionStatus;
 import com.wydad.digital.auth.repository.UserRepository;
 import com.wydad.digital.auth.repository.subscription.SubscriptionPlanRepository;
 import com.wydad.digital.auth.repository.subscription.UserSubscriptionRepository;
+import com.wydad.digital.auth.service.ChildUserService;
 import com.wydad.digital.auth.service.PdfService;
 import com.wydad.digital.auth.service.QrCodeService;
 import lombok.RequiredArgsConstructor;
@@ -54,6 +56,8 @@ public class SubscriptionService {
     private final PaymentClient paymentClient;
     private final QrCodeService qrCodeService;
     private final PdfService pdfService;
+    private final ChildUserService childUserService;
+    private final SportsClient sportsClient;
 
     /**
      * Catalogue public des zones.
@@ -93,8 +97,37 @@ public class SubscriptionService {
      */
     @Transactional
     public SubscriptionResponse purchase(String email, PurchaseSubscriptionRequest request) {
-        User user = userRepository.findByEmail(email)
+        User parent = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UserNotFoundException(email));
+
+        // B.18 — branche « achat pour un enfant académie ». Si
+        // beneficiaryAcademyMemberId est fourni, on bascule user → User shadow
+        // du fils (créé via ChildUserService). L'autorisation IDOR (l'enfant
+        // est-il bien rattaché à CE parent ?) est faite avant tout débit.
+        User user = parent;
+        User childShadow = null;
+        Long beneficiaryAcademyMemberId = request.beneficiaryAcademyMemberId();
+        if (beneficiaryAcademyMemberId != null) {
+            // Lookup sports-service : {id, parentUserId, childFullName}.
+            java.util.Map<String, Object> child = sportsClient.getAcademyMember(beneficiaryAcademyMemberId);
+            if (child == null) {
+                throw new NotYourChildException(
+                        "Enfant académie introuvable : id=" + beneficiaryAcademyMemberId);
+            }
+            Object rawParentId = child.get("parentUserId");
+            if (rawParentId == null || !parent.getId().equals(toLong(rawParentId))) {
+                // IDOR : un parent qui tente d'acheter pour un enfant qui
+                // n'est pas le sien. Message volontairement vague pour ne
+                // pas révéler l'existence de l'enfant ciblé.
+                throw new NotYourChildException(
+                        "Cet enfant n'est pas rattaché à votre compte parent");
+            }
+            Object rawName = child.get("childFullName");
+            String childFullName = rawName != null ? rawName.toString() : "Enfant WAC";
+            childShadow = childUserService.ensureChildUser(
+                    parent.getId(), childFullName, beneficiaryAcademyMemberId);
+            user = childShadow;
+        }
 
         // Résolution du plan par code (la source de vérité est désormais la table).
         SubscriptionPlan plan = planRepository.findByCode(request.planCode())
@@ -107,13 +140,17 @@ public class SubscriptionService {
         // et check de l'invariant « un seul abonnement par saison » :
         // si l'utilisateur a déjà un ACTIVE ou REPLACED, on refuse AVANT
         // de débiter. EXPIRED et CANCELLED n'empêchent pas l'achat.
+        //
+        // B.18 — la règle s'applique au user final (le fils si achat
+        // bénéficiaire). Conséquence : un parent peut acheter un abonnement
+        // pour CHACUN de ses fils sans déclencher 409.
         String season = currentSeason();
         List<UserSubscription> alreadyThere = subscriptionRepository
                 .findByUserAndSeasonAndStatusIn(user, season,
                         List.of(UserSubscriptionStatus.ACTIVE, UserSubscriptionStatus.REPLACED));
         if (!alreadyThere.isEmpty()) {
             log.info("Achat refusé pour {} (saison {}) : déjà {} abonnement(s) ACTIVE/REPLACED",
-                    email, season, alreadyThere.size());
+                    user.getEmail(), season, alreadyThere.size());
             throw new AlreadySubscribedException(season);
         }
 
@@ -123,13 +160,12 @@ public class SubscriptionService {
         // jamais valorisé pour les nouveaux comptes depuis la refonte B.12).
         BigDecimal price = resolvePrice(plan, user);
 
-        // 1) Débit E-Cash (paiement simulé via payment-service). Le user doit
-        // avoir rechargé son wallet au préalable — si le solde est insuffisant,
-        // payment-service renvoie 402 et on propage l'exception.
+        // 1) Débit E-Cash (paiement simulé via payment-service). Le débit
+        // reste sur le wallet du PARENT (le fils n'a pas de wallet accessible).
         // Référence interne = "B12-{planCode}-{userId}-{tsEpochMs}" pour
         // permettre le rapprochement côté payment_db.transactions.
         String reference = "B12-" + plan.getCode() + "-" + user.getId() + "-" + System.currentTimeMillis();
-        String txRef = paymentClient.debitEcash(email, price, reference);
+        String txRef = paymentClient.debitEcash(parent.getEmail(), price, reference);
 
         // 2) Création de l'abonnement
         LocalDateTime now = LocalDateTime.now();
@@ -149,6 +185,9 @@ public class SubscriptionService {
                 .validFrom(validFrom)
                 .validTo(validTo)
                 .status(UserSubscriptionStatus.ACTIVE)
+                // B.18 — traçabilité du parent payeur et de l'enfant bénéficiaire.
+                .beneficiaryAcademyMemberId(beneficiaryAcademyMemberId)
+                .parentPayerEmail(childShadow != null ? parent.getEmail() : null)
                 .build();
 
         // 3) Génération QR + PDF
@@ -163,8 +202,14 @@ public class SubscriptionService {
         sub.setPdfPath(pdfService.generateSubscriptionPdf(sub, user, qrPayload));
 
         UserSubscription saved = subscriptionRepository.save(sub);
-        log.info("Abonnement {} créé pour {} (plan {}, saison {}, {} DH)",
-                saved.getId(), email, plan.getCode(), season, price);
+        if (childShadow != null) {
+            log.info("Abonnement {} créé pour ENFANT {} (parent {}, academyId {}, plan {}, saison {}, {} DH)",
+                    saved.getId(), childShadow.getEmail(), parent.getEmail(),
+                    beneficiaryAcademyMemberId, plan.getCode(), season, price);
+        } else {
+            log.info("Abonnement {} créé pour {} (plan {}, saison {}, {} DH)",
+                    saved.getId(), email, plan.getCode(), season, price);
+        }
 
         return SubscriptionResponse.from(saved);
     }
@@ -297,5 +342,29 @@ public class SubscriptionService {
             super("Vous avez déjà un abonnement pour la saison " + season
                     + " — un seul abonnement par saison est autorisé.");
         }
+    }
+
+    /**
+     * B.18 — Le parent a tenté d'acheter un abonnement pour un enfant
+     * académie qui n'existe pas OU qui n'est pas le sien. → 403.
+     * Message volontairement vague pour ne pas révéler l'existence d'un
+     * enfant rattaché à un autre parent.
+     */
+    public static class NotYourChildException extends RuntimeException {
+        public NotYourChildException(String message) {
+            super(message);
+        }
+    }
+
+    /**
+     * Convertit en Long en tolérant Integer (la sérialisation JSON de
+     * Map&lt;String,Object&gt; renvoie Integer pour les petits nombres).
+     */
+    private static Long toLong(Object o) {
+        if (o == null) return null;
+        if (o instanceof Long l) return l;
+        if (o instanceof Integer i) return i.longValue();
+        if (o instanceof Number n) return n.longValue();
+        return Long.parseLong(o.toString());
     }
 }

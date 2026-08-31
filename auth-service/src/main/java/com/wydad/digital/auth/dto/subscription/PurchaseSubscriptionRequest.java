@@ -14,6 +14,11 @@ import jakarta.validation.constraints.Pattern;
  *
  * Le code du plan est désormais un STRING (référence à {@code subscription_plans.code})
  * — il était auparavant un enum Java {@code SubscriptionZoneCode} figé.
+ *
+ * <p>PARENT — achat pour un fils académie : si {@code beneficiaryAcademyMemberId}
+ * est fourni, l'abonnement est créé pour l'User shadow de l'enfant
+ * (cf. {@code ChildUserService}), pas pour le parent connecté. Le débit
+ * E-Cash reste sur le parent (le wallet du fils n'est pas exposé).</p>
  */
 public record PurchaseSubscriptionRequest(
         @NotBlank
@@ -24,5 +29,13 @@ public record PurchaseSubscriptionRequest(
         @NotNull @Pattern(regexp = "\\d{16}") String cardNumber,
         @NotNull @Pattern(regexp = "(0[1-9]|1[0-2])/\\d{2}") String expiryDate,
         @NotNull @Pattern(regexp = "\\d{3}") String cvv,
-        @NotNull @Pattern(regexp = "\\d{6}") String otp
+        @NotNull @Pattern(regexp = "\\d{6}") String otp,
+
+        /**
+         * Optionnel — id de l'{@code AcademyMember} (sports-service) au nom
+         * duquel l'abonnement doit être créé. Réservé au rôle PARENT : un
+         * ADHERENT qui passerait cette valeur se la verrait refusée (le
+         * service vérifie que l'enfant lui appartient).
+         */
+        Long beneficiaryAcademyMemberId
 ) {}

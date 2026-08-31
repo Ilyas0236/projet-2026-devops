@@ -56,6 +56,23 @@ public class Ticket {
     @Column(columnDefinition = "BYTEA")
     private byte[] qrCodeImage;
 
+    /**
+     * B.18 — Achat PARENT pour un enfant académie. Si non NULL, ce billet
+     * a été acheté par un parent au nom de son enfant (User shadow).
+     * NULL = achat « pour soi » (cas ADHERENT, ADMIN, PARENT pour lui-même).
+     * La colonne permet les listings admin et la traçabilité.
+     */
+    @Column(name = "beneficiary_academy_member_id")
+    private Long beneficiaryAcademyMemberId;
+
+    /**
+     * B.18 — Email du parent payeur pour les billets offerts à un enfant.
+     * NULL pour les achats « pour soi ». Permet le remboursement E-Cash
+     * (le wallet débité est celui du parent) et l'affichage back-office.
+     */
+    @Column(name = "parent_payer_email", length = 256)
+    private String parentPayerEmail;
+
     private LocalDateTime validatedAt;
     private LocalDateTime cancelledAt;
 

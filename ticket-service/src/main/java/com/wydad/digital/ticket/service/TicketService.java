@@ -5,6 +5,7 @@ import com.wydad.digital.ticket.enums.TicketStatus;
 import com.wydad.digital.ticket.client.AuthClient;
 import com.wydad.digital.ticket.client.NotificationClient;
 import com.wydad.digital.ticket.client.PaymentClient;
+import com.wydad.digital.ticket.client.SportsAcademyClient;
 import com.wydad.digital.ticket.filter.UserContext;
 import com.wydad.digital.ticket.model.Event;
 import com.wydad.digital.ticket.model.Section;
@@ -36,6 +37,7 @@ public class TicketService {
     private final NotificationClient notificationClient;
     private final PaymentClient paymentClient;
     private final AuthClient authClient;
+    private final SportsAcademyClient sportsAcademyClient;
 
     @Transactional
     public List<TicketResponse> purchaseTickets(PurchaseTicketRequest request) {
@@ -80,6 +82,39 @@ public class TicketService {
                 ? request.getUserEmail()
                 : UserContext.getCurrentUserEmail();
 
+        // B.18 — branche « PARENT achète pour son fils ». Si
+        // beneficiaryAcademyMemberId est fourni, on bascule l'identité du
+        // billet sur l'User shadow de l'enfant. L'IDOR (l'enfant est-il
+        // bien rattaché à CE parent ?) est vérifié ici avant tout débit.
+        Long beneficiaryAcademyMemberId = request.getBeneficiaryAcademyMemberId();
+        String parentPayerEmail = null;
+        if (beneficiaryAcademyMemberId != null) {
+            // Étape 1 : lookup sports-service pour récupérer parentUserId + childFullName.
+            SportsAcademyClient.AcademyMemberView child =
+                    sportsAcademyClient.lookup(beneficiaryAcademyMemberId);
+            if (child == null) {
+                throw new IllegalStateException(
+                        "Enfant académie introuvable : id=" + beneficiaryAcademyMemberId);
+            }
+            // Anti-IDOR : un parent ne peut acheter que pour SES enfants.
+            if (!UserContext.isAdmin()
+                    && !child.parentUserId().equals(UserContext.getCurrentUserId())) {
+                throw new org.springframework.security.access.AccessDeniedException(
+                        "Cet enfant n'est pas rattaché à votre compte parent");
+            }
+            // Étape 2 : appel auth-service pour créer/récupérer l'User shadow.
+            // Le userId du billet est celui du fils, mais le parent reste
+            // payeur E-Cash (effectif via effectiveUserEmail conservé = parent).
+            AuthClient.EnsureChildUserResponse shadow =
+                    authClient.ensureChildUser(
+                            UserContext.getCurrentUserId(),
+                            child.childFullName(),
+                            beneficiaryAcademyMemberId);
+            effectiveUserId = shadow.childUserId();
+            effectiveUserEmail = shadow.email();
+            parentPayerEmail = UserContext.getCurrentUserEmail();
+        }
+
         for (int i = 0; i < qty; i++) {
             String ticketNumber = "WAC-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
             String qrData = "WAC-TICKET:" + ticketNumber + ":EVENT:" + event.getId() + ":USER:" + effectiveUserId;
@@ -98,6 +133,9 @@ public class TicketService {
                     .qrCodeData(qrData)
                     .qrCodeImage(qrImage)
                     .status(TicketStatus.PAID)
+                    // B.18 — traçabilité de l'achat « pour enfant ».
+                    .beneficiaryAcademyMemberId(beneficiaryAcademyMemberId)
+                    .parentPayerEmail(parentPayerEmail)
                     .build();
 
             tickets.add(ticketRepository.save(ticket));
@@ -264,6 +302,9 @@ public class TicketService {
                 .seatNumber(ticket.getSeatNumber())
                 .status(ticket.getStatus())
                 .price(ticket.getPrice())
+                // B.18 — traçabilité achat pour enfant.
+                .beneficiaryAcademyMemberId(ticket.getBeneficiaryAcademyMemberId())
+                .parentPayerEmail(ticket.getParentPayerEmail())
                 .qrCodeData(ticket.getQrCodeData())
                 .createdAt(ticket.getCreatedAt())
                 .build();

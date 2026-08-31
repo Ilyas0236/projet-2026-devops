@@ -22,6 +22,39 @@
                       detail="Vérifiez votre connexion et réessayez."
                       (retry)="retry()" />
 
+    <!-- B.18 — Message 403 VOTE_REQUIRES_MEMBERSHIP. Affiché quand
+         l'utilisateur a tenté de voter mais n'a pas d'abonnement
+         saisonnier ACTIF. CTA vers /abonnement pour souscrire. -->
+    <div *ngIf="membershipRequiredMsg"
+         class="mb-6 rounded-2xl border-2 border-wydad-red bg-wydad-red/[0.06] p-6 shadow-paper-card"
+         role="alert">
+      <div class="flex items-start gap-4">
+        <div class="flex-shrink-0 w-10 h-10 rounded-full bg-wydad-red text-white flex items-center justify-center font-black text-lg">
+          🎟
+        </div>
+        <div class="flex-1">
+          <p class="font-display font-bold text-ink-primary text-lg mb-1">
+            Abonnement requis pour voter
+          </p>
+          <p class="text-ink-secondary text-sm leading-relaxed">
+            {{ membershipRequiredMsg }}
+          </p>
+          <div class="mt-4 flex flex-wrap gap-3">
+            <button type="button"
+                    (click)="goToAbonnement()"
+                    class="paper-btn-primary px-5 py-2.5 rounded-xl font-display font-bold uppercase text-sm">
+              Acheter ma carte
+            </button>
+            <button type="button"
+                    (click)="membershipRequiredMsg = ''"
+                    class="px-5 py-2.5 rounded-xl bg-paper-2 text-ink-secondary font-bold text-sm hover:bg-paper-3 transition-colors">
+              Plus tard
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div *ngIf="loading" class="space-y-6" role="status" aria-label="Chargement des élections">
       <div *ngFor="let s of [1,2]" class="rounded-2xl border border-paper-3 bg-paper-0 shadow-paper-card p-8">
         <div class="h-5 w-2/3 mb-6 rounded" style="background: linear-gradient(90deg, #EFEFF1 25%, #E5E5E8 50%, #EFEFF1 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite;"></div>

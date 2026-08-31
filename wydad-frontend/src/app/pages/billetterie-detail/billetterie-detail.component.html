@@ -160,6 +160,45 @@
                   <option value="ECASH" *ngIf="isLoggedIn">Portefeuille E-Cash (Solde: {{ userBalance }} DH)</option>
                 </select>
 
+                <!-- B.18 — sélecteur de bénéficiaire (parent uniquement).
+                     Si le parent a au moins un enfant académie, il peut
+                     acheter le billet pour lui-même OU pour un fils.
+                     Le billet est émis au nom de l'enfant (User shadow),
+                     le paiement E-Cash reste sur le wallet du parent. -->
+                <div *ngIf="isParent && myChildren.length > 0"
+                     class="mb-4 p-3 bg-amber-50 border border-amber-300 rounded-lg">
+                  <p class="text-xs text-amber-800 uppercase tracking-wider font-bold mb-2">🎟 Billet pour</p>
+                  <div class="flex flex-wrap gap-2">
+                    <button type="button"
+                            (click)="selectedBeneficiary = 'self'"
+                            [class.bg-wydad-red]="selectedBeneficiary === 'self'"
+                            [class.text-white]="selectedBeneficiary === 'self'"
+                            [class.bg-white]="selectedBeneficiary !== 'self'"
+                            [class.text-ink-primary]="selectedBeneficiary !== 'self'"
+                            [class.border]="selectedBeneficiary !== 'self'"
+                            [class.border-paper-3]="selectedBeneficiary !== 'self'"
+                            class="px-3 py-1.5 rounded-lg text-sm font-bold">
+                      Moi (Parent)
+                    </button>
+                    <button *ngFor="let child of myChildren"
+                            type="button"
+                            (click)="selectedBeneficiary = child.id"
+                            [class.bg-wydad-red]="selectedBeneficiary === child.id"
+                            [class.text-white]="selectedBeneficiary === child.id"
+                            [class.bg-white]="selectedBeneficiary !== child.id"
+                            [class.text-ink-primary]="selectedBeneficiary !== child.id"
+                            [class.border]="selectedBeneficiary !== child.id"
+                            [class.border-paper-3]="selectedBeneficiary !== child.id"
+                            class="px-3 py-1.5 rounded-lg text-sm font-bold">
+                      {{ child.childFullName }}
+                    </button>
+                  </div>
+                  <p *ngIf="selectedBeneficiary !== 'self'" class="text-xs text-amber-700 mt-2">
+                    Le billet sera émis au nom de <b>{{ beneficiaryLabel() }}</b>.
+                    Paiement débité de votre wallet E-Cash.
+                  </p>
+                </div>
+
                 <button (click)="purchase()"
                         [disabled]="processing || !selectedSection || (isLoggedIn && paymentMethod === 'ECASH' && userBalance < getTotal())"
                         class="paper-btn-primary w-full py-4 skew-x-[-10deg]">

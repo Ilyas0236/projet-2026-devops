@@ -23,7 +23,10 @@ import java.time.LocalDateTime;
 @Table(name = "user_subscriptions",
         indexes = {
                 @Index(name = "idx_user_subscription_active", columnList = "user_id, status"),
-                @Index(name = "idx_user_subscription_zone", columnList = "zone_code")
+                @Index(name = "idx_user_subscription_zone", columnList = "zone_code"),
+                // B.18 — listing admin des abonnements offerts par un parent
+                // à un enfant académie (filtre par academyMemberId).
+                @Index(name = "idx_user_subscription_beneficiary", columnList = "beneficiary_academy_member_id")
         },
         uniqueConstraints = {
                 // Empêche deux abonnements ACTIFS simultanés sur le même user.
@@ -96,4 +99,25 @@ public class UserSubscription {
     /** Chemin du PDF généré (Cloudinary publicId ou stockage local). */
     @Column(name = "pdf_path", length = 512)
     private String pdfPath;
+
+    /**
+     * B.18 — Achat PARENT pour un enfant académie. Si non NULL, l'abonnement
+     * a été souscrit par un parent au nom de son enfant (User shadow créé
+     * via {@code ChildUserService}). NULL = achat « pour soi ».
+     *
+     * <p>Nullable : les achats ADHERENT/ADMIN ne renseignent pas ce champ.
+     * La colonne permet les listings admin « tous les abonnements enfants
+     * d'un parent donné » (jointure via parentUserId côté AcademyMember).</p>
+     */
+    @Column(name = "beneficiary_academy_member_id")
+    private Long beneficiaryAcademyMemberId;
+
+    /**
+     * B.18 — Email du parent payeur (pour les abonnements offerts à un
+     * enfant). Permet le remboursement en cas d'annulation et l'affichage
+     * côté back-office « souscrit par {parentEmail} pour {childFullName} ».
+     * NULL pour les achats « pour soi ».
+     */
+    @Column(name = "parent_payer_email", length = 256)
+    private String parentPayerEmail;
 }

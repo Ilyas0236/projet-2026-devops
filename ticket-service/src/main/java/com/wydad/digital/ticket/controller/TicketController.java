@@ -65,7 +65,7 @@ public class TicketController {
     public ResponseEntity<TicketResponse> getTicketByNumber(@PathVariable String ticketNumber) {
         Ticket ticket = ticketRepository.findByTicketNumber(ticketNumber)
                 .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException("Billet non trouvé: " + ticketNumber));
-        assertOwnerOrAdmin(ticket.getUserId());
+        assertOwnerOrAdmin(ticket);
         return ResponseEntity.ok(ticketService.mapToResponsePublic(ticket));
     }
 
@@ -79,7 +79,7 @@ public class TicketController {
     public ResponseEntity<TicketResponse> cancelTicket(@PathVariable Long ticketId) {
         Ticket ticket = ticketRepository.findById(ticketId)
                 .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException("Billet non trouvé"));
-        assertOwnerOrAdmin(ticket.getUserId());
+        assertOwnerOrAdmin(ticket);
         return ResponseEntity.ok(ticketService.cancelTicket(ticketId));
     }
 
@@ -87,7 +87,7 @@ public class TicketController {
     public ResponseEntity<byte[]> getTicketQrCode(@PathVariable Long ticketId) {
         Ticket ticket = ticketRepository.findById(ticketId)
                 .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException("Billet non trouvé"));
-        assertOwnership(ticket.getUserId());
+        assertOwnership(ticket);
         byte[] qrCode = ticketService.getTicketQrCode(ticketId);
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.IMAGE_PNG);
@@ -100,7 +100,7 @@ public class TicketController {
                 .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException("Billet non trouvé"));
         // Ownership sur le PROPRIETAIRE du billet (bug : on comparait
         // l'id du billet lui-meme -> 403 pour tout utilisateur non admin).
-        assertOwnership(ticket.getUserId());
+        assertOwnership(ticket);
         byte[] pdf = ticketPdfService.generateTicketPdf(ticket);
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_PDF);
@@ -117,7 +117,7 @@ public class TicketController {
     public ResponseEntity<byte[]> downloadTicketInvoice(@PathVariable Long ticketId) {
         Ticket ticket = ticketRepository.findById(ticketId)
                 .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException("Billet non trouvé"));
-        assertOwnership(ticket.getUserId());
+        assertOwnership(ticket);
         byte[] pdf = ticketPdfService.generateInvoicePdf(ticket);
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_PDF);
@@ -126,14 +126,28 @@ public class TicketController {
         return new ResponseEntity<>(pdf, headers, HttpStatus.OK);
     }
 
-    /** Un utilisateur ne peut accéder qu'à ses billets ; ADMIN autorisé. */
-    private void assertOwnership(Long ticketOwnerId) {
-        if (!UserContext.isAdmin() && !ticketOwnerId.equals(UserContext.getCurrentUserId())) {
-            throw new AccessDeniedException("Ce billet n'appartient pas à l'utilisateur connecté");
+    /**
+     * Un utilisateur ne peut accéder qu'à ses billets ; ADMIN autorisé.
+     *
+     * <p>B.18 — exception pour les billets achetés par un parent pour
+     * son enfant : le parent payeur (identifié par
+     * {@code ticket.parentPayerEmail}) peut accéder au PDF/QR/invoice
+     * du billet de son fils, sans quoi il ne pourrait pas lui présenter
+     * le billet à l'entrée du stade. Le contrôle se fait sur l'email
+     * du parent payeur (toujours présent si achat « pour enfant »).</p>
+     */
+    private void assertOwnership(Ticket ticket) {
+        if (UserContext.isAdmin() || ticket.getUserId().equals(UserContext.getCurrentUserId())) {
+            return;
         }
+        if (ticket.getParentPayerEmail() != null
+                && ticket.getParentPayerEmail().equalsIgnoreCase(UserContext.getCurrentUserEmail())) {
+            return;
+        }
+        throw new AccessDeniedException("Ce billet n'appartient pas à l'utilisateur connecté");
     }
 
-    private void assertOwnerOrAdmin(Long ownerId) {
-        assertOwnership(ownerId);
+    private void assertOwnerOrAdmin(Ticket ticket) {
+        assertOwnership(ticket);
     }
 }

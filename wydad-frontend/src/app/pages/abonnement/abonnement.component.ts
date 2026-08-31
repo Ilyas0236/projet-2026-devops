@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { ApiService } from '../../services/api.service';
+import { AuthService } from '../../services/auth.service';
 import { ToastService } from '../../services/toast.service';
 
 /**
@@ -12,9 +13,10 @@ import { ToastService } from '../../services/toast.service';
  * Prix regular / adherent selon que l'utilisateur a déjà un abonnement
  * actif. Permet l'achat via un dialog de paiement SIMULÉ.
  *
- * Côté backend, c'est auth-service /api/auth/subscriptions/plans qui
- * pilote la grille (cf. Lot 2 SubscriptionPlan JPA). Ce composant ne
- * fait QUE consommer ces endpoints.
+ * <p>B.18 — Pour un parent connecté : ajout d'un sélecteur de
+ * bénéficiaire « pour moi / pour mon fils » au-dessus du dialog de
+ * paiement. Voir {@link selectedBeneficiary} pour le modèle et
+ * {@link submitPayment} pour l'envoi de {@code beneficiaryAcademyMemberId}.</p>
  */
 @Component({
   selector: 'app-abonnement',
@@ -37,12 +39,47 @@ export class AbonnementComponent implements OnInit {
   paymentLoading = false;
   paymentError = '';
 
+  // B.18 — sélecteur de bénéficiaire (parent uniquement)
+  isParent = false;
+  myChildren: any[] = [];
+  childrenLoading = false;
+  /**
+   * Bénéficiaire courant : 'self' = achat pour le parent, sinon un enfant
+   * identifié par son id AcademyMember.
+   */
+  selectedBeneficiary: 'self' | number = 'self';
+
   api = inject(ApiService);
+  auth = inject(AuthService);
   toast = inject(ToastService);
   router = inject(Router);
 
   ngOnInit() {
     this.loadData();
+    this.loadBeneficiaries();
+  }
+
+  /**
+   * B.18 — charge les enfants académie du parent connecté pour peupler le
+   * sélecteur de bénéficiaire. Silencieux pour les non-parents : le
+   * bandeau n'est pas affiché.
+   */
+  private loadBeneficiaries() {
+    if (this.auth.getTokenRole() !== 'PARENT') return;
+    this.isParent = true;
+    const parentId = this.auth.getCurrentUserId();
+    if (!parentId) return;
+    this.childrenLoading = true;
+    this.api.getMyChildren(parentId).subscribe({
+      next: (kids) => {
+        this.myChildren = kids || [];
+        this.childrenLoading = false;
+      },
+      error: () => {
+        this.myChildren = [];
+        this.childrenLoading = false;
+      }
+    });
   }
 
   loadData() {
@@ -87,20 +124,23 @@ export class AbonnementComponent implements OnInit {
     return Math.round(((regular - adherent) / regular) * 100);
   }
 
+  /**
+   * Libellé du bénéficiaire courant (pour l'afficher dans le dialog).
+   * Renvoie "vous-même" pour self, sinon le nom complet de l'enfant.
+   */
+  beneficiaryLabel(): string {
+    if (this.selectedBeneficiary === 'self') return 'vous-même';
+    const child = this.myChildren.find(c => c.id === this.selectedBeneficiary);
+    return child ? child.childFullName : 'votre enfant';
+  }
+
   openPaymentDialog(plan: any) {
     const email = localStorage.getItem('wydad_email');
     if (!email) {
       this.toast.info('Veuillez vous connecter pour acheter un abonnement.');
-      // returnUrl pour que le login ramène l'utilisateur ici.
       this.router.navigate(['/login'], { queryParams: { returnUrl: this.router.url } });
       return;
     }
-    // Règle métier « un seul abonnement par saison » : si l'utilisateur a
-    // déjà un abonnement ACTIF, le bouton « Acheter X » est masqué dans
-    // le HTML (bandeau « Abonnement actif » + QR restent affichés). Cette
-    // garde est defensive au cas où l'UI serait bypassed (F5, deep link) :
-    // le back renverra 409 ALREADY_SUBSCRIBED et le dialog affichera le
-    // message d'erreur retourné (cf. submitPayment error handler).
     this.selectedPlan = plan;
     this.paymentForm = { cardNumber: '4242424242424242', expiryDate: '12/29', cvv: '123', otp: '123456' };
     this.paymentError = '';
@@ -118,18 +158,26 @@ export class AbonnementComponent implements OnInit {
     this.paymentLoading = true;
     this.paymentError = '';
 
-    this.api.purchaseSubscription({
+    const payload: any = {
       planCode: this.selectedPlan.code,
       cardNumber: this.paymentForm.cardNumber,
       expiryDate: this.paymentForm.expiryDate,
       cvv: this.paymentForm.cvv,
       otp: this.paymentForm.otp
-    }).subscribe({
+    };
+    if (this.isParent && this.selectedBeneficiary !== 'self') {
+      payload.beneficiaryAcademyMemberId = this.selectedBeneficiary;
+    }
+
+    this.api.purchaseSubscription(payload).subscribe({
       next: (sub) => {
         this.paymentLoading = false;
         this.closePaymentDialog();
         const label = sub.planName || sub.zoneDisplayName;
-        this.toast.success(`Abonnement ${label} confirmé pour la saison ${sub.season} !`);
+        const forWhom = this.isParent && this.selectedBeneficiary !== 'self'
+          ? ` pour ${this.beneficiaryLabel()}`
+          : '';
+        this.toast.success(`Abonnement ${label}${forWhom} confirmé pour la saison ${sub.season} !`);
         this.loadData();
       },
       error: (err) => {

@@ -1,6 +1,7 @@
 package com.wydad.digital.sports.controller;
 
 import com.wydad.digital.sports.dto.AcademyMemberDto;
+import com.wydad.digital.sports.dto.AcademyMemberLookup;
 import com.wydad.digital.sports.filter.SportsUserContext;
 import com.wydad.digital.sports.model.AcademyDocument;
 import com.wydad.digital.sports.repository.AcademyDocumentRepository;
@@ -64,6 +65,30 @@ public class AcademyController {
             throw new AccessDeniedException("Accès aux enfants d'un autre parent interdit");
         }
         return ResponseEntity.ok(academyService.getChildrenByParent(parentUserId));
+    }
+
+    /**
+     * B.18 — Lookup interne service-à-service d'un dossier académie.
+     * Consommé par auth-service et ticket-service pour valider qu'un
+     * parent a bien le droit d'acheter pour tel enfant (IDOR). Renvoie
+     * un DTO allégé (id, parentUserId, childFullName) — voir
+     * {@link AcademyMemberLookup}.
+     *
+     * <p>Protégé par la whitelist « X-Internal-Secret » de la gateway
+     * (route {@code /api/sports/academy/internal/**}). L'endpoint
+     * n'est pas {@code @PreAuthorize} car le contexte JWT est absent
+     * côté service (le header X-User-* transite par la gateway, mais
+     * ce controller n'en a pas l'usage : la sécurité est entièrement
+     * portée par le secret partagé).</p>
+     */
+    @GetMapping("/internal/{id}")
+    public ResponseEntity<AcademyMemberLookup> internalLookup(@PathVariable Long id) {
+        var member = academyMemberRepository.findById(id)
+                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException("Dossier académie introuvable : id=" + id));
+        return ResponseEntity.ok(new AcademyMemberLookup(
+                member.getId(),
+                member.getParentUserId(),
+                member.getChildFullName()));
     }
 
     /** Liste globale des dossiers d'inscription : STAFF/ADMIN uniquement. */

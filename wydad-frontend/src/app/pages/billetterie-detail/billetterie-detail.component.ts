@@ -31,6 +31,13 @@ export class BilletterieDetailComponent implements OnInit, OnDestroy {
   /** Numéro du ticket émis après achat membre (affichage confirmation). */
   lastTicketNumber: string | null = null;
 
+  // B.18 — sélecteur de bénéficiaire pour les parents.
+  isParent = false;
+  myChildren: any[] = [];
+  childrenLoading = false;
+  /** 'self' = achat pour le parent connecté, sinon un academyMemberId. */
+  selectedBeneficiary: 'self' | number = 'self';
+
   private destroy$ = new Subject<void>();
 
   api = inject(ApiService);
@@ -67,7 +74,10 @@ export class BilletterieDetailComponent implements OnInit, OnDestroy {
         this.userBalance = 0;
         if (email) {
           this.auth.getProfile().subscribe({
-            next: (profile) => { this.userId = profile?.id ?? null; },
+            next: (profile) => {
+              this.userId = profile?.id ?? null;
+              this.loadChildrenIfParent();
+            },
             error: () => { this.userId = null; }
           });
           this.api.getBalance(email).subscribe({
@@ -76,6 +86,34 @@ export class BilletterieDetailComponent implements OnInit, OnDestroy {
           });
         }
       });
+  }
+
+  /**
+   * B.18 — si l'utilisateur connecté est PARENT, charge ses enfants
+   * académie pour peupler le sélecteur de bénéficiaire. Silencieux
+   * pour les non-parents.
+   */
+  private loadChildrenIfParent() {
+    if (this.auth.getTokenRole() !== 'PARENT' || !this.userId) return;
+    this.isParent = true;
+    this.childrenLoading = true;
+    this.api.getMyChildren(this.userId).subscribe({
+      next: (kids) => {
+        this.myChildren = kids || [];
+        this.childrenLoading = false;
+      },
+      error: () => {
+        this.myChildren = [];
+        this.childrenLoading = false;
+      }
+    });
+  }
+
+  /** Libellé du bénéficiaire courant (pour l'UI). */
+  beneficiaryLabel(): string {
+    if (this.selectedBeneficiary === 'self') return 'moi';
+    const child = this.myChildren.find(c => c.id === this.selectedBeneficiary);
+    return child ? child.childFullName : 'votre enfant';
   }
 
   ngOnDestroy() {
@@ -179,7 +217,7 @@ export class BilletterieDetailComponent implements OnInit, OnDestroy {
     const userEmail = (localStorage.getItem('wydad_email') || '').trim();
     const userFullName = (fn + ' ' + ln).trim() || undefined;
 
-    const req = {
+    const req: any = {
       eventId: this.event.id,
       userId: this.userId,
       userFullName,
@@ -188,6 +226,10 @@ export class BilletterieDetailComponent implements OnInit, OnDestroy {
       quantity: this.quantity,
       paymentMethod: this.paymentMethod
     };
+    // B.18 — si parent achète pour un fils, on envoie l'id AcademyMember.
+    if (this.isParent && this.selectedBeneficiary !== 'self') {
+      req.beneficiaryAcademyMemberId = this.selectedBeneficiary;
+    }
 
     this.api.purchaseTickets(req).subscribe({
       next: (res) => this.handlePurchaseSuccess(res),
@@ -201,7 +243,10 @@ export class BilletterieDetailComponent implements OnInit, OnDestroy {
    */
   private handlePurchaseSuccess(res: any) {
     this.processing = false;
-    this.successMsg = 'Paiement effectué avec succès !';
+    const forWhom = this.isParent && this.selectedBeneficiary !== 'self'
+      ? ` pour ${this.beneficiaryLabel()}`
+      : '';
+    this.successMsg = `Paiement effectué avec succès${forWhom} !`;
     // Membre : redirection vers son espace (authGuard laisse passer)
     this.router.navigate(['/profil/billets']);
   }

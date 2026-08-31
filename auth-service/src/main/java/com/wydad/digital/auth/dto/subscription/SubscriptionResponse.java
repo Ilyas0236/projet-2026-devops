@@ -39,7 +39,12 @@ public record SubscriptionResponse(
         LocalDateTime validTo,
         UserSubscriptionStatus status,
         String qrCodeBase64,
-        String pdfPath
+        String pdfPath,
+        /** B.18 — id AcademyMember si l'abonnement a été offert par un parent
+         * à son enfant. NULL = achat « pour soi ». */
+        Long beneficiaryAcademyMemberId,
+        /** B.18 — email du parent payeur (pour abonnements enfants). NULL si pour soi. */
+        String parentPayerEmail
 ) {
     public static SubscriptionResponse from(UserSubscription s) {
         SubscriptionPlan plan = s.getPlan();
@@ -70,7 +75,9 @@ public record SubscriptionResponse(
                 s.getValidTo(),
                 s.getStatus(),
                 s.getQrCodeBase64(),
-                s.getPdfPath()
+                s.getPdfPath(),
+                s.getBeneficiaryAcademyMemberId(),
+                s.getParentPayerEmail()
         );
     }
 }

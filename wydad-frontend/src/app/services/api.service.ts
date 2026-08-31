@@ -105,6 +105,12 @@ export class ApiService {
    * Achat via paiement carte SIMULÉ. Le champ d'identification est
    * désormais {@code planCode} (code du plan, ex. "VIP") et non plus
    * {@code zoneCode} (valeur d'enum).
+   *
+   * <p>B.18 — si le caller est un PARENT et souhaite acheter pour son
+   * fils académie, il renseigne {@code beneficiaryAcademyMemberId}.
+   * Le backend bascule alors l'abonnement sur l'User shadow du fils
+   * (auth-service {@code ChildUserService}) tout en débitant le wallet
+   * E-Cash du parent.</p>
    */
   purchaseSubscription(req: {
     planCode: string;
@@ -112,6 +118,7 @@ export class ApiService {
     expiryDate: string;
     cvv: string;
     otp: string;
+    beneficiaryAcademyMemberId?: number;
   }): Observable<any> {
     return this.http.post(`${this.baseUrl}/auth/subscriptions/purchase`, req);
   }
@@ -522,6 +529,10 @@ export class ApiService {
   }
 
   purchaseTickets(purchaseRequest: any): Observable<any[]> {
+    // B.18 — le parent peut passer `beneficiaryAcademyMemberId` dans le
+    // payload pour acheter un billet au nom de son enfant académie. Le
+    // ticket-service basculera l'identité du billet sur l'User shadow
+    // du fils et débitera le wallet E-Cash du parent.
     return this.http.post<any[]>(`${this.baseUrl}/ticket/tickets/purchase`, purchaseRequest);
   }
 
@@ -620,6 +631,16 @@ export class ApiService {
 
   getAcademyChildrenByParent(parentId: number): Observable<any[]> {
     return this.http.get<any[]>(`${this.baseUrl}/sports/academy/parent/${parentId}`);
+  }
+
+  /**
+   * B.18 — Helper sémantique pour le bandeau « Acheter pour toi ou pour
+   * ton fils ». Délègue à {@link getAcademyChildrenByParent} (endpoint
+   * existant côté sports-service) mais rend l'intention explicite côté
+   * composants abonnement / billetterie.
+   */
+  getMyChildren(parentId: number): Observable<any[]> {
+    return this.getAcademyChildrenByParent(parentId);
   }
 
   /** Liste globale des dossiers d'inscription (STAFF/ADMIN). */

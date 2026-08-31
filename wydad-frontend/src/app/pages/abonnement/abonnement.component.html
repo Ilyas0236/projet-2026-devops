@@ -127,6 +127,39 @@
       {{ displayPrice(selectedPlan) }} MAD
     </p>
 
+    <!-- B.18 — Sélecteur de bénéficiaire (parent uniquement).
+         Si le parent a au moins un enfant académie, on lui permet
+         d'acheter la carte d'abonnement pour lui-même OU pour un fils.
+         La carte est émise au nom de l'enfant (User shadow côté backend),
+         mais le paiement E-Cash reste sur le wallet du parent. -->
+    <div *ngIf="isParent && myChildren.length > 0" class="mb-4 p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl">
+      <p class="text-xs text-amber-300 uppercase tracking-wider font-bold mb-2">🎟 Carte pour</p>
+      <div class="flex flex-wrap gap-2">
+        <button type="button"
+                (click)="selectedBeneficiary = 'self'"
+                [class.bg-wydad-red]="selectedBeneficiary === 'self'"
+                [class.text-white]="selectedBeneficiary === 'self'"
+                [class.bg-white\\/5]="selectedBeneficiary !== 'self'"
+                [class.text-gray-300]="selectedBeneficiary !== 'self'"
+                class="px-3 py-1.5 rounded-lg text-sm font-bold">
+          Moi ({{ auth.getTokenRole() === 'PARENT' ? 'Parent' : 'Adhérent' }})
+        </button>
+        <button *ngFor="let child of myChildren"
+                type="button"
+                (click)="selectedBeneficiary = child.id"
+                [class.bg-wydad-red]="selectedBeneficiary === child.id"
+                [class.text-white]="selectedBeneficiary === child.id"
+                [class.bg-white\\/5]="selectedBeneficiary !== child.id"
+                [class.text-gray-300]="selectedBeneficiary !== child.id"
+                class="px-3 py-1.5 rounded-lg text-sm font-bold">
+          {{ child.childFullName }}
+        </button>
+      </div>
+      <p *ngIf="selectedBeneficiary !== 'self'" class="text-xs text-amber-200/80 mt-2">
+        La carte sera émise au nom de <b>{{ beneficiaryLabel() }}</b>. Le paiement sera débité de votre wallet E-Cash.
+      </p>
+    </div>
+
     <div class="space-y-3">
       <div>
         <label class="text-xs text-gray-400 uppercase tracking-wider">Numéro de carte</label>

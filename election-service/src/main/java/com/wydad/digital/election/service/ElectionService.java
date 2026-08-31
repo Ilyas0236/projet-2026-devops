@@ -1,5 +1,6 @@
 package com.wydad.digital.election.service;
 
+import com.wydad.digital.election.client.AuthSubscriptionClient;
 import com.wydad.digital.election.client.NotificationClient;
 import com.wydad.digital.election.dto.ElectionDtos.AddCandidateRequest;
 import com.wydad.digital.election.dto.ElectionDtos.CandidateView;
@@ -45,6 +46,7 @@ public class ElectionService {
     private final ElectionCandidateRepository candidateRepository;
     private final ElectionVoteRepository voteRepository;
     private final NotificationClient notificationClient;
+    private final AuthSubscriptionClient authSubscriptionClient;
 
     // ------------------------------------------------------------------
     // Administration
@@ -145,6 +147,18 @@ public class ElectionService {
         }
         if (now.isAfter(election.getEndsAt())) {
             throw new IllegalStateException("Le vote est clos depuis le " + election.getEndsAt());
+        }
+
+        // B.18 — condition d'éligibilité au vote : l'utilisateur doit avoir
+        // un abonnement saisonnier ACTIF (soutien effectif au club). Les
+        // sondages (PollService) ne sont PAS soumis à cette condition —
+        // c'est une règle spécifique à l'élection présidentielle. ADMIN
+        // est exempté (peut voter sans abonnement pour ne pas bloquer
+        // l'organisation interne en cas de pépin technique auth-service).
+        String currentEmail = UserContext.getCurrentUserEmail();
+        if (!UserContext.isAdmin()
+                && !authSubscriptionClient.isActiveSubscriber(currentEmail)) {
+            throw new IllegalStateException("VOTE_REQUIRES_MEMBERSHIP");
         }
 
         ElectionCandidate candidate = candidateRepository.findById(candidateId)

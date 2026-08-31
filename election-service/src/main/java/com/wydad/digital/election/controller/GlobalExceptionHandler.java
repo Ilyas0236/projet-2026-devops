@@ -18,14 +18,32 @@ import java.util.Map;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    /**
+     * B.18 — Code d'erreur renvoyé quand un utilisateur non-adhérent tente
+     * de voter à une élection présidentielle. Le front matche ce code
+     * pour afficher un message dédié + CTA vers /abonnement.
+     */
+    public static final String VOTE_REQUIRES_MEMBERSHIP = "VOTE_REQUIRES_MEMBERSHIP";
+
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Map<String, String>> badRequest(IllegalArgumentException e) {
         return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
     }
 
-    /** Règles métier violées (double vote, élection clôturée, hors période...). */
+    /**
+     * B.18 — AVANT le catch-all IllegalStateException : on intercepte
+     * spécifiquement le code VOTE_REQUIRES_MEMBERSHIP pour renvoyer 403
+     * + un code dédié (au lieu du 409 Conflict générique). Le front
+     * détecte ce code et propose un CTA « Acheter ma carte ».
+     */
     @ExceptionHandler(IllegalStateException.class)
     public ResponseEntity<Map<String, String>> conflict(IllegalStateException e) {
+        if (VOTE_REQUIRES_MEMBERSHIP.equals(e.getMessage())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(Map.of("code", VOTE_REQUIRES_MEMBERSHIP,
+                            "message", "Pour voter aux élections du président, "
+                                    + "vous devez avoir une carte d'abonnement saisonnier active."));
+        }
         return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("message", e.getMessage()));
     }
 

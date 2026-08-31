@@ -104,4 +104,32 @@ public class SportsClient {
             return false;
         }
     }
+
+    /**
+     * B.18 — Lookup d'un AcademyMember (enfant d'un parent) par son id.
+     * Utilisé par le flow « PARENT achète pour son fils » : on doit savoir
+     * à quel parent l'enfant est rattaché (sécurité IDOR) et comment il
+     * s'appelle (pour la carte et le PDF).
+     *
+     * <p>Retourne {@code null} si l'enfant n'existe pas ou si l'appel
+     * échoue (best-effort, comme {@link #createRosterEntry}). L'appelant
+     * doit traiter {@code null} comme une erreur fonctionnelle.</p>
+     */
+    @SuppressWarnings("unchecked")
+    public java.util.Map<String, Object> getAcademyMember(Long academyMemberId) {
+        try {
+            HttpHeaders headers = new HttpHeaders();
+            if (internalSecret != null && !internalSecret.isEmpty()) {
+                headers.set("X-Internal-Secret", internalSecret);
+            }
+            String url = baseUrl.replace("/internal/roster", "/academy/internal/" + academyMemberId);
+            org.springframework.http.ResponseEntity<java.util.Map> response = restTemplate.exchange(
+                    url, HttpMethod.GET, new HttpEntity<>(headers), java.util.Map.class);
+            if (response.getBody() == null) return null;
+            return (java.util.Map<String, Object>) response.getBody();
+        } catch (Exception e) {
+            log.error("Lookup AcademyMember {} échoué : {}", academyMemberId, e.getMessage());
+            return null;
+        }
+    }
 }

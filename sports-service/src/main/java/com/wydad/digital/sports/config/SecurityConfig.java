@@ -31,6 +31,9 @@ public class SecurityConfig {
                         // La gateway bloque de toute façon /api/sports/internal/**
                         // depuis l'extérieur.
                         .requestMatchers("/api/sports/internal/**").permitAll()
+                        // B.18 — lookup AcademyMember service-à-service (auth/ticket).
+                        // Mêmes règles que /internal/** ci-dessus.
+                        .requestMatchers("/api/sports/academy/internal/**").permitAll()
                         // §9 — la liste des convocations PUBLIÉES apparaît
                         // automatiquement sur le site public : lecture anonyme,
                         // le service ne renvoie de toute façon que du PUBLIEE.

@@ -25,4 +25,8 @@ public class TicketResponse {
     private BigDecimal price;
     private String qrCodeData;
     private LocalDateTime createdAt;
+    /** B.18 — id AcademyMember si billet acheté par un parent pour son enfant. */
+    private Long beneficiaryAcademyMemberId;
+    /** B.18 — email du parent payeur (billets enfants). */
+    private String parentPayerEmail;
 }

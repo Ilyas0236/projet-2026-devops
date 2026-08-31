@@ -30,6 +30,7 @@ public class AuthClient {
     private final RestTemplate restTemplate = new RestTemplate();
     private final String recipientsUrl;
     private final String isAdherentUrl;
+    private final String ensureChildUserUrl;
     private final String internalSecret;
 
     /** Projection minimale de UserProfileResponse (auth-service). */
@@ -49,11 +50,16 @@ public class AuthClient {
         }
     }
 
+    /** B.18 — Réponse de {@code POST /api/auth/internal/ensure-child-user}. */
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public record EnsureChildUserResponse(Long childUserId, String email) {}
+
     public AuthClient(
             @Value("${wydad.auth-service-uri:http://auth-service:8081}") String baseUrl,
             @Value("${wydad.internal-secret:}") String internalSecret) {
         this.recipientsUrl = baseUrl + "/api/auth/internal/recipients";
         this.isAdherentUrl = baseUrl + "/api/auth/subscriptions/internal/is-adherent";
+        this.ensureChildUserUrl = baseUrl + "/api/auth/internal/ensure-child-user";
         this.internalSecret = internalSecret;
     }
 
@@ -151,5 +157,44 @@ public class AuthClient {
             log.warn("auth-service injoignable pour is-adherent({}) : {}", email, e.getMessage());
             return false;
         }
+    }
+
+    /**
+     * B.18 — Demande à auth-service de créer (ou récupérer) l'User shadow
+     * d'un enfant académie pour le compte du parent connecté. Utilisé par
+     * le flow « PARENT achète un billet pour son fils ».
+     *
+     * <p>Auth-service gère l'IDOR : le contrôle
+     * {@code AcademyMember.parentUserId == parentUserId} est fait côté
+     * auth-service via {@code ChildUserService} + lookup sports. Si
+     * l'enfant n'existe pas ou n'est pas celui du parent, auth renvoie
+     * une erreur (4xx) qu'on propage ici sous forme de {@link RuntimeException}.</p>
+     *
+     * <p>Best-effort : un échec d'appel HTTP ou d'auth-service est
+     * remonté en exception — l'achat ne peut pas se poursuivre sans
+     * un childUserId connu.</p>
+     */
+    public EnsureChildUserResponse ensureChildUser(Long parentUserId, String childFullName, Long academyMemberId) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(org.springframework.http.MediaType.APPLICATION_JSON);
+        if (internalSecret != null && !internalSecret.isEmpty()) {
+            headers.set("X-Internal-Secret", internalSecret);
+        }
+        String body = String.format(
+                "{\"parentUserId\":%d,\"childFullName\":\"%s\",\"academyMemberId\":%d}",
+                parentUserId,
+                childFullName.replace("\"", ""),
+                academyMemberId);
+        ResponseEntity<EnsureChildUserResponse> response = restTemplate.exchange(
+                ensureChildUserUrl,
+                HttpMethod.POST,
+                new HttpEntity<>(body, headers),
+                EnsureChildUserResponse.class);
+        EnsureChildUserResponse result = response.getBody();
+        if (result == null || result.childUserId() == null) {
+            throw new IllegalStateException(
+                    "auth-service n'a pas renvoyé de childUserId pour academyMemberId=" + academyMemberId);
+        }
+        return result;
     }
 }

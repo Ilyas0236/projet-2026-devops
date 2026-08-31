@@ -358,4 +358,27 @@ public class GlobalExceptionHandler {
         );
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
     }
+
+    // ──────────────────── B.18 — Achat PARENT pour enfant académie ────────────────────
+
+    /**
+     * B.18 — Le parent a tenté d'acheter pour un enfant qui n'est pas
+     * le sien (IDOR) ou qui n'existe pas. 403 avec un code dédié
+     * {@code NOT_YOUR_CHILD} que le front peut matcher pour afficher
+     * un message d'erreur ciblé.
+     */
+    @ExceptionHandler(com.wydad.digital.auth.service.subscription.SubscriptionService.NotYourChildException.class)
+    public ResponseEntity<ErrorResponse> handleNotYourChild(
+            com.wydad.digital.auth.service.subscription.SubscriptionService.NotYourChildException ex,
+            HttpServletRequest request) {
+
+        ErrorResponse error = new ErrorResponse(
+                LocalDateTime.now(),
+                HttpStatus.FORBIDDEN.value(),
+                "NOT_YOUR_CHILD",
+                ex.getMessage(),
+                request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
+    }
 }

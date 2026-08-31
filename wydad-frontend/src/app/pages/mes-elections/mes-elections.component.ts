@@ -1,6 +1,7 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { ApiService } from '../../services/api.service';
 import { AuthService } from '../../services/auth.service';
 import { ToastService } from '../../services/toast.service';
@@ -11,6 +12,12 @@ import { ErrorBannerComponent } from '../../components/error-banner/error-banner
  * Liste les élections ouvertes avec l'état de vote de l'utilisateur
  * (myVoteIndex / canVote peuplés par le backend depuis le JWT).
  * Le vote est définitif ; un seul vote par membre est prouvé côté serveur.
+ *
+ * <p>B.18 — un utilisateur non-adhérent qui tente de voter reçoit
+ * 403 + code {@code VOTE_REQUIRES_MEMBERSHIP} du backend
+ * (cf. {@code election-service GlobalExceptionHandler}). Le front
+ * affiche un message dédié avec CTA « Acheter ma carte » vers
+ * /abonnement, plutôt qu'un toast générique d'erreur.</p>
  */
 @Component({
   selector: 'app-mes-elections',
@@ -23,12 +30,16 @@ export class MesElectionsComponent implements OnInit {
   api = inject(ApiService);
   auth = inject(AuthService);
   toast = inject(ToastService);
+  router = inject(Router);
 
   elections: any[] = [];
   loading = true;
   loadError = false;
   /** Id de l'élection en cours de vote (anti double-clic). */
   votingElectionId: number | null = null;
+
+  /** B.18 — message d'erreur dédié quand l'utilisateur n'a pas d'abonnement. */
+  membershipRequiredMsg = '';
 
   ngOnInit() {
     this.load();
@@ -55,10 +66,10 @@ export class MesElectionsComponent implements OnInit {
 
   vote(election: any, candidateId: number) {
     if (this.votingElectionId !== null) { return; }
-    // Déjà voté : le backend refuse de toute façon (409) mais on évite l'appel.
     if (election.myVoteIndex !== null && election.myVoteIndex !== undefined) { return; }
 
     this.votingElectionId = election.id;
+    this.membershipRequiredMsg = '';
     this.api.voteElection(election.id, candidateId).subscribe({
       next: (updated: any) => {
         Object.assign(election, updated);
@@ -67,8 +78,21 @@ export class MesElectionsComponent implements OnInit {
       },
       error: (err: any) => {
         this.votingElectionId = null;
-        this.toast.error(err?.error?.message || 'Impossible d\'enregistrer votre vote.');
+        // B.18 — code dédié 403 VOTE_REQUIRES_MEMBERSHIP.
+        const code = err?.error?.code;
+        if (code === 'VOTE_REQUIRES_MEMBERSHIP') {
+          this.membershipRequiredMsg = err.error?.message
+            || 'Pour voter aux élections du président, vous devez avoir une carte '
+            + 'd\'abonnement saisonnier active.';
+        } else {
+          this.toast.error(err?.error?.message || 'Impossible d\'enregistrer votre vote.');
+        }
       }
     });
+  }
+
+  /** B.18 — CTA vers la page abonnement depuis le message d'erreur 403. */
+  goToAbonnement() {
+    this.router.navigate(['/abonnement']);
   }
 }

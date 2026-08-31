@@ -39,3 +39,11 @@ build/
 .DS_Store
 ### Secrets locaux ###
 .env
+
+# Outillage dev local (Claude Code, audits, notes ops)
+.claude/
+audit/
+AZURE-RUN-STOP.md
+rapport-pfa/
+plans/
+memory/
