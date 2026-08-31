@@ -139,7 +139,7 @@
                 (click)="selectedBeneficiary = 'self'"
                 [class.bg-wydad-red]="selectedBeneficiary === 'self'"
                 [class.text-white]="selectedBeneficiary === 'self'"
-                [class.bg-white\\/5]="selectedBeneficiary !== 'self'"
+                [class.bg-paper-2]="selectedBeneficiary !== 'self'"
                 [class.text-gray-300]="selectedBeneficiary !== 'self'"
                 class="px-3 py-1.5 rounded-lg text-sm font-bold">
           Moi ({{ auth.getTokenRole() === 'PARENT' ? 'Parent' : 'Adhérent' }})
@@ -149,7 +149,7 @@
                 (click)="selectedBeneficiary = child.id"
                 [class.bg-wydad-red]="selectedBeneficiary === child.id"
                 [class.text-white]="selectedBeneficiary === child.id"
-                [class.bg-white\\/5]="selectedBeneficiary !== child.id"
+                [class.bg-paper-2]="selectedBeneficiary !== child.id"
                 [class.text-gray-300]="selectedBeneficiary !== child.id"
                 class="px-3 py-1.5 rounded-lg text-sm font-bold">
           {{ child.childFullName }}
