@@ -791,7 +791,7 @@ public class AuthService {
         if (user.getRole() != Role.ADMIN && user.getRole() != Role.ADHERENT) {
             boolean sollicitable = user.getRole() == Role.JOURNALISTE || user.getRole() == Role.JOUEUR
                     || user.getRole() == Role.ENTRAINEUR || user.getRole() == Role.STAFF
-                    || user.getRole() == Role.PRESIDENT;
+                    || user.getRole() == Role.PRESIDENT || user.getRole() == Role.PARENT;
             if (!sollicitable) {
                 throw new RuntimeException("Ce rôle ne nécessite pas de validation");
             }
