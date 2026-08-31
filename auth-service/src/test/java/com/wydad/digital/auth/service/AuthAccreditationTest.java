@@ -61,9 +61,9 @@ class AuthAccreditationTest {
 
     /** Fabrique une demande complète ; les champs conditionnels sont null par défaut. */
     private RegisterRequest demande(String role, String discipline, String categorie,
-                                    String organismePresse, Long matchId) {
+                                    String organismePresse, String numeroCartePresse) {
         return new RegisterRequest("presse@test.ma", "0612345678", "secret123",
-                "Nadia", "Berrada", null, role, discipline, categorie, organismePresse, matchId);
+                "Nadia", "Berrada", null, role, discipline, categorie, organismePresse, numeroCartePresse);
     }
 
     /** Stub des mocks communs à tout register() qui aboutit. Les stubs JWT ne
@@ -92,52 +92,44 @@ class AuthAccreditationTest {
         return captor.getValue();
     }
 
-    // ---------- JOURNALISTE ----------
+    // ---------- JOURNALISTE (B.17 — pas de matchId à l'inscription) ----------
 
     @Test
-    @DisplayName("demandeRole=JOURNALISTE + match réel → compte JOURNALISTE EN_ATTENTE avec libellé figé")
+    @DisplayName("B.17 : JOURNALISTE + média + n° carte → compte EN_ATTENTE, pas de match figé")
     void journaliste_enAttente() {
         stubRegisterEnAttente();
-        when(contentClient.fetchMatchLabel(7L)).thenReturn("Wydad vs Raja — Botola Pro, le 2026-09-10");
 
-        authService.register(demande("journaliste", null, null, "SportsDZ.ma", 7L)); // casse insensible
+        authService.register(demande("journaliste", null, null, "SportsDZ.ma", "CARTE-12345"));
 
         User saved = savedUser();
         assertEquals(Role.JOURNALISTE, saved.getRole());
         assertEquals(StatutCompte.EN_ATTENTE, saved.getStatutCompte());
         assertEquals("SportsDZ.ma", saved.getOrganismePresse());
-        assertEquals(7L, saved.getMatchId());
-        assertEquals("Wydad vs Raja — Botola Pro, le 2026-09-10", saved.getMatchSouhaite());
+        assertEquals("CARTE-12345", saved.getNumeroCartePresse());
+        // B.17 : plus de matchId/matchSouhaite à l'inscription
+        assertNull(saved.getMatchId());
+        assertNull(saved.getMatchSouhaite());
         assertNull(saved.getMotifRefus());
         assertNull(saved.getCategorieDemandee()); // pas de catégorie pour la presse
         verify(jwtUtils, org.mockito.Mockito.never()).generateAccessToken(any(), any(), any());
+        // Pas d'appel content-client non plus (pas de match à vérifier)
+        verify(contentClient, org.mockito.Mockito.never()).fetchMatchLabel(any());
     }
 
     @Test
-    @DisplayName("JOURNALISTE sans organe de presse → refusé")
+    @DisplayName("B.17 : JOURNALISTE sans organe de presse → refusé")
     void journaliste_sansOrganisme_ko() {
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-                () -> authService.register(demande("JOURNALISTE", null, null, null, 7L)));
+                () -> authService.register(demande("JOURNALISTE", null, null, null, "CARTE-12345")));
         assertTrue(ex.getMessage().contains("organe de presse"));
     }
 
     @Test
-    @DisplayName("§17 : JOURNALISTE sans matchId → refusé (texte libre interdit)")
-    void journaliste_sansMatch_ko() {
+    @DisplayName("B.17 : JOURNALISTE sans n° carte de presse → refusé")
+    void journaliste_sansCartePresse_ko() {
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
                 () -> authService.register(demande("JOURNALISTE", null, null, "SportsDZ.ma", null)));
-        assertTrue(ex.getMessage().contains("match réel"));
-    }
-
-    @Test
-    @DisplayName("§17 : match inexistant dans le calendrier → demande refusée")
-    void journaliste_matchInconnu_ko() {
-        when(contentClient.fetchMatchLabel(999L)).thenReturn(null);
-
-        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-                () -> authService.register(demande("JOURNALISTE", null, null, "SportsDZ.ma", 999L)));
-        assertTrue(ex.getMessage().contains("Match introuvable"));
-        verify(userRepository, org.mockito.Mockito.never()).save(any());
+        assertTrue(ex.getMessage().contains("carte de presse"));
     }
 
     // ---------- Rôles sportifs : catégorie obligatoire ----------
