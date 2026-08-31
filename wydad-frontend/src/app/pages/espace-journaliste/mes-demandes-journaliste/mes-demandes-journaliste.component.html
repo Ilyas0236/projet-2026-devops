@@ -74,7 +74,7 @@
           <button *ngIf="d.statut === 'VALIDE'" type="button"
                   (click)="telechargerBadge(d.id)"
                   [disabled]="busyId === d.id"
-                  class="wydad-btn-primary disabled:opacity-50 disabled:cursor-not-allowed shrink-0">
+                  class="paper-btn-outline disabled:opacity-50 disabled:cursor-not-allowed shrink-0">
             {{ busyId === d.id ? 'Préparation…' : '🎫 Télécharger le badge' }}
           </button>
         </div>
