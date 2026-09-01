@@ -94,9 +94,9 @@ export class PresidentDashboardComponent implements OnInit {
    */
   private loadProfil() {
     this.profil = {
-      firstName: localStorage.getItem('wydad_first_name') || this.auth.getCurrentUserEmail() || 'Président',
+      firstName: localStorage.getItem('wydad_first_name') || 'Président',
       lastName: localStorage.getItem('wydad_last_name') || '',
-      email: this.auth.getCurrentUserEmail(),
+      email: localStorage.getItem('wydad_email'),
       disciplineDemandee: localStorage.getItem('wydad_discipline') || null,
       statutCompte: 'VALIDE',
     };
