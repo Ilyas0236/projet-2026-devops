@@ -45,6 +45,15 @@ public class StaffService {
                 .stream().map(this::mapToDto).collect(Collectors.toList());
     }
 
+    /**
+     * C.21 — tout le staff d'une discipline (toutes catégories).
+     * Utilisé par l'annuaire du président qui gère toute sa section.
+     */
+    public List<StaffDto> getStaffByDiscipline(SportType sportType) {
+        return staffRepository.findBySportType(sportType)
+                .stream().map(this::mapToDto).collect(Collectors.toList());
+    }
+
     public StaffDto updateStaff(Long id, StaffDto dto) {
         Staff staff = staffRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Staff non trouvé"));

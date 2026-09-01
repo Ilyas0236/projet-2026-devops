@@ -13,4 +13,6 @@ import java.util.Optional;
 public interface StaffRepository extends JpaRepository<Staff, Long> {
     Optional<Staff> findByUserId(Long userId);
     List<Staff> findBySportTypeAndAssignedCategory(SportType sportType, Category assignedCategory);
+    /** C.21 — tout le staff d'une discipline (toutes catégories). */
+    List<Staff> findBySportType(SportType sportType);
 }

@@ -48,13 +48,22 @@ public class StaffController {
         return ResponseEntity.noContent().build();
     }
 
-    /** Listing par équipe avec isolation serveur (§6/§24). */
+    /**
+     * Listing avec isolation serveur (§6/§24).
+     * <p>C.21 — catégorie optionnelle pour le PRESIDENT : il gère toute la
+     * discipline, pas une équipe précise. Sans catégorie → tout le staff de
+     * la discipline (toutes catégories). Avec catégorie → filtrage classique.</p>
+     */
     @GetMapping("/filter")
     @PreAuthorize("hasRole('ENTRAINEUR') or hasRole('STAFF') or hasRole('JOUEUR') "
             + "or hasRole('ADMIN') or hasRole('PRESIDENT')")
     public ResponseEntity<List<StaffDto>> getStaffByTeam(
             @RequestParam SportType sportType,
-            @RequestParam Category category) {
+            @RequestParam(required = false) Category category) {
+        if (category == null) {
+            teamIsolationService.ensureCanQueryDiscipline(sportType);
+            return ResponseEntity.ok(staffService.getStaffByDiscipline(sportType));
+        }
         teamIsolationService.ensureCanQueryTeam(sportType, category);
         return ResponseEntity.ok(staffService.getStaffByTeam(sportType, category));
     }
