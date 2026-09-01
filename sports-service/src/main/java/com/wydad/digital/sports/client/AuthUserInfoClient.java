@@ -29,8 +29,19 @@ public class AuthUserInfoClient {
     private final String internalSecret;
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public record UserInfo(Long id, String email, String role,
-                           String disciplineDemandee, String categorieDemandee) {}
+    public record UserInfo(
+            Long id,
+            String email,
+            String role,
+            // Le endpoint /api/auth/internal/users/{id}/discipline renvoie
+            // {"id":..,"email":..,"role":..,"discipline":..} (cf.
+            // InternalUserInfoController.UserDisciplineResponse). L'ancien
+            // mapping attendait "disciplineDemandee" — bug de naming qui
+            // faisait silencieusement tomber la discipline à null et jetait
+            // le président en 403 sur l'annuaire de sa discipline.
+            @com.fasterxml.jackson.annotation.JsonProperty("discipline")
+            String disciplineDemandee,
+            String categorieDemandee) {}
 
     public AuthUserInfoClient(
             @Value("${wydad.auth-service-uri:http://auth-service:8081}") String baseUrl,
