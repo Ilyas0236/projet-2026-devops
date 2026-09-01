@@ -29,6 +29,47 @@
         </div>
       </div>
 
+      <!-- C.21 — Badge doré président + discipline. Distinctif (GOL) pour
+           qu'un visiteur identifie immédiatement l'autorité présidentielle
+           (rouge = club, or = président). Le président gère une section
+           entière : il ne parle qu'aux joueurs + entraîneurs de SA discipline. -->
+      <div *ngIf="profil"
+           class="mb-10 flex flex-col sm:flex-row items-start sm:items-center gap-5 p-6 rounded-2xl border-2 shadow-paper-card"
+           [class]="badgeOr.bg + ' ' + badgeOr.border">
+        <!-- Médaillon GOL avec couronne -->
+        <div class="relative shrink-0">
+          <div class="w-20 h-20 rounded-full bg-white/30 flex items-center justify-center ring-4 ring-white/50">
+            <svg aria-hidden="true" class="w-11 h-11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                 [class]="'text-' + badgeOr.text.replace('text-', '')">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                    d="M12 2l2.39 4.84L20 8.27l-4 3.9.94 5.49L12 15.77 7.06 17.66 8 12.17 4 8.27l5.61-1.43L12 2z"/>
+            </svg>
+          </div>
+          <span class="absolute -bottom-1 -right-1 bg-white text-amber-700 text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-full border border-amber-500/40 shadow">GOL</span>
+        </div>
+        <div class="flex-1">
+          <p class="text-[10px] font-bold uppercase tracking-[0.3em] opacity-80 mb-1">Président du Club</p>
+          <h2 class="font-display font-black text-2xl md:text-3xl uppercase tracking-tight"
+              [class]="badgeOr.text">
+            {{ profil.firstName }} {{ profil.lastName }}
+          </h2>
+          <div class="flex flex-wrap items-center gap-2 mt-2">
+            <span class="px-3 py-1 rounded-full bg-white/40 text-amber-950 text-[11px] font-black uppercase tracking-widest border border-amber-700/30">
+              🏆 Président Club {{ disciplineLabel || '…' }}
+            </span>
+            <span *ngIf="profil.statutCompte === 'VALIDE'"
+                  class="px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-bold uppercase tracking-widest border border-emerald-300">
+              ✓ Validé
+            </span>
+          </div>
+          <p *ngIf="disciplineLabel" class="text-amber-950/80 text-xs mt-3 leading-relaxed">
+            Vous gérez l'ensemble de la section <strong>{{ disciplineLabel }}</strong>. Vos
+            interlocuteurs (joueurs, entraîneurs) sont filtrés par discipline — vous ne pouvez
+            pas échanger avec d'autres sections.
+          </p>
+        </div>
+      </div>
+
       <!-- ONGLETS -->
       <div class="flex gap-2 mb-8 flex-wrap">
         <button type="button" (click)="activeTab = 'messagerie'"

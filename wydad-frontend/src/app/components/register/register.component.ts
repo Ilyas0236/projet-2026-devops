@@ -5,7 +5,7 @@ import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { ApiService } from '../../services/api.service';
 
-type StatutChoix = 'ADHERENT' | 'JOURNALISTE' | 'JOUEUR' | 'ENTRAINEUR' | 'STAFF' | 'PARENT';
+type StatutChoix = 'ADHERENT' | 'JOURNALISTE' | 'JOUEUR' | 'ENTRAINEUR' | 'STAFF' | 'PARENT' | 'PRESIDENT';
 
 interface StatutOption {
   valeur: StatutChoix;
@@ -16,12 +16,18 @@ interface StatutOption {
 
 /**
  * Inscription multi-statuts : l'utilisateur choisit son statut (adhérent,
- * journaliste, joueur, entraîneur, staff). Les statuts privilégiés créent
- * un compte EN_ATTENTE validé par l'ADMIN.
+ * journaliste, joueur, entraîneur, staff, parent, président de club).
+ * Les statuts privilégiés créent un compte EN_ATTENTE validé par l'ADMIN.
  *
  * B.17 — Le journaliste renseigne désormais : média, n° carte de presse,
  * photo de profil. PAS de match à l'inscription (le choix des matchs se
  * fait depuis l'espace, après validation du compte).
+ *
+ * PRESIDENT — chef d'une section sportive (FOOTBALL/BASKETBALL/HANDBALL).
+ * À l'inscription il choisit la discipline qu'il préside + dépose un
+ * justificatif. Une fois validé par l'admin, il accède à un dashboard
+ * avec badge doré et peut échanger avec les joueurs + entraîneurs de
+ * SA discipline (filtrage backend).
  */
 @Component({
   selector: 'app-register',
@@ -51,7 +57,8 @@ export class RegisterComponent implements OnInit {
     { valeur: 'JOURNALISTE', titre: 'Journaliste',          description: 'Demande d\'accréditation presse — validée par le club.', icone: '📰' },
     { valeur: 'JOUEUR',      titre: 'Joueur',               description: 'Intégration à une catégorie — validée par le club.', icone: '⚽' },
     { valeur: 'ENTRAINEUR',  titre: 'Entraîneur',           description: 'Encadrement d\'une catégorie — validé par le club.', icone: '📋' },
-    { valeur: 'STAFF',       titre: 'Staff technique',      description: 'Personnel médical, physique ou manager — validé par le club.', icone: '🩺' }
+    { valeur: 'STAFF',       titre: 'Staff technique',      description: 'Personnel médical, physique ou manager — validé par le club.', icone: '🩺' },
+    { valeur: 'PRESIDENT',   titre: 'Président de club',    description: 'Dirigeant d\'une section sportive — validé par le club.', icone: '🏆' }
   ];
 
   /** Disciplines sportives (alignées sur le backend DISCIPLINES_VALIDES). */
@@ -117,6 +124,13 @@ export class RegisterComponent implements OnInit {
     return this.statut === 'JOUEUR' || this.statut === 'ENTRAINEUR' || this.statut === 'STAFF';
   }
 
+  /** Vrai quand le président d'une section sportive est en cours d'inscription.
+   * Le président gère TOUTE une discipline (pas une catégorie précise), donc
+   * on lui demande uniquement la discipline, pas la catégorie. */
+  get estPresident(): boolean {
+    return this.statut === 'PRESIDENT';
+  }
+
   ngOnInit() {
     // L'inscription crée un compte sans palier pré-sélectionné.
     // Les abonnements sont gérés par l'admin et s'achètent depuis l'espace
@@ -149,6 +163,8 @@ export class RegisterComponent implements OnInit {
       return false;
     }
     if (this.estSportif && (!this.disciplineDemandee || !this.categorieDemandee)) return false;
+    // PRESIDENT : discipline obligatoire (pas de catégorie — il gère toute la section).
+    if (this.estPresident && !this.disciplineDemandee) return false;
     if (this.statut === 'JOURNALISTE') {
       if (this.organismePresse.trim().length === 0) return false;
       // B.17 : n° carte de presse obligatoire pour JOURNALISTE.
@@ -188,6 +204,12 @@ export class RegisterComponent implements OnInit {
       if (this.estSportif) {
         requestData.disciplineDemandee = this.disciplineDemandee;
         requestData.categorieDemandee = this.categorieDemandee;
+      }
+      // PRESIDENT : discipline (Football / Basketball / Handball) mais PAS
+      // de catégorie — il gère toute la section, pas une équipe précise.
+      if (this.estPresident) {
+        requestData.disciplineDemandee = this.disciplineDemandee;
+        requestData.categorieDemandee = null;
       }
     }
 

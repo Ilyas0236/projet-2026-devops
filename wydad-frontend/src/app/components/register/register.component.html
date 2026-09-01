@@ -133,6 +133,37 @@
           </p>
         </div>
 
+        <!-- Président de club : discipline uniquement (pas de catégorie — il gère toute la section) -->
+        <div *ngIf="estPresident" class="mb-6 p-4 rounded-xl bg-paper-1 border border-paper-3 animate-fade-in space-y-4">
+          <p class="text-ink-secondary text-xs leading-relaxed">
+            <strong class="text-ink-primary">Président de section sportive.</strong> Vous dirigez
+            l'ensemble d'une discipline (Football, Basketball ou Handball). Après validation
+            par le club, vous accédez à votre dashboard avec badge doré : messagerie et appels
+            avec les joueurs + entraîneurs de votre discipline.
+          </p>
+          <div>
+            <label class="block mb-2 text-ink-primary text-xs uppercase tracking-wider font-semibold">
+              Discipline présidée *
+              <span class="normal-case text-ink-tertiary font-normal">— section sportive (FOOTBALL / BASKETBALL / HANDBALL)</span>
+            </label>
+            <div class="grid grid-cols-3 gap-2" role="radiogroup" aria-label="Discipline présidée">
+              <button type="button" *ngFor="let d of disciplines.slice(0, 3)"
+                      (click)="disciplineDemandee = d.valeur"
+                      role="radio" [attr.aria-checked]="disciplineDemandee === d.valeur"
+                      class="py-2.5 rounded-lg border font-display text-sm tracking-wider transition-all duration-150"
+                      [ngClass]="disciplineDemandee === d.valeur
+                        ? 'bg-wydad-red text-white border-wydad-red'
+                        : 'border-paper-3 text-ink-secondary hover:border-wydad-red/60'">
+                {{ d.label }}
+              </button>
+            </div>
+          </div>
+          <p class="text-ink-tertiary text-xs leading-relaxed !mb-0">
+            Vous serez rattaché à la section <strong class="text-ink-secondary">{{ disciplineDemandee || '…' }}</strong> —
+            vous ne communiquerez qu'avec les joueurs et entraîneurs de cette discipline.
+          </p>
+        </div>
+
         <!-- Journaliste : accréditation presse (B.17 — photo + média + n° carte, PAS de match à l'inscription) -->
         <div *ngIf="statut === 'JOURNALISTE'" class="mb-6 p-4 rounded-xl bg-paper-1 border border-paper-3 animate-fade-in space-y-4">
           <p class="text-ink-secondary text-xs leading-relaxed">

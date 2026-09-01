@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ApiService } from '../../../services/api.service';
+import { AuthService } from '../../../services/auth.service';
 import { ToastService } from '../../../services/toast.service';
 import { ErrorBannerComponent } from '../../../components/error-banner/error-banner.component';
 import { MyCallsComponent } from '../../../components/my-calls/my-calls.component';
@@ -34,7 +35,28 @@ export class PresidentDashboardComponent implements OnInit {
   activeTab: 'messagerie' | 'recus' | 'video' = 'messagerie';
 
   api = inject(ApiService);
+  auth = inject(AuthService);
   private toast = inject(ToastService);
+
+  // ──────────────────── C.21 — Profil président (badge doré) ────────────────────
+  /** Profil complet du président connecté (nom, discipline, statut). */
+  profil: any = null;
+  /** Libellé lisible de la discipline (« FOOTBALL » → « Football »). */
+  get disciplineLabel(): string {
+    const d = this.profil?.disciplineDemandee;
+    if (!d) return '';
+    return d.charAt(0).toUpperCase() + d.slice(1).toLowerCase();
+  }
+  /** Couleur dorée (GOL) appliquée au badge, propre au rôle président.
+   * Distincte du rouge (wydad-red) et du neutre papier, pour qu'un visiteur
+   * identifie immédiatement l'autorité présidentielle. */
+  get badgeOr(): { bg: string; text: string; border: string } {
+    return {
+      bg: 'bg-gradient-to-br from-amber-300 via-yellow-400 to-amber-500',
+      text: 'text-amber-950',
+      border: 'border-amber-600/40',
+    };
+  }
 
   // ───────────────────────────── Messagerie ─────────────────────────────
   inbox: any[] = [];
@@ -60,7 +82,24 @@ export class PresidentDashboardComponent implements OnInit {
   };
 
   ngOnInit() {
+    this.loadProfil();
     this.loadAll();
+  }
+
+  /**
+   * C.21 — Charge le profil président (nom, discipline, statutCompte) pour
+   * afficher le badge doré et le sélecteur de discipline. Le profil est
+   * déjà mis en cache par AuthService.currentUser$ — on le lit directement
+   * depuis le localStorage pour éviter un round-trip.
+   */
+  private loadProfil() {
+    this.profil = {
+      firstName: localStorage.getItem('wydad_first_name') || this.auth.getCurrentUserEmail() || 'Président',
+      lastName: localStorage.getItem('wydad_last_name') || '',
+      email: this.auth.getCurrentUserEmail(),
+      disciplineDemandee: localStorage.getItem('wydad_discipline') || null,
+      statutCompte: 'VALIDE',
+    };
   }
 
   retryLoad() {

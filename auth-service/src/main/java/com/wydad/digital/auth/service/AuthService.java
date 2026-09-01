@@ -61,7 +61,7 @@ public class AuthService {
 
     /** Rôles que le public peut solliciter à l'inscription. */
     private static final java.util.Set<String> ROLES_SOLICITABLES =
-            java.util.Set.of("JOURNALISTE", "JOUEUR", "ENTRAINEUR", "STAFF", "PARENT");
+            java.util.Set.of("JOURNALISTE", "JOUEUR", "ENTRAINEUR", "STAFF", "PARENT", "PRESIDENT");
 
     /**
      * Choix du statut à l'inscription : JOURNALISTE, JOUEUR, ENTRAINEUR ou
@@ -115,6 +115,23 @@ public class AuthService {
                 // et le compte passe EN_ATTENTE pour validation admin.
                 // L'inscription d'un enfant à l'académie se fait depuis
                 // /academie/inscription (espace parent post-login).
+            } else if ("PRESIDENT".equals(demande)) {
+                // C.21 — Président de section sportive (FOOTBALL / BASKETBALL /
+                // HANDBALL). Discipline obligatoire (la section qu'il préside),
+                // PAS de catégorie (il gère toute la discipline, pas une équipe
+                // précise). Le compte passe EN_ATTENTE — l'admin vérifie son
+                // identité et la légitimité de sa candidature avant activation.
+                if (request.disciplineDemandee() == null || request.disciplineDemandee().isBlank()) {
+                    throw new IllegalArgumentException(
+                            "La discipline est obligatoire pour le président (FOOTBALL / BASKETBALL / HANDBALL)");
+                }
+                discipline = request.disciplineDemandee().trim().toUpperCase();
+                if (!DISCIPLINES_VALIDES.contains(discipline)) {
+                    throw new IllegalArgumentException(
+                            "Discipline invalide pour un président — valeurs acceptées : FOOTBALL, BASKETBALL, HANDBALL");
+                }
+                // categorie reste null : le président gère toute la discipline,
+                // pas une catégorie précise (U15/U17/U18/U20/SENIOR).
             } else {
                 // Rôle sportif : le couple DISCIPLINE + CATÉGORIE est obligatoire —
                 // c'est ce couple qui isole les groupes dans toute la plateforme.
