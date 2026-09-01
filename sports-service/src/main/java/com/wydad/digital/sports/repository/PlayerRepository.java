@@ -13,4 +13,7 @@ import java.util.Optional;
 public interface PlayerRepository extends JpaRepository<Player, Long> {
     Optional<Player> findByUserId(Long userId);
     List<Player> findBySportTypeAndCategory(SportType sportType, Category category);
+    /** C.21 — tous les joueurs d'une discipline (toutes catégories confondues).
+     * Utilisé par l'annuaire du président. */
+    List<Player> findBySportType(SportType sportType);
 }

@@ -70,13 +70,25 @@ public class PlayerController {
      * Listing par équipe avec isolation serveur (§6/§24) : le couple
      * discipline+catégorie est vérifié contre le profil de l'appelant — un
      * entraîneur Football U17 qui demande Basketball U17 reçoit 403.
+     *
+     * <p>C.21 — catégorie optionnelle pour le rôle PRESIDENT : le président
+     * gère TOUTE sa discipline (Football U15 + U17 + U18 + U20 + Senior)
+     * sans distinction de catégorie. Sans catégorie → toutes les catégories
+     * de la discipline. Avec catégorie → filtrage classique (entraîneur).</p>
      */
     @GetMapping("/filter")
     @PreAuthorize("hasRole('ENTRAINEUR') or hasRole('STAFF') or hasRole('JOUEUR') "
             + "or hasRole('ADMIN') or hasRole('PRESIDENT')")
     public ResponseEntity<List<PlayerDto>> getPlayersByCategory(
             @RequestParam SportType sportType,
-            @RequestParam Category category) {
+            @RequestParam(required = false) Category category) {
+        // C.21 — un président qui omet la catégorie récupère toute sa
+        // discipline (toutes catégories). L'isolation serveur vérifie que
+        // le sportType demandé correspond à SA discipline de président.
+        if (category == null) {
+            teamIsolationService.ensureCanQueryDiscipline(sportType);
+            return ResponseEntity.ok(playerService.getPlayersByDiscipline(sportType));
+        }
         teamIsolationService.ensureCanQueryTeam(sportType, category);
         return ResponseEntity.ok(playerService.getPlayersByCategory(sportType, category));
     }

@@ -87,6 +87,11 @@
                 [class]="activeTab === 'video' ? 'bg-wydad-red text-white shadow-md' : 'paper-card text-ink-secondary hover:text-wydad-red'">
           Réunions vidéo
         </button>
+        <button type="button" (click)="activeTab = 'annuaire'"
+                class="px-6 py-3 rounded-2xl text-xs font-bold uppercase tracking-wider transition-all"
+                [class]="activeTab === 'annuaire' ? 'bg-wydad-red text-white shadow-md' : 'paper-card text-ink-secondary hover:text-wydad-red'">
+          📇 Annuaire {{ disciplineLabel }}
+        </button>
         <a routerLink="/president/discussions"
            class="px-6 py-3 rounded-2xl text-xs font-bold uppercase tracking-wider transition-all paper-card text-ink-secondary hover:text-wydad-red flex items-center gap-2">
           💬 Discussions avec les équipes
@@ -296,6 +301,55 @@
       <section *ngIf="activeTab === 'video'" class="animate-fade-in-up space-y-6">
         <app-my-calls></app-my-calls>
         <app-schedule-call-form></app-schedule-call-form>
+      </section>
+
+      <!-- ═════════ ONGLET ANNUAIRE (C.21) ═════════ -->
+      <section *ngIf="activeTab === 'annuaire'" class="animate-fade-in-up">
+        <div class="paper-card rounded-3xl p-8">
+          <div class="flex items-center gap-3 mb-5">
+            <h3 class="font-display font-bold uppercase tracking-wider text-2xl">
+              Joueurs &amp; entraîneurs — {{ disciplineLabel }}
+            </h3>
+            <span class="px-3 py-1 rounded-full bg-amber-100 text-amber-800 text-[10px] font-bold uppercase tracking-widest border border-amber-300">
+              {{ contactsDir.length }} interlocuteur(s) autorisé(s)
+            </span>
+          </div>
+          <p class="text-ink-tertiary text-xs mb-6 leading-relaxed">
+            Seuls les joueurs et entraîneurs de votre discipline
+            <strong class="text-ink-secondary">{{ disciplineLabel }}</strong> sont listés.
+            Le filtrage est appliqué côté serveur (sports-service) — un
+            appel vers une autre discipline renvoie 403.
+          </p>
+
+          <div *ngIf="contactsDirLoading" class="flex justify-center py-10">
+            <div class="w-10 h-10 border-4 border-wydad-red border-t-transparent rounded-full animate-spin"></div>
+          </div>
+
+          <div *ngIf="!contactsDirLoading && contactsDir.length === 0" class="text-center py-10">
+            <p class="font-display uppercase tracking-wider text-ink-secondary">Aucun interlocuteur</p>
+            <p class="text-ink-tertiary text-xs mt-1">Aucun joueur ou entraîneur n'est rattaché à votre discipline pour l'instant.</p>
+          </div>
+
+          <div *ngIf="!contactsDirLoading && contactsDir.length > 0"
+               class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <article *ngFor="let c of contactsDir"
+                     class="rounded-2xl border border-paper-3 bg-white p-4 flex items-center gap-3 hover:border-wydad-red/60 transition-colors">
+              <div class="w-10 h-10 rounded-full bg-paper-2 flex items-center justify-center font-display font-bold text-ink-secondary">
+                {{ c.name?.charAt(0) || '?' }}
+              </div>
+              <div class="flex-1 min-w-0">
+                <p class="font-bold text-ink-primary truncate" [title]="c.name">{{ c.name }}</p>
+                <p class="text-[10px] uppercase tracking-widest text-ink-tertiary mt-0.5">
+                  {{ c.role }}<span *ngIf="c.category"> · {{ c.category }}</span>
+                </p>
+              </div>
+              <button type="button" (click)="activeTab = 'messagerie'; selectContact(c.id)"
+                      class="text-[10px] font-bold uppercase tracking-widest text-wydad-red border border-wydad-red/40 rounded-full px-3 py-1 hover:bg-wydad-red hover:text-white transition-colors">
+                Message
+              </button>
+            </article>
+          </div>
+        </div>
       </section>
 
     </div>

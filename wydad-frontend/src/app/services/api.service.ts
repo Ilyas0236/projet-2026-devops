@@ -994,6 +994,27 @@ export class ApiService {
     return this.http.get<any[]>(`${this.baseUrl}/sports/players/filter?sportType=${sportType}&category=${category}`);
   }
 
+  /**
+   * C.21 — Tous les joueurs d'une discipline (toutes catégories confondues).
+   * Renvoie 403 si l'appelant n'est pas président de cette discipline.
+   */
+  getPlayersByDiscipline(sportType: string): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/sports/players/filter?sportType=${sportType}`);
+  }
+
+  /** Encadrement d'une catégorie (entraîneur / staff). */
+  getStaffByCategory(sportType: string, category: string): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/sports/staff/filter?sportType=${sportType}&category=${category}`);
+  }
+
+  /**
+   * C.21 — Tous les entraîneurs d'une discipline (toutes catégories).
+   * Filtré côté serveur par TeamIsolationService.
+   */
+  getStaffByDiscipline(sportType: string): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/sports/staff/filter?sportType=${sportType}`);
+  }
+
   createSession(session: any): Observable<any> {
     return this.http.post<any>(`${this.baseUrl}/sports/sessions`, session);
   }

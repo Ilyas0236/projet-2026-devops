@@ -32,7 +32,7 @@ export class PresidentDashboardComponent implements OnInit {
   // ───────────────────────────── État général ─────────────────────────────
   loading = true;
   loadError = false;
-  activeTab: 'messagerie' | 'recus' | 'video' = 'messagerie';
+  activeTab: 'messagerie' | 'recus' | 'video' | 'annuaire' = 'messagerie';
 
   api = inject(ApiService);
   auth = inject(AuthService);
@@ -66,6 +66,11 @@ export class PresidentDashboardComponent implements OnInit {
   convLoading = false;
   newMessage = '';
 
+  // C.21 — Annuaire des interlocuteurs autorisés (joueurs + entraîneurs de
+  // MA discipline). Renforcé côté backend par TeamIsolationService.
+  contactsDir: any[] = [];
+  contactsDirLoading = false;
+
   // ───────────────────────────── Reçus ─────────────────────────────
   receipts: any[] = [];
   receiptsLoading = false;
@@ -84,6 +89,7 @@ export class PresidentDashboardComponent implements OnInit {
   ngOnInit() {
     this.loadProfil();
     this.loadAll();
+    this.loadContactsDiscipline();
   }
 
   /**
@@ -121,6 +127,49 @@ export class PresidentDashboardComponent implements OnInit {
   }
 
   // ═══════════════════════════ Messagerie ═══════════════════════════
+
+  /**
+   * C.21 — Charge l'annuaire des joueurs + entraîneurs de la discipline
+   * du président. Backend = sports-service /players/filter et
+   * /staff/filter avec sportType=discipline du président.
+   *
+   * <p>Si la discipline n'est pas connue (login trop ancien, pas de
+   * disciplineDemandee en localStorage), on tente via /api/auth/me.</p>
+   */
+  loadContactsDiscipline() {
+    const disc = this.profil?.disciplineDemandee;
+    if (!disc) {
+      // Récupère via /api/auth/me (méthode du auth.service).
+      this.auth.getProfile().subscribe({
+        next: (p: any) => {
+          this.profil = { ...this.profil, disciplineDemandee: p?.disciplineDemandee };
+          if (p?.disciplineDemandee) {
+            localStorage.setItem('wydad_discipline', p.disciplineDemandee);
+            this.loadContactsDiscipline();
+          }
+        }
+      });
+      return;
+    }
+    this.contactsDirLoading = true;
+    // Charge en parallèle joueurs et entraîneurs.
+    Promise.all([
+      this.api.getPlayersByDiscipline(disc).toPromise(),
+      this.api.getStaffByDiscipline(disc).toPromise()
+    ]).then(([players, staff]) => {
+      const merged: any[] = [];
+      (players || []).forEach((p: any) => merged.push({
+        id: p.userId, name: p.fullName, role: 'JOUEUR', category: p.category
+      }));
+      (staff || []).forEach((s: any) => merged.push({
+        id: s.userId, name: s.fullName, role: 'ENTRAINEUR', category: s.assignedCategory
+      }));
+      this.contactsDir = merged;
+      this.contactsDirLoading = false;
+    }).catch(() => {
+      this.contactsDirLoading = false;
+    });
+  }
 
   loadInbox(done?: () => void) {
     this.inboxLoading = true;

@@ -59,6 +59,16 @@ public class PlayerService {
                 .stream().map(this::mapToDto).collect(Collectors.toList());
     }
 
+    /**
+     * C.21 — Tous les joueurs d'une discipline (toutes catégories). Utilisé
+     * par l'annuaire du président de section : il doit voir U15 + U17 + U18
+     * + U20 + Senior sans filtrer par équipe précise.
+     */
+    public List<PlayerDto> getPlayersByDiscipline(SportType sportType) {
+        return playerRepository.findBySportType(sportType)
+                .stream().map(this::mapToDto).collect(Collectors.toList());
+    }
+
     public List<PlayerDto> getAllPlayers() {
         return playerRepository.findAll().stream().map(this::mapToDto).collect(Collectors.toList());
     }
