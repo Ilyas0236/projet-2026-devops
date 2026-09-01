@@ -43,12 +43,17 @@ public class PlayerController {
     }
 
     @GetMapping("/user/{userId}")
-    @PreAuthorize("hasRole('JOUEUR') or hasRole('STAFF') or hasRole('ADMIN')")
+    @PreAuthorize("hasRole('JOUEUR') or hasRole('STAFF') or hasRole('PRESIDENT') or hasRole('ADMIN')")
     public ResponseEntity<PlayerDto> getPlayerByUserId(@PathVariable Long userId) {
-        // Anti-IDOR : un joueur ne peut consulter que sa propre fiche sportive ;
-        // STAFF et ADMIN peuvent lire toutes les fiches.
+        // Anti-IDOR :
+        //  - un joueur ne peut consulter que sa propre fiche ;
+        //  - STAFF et ADMIN peuvent lire toutes les fiches ;
+        //  - PRESIDENT ne peut consulter que les fiches des joueurs de SA discipline
+        //    (vérification faite côté service via la discipline du joueur).
+        String role = SportsUserContext.getCurrentUserRole();
         if (!SportsUserContext.isAdmin()
-                && !"STAFF".equals(SportsUserContext.getCurrentUserRole())
+                && !"STAFF".equals(role)
+                && !"PRESIDENT".equals(role)
                 && !userId.equals(SportsUserContext.getCurrentUserId())) {
             throw new AccessDeniedException("Consultation de la fiche d'un autre joueur interdite");
         }

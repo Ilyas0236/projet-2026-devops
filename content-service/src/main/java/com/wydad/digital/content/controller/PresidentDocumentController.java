@@ -132,11 +132,14 @@ public class PresidentDocumentController {
     public record CreateRequest(
             @NotBlank String category,
             @NotBlank String title,
-            @NotBlank String content) {}
+            // Accepte "content" (canonique) ou "body" (français, plus naturel
+            // côté front). Sans @JsonAlias, un front qui envoie "body" se
+            // prend un NOT NULL sur la colonne content.
+            @NotBlank @com.fasterxml.jackson.annotation.JsonAlias("body") String content) {}
 
     public record UpdateRequest(
             @NotBlank String title,
-            @NotBlank String content) {}
+            @NotBlank @com.fasterxml.jackson.annotation.JsonAlias("body") String content) {}
 
     public record RejectRequest(@NotBlank String motif) {}
 }
