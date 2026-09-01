@@ -14,14 +14,20 @@ import java.util.Map;
 public class GlobalExceptionHandler {
 
     /**
-     * AccessDeniedException (levee par @PreAuthorize) doit donner 403 et non
-     * tomber dans le handler generique qui renvoie 500.
+     * AccessDeniedException (levee par @PreAuthorize ou par les services
+     * d'isolation §6/§24) doit donner 403 et non tomber dans le handler
+     * generique qui renverrait 500. On expose le message original pour
+     * aider au diagnostic côté front (sinon le client reçoit un 403
+     * générique "Acces refuse" sans savoir si c'est une mauvaise
+     * discipline, un profil manquant, etc.).
      */
     @ExceptionHandler(org.springframework.security.access.AccessDeniedException.class)
     public ResponseEntity<Map<String, Object>> handleAccessDenied(org.springframework.security.access.AccessDeniedException ex) {
+        log.debug("AccessDenied sur sports-service: {}", ex.getMessage());
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of(
                 "error", "FORBIDDEN",
-                "message", "Acces refuse",
+                "message", ex.getMessage() != null && !ex.getMessage().isBlank()
+                        ? ex.getMessage() : "Acces refuse",
                 "timestamp", LocalDateTime.now().toString()
         ));
     }

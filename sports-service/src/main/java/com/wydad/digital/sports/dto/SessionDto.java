@@ -15,7 +15,10 @@ public class SessionDto {
     private String description;
     private String location;
     @NotNull private LocalDateTime sessionDate;
-    @NotNull private SportType sportType;
-    @NotNull private Category category;
-    @NotNull private Long createdByStaffId;
+    // sportType, category, createdByStaffId sont déduits côté serveur
+    // depuis la fiche Staff du courant (ou acceptés en mode ADMIN).
+    // On les laisse nullables pour ne pas casser le flux STAFF/ENTRAINEUR.
+    private SportType sportType;
+    private Category category;
+    private Long createdByStaffId;
 }

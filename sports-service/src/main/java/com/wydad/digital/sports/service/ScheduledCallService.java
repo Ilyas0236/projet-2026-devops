@@ -183,18 +183,43 @@ public class ScheduledCallService {
                 }
             }
             case UTILISATEURS -> {
-                if (!"PRESIDENT".equals(role) && !"ADMIN".equals(role)) {
-                    throw new AccessDeniedException("Cible réservée au président");
-                }
                 if (req.targetUserIds() == null || req.targetUserIds().isEmpty()) {
                     throw new IllegalArgumentException("Liste de destinataires vide");
                 }
+                // Règle par rôle (C.21 + §8) :
+                //  - PRESIDENT/ADMIN : peuvent viser n'importe quel utilisateur actif ;
+                //  - ENTRAINEUR/STAFF : ne peuvent viser QUE des membres de LEUR
+                //    discipline + catégorie (joueurs ET staff). Filtrage strict
+                //    pour empêcher l'énumération inter-équipes ;
+                //  - JOUEUR : refusé (les JOUEURs sont gérés par CATEGORIE_JOUEURS).
+                if ("JOUEUR".equals(role)) {
+                    throw new AccessDeniedException(
+                            "Cible UTILISATEURS réservée à l'encadrement et au président");
+                }
                 Set<Long> known = new HashSet<>();
-                for (AuthClient.UserProfile u : authClient.getAllActiveUsers()) {
-                    if (u.isValide()) known.add(u.id());
+                if ("ENTRAINEUR".equals(role) || "STAFF".equals(role)) {
+                    requireCategory(sportType, category);
+                    // Charge la liste des userIds autorisés pour ce couple
+                    // discipline+catégorie depuis le roster (BDD locale).
+                    for (Player p : playerRepository.findBySportTypeAndCategory(sportType, category)) {
+                        known.add(p.getUserId());
+                    }
+                    for (Staff s : staffRepository.findBySportTypeAndAssignedCategory(sportType, category)) {
+                        known.add(s.getUserId());
+                    }
+                } else {
+                    // PRESIDENT/ADMIN : tous les utilisateurs actifs.
+                    for (AuthClient.UserProfile u : authClient.getAllActiveUsers()) {
+                        if (u.isValide()) known.add(u.id());
+                    }
                 }
                 for (Long id : req.targetUserIds()) {
                     if (id != null && known.contains(id)) ids.add(id);
+                }
+                if (ids.isEmpty()) {
+                    throw new AccessDeniedException(
+                            "Aucun des destinataires n'appartient à votre équipe "
+                                    + "(" + sportType + " " + category + ")");
                 }
             }
         }

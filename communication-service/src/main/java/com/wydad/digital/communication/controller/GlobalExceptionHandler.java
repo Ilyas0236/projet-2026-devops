@@ -41,6 +41,24 @@ public class GlobalExceptionHandler {
         ));
     }
 
+    /**
+     * Payload JSON invalide (encodage cassé, champ requis manquant,
+     * accolade oubliée...) : 400 propre, pas un 500 cryptique
+     * « Invalid UTF-8 middle byte 0xNN » qui fait perdre du temps au
+     * front lors d'un debuggage.
+     */
+    @ExceptionHandler(org.springframework.http.converter.HttpMessageNotReadableException.class)
+    public ResponseEntity<Map<String, Object>> handleUnreadable(
+            org.springframework.http.converter.HttpMessageNotReadableException ex) {
+        log.debug("Payload JSON invalide sur communication-service: {}",
+                ex.getMostSpecificCause() != null ? ex.getMostSpecificCause().getMessage() : ex.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of(
+                "error", "BAD_REQUEST",
+                "message", "Payload JSON invalide ou incomplet",
+                "timestamp", LocalDateTime.now().toString()
+        ));
+    }
+
     @ExceptionHandler({IllegalArgumentException.class, IllegalStateException.class})
     public ResponseEntity<Map<String, Object>> handleBadRequest(RuntimeException ex) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of(
