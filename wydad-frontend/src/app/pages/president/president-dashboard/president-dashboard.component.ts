@@ -136,6 +136,23 @@ export class PresidentDashboardComponent implements OnInit {
    * <p>Si la discipline n'est pas connue (login trop ancien, pas de
    * disciplineDemandee en localStorage), on tente via /api/auth/me.</p>
    */
+  /**
+   * C.21 vague 3 — Pré-remplit le ScheduleCallFormComponent avec l'interlocuteur
+   * cliqué : cible UTILISATEURS + targetUserIds=[id]. Le président n'a plus
+   * qu'à saisir titre + date + durée et confirmer. Bascule sur l'onglet
+   * Vidéo pour rendre le formulaire visible.
+   */
+  scheduleCallWith(contact: any) {
+    this.callTargetUserIds = [contact.id];
+    this.callTargetName = contact.name;
+    this.activeTab = 'video';
+    this.toast.show('info', `Programmez un appel avec ${contact.name} (titre, date, durée)`);
+  }
+
+  /** Liste des userIds à passer au ScheduleCallFormComponent (ng-template binding). */
+  callTargetUserIds: number[] = [];
+  callTargetName = '';
+
   loadContactsDiscipline() {
     const disc = this.profil?.disciplineDemandee;
     if (!disc) {

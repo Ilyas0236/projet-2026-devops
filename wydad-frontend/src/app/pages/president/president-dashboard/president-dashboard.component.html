@@ -300,7 +300,13 @@
       <!-- ═════════ ONGLET VIDÉO (composants Phase 5 réutilisés) ═════════ -->
       <section *ngIf="activeTab === 'video'" class="animate-fade-in-up space-y-6">
         <app-my-calls></app-my-calls>
-        <app-schedule-call-form></app-schedule-call-form>
+        <app-schedule-call-form
+          [initialTargetUserIds]="callTargetUserIds">
+        </app-schedule-call-form>
+        <p *ngIf="callTargetName" class="text-xs text-ink-tertiary">
+          🎯 Appel pré-ciblé : <strong class="text-ink-secondary">{{ callTargetName }}</strong>
+          (vous pouvez ajouter d'autres destinataires dans le formulaire).
+        </p>
       </section>
 
       <!-- ═════════ ONGLET ANNUAIRE (C.21) ═════════ -->
@@ -343,10 +349,18 @@
                   {{ c.role }}<span *ngIf="c.category"> · {{ c.category }}</span>
                 </p>
               </div>
-              <button type="button" (click)="activeTab = 'messagerie'; selectContact(c.id)"
-                      class="text-[10px] font-bold uppercase tracking-widest text-wydad-red border border-wydad-red/40 rounded-full px-3 py-1 hover:bg-wydad-red hover:text-white transition-colors">
-                Message
-              </button>
+              <div class="flex gap-1.5 shrink-0">
+                <button type="button" (click)="activeTab = 'messagerie'; selectContact(c.id)"
+                        title="Envoyer un message"
+                        class="text-[10px] font-bold uppercase tracking-widest text-wydad-red border border-wydad-red/40 rounded-full px-3 py-1 hover:bg-wydad-red hover:text-white transition-colors">
+                  Message
+                </button>
+                <button type="button" (click)="scheduleCallWith(c)"
+                        title="Programmer un appel (vidéo ou audio) avec cet interlocuteur"
+                        class="text-[10px] font-bold uppercase tracking-widest text-white bg-wydad-red rounded-full px-3 py-1 hover:bg-wydad-red/90 transition-colors">
+                  📞 Appeler
+                </button>
+              </div>
             </article>
           </div>
         </div>

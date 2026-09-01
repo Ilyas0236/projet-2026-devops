@@ -99,6 +99,14 @@ export class ScheduleCallFormComponent implements OnInit {
   @Input() lockedCategory: string | null = null;
   @Input() lockedAudienceUserIds: number[] = [];
 
+  /**
+   * C.21 vague 3 — Liste explicite de destinataires (un ou plusieurs userIds).
+   * Si fournie + le rôle est président → cible UTILISATEURS automatiquement
+   * (le président peut cibler n'importe quel joueur/entraîneur de sa
+   * discipline en un clic depuis l'annuaire).
+   */
+  @Input() initialTargetUserIds: number[] | null = null;
+
   isPresident = false;
   isCoach = false;
   sportLabel = '';
@@ -119,6 +127,13 @@ export class ScheduleCallFormComponent implements OnInit {
     // par défaut dessus (le président n'a plus qu'à confirmer).
     if (this.isPresident && this.lockedSportType && this.lockedCategory) {
       this.target = 'CATEGORIE_EQUIPE';
+    }
+    // C.21 — si on a reçu une liste explicite de destinataires (clic "Appeler"
+    // depuis l'annuaire), on bascule la cible sur UTILISATEURS et on
+    // mémorise la liste. Le formulaire permet d'ajouter/retirer des gens.
+    if (this.isPresident && this.initialTargetUserIds && this.initialTargetUserIds.length > 0) {
+      this.target = 'UTILISATEURS' as any;
+      this.lockedAudienceUserIds = [...this.initialTargetUserIds];
     }
   }
 
@@ -142,6 +157,10 @@ export class ScheduleCallFormComponent implements OnInit {
       title: this.title.trim(),
       durationMinutes: this.durationMinutes,
       // Contrat backend (TargetType) : le champ s'appelle `target`, pas `targetType`.
+      // C.21 — pour le président qui choisit un interlocuteur précis depuis
+      // l'annuaire, on envoie UTILISATEURS + targetUserIds. Le backend
+      // vérifie que tous les userIds sont des comptes existants (filtre
+      // auth-client).
       target: this.isCoach ? 'CATEGORIE_EQUIPE' : this.target,
     };
     if (this.scheduledAt) body.scheduledAt = new Date(this.scheduledAt).toISOString();
@@ -156,6 +175,11 @@ export class ScheduleCallFormComponent implements OnInit {
       if (this.lockedAudienceUserIds?.length > 0) {
         body.targetUserIds = this.lockedAudienceUserIds;
       }
+    }
+    // C.21 — président qui cible un interlocuteur précis (annuaire).
+    if (this.isPresident && (this.target as any) === 'UTILISATEURS'
+        && this.lockedAudienceUserIds?.length > 0) {
+      body.targetUserIds = this.lockedAudienceUserIds;
     }
 
     this.submitting = true;
