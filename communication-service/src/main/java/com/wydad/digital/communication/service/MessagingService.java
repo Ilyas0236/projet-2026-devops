@@ -1,5 +1,6 @@
 package com.wydad.digital.communication.service;
 
+import com.wydad.digital.communication.client.AuthUserInfoClient;
 import com.wydad.digital.communication.client.NotificationClient;
 import com.wydad.digital.communication.client.RosterClient;
 import com.wydad.digital.communication.filter.UserContext;
@@ -39,6 +40,7 @@ public class MessagingService {
     private final AnnouncementRepository announcementRepository;
     private final RosterClient rosterClient;
     private final NotificationClient notificationClient;
+    private final AuthUserInfoClient authUserInfoClient;
     private final MessageMediaService messageMediaService;
 
     /** Pièce jointe optionnelle (V2.3). Tous champs nullables. */
@@ -82,8 +84,10 @@ public class MessagingService {
 
         RosterClient.MembershipInfo mine = rosterClient.findMembership(me);
         if ("JOUEUR".equals(myRole)) {
-            // Destinataire : un staff encadrant MA catégorie, ou un
-            // coéquipier de MON groupe (même sport+catégorie).
+            // Destinataire : un staff encadrant MA catégorie, un coéquipier
+            // de MON groupe (même sport+catégorie), OU le président de MA
+            // discipline (C.21 — le joueur doit pouvoir interpeller le
+            // président de sa section, pas uniquement le staff).
             if (mine == null) {
                 throw new AccessDeniedException("Aucune fiche sportive liée à votre compte");
             }
@@ -92,10 +96,18 @@ public class MessagingService {
                     theirs != null && "STAFF".equals(theirs.rosterRole());
             boolean recipientIsTeammate =
                     theirs != null && "JOUEUR".equals(theirs.rosterRole());
-            if ((!recipientIsStaff && !recipientIsTeammate) || !sameGroup(mine, theirs)) {
+            // C.21 — récupération du rôle destinataire via UserContext n'est
+            // pas dispo ici (RosterClient ne lit que player/staff). On
+            // détermine « président de la même discipline » en comparant
+            // sportType du joueur au sportType des fiches du destinataire.
+            // Si le destinataire est le président de MA discipline → OK.
+            boolean recipientIsPresident = theirs == null && isPresidentOfMyDiscipline(
+                    mine, recipientUserId);
+            if ((!recipientIsStaff && !recipientIsTeammate && !recipientIsPresident)
+                    || (theirs != null && !sameGroup(mine, theirs))) {
                 throw new AccessDeniedException(
-                        "Vous ne pouvez écrire qu'au staff encadrant votre catégorie "
-                                + "et aux joueurs de votre équipe");
+                        "Vous ne pouvez écrire qu'au staff encadrant votre catégorie, "
+                                + "aux joueurs de votre équipe, ou au président de votre discipline");
             }
         } else if ("STAFF".equals(myRole) || "ENTRAINEUR".equals(myRole)) {
             // Le destinataire doit être un joueur de MA catégorie.
@@ -253,5 +265,22 @@ public class MessagingService {
             throw new AccessDeniedException("Identité introuvable dans le contexte de sécurité");
         }
         return id;
+    }
+
+    /**
+     * C.21 — Vrai si le destinataire est le président de la même discipline
+     * que l'appelant. Le RosterClient ne sait lire que les fiches
+     * player/staff (pas les users PRESIDENT), donc on délegue à AuthClient.
+     * L'appelant doit déjà avoir vérifié {@code mine} (sa propre fiche
+     * joueur/staff) pour porter un sportType.
+     */
+    private boolean isPresidentOfMyDiscipline(RosterClient.MembershipInfo mine, Long recipientUserId) {
+        if (mine == null || mine.sportType() == null) return false;
+        AuthUserInfoClient.UserRoleDiscipline recipient =
+                authUserInfoClient.getRoleAndDiscipline(recipientUserId);
+        if (recipient == null || !"PRESIDENT".equalsIgnoreCase(recipient.role())) {
+            return false;
+        }
+        return mine.sportType().equalsIgnoreCase(recipient.discipline());
     }
 }
