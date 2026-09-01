@@ -193,11 +193,30 @@ class AuthAccreditationTest {
     // ---------- Rôle non sollicitable ----------
 
     @Test
-    @DisplayName("demandeRole=PRESIDENT → jamais auto-attribué, rejeté explicitement")
-    void presidentDemande_rejete() {
+    @DisplayName("C.21 — demandeRole=PRESIDENT + discipline FOOTBALL → accepté EN_ATTENTE")
+    void presidentDemande_acceptee() {
+        // C.21 — le président d'une section sportive EST désormais sollicitable
+        // à l'inscription (FOOTBALL / BASKETBALL / HANDBALL), avec discipline
+        // obligatoire. Le compte part en EN_ATTENTE pour validation admin.
+        // authService.register() retourne un AuthResponse (DTO public) ; on
+        // vérifie via le mock userRepository.save() que le User persisté a
+        // bien role=PRESIDENT, statut=EN_ATTENTE, discipline=FOOTBALL.
+        ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
+        authService.register(demande("PRESIDENT", "FOOTBALL", null, null, null));
+        verify(userRepository).save(captor.capture());
+        User saved = captor.getValue();
+        assertEquals(Role.PRESIDENT, saved.getRole());
+        assertEquals(StatutCompte.EN_ATTENTE, saved.getStatutCompte());
+        assertEquals("FOOTBALL", saved.getDisciplineDemandee());
+    }
+
+    @Test
+    @DisplayName("C.21 — demandeRole=PRESIDENT SANS discipline → rejeté")
+    void presidentDemande_sansDiscipline_rejete() {
+        // Le président DOIT préciser sa discipline (section qu'il préside).
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
                 () -> authService.register(demande("PRESIDENT", null, null, null, null)));
-        assertTrue(ex.getMessage().contains("non sollicitable"));
+        assertTrue(ex.getMessage().contains("discipline"));
         verify(userRepository, org.mockito.Mockito.never()).save(any());
     }
 
