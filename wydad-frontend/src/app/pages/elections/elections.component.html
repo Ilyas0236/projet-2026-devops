@@ -1,7 +1,10 @@
 <!-- ═══════════════════════════════════════════════════════════ -->
 <!-- WYDAD DIGITAL — ÉLECTIONS DU PRÉSIDENT (B.8) — thème clair  -->
-<!-- Résultats PUBLIés : gagnant + pourcentages calculés serveur -->
-<!-- Visibles sans connexion (gateway : GET /elections/published) -->
+<!-- 2 sections :                                               -->
+<!--   1. Scrutins EN COURS (OPEN) — participation X/Y          -->
+<!--   2. Résultats PUBLIÉS (CLOSED + published) — figés        -->
+<!-- Visible y compris visiteurs non connectés (gateway bypass) -->
+<!-- Rafraîchissement auto toutes les 30s (polling)             -->
 <!-- ═══════════════════════════════════════════════════════════ -->
 <div class="min-h-screen bg-paper-1 light-page pt-28 pb-24">
 
@@ -12,8 +15,8 @@
       Élections <span class="text-wydad-red">du Président</span>
     </h1>
     <p class="text-ink-secondary mt-4 max-w-2xl mx-auto relative z-10">
-      La présidence du Wydad AC appartient à ses membres. Chaque élection est ouverte aux adhérents,
-      puis ses résultats sont publiés ici, en toute transparence.
+      La présidence du Wydad AC appartient à ses membres. Chaque élection est ouverte aux titulaires
+      d'une carte d'abonnement, et ses résultats sont publiés ici en toute transparence.
     </p>
   </div>
 
@@ -33,105 +36,167 @@
       </div>
     </div>
 
-    <!-- Liste des élections publiées -->
-    <div *ngIf="!loading" class="space-y-10">
+    <!-- ═════════ SCRUTINS EN COURS (OPEN) ═════════ -->
+    <section *ngIf="!loading && openElections.length > 0" class="mb-14" aria-label="Scrutins en cours">
+      <header class="mb-6 flex items-center gap-3">
+        <span class="relative flex h-3 w-3">
+          <span class="absolute inline-flex h-full w-full rounded-full bg-wydad-red opacity-60 animate-ping"></span>
+          <span class="relative inline-flex rounded-full h-3 w-3 bg-wydad-red"></span>
+        </span>
+        <h2 class="font-display font-bold uppercase tracking-wider text-wydad-red text-sm">
+          Scrutin{{ openElections.length > 1 ? 's' : '' }} en cours — résultats partiels
+        </h2>
+      </header>
 
-      <div *ngIf="elections.length === 0" class="text-center py-20">
-        <div class="paper-card rounded-2xl p-12 max-w-md mx-auto">
-          <svg class="w-16 h-16 text-ink-tertiary mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-          </svg>
-          <p class="text-ink-secondary font-display text-lg uppercase tracking-wider">Aucun résultat publié</p>
-          <p class="text-ink-tertiary text-sm mt-2">
-            Les résultats apparaîtront ici dès la première élection clôturée par l'administration.
+      <div class="space-y-4">
+        <article *ngFor="let e of openElections"
+                 class="paper-card rounded-2xl p-6 border-l-4 border-wydad-red"
+                 role="region"
+                 [attr.aria-label]="'Scrutin en cours : ' + e.title">
+
+          <header class="mb-4 flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h3 class="font-display font-black text-xl text-ink-primary">{{ e.title }}</h3>
+              <p class="text-xs text-ink-tertiary uppercase tracking-wider mt-1">
+                Vote ouvert du {{ e.startsAt | date:'d MMM y HH:mm' }}
+                au {{ e.endsAt | date:'d MMM y HH:mm' }}
+              </p>
+            </div>
+            <span class="bg-wydad-red/10 text-wydad-red text-[10px] font-bold uppercase tracking-[0.15em] px-3 py-1.5 rounded-full">
+              En direct
+            </span>
+          </header>
+
+          <!-- Participation X/Y (sans détail par candidat — décision B.8) -->
+          <div class="flex items-baseline gap-2 mb-2">
+            <span class="font-display font-black text-3xl text-ink-primary tabular-nums">
+              {{ e.totalVotes }}<span class="text-ink-tertiary text-xl">/{{ e.eligibleVotersCount }}</span>
+            </span>
+            <span class="text-xs text-ink-tertiary uppercase tracking-wider">titulaires ont voté</span>
+          </div>
+          <div class="h-2.5 rounded-full bg-paper-2 overflow-hidden mb-3" role="progressbar"
+               [attr.aria-valuenow]="e.participationPercent"
+               aria-valuemin="0" aria-valuemax="100">
+            <div class="h-full rounded-full bg-wydad-red transition-all duration-700"
+                 [style.width.%]="e.participationPercent"></div>
+          </div>
+          <p class="text-xs text-ink-tertiary">
+            {{ e.participationPercent }}% de participation.
+            Les résultats détaillés par candidat seront publiés à l'issue du scrutin, lorsque
+            tous les titulaires de carte d'abonnement auront voté.
           </p>
-          <a routerLink="/sondages" class="inline-block mt-6 text-sm font-bold text-wydad-red hover:underline">
-            Participer aux sondages en cours →
-          </a>
-        </div>
+        </article>
       </div>
+    </section>
 
-      <article *ngFor="let e of elections; let first = first" class="paper-card rounded-2xl p-8">
+    <!-- ═════════ RÉSULTATS PUBLIÉS ═════════ -->
+    <section *ngIf="!loading" aria-label="Résultats publiés">
+      <h2 *ngIf="publishedElections.length > 0"
+          class="font-display font-bold uppercase tracking-wider text-ink-secondary text-sm mb-6">
+        Résultats définitifs
+      </h2>
 
-        <header class="mb-8 flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <h2 class="font-display font-black text-2xl uppercase tracking-tight text-ink-primary">{{ e.title }}</h2>
-            <p class="text-xs text-ink-tertiary uppercase tracking-wider mt-2">
-              {{ e.totalVotes }} vote{{ e.totalVotes > 1 ? 's' : '' }} exprimé{{ e.totalVotes > 1 ? 's' : '' }}
-              · Clôturée le {{ e.endsAt | date:'d MMM y' }}
+      <div *ngIf="!loading" class="space-y-10">
+
+        <div *ngIf="publishedElections.length === 0 && openElections.length === 0"
+             class="text-center py-20">
+          <div class="paper-card rounded-2xl p-12 max-w-md mx-auto">
+            <svg class="w-16 h-16 text-ink-tertiary mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <p class="text-ink-secondary font-display text-lg uppercase tracking-wider">Aucun scrutin en cours</p>
+            <p class="text-ink-tertiary text-sm mt-2">
+              Aucun résultat publié pour le moment. Les élections apparaîtront ici dès qu'elles
+              seront ouvertes ou clôturées.
             </p>
+            <a routerLink="/sondages" class="inline-block mt-6 text-sm font-bold text-wydad-red hover:underline">
+              Participer aux sondages en cours →
+            </a>
           </div>
-          <span *ngIf="first"
-                class="bg-wydad-red text-white text-[10px] font-bold uppercase tracking-[0.15em] px-3 py-1.5 rounded-full">
-            Dernière élection
-          </span>
-        </header>
-
-        <!-- Gagnant -->
-        <div *ngIf="winnerIndex(e) >= 0" class="mb-8 rounded-xl bg-gradient-to-r from-wydad-red/10 to-transparent border-l-4 border-wydad-red p-5 flex items-center gap-4">
-          <img *ngIf="e.candidates[winnerIndex(e)].photoUrl; else noPhotoWinner"
-               [src]="e.candidates[winnerIndex(e)].photoUrl"
-               [alt]="'Photo de ' + e.candidates[winnerIndex(e)].fullName"
-               class="w-14 h-14 rounded-full object-cover border-2 border-wydad-red flex-shrink-0">
-          <ng-template #noPhotoWinner>
-            <div class="w-14 h-14 rounded-full bg-wydad-red/20 flex items-center justify-center flex-shrink-0">
-              <svg class="w-7 h-7 text-wydad-red" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
-                <path d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"/>
-              </svg>
-            </div>
-          </ng-template>
-          <div>
-            <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-wydad-red">Élu président</p>
-            <p class="font-display font-bold text-xl text-ink-primary">{{ e.candidates[winnerIndex(e)].fullName }}</p>
-          </div>
-          <span class="ml-auto font-display font-black text-3xl text-wydad-red">
-            {{ e.percentages[winnerIndex(e)] }}<span class="text-lg">%</span>
-          </span>
         </div>
 
-        <!-- Détail des voix par candidat -->
-        <div class="space-y-4" role="list" [attr.aria-label]="'Résultats détaillés : ' + e.title">
-          <div *ngFor="let c of e.candidates; let i = index" role="listitem">
-            <div class="flex items-center gap-4 mb-1.5">
-              <img *ngIf="c.photoUrl; else noPhoto"
-                   [src]="c.photoUrl" [alt]="'Photo de ' + c.fullName"
-                   class="w-10 h-10 rounded-full object-cover border flex-shrink-0"
-                   [class.border-wydad-red]="i === winnerIndex(e)"
-                   [class.border-paper-3]="i !== winnerIndex(e)">
-              <ng-template #noPhoto>
-                <div class="w-10 h-10 rounded-full bg-paper-2 flex items-center justify-center flex-shrink-0 border border-paper-3"
-                     [class.border-wydad-red]="i === winnerIndex(e)">
-                  <svg class="w-5 h-5 text-ink-tertiary" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
-                    <path d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"/>
-                  </svg>
-                </div>
-              </ng-template>
-              <div class="min-w-0 flex-1">
-                <p class="text-sm font-semibold text-ink-primary truncate"
-                   [class.text-wydad-red]="i === winnerIndex(e)">
-                  {{ c.fullName }}
-                  <svg *ngIf="i === winnerIndex(e)" class="w-4 h-4 inline-block ml-1 -mt-0.5"
-                       fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
-                    <path d="M2 11a1.5 1.5 0 111.5-1.5h5a3.5 3.5 0 107 0h4.08L18.5 7H16l-1-3H5L4 7H1.5L0 11h2zM3 13v4h14v-4H3z"/>
-                  </svg>
-                </p>
-                <p *ngIf="c.presentation" class="text-xs text-ink-tertiary line-clamp-2">{{ c.presentation }}</p>
+        <article *ngFor="let e of publishedElections; let first = first" class="paper-card rounded-2xl p-8">
+
+          <header class="mb-8 flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <h2 class="font-display font-black text-2xl uppercase tracking-tight text-ink-primary">{{ e.title }}</h2>
+              <p class="text-xs text-ink-tertiary uppercase tracking-wider mt-2">
+                {{ e.totalVotes }} vote{{ e.totalVotes > 1 ? 's' : '' }} exprimé{{ e.totalVotes > 1 ? 's' : '' }}
+                · Clôturée le {{ e.endsAt | date:'d MMM y' }}
+              </p>
+            </div>
+            <span *ngIf="first"
+                  class="bg-wydad-red text-white text-[10px] font-bold uppercase tracking-[0.15em] px-3 py-1.5 rounded-full">
+              Dernière élection
+            </span>
+          </header>
+
+          <!-- Gagnant -->
+          <div *ngIf="winnerIndex(e) >= 0" class="mb-8 rounded-xl bg-gradient-to-r from-wydad-red/10 to-transparent border-l-4 border-wydad-red p-5 flex items-center gap-4">
+            <img *ngIf="e.candidates[winnerIndex(e)].photoUrl; else noPhotoWinner"
+                 [src]="e.candidates[winnerIndex(e)].photoUrl"
+                 [alt]="'Photo de ' + e.candidates[winnerIndex(e)].fullName"
+                 class="w-14 h-14 rounded-full object-cover border-2 border-wydad-red flex-shrink-0">
+            <ng-template #noPhotoWinner>
+              <div class="w-14 h-14 rounded-full bg-wydad-red/20 flex items-center justify-center flex-shrink-0">
+                <svg class="w-7 h-7 text-wydad-red" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                  <path d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"/>
+                </svg>
               </div>
-              <span class="text-sm font-display font-bold text-ink-secondary flex-shrink-0 tabular-nums">
-                {{ e.percentages[i] }}% <span class="text-ink-tertiary font-normal">({{ e.results[i] }})</span>
-              </span>
+            </ng-template>
+            <div>
+              <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-wydad-red">Élu président</p>
+              <p class="font-display font-bold text-xl text-ink-primary">{{ e.candidates[winnerIndex(e)].fullName }}</p>
             </div>
-            <!-- Barre -->
-            <div class="h-2.5 rounded-full bg-paper-2 overflow-hidden">
-              <div class="h-full rounded-full transition-all duration-700"
-                   [style.width.%]="e.percentages[i]"
-                   [style.background]="i === winnerIndex(e) ? '#c8102e' : 'rgba(200,16,46,0.4)'"></div>
+            <span class="ml-auto font-display font-black text-3xl text-wydad-red">
+              {{ e.percentages[winnerIndex(e)] }}<span class="text-lg">%</span>
+            </span>
+          </div>
+
+          <!-- Détail des voix par candidat -->
+          <div class="space-y-4" role="list" [attr.aria-label]="'Résultats détaillés : ' + e.title">
+            <div *ngFor="let c of e.candidates; let i = index" role="listitem">
+              <div class="flex items-center gap-4 mb-1.5">
+                <img *ngIf="c.photoUrl; else noPhoto"
+                     [src]="c.photoUrl" [alt]="'Photo de ' + c.fullName"
+                     class="w-10 h-10 rounded-full object-cover border flex-shrink-0"
+                     [class.border-wydad-red]="i === winnerIndex(e)"
+                     [class.border-paper-3]="i !== winnerIndex(e)">
+                <ng-template #noPhoto>
+                  <div class="w-10 h-10 rounded-full bg-paper-2 flex items-center justify-center flex-shrink-0 border border-paper-3"
+                       [class.border-wydad-red]="i === winnerIndex(e)">
+                    <svg class="w-5 h-5 text-ink-tertiary" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                      <path d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"/>
+                    </svg>
+                  </div>
+                </ng-template>
+                <div class="min-w-0 flex-1">
+                  <p class="text-sm font-semibold text-ink-primary truncate"
+                     [class.text-wydad-red]="i === winnerIndex(e)">
+                    {{ c.fullName }}
+                    <svg *ngIf="i === winnerIndex(e)" class="w-4 h-4 inline-block ml-1 -mt-0.5"
+                         fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                      <path d="M2 11a1.5 1.5 0 111.5-1.5h5a3.5 3.5 0 107 0h4.08L18.5 7H16l-1-3H5L4 7H1.5L0 11h2zM3 13v4h14v-4H3z"/>
+                    </svg>
+                  </p>
+                  <p *ngIf="c.presentation" class="text-xs text-ink-tertiary line-clamp-2">{{ c.presentation }}</p>
+                </div>
+                <span class="text-sm font-display font-bold text-ink-secondary flex-shrink-0 tabular-nums">
+                  {{ e.percentages[i] }}% <span class="text-ink-tertiary font-normal">({{ e.results[i] }})</span>
+                </span>
+              </div>
+              <!-- Barre -->
+              <div class="h-2.5 rounded-full bg-paper-2 overflow-hidden">
+                <div class="h-full rounded-full transition-all duration-700"
+                     [style.width.%]="e.percentages[i]"
+                     [style.background]="i === winnerIndex(e) ? '#c8102e' : 'rgba(200,16,46,0.4)'"></div>
+              </div>
             </div>
           </div>
-        </div>
 
-      </article>
-    </div>
+        </article>
+      </div>
+    </section>
   </div>
 </div>
