@@ -43,10 +43,17 @@
             <scope>runtime</scope>
         </dependency>
         <!-- V1 — schéma versionné de la table session_convocations.
-             Cohérence avec auth-service et ticket-service. -->
+             Cohérence avec auth-service et ticket-service.
+             flyway-database-postgresql INDISPENSABLE depuis Flyway 10.x :
+             le support PostgreSQL a été extrait de flyway-core en module
+             séparé, sans lui Flyway lève "Unsupported Database: PostgreSQL 16". -->
         <dependency>
             <groupId>org.flywaydb</groupId>
             <artifactId>flyway-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-database-postgresql</artifactId>
         </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>
