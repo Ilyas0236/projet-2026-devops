@@ -103,5 +103,7 @@ public final class ElectionDtos {
         long eligibleVotersCount;
         /** % de participation = totalVotes / eligibleVotersCount * 100 (entier arrondi). */
         int participationPercent;
+        /** B.8 — horodatage de la clôture (gèle, SANS publier). Null tant que OPEN. */
+        LocalDateTime closedAt;
     }
 }

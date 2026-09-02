@@ -233,7 +233,15 @@ class ElectionLifecycleTest {
         long id = createOpenElectionWithVotingWindow();
         vote(id, 101L, firstCandidateId(id));
 
+        // B.8 — close (gèle, NE publie PAS) puis publish (publication
+        // explicite). Le mock @BeforeEach retourne 3 éligibles ; 1 vote
+        // < 3 éligibles -> NOT_ALL_VOTED. On injecte donc 3 votes pour
+        // que la publication aboutisse.
+        vote(id, 102L, firstCandidateId(id));
+        vote(id, 103L, firstOtherCandidateId(id));
         mockMvc.perform(asGateway(post("/api/elections/" + id + "/close"), null, ADMIN_EMAIL, "ADMIN"))
+                .andExpect(status().isOk());
+        mockMvc.perform(asGateway(post("/api/elections/" + id + "/publish"), null, ADMIN_EMAIL, "ADMIN"))
                 .andExpect(status().isOk());
 
         // Aucun en-tête X-User-* : le visiteur du site officiel voit le gagnant.
@@ -241,7 +249,7 @@ class ElectionLifecycleTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.published").value(true))
                 .andExpect(jsonPath("$.results.length()").value(2))
-                .andExpect(jsonPath("$.totalVotes").value(1));
+                .andExpect(jsonPath("$.totalVotes").value(3));
     }
 
     // ------------------------------------------------------------------
@@ -300,7 +308,7 @@ class ElectionLifecycleTest {
     // ------------------------------------------------------------------
 
     @Test
-    @DisplayName("Clôture manuelle : publication des résultats, gagnant majoritaire relatif")
+    @DisplayName("B.8 — clôture (gèle) puis publication : gagnant majoritaire relatif")
     void clotureManuellePublieGagnant() throws Exception {
         long id = createOpenElectionWithVotingWindow();
         long c0 = firstCandidateId(id);
@@ -309,20 +317,30 @@ class ElectionLifecycleTest {
         vote(id, 602L, c0);
         vote(id, 603L, firstOtherCandidateId(id));
 
+        // Étape 1 : /close gèle, published=false.
         MvcResult closed = mockMvc.perform(asGateway(post("/api/elections/" + id + "/close"), null, ADMIN_EMAIL, "ADMIN"))
                 .andExpect(status().isOk())
                 .andReturn();
         var json = com.fasterxml.jackson.databind.json.JsonMapper.builder().build()
                 .readTree(closed.getResponse().getContentAsString());
-
         assertThat(json.get("status").asText()).isEqualTo("CLOSED");
-        assertThat(json.get("published").asBoolean()).isTrue();
-        assertThat(json.get("winnerCandidateId").asLong()).isEqualTo(c0); // 2 voix > 1
+        assertThat(json.get("published").asBoolean()).isFalse(); // B.8 — gèle seulement
+        assertThat(json.get("closedAt").isNull()).isFalse();      // B.8 — horodatage posé
 
-        int p0 = json.get("percentages").get(0).asInt();
+        // Étape 2 : /publish publie, 3 votes == 3 éligibles (mock) → OK.
+        MvcResult pub = mockMvc.perform(asGateway(post("/api/elections/" + id + "/publish"), null, ADMIN_EMAIL, "ADMIN"))
+                .andExpect(status().isOk())
+                .andReturn();
+        var pubJson = com.fasterxml.jackson.databind.json.JsonMapper.builder().build()
+                .readTree(pub.getResponse().getContentAsString());
+        assertThat(pubJson.get("status").asText()).isEqualTo("CLOSED");
+        assertThat(pubJson.get("published").asBoolean()).isTrue();
+        assertThat(pubJson.get("winnerCandidateId").asLong()).isEqualTo(c0); // 2 voix > 1
+
+        int p0 = pubJson.get("percentages").get(0).asInt();
         assertThat(p0).isEqualTo(67); // 2/3 arrondi
 
-        // L'élection clôturée apparaît bien côté public.
+        // L'élection publiée apparaît bien côté public.
         mockMvc.perform(get("/api/elections/published"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].winnerCandidateId").value(c0));
@@ -365,9 +383,15 @@ class ElectionLifecycleTest {
         long id = createOpenElectionWithVotingWindow();
         mockMvc.perform(asGateway(post("/api/elections/" + id + "/close"), null, ADMIN_EMAIL, "ADMIN"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.published").value(true))
-                .andExpect(jsonPath("$.winnerCandidateId").doesNotExist())
-                .andExpect(jsonPath("$.totalVotes").value(0));
+                // B.8 — close gèle, NE publie PAS.
+                .andExpect(jsonPath("$.published").value(false));
+        // Publication : 0 votes, 0 éligibles (mock) → 0/0 NOT_ALL_VOTED.
+        // On remplit en injectant un mock "0 votes mais 0 éligibles" :
+        // comme on est déjà CLOSED, on peut appeler /publish mais il
+        // refuse avec PUBLISH_NO_ELIGIBLE_SNAPSHOT (auth-service simulé
+        // down). Test dédié dans ElectionPublishEligibilityTest.
+        mockMvc.perform(asGateway(post("/api/elections/" + id + "/publish"), null, ADMIN_EMAIL, "ADMIN"))
+                .andExpect(status().isConflict());
     }
 
     // ------------------------------------------------------------------
@@ -398,7 +422,7 @@ class ElectionLifecycleTest {
     // ------------------------------------------------------------------
 
     @Test
-    @DisplayName("closeExpiredElections : clôture automatique des élections échues")
+    @DisplayName("B.8 — closeExpiredElections : gèle SANS publier (publication explicite admin)")
     void clotureAutomatiqueDesEchues() throws Exception {
         // Élection déjà expirée (fin passée mais encore OPEN).
         long id = createElection(LocalDateTime.now().minusDays(2), LocalDateTime.now().minusHours(1));
@@ -409,7 +433,9 @@ class ElectionLifecycleTest {
 
         Election e = electionRepository.findById(id).orElseThrow();
         assertThat(e.getStatus()).isEqualTo(ElectionStatus.CLOSED);
-        assertThat(e.isPublished()).isTrue();
+        // B.8 — le scheduler ne publie plus, l'admin publie via /publish.
+        assertThat(e.isPublished()).isFalse();
+        assertThat(e.getClosedAt()).isNotNull();
     }
 
     // ------------------------------------------------------------------

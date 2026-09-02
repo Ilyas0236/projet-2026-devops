@@ -115,12 +115,63 @@ public class ElectionService {
     }
 
     /**
-     * Clôture manuelle (ADMIN, ex. avant terme). Calcule et publie les
-     * résultats immédiatement. Transition OPEN -> CLOSED irréversible.
+     * B.8 — Clôture seule (ADMIN, ex. avant terme). Gèle le scrutin
+     * (status=CLOSED, published=false, ferme closedAt) SANS publier
+     * les résultats. L'admin peut ensuite auditer, puis décider de
+     * publier explicitement (POST /publish) une fois tous les
+     * titulaires votants.
+     *
+     * <p>Idempotent : un second appel sur une élection déjà clôturée
+     * est un no-op (renvoie la vue courante).</p>
+     */
+    @Transactional
+    public ElectionView closeOnly(Long electionId) {
+        return closeOnlyInternal(getElection(electionId));
+    }
+
+    /**
+     * B.8 — Publication explicite des résultats (ADMIN). Exige que
+     * <b>tous les titulaires éligibles aient voté</b> (count voteRepository ==
+     * eligibleVotersCount figé à endsAt). Calcule le gagnant, set
+     * published=true, notifie. Idempotent (replay=200 no-op).
+     *
+     * @throws IllegalStateException NOT_ALL_VOTED si le nombre de
+     *         votes est strictement inférieur au nombre d'éligibles.
+     */
+    @Transactional
+    public ElectionView publishResults(Long electionId) {
+        return publishResultsInternal(getElection(electionId));
+    }
+
+    /**
+     * Rétro-compat : clôture + publication immédiate en une transaction
+     * (admin qui veut le comportement « tout-en-un »). Le scheduler
+     * {@code closeExpiredElections} l'utilise aussi.
      */
     @Transactional
     public ElectionView closeAndPublish(Long electionId) {
-        return closeAndPublishInternal(getElection(electionId));
+        Election e = getElection(electionId);
+        closeOnlyInternal(e);
+        return publishResultsInternal(e);
+    }
+
+    /**
+     * Indique si l'admin peut publier : scrutin clôturé (status=CLOSED)
+     * et TOUS les éligibles ont voté. Affiché côté front pour
+     * griser/dégriser le bouton "Publier".
+     */
+    @Transactional(readOnly = true)
+    public PublishEligibility getPublishEligibility(Long electionId) {
+        Election e = getElection(electionId);
+        long votes = voteRepository.countByElectionId(electionId);
+        long eligible = activeMembersClient.countActiveAt(
+                e.getEndsAt() != null && !e.getEndsAt().isAfter(LocalDateTime.now())
+                        ? e.getEndsAt() : LocalDateTime.now());
+        boolean alreadyPublished = e.isPublished();
+        boolean closed = e.getStatus() == ElectionStatus.CLOSED;
+        boolean allVoted = votes >= eligible && eligible > 0;
+        boolean ready = closed && allVoted && !alreadyPublished;
+        return new PublishEligibility(ready, votes, eligible, alreadyPublished, closed);
     }
 
     // ------------------------------------------------------------------
@@ -244,6 +295,7 @@ public class ElectionService {
                 .canVote(full.isCanVote())
                 .eligibleVotersCount(full.getEligibleVotersCount())
                 .participationPercent(full.getParticipationPercent())
+                .closedAt(full.getClosedAt())
                 .build();
     }
 
@@ -252,9 +304,14 @@ public class ElectionService {
     // ------------------------------------------------------------------
 
     /**
-     * Toutes les 60 s : clôture + publication des élections OPEN dont la
-     * date de fin est passée. Idempotent — seules les élections encore OPEN
-     * sont traitées, donc deux exécutions consécutives ne font rien de plus.
+     * Toutes les 60 s : clôture des élections OPEN dont la date de
+     * fin est passée (SANS publier — c'est désormais l'admin qui
+     * publie manuellement). Idempotent : seul un passage OPEN→CLOSED
+     * est effectué, deux exécutions consécutives ne font rien de plus.
+     *
+     * <p>B.8 — rupture assumée : on ne publie plus automatiquement
+     * (le scheduler se contente de geler, l'admin publie via POST
+     * /publish une fois que tous les titulaires ont voté).</p>
      */
     @Scheduled(fixedDelay = 60_000)
     @Transactional
@@ -265,8 +322,9 @@ public class ElectionService {
                 .toList();
         for (Election election : expired) {
             try {
-                closeAndPublishInternal(election);
-                log.info("Election {} cloturee automatiquement (fin {})", election.getId(), election.getEndsAt());
+                closeOnlyInternal(election);
+                log.info("Election {} closee automatiquement (fin {}, en attente de publication admin)",
+                        election.getId(), election.getEndsAt());
             } catch (Exception e) {
                 // Une élection en échec ne bloque jamais les autres ni le scheduler.
                 log.error("Echec de cloture automatique de l'élection {}", election.getId(), e);
@@ -279,16 +337,48 @@ public class ElectionService {
     // ------------------------------------------------------------------
 
     /**
-     * Dépouillement : comptage par candidat, gagnant = majorité relative
-     * (en cas d'égalité, le premier atteint est gardé), pourcentages arrondis,
-     * figeage du gagnant, publication, puis notification IN_APP best-effort.
-     * Transition irréversible : status=CLOSED + published=true en un seul
-     * flush transactionnel.
+     * B.8 — Clôture seule (gèle sans publier). Pas de comptage ici :
+     * on veut pouvoir auditer APRÈS closeOnlyInternal, sans pour
+     * autant avoir publié quoi que ce soit.
      */
-    private ElectionView closeAndPublishInternal(Election election) {
+    private ElectionView closeOnlyInternal(Election election) {
         if (election.getStatus() == ElectionStatus.CLOSED) {
-            // Idempotence : déjà clôturée, on renvoie juste l'état publié.
             return toView(election, UserContext.getCurrentUserId());
+        }
+        election.setStatus(ElectionStatus.CLOSED);
+        election.setPublished(false);
+        election.setClosedAt(LocalDateTime.now());
+        electionRepository.save(election);
+        log.info("Election {} closee (gellee, non publiee) par {}", election.getId(),
+                UserContext.getCurrentUserEmail());
+        return toView(election, UserContext.getCurrentUserId());
+    }
+
+    /**
+     * B.8 — Publication explicite. Exige que tous les éligibles
+     * aient voté (NOT_ALL_VOTED -> 409). Idempotent (replay = no-op).
+     */
+    private ElectionView publishResultsInternal(Election election) {
+        if (election.isPublished()) {
+            return toView(election, UserContext.getCurrentUserId());
+        }
+        if (election.getStatus() != ElectionStatus.CLOSED) {
+            throw new IllegalStateException(
+                    "L'élection doit être clôturée avant publication (status=" + election.getStatus() + ")");
+        }
+        long votes = voteRepository.countByElectionId(election.getId());
+        long eligible = activeMembersClient.countActiveAt(election.getEndsAt());
+        if (eligible == 0) {
+            // Cas dégradé : auth-service down (count=0 par fallback).
+            // On refuse de publier : publier sans snapshot d'éligibles
+            // reviendrait à ne pas pouvoir garantir « tous ont voté ».
+            throw new IllegalStateException(
+                    "PUBLISH_NO_ELIGIBLE_SNAPSHOT: impossible de vérifier la participation — auth-service injoignable ?");
+        }
+        if (votes < eligible) {
+            throw new IllegalStateException(
+                    "NOT_ALL_VOTED: " + votes + "/" + eligible
+                            + " ont voté — publication refusée tant que tous les titulaires n'ont pas voté.");
         }
 
         List<ElectionCandidate> candidates =
@@ -298,26 +388,37 @@ public class ElectionService {
         Long winnerId = null;
         long winnerVotes = -1;
         for (ElectionCandidate c : candidates) {
-            long votes = voteRepository.countByElectionIdAndCandidateId(election.getId(), c.getId());
-            results.add(votes);
-            total += votes;
-            if (votes > winnerVotes) {
-                winnerVotes = votes;
+            long v = voteRepository.countByElectionIdAndCandidateId(election.getId(), c.getId());
+            results.add(v);
+            total += v;
+            if (v > winnerVotes) {
+                winnerVotes = v;
                 winnerId = c.getId();
             }
         }
-        if (total == 0) winnerId = null; // aucun vote exprimé : pas de gagnant
+        if (total == 0) winnerId = null;
 
         List<Integer> percentages = computePercentages(results, total);
-
-        election.setStatus(ElectionStatus.CLOSED);
         election.setPublished(true);
         election.setWinnerCandidateId(winnerId);
         electionRepository.save(election);
-
         notifyMembers(election, candidates, winnerId, results.indexOf(winnerId), percentages);
+        log.info("Election {} publiee par {} : {} candidats, {} votes, gagnant={}",
+                election.getId(), UserContext.getCurrentUserEmail(), candidates.size(), total, winnerId);
         return toView(election, UserContext.getCurrentUserId());
     }
+
+    /**
+     * Indicateur d'éligibilité à la publication consommé par le front
+     * admin pour griser/dégriser le bouton "Publier".
+     */
+    public record PublishEligibility(
+            boolean ready,
+            long votes,
+            long eligibleVoters,
+            boolean alreadyPublished,
+            boolean closed
+    ) {}
 
     /**
      * Notification de publication (best-effort) : message global avec le nom
@@ -486,6 +587,7 @@ public class ElectionService {
                 .canVote(canVote)
                 .eligibleVotersCount(eligibleVotersCount)
                 .participationPercent(participationPercent)
+                .closedAt(election.getClosedAt())
                 .build();
     }
 }

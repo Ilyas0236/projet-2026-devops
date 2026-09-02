@@ -88,9 +88,40 @@ public class ElectionController {
         return ResponseEntity.ok(electionService.removeCandidate(id, candidateId));
     }
 
+    /**
+     * B.8 — Clôture seule (gèle, ne publie PAS). Pour publier
+     * explicitement, utiliser POST /{id}/publish (avec garde
+     * "tous les titulaires ont voté").
+     *
+     * <p>BREAKING : l'ancien comportement couplé (close+publish) est
+     * préservé uniquement en interne (cf. closeAndPublish()) pour
+     * rétro-compat, mais le front doit désormais utiliser /close puis
+     * /publish en deux temps.</p>
+     */
     @PostMapping("/{id}/close")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ElectionView> closeAndPublish(@PathVariable Long id) {
-        return ResponseEntity.ok(electionService.closeAndPublish(id));
+    public ResponseEntity<ElectionView> closeOnly(@PathVariable Long id) {
+        return ResponseEntity.ok(electionService.closeOnly(id));
+    }
+
+    /**
+     * B.8 — Publication explicite des résultats. 409 NOT_ALL_VOTED
+     * si pas tous les titulaires ont voté. Idempotent.
+     */
+    @PostMapping("/{id}/publish")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ElectionView> publishResults(@PathVariable Long id) {
+        return ResponseEntity.ok(electionService.publishResults(id));
+    }
+
+    /**
+     * B.8 — État d'éligibilité à la publication. Le front admin
+     * l'interroge pour griser/dégriser le bouton "Publier" et
+     * afficher l'indicateur "X/Y ont voté".
+     */
+    @GetMapping("/{id}/publish-eligibility")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ElectionService.PublishEligibility> getPublishEligibility(@PathVariable Long id) {
+        return ResponseEntity.ok(electionService.getPublishEligibility(id));
     }
 }

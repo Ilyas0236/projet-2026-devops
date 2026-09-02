@@ -9,12 +9,32 @@ import java.time.LocalDateTime;
 /**
  * Élection du président du club — domaine GOUVERNANCE, service dédié.
  *
- * Cycle de vie (transitions d'état ISTQB) :
- *   OPEN -> CLOSED (à la date de fin, par le scheduler, ou manuellement ADMIN)
+ * <p>Cycle de vie B.8 (transitions d'état ISTQB) :</p>
+ * <pre>
+ *   OPEN ---(clôture ADMIN ou scheduler)--&gt; CLOSED(published=false)
+ *                                              |
+ *                                              +--(publish ADMIN, si
+ *                                              |   votes == éligibles)
+ *                                              v
+ *                                          CLOSED(published=true)
+ * </pre>
  *
- * À la clôture les résultats sont calculés puis PUBLIÉS automatiquement :
- * le gagnant apparaît dans l'espace adhérent ET sur le site public
- * (visible sans connexion).
+ * <p>B.8 — La clôture et la publication sont désormais deux étapes
+ * distinctes :
+ * <ul>
+ *   <li>{@code closeOnly} : gèle le scrutin (status=CLOSED,
+ *       published=false, ferme closedAt). Aucun résultat n'est encore
+ *       public — l'admin peut encore auditer les votes ;</li>
+ *   <li>{@code publishResults} : exige que <b>tous les titulaires
+ *       éligibles aient voté</b> (count voteRepository ==
+ *       eligibleVotersCount figé à endsAt). Calcule le gagnant,
+ *       set published=true, notifie. Idempotent (replay=200 no-op).</li>
+ * </ul>
+ * </p>
+ *
+ * <p>Le mode « close + publish immédiat » reste disponible via
+ * {@code closeAndPublish} (alias pour rétro-compat interne, exposé
+ * au front admin en bouton "Tout-en-un").</p>
  */
 @Entity
 @Table(name = "elections")
@@ -60,4 +80,12 @@ public class Election {
 
     @CreationTimestamp
     private LocalDateTime createdAt;
+
+    /**
+     * B.8 — Date de clôture (gèle, SANS publier). Null tant que
+     * l'élection est OPEN. Renseigné par {@code closeOnly}. Permet
+     * à l'admin d'auditer la fenêtre de vote close (vote clos
+     * depuis X) sans pour autant publier les résultats.
+     */
+    private LocalDateTime closedAt;
 }
