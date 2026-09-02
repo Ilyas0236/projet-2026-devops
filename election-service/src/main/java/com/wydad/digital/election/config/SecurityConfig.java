@@ -24,12 +24,15 @@ public class SecurityConfig {
                         // Dispatch d erreur Spring : le laisser passer pour renvoyer le vrai code
                         // (400/500) ; sinon /error est re-securise et renvoie 403 qui masque la cause.
                         .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
-                        // Résultats PUBLIÉS : donnée non personnelle consultable
-                        // par un visiteur anonyme (site officiel, sans connexion).
-                        // Le VOTE et l'administration restent authentifiés.
+                        // Résultats PUBLIÉS + scrutins EN COURS : donnée non personnelle
+                        // consultable par un visiteur anonyme (site officiel, sans
+                        // connexion). Le VOTE et l'administration restent authentifiés.
+                        // B.8 — /api/elections/open expose la participation X/Y sans
+                        // détail par candidat (transparence pendant le scrutin).
                         .requestMatchers(org.springframework.http.HttpMethod.GET,
                                 "/api/elections/published",
                                 "/api/elections/published/latest",
+                                "/api/elections/open",
                                 // Sondages actifs : lecture publique (page /sondages
                                 // du site officiel, visiteur non connecté inclus).
                                 // Le VOTE et l'administration restent authentifiés.
