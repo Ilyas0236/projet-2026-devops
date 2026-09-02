@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../services/api.service';
@@ -24,10 +24,10 @@ import { ToastService } from '../../../services/toast.service';
   imports: [CommonModule, FormsModule, ErrorBannerComponent, MyCallsComponent, ScheduleCallFormComponent, TeamChatComponent],
   templateUrl: './dashboard-entraineur.component.html'
 })
-export class DashboardEntraineurComponent implements OnInit {
+export class DashboardEntraineurComponent implements OnInit, OnDestroy {
   loading = true;
   loadError = false;
-  activeTab: 'effectif' | 'seances' | 'matchs' | 'messagerie' | 'video' = 'effectif';
+  activeTab: 'effectif' | 'seances' | 'matchs' | 'messagerie' | 'video' | 'recus' = 'effectif';
 
   api = inject(ApiService);
   auth = inject(AuthService);
@@ -52,6 +52,13 @@ export class DashboardEntraineurComponent implements OnInit {
   jerseyByUser: Record<number, number> = {};
   loadingConvocations = false;
   submittingSheet = false;
+
+  // ─── C.21.v2 — Reçus de salaire/prime reçus du président ───
+  myReceipts: any[] = [];
+  myReceiptsLoading = false;
+  unreadReceipts = 0;
+  lastSeenReceiptIdValue: number | null = null;
+  downloadingReceiptId: number | null = null;
 
   ngOnInit() {
     this.loadAll();
@@ -129,6 +136,8 @@ export class DashboardEntraineurComponent implements OnInit {
       },
       error: () => { this.matchs = []; finish(); }
     });
+
+    this.loadMyReceipts();
   }
 
   formatSeance(seance: any): string {
@@ -288,5 +297,109 @@ export class DashboardEntraineurComponent implements OnInit {
         this.submittingSheet = false;
       }
     });
+  }
+
+  // ─── C.21.v2 — Reçus de salaire/prime reçus du président ───
+
+  /**
+   * Charge les reçus de salaire/prime émis à mon intention par le président.
+   * L'endpoint /api/auth/salary-receipts/mine est résolu côté serveur via
+   * le header X-User-Email de la gateway (pas de risque d'usurpation côté
+   * client : impossible d'injecter un autre userId).
+   */
+  loadMyReceipts() {
+    this.myReceiptsLoading = true;
+    this.api.getMySalaryReceipts().subscribe({
+      next: (data) => {
+        this.myReceipts = Array.isArray(data) ? data : [];
+        this.myReceiptsLoading = false;
+        this.computeUnreadReceipts();
+      },
+      error: () => {
+        this.myReceiptsLoading = false;
+        this.toast.error('Impossible de charger vos reçus.');
+      }
+    });
+  }
+
+  /**
+   * Compte les reçus non-vus (id > lastSeenId en localStorage).
+   * Si l'user n'a jamais visité l'onglet → tous les reçus sont non-vus.
+   */
+  computeUnreadReceipts() {
+    const userId = this.auth.getCurrentUserId();
+    if (!userId) {
+      this.unreadReceipts = 0;
+      return;
+    }
+    const key = 'lastSeenReceiptId_' + userId;
+    const stored = localStorage.getItem(key);
+    if (stored == null) {
+      // Premier accès : badge = nombre de reçus
+      this.unreadReceipts = this.myReceipts.length;
+      this.lastSeenReceiptIdValue = null;
+      return;
+    }
+    const lastSeen = parseInt(stored, 10);
+    this.lastSeenReceiptIdValue = isNaN(lastSeen) ? null : lastSeen;
+    this.unreadReceipts = this.myReceipts.filter(r =>
+      this.lastSeenReceiptIdValue == null || r.id > this.lastSeenReceiptIdValue
+    ).length;
+  }
+
+  /**
+   * Marque tous les reçus comme vus. Déclenché par le clic sur le bouton
+   * d'onglet "Reçus" (voir template : `(click)="activeTab = 'recus'; markReceiptsSeen()"`).
+   */
+  markReceiptsSeen() {
+    if (this.myReceipts.length === 0) return;
+    const userId = this.auth.getCurrentUserId();
+    if (!userId) return;
+    const maxId = Math.max(...this.myReceipts.map(r => r.id));
+    localStorage.setItem('lastSeenReceiptId_' + userId, String(maxId));
+    this.lastSeenReceiptIdValue = maxId;
+    this.unreadReceipts = 0;
+  }
+
+  /**
+   * Télécharge le PDF d'un reçu. Pattern copié sur
+   * dashboard-joueur.component.ts:downloadVipPdf.
+   */
+  downloadReceiptPdf(receipt: any) {
+    if (this.downloadingReceiptId != null) return;
+    this.downloadingReceiptId = receipt.id;
+    this.api.getRecuPdf(receipt.id).subscribe({
+      next: (blob: Blob) => {
+        try {
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `recu-${receipt.reference || receipt.id}.pdf`;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          window.URL.revokeObjectURL(url);
+          this.toast.success('Reçu téléchargé.');
+        } catch (e) {
+          this.toast.error('Téléchargement impossible.');
+        } finally {
+          this.downloadingReceiptId = null;
+        }
+      },
+      error: (err) => {
+        this.downloadingReceiptId = null;
+        this.toast.error(err?.error?.message || 'Téléchargement du PDF impossible.');
+      }
+    });
+  }
+
+  formatDate(iso: string | null | undefined): string {
+    if (!iso) return '';
+    const d = new Date(iso);
+    return isNaN(d.getTime()) ? String(iso) : d.toLocaleDateString('fr-FR');
+  }
+
+  ngOnDestroy() {
+    // Pas d'observer côté entraineur : le mark se fait via clic onglet.
   }
 }
