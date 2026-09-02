@@ -710,10 +710,11 @@ export class ApiService {
   }
 
   addElectionCandidate(electionId: number, fullName: string, presentation?: string,
-                       photoUrl?: string): Observable<any> {
+                       photoUrl?: string, userId?: number): Observable<any> {
     const body: any = { fullName };
     if (presentation) { body.presentation = presentation; }
     if (photoUrl) { body.photoUrl = photoUrl; }
+    if (userId) { body.userId = userId; }
     return this.http.post<any>(`${this.baseUrl}/elections/${electionId}/candidates`, body);
   }
 
@@ -721,8 +722,47 @@ export class ApiService {
     return this.http.delete<any>(`${this.baseUrl}/elections/${electionId}/candidates/${candidateId}`);
   }
 
+  /** B.8 — Clôture seule (gèle, ne publie PAS). Réservé à l'admin. */
   closeElection(electionId: number): Observable<any> {
     return this.http.post<any>(`${this.baseUrl}/elections/${electionId}/close`, {});
+  }
+
+  /** B.8 — Publication explicite des résultats. 409 si pas tous les éligibles ont voté. */
+  publishElection(electionId: number): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/elections/${electionId}/publish`, {});
+  }
+
+  /**
+   * B.8 — État d'éligibilité à la publication. Le front admin
+   * s'en sert pour griser/dégriser le bouton "Publier" et afficher
+   * l'indicateur "X/Y ont voté".
+   */
+  getElectionPublishEligibility(electionId: number): Observable<{
+    ready: boolean;
+    totalVotes: number;
+    eligibleVoters: number;
+    participationPercent: number;
+    alreadyPublished: boolean;
+    closed: boolean;
+  }> {
+    return this.http.get<any>(`${this.baseUrl}/elections/${electionId}/publish-eligibility`);
+  }
+
+  /**
+   * B.8 — Liste des titulaires actifs pour la saison (dropdown candidats).
+   * Service-à-service : l'admin y accède via le gateway (qui injecte le
+   * X-Internal-Secret). Réponse : [{id, email, firstName, lastName, season, validTo, subscriptionId}].
+   */
+  listEligibleMembers(season: string): Observable<Array<{
+    id: number;
+    email: string;
+    firstName: string;
+    lastName: string;
+    season: string;
+    validTo: string;
+    subscriptionId: number;
+  }>> {
+    return this.http.get<any[]>(`${this.baseUrl}/auth/internal/active-subscribers?season=${encodeURIComponent(season)}`);
   }
 
   // ==========================================
