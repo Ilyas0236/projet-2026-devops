@@ -692,11 +692,11 @@ export class ApiService {
     return this.http.get<any[]>(`${this.baseUrl}/elections/published`);
   }
 
-  getLatestPublishedElection(): Observable<any> {
-    return this.http.get<any>(`${this.baseUrl}/elections/published/latest`);
-  }
-
-  /** Espace adhérent : élections ouvertes + état de vote de l'utilisateur. */
+  /**
+   * Espace adhérent : élections en cours + état de vote de l'utilisateur.
+   * Depuis B.8, cette route est aussi bypassée en GET anonyme par la
+   * gateway, donc utilisable côté public pour afficher la participation X/Y.
+   */
   getOpenElections(): Observable<any[]> {
     return this.http.get<any[]>(`${this.baseUrl}/elections/open`);
   }
