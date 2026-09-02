@@ -210,7 +210,14 @@
               <select [(ngModel)]="emissionForm.userId" name="beneficiary"
                       class="w-full px-4 py-2.5 rounded-xl border border-paper-3 bg-white text-sm focus:outline-none focus:border-wydad-red/60">
                 <option [ngValue]="null">— Sélectionner un joueur ou un agent —</option>
-                <option *ngFor="let u of users" [ngValue]="u.id">{{ u.firstName }} {{ u.lastName }} ({{ u.email }})</option>
+                <!-- C.21 — Bénéficiaire limité à l'annuaire de la discipline du président
+                     (contactsDir, chargé au mount via /players/filter + /staff/filter).
+                     AVANT ce fix : on appelait /auth/admin/users (réservé ADMIN → 403 silencieux,
+                     dropdown vide). Le président ne peut émettre qu'à un interlocuteur de SA
+                     discipline — règle métier verrouillée côté sports-service. -->
+                <option *ngFor="let c of contactsDir" [ngValue]="c.id">
+                  {{ c.name }} ({{ c.role }}<ng-container *ngIf="c.category"> · {{ c.category }}</ng-container>)
+                </option>
               </select>
             </div>
             <div>

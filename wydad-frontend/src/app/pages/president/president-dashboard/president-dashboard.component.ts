@@ -74,7 +74,10 @@ export class PresidentDashboardComponent implements OnInit {
   // ───────────────────────────── Reçus ─────────────────────────────
   receipts: any[] = [];
   receiptsLoading = false;
-  users: any[] = [];
+  /** Plus de cache `users` local : le dropdown Bénéficiaire est peuplé
+   *  depuis `contactsDir` (annuaire discipline, chargé au mount). Avant
+   *  ce fix on appelait `getAllUsers()` → /auth/admin/users (réservé
+   *  ADMIN) → 403 silencieux → dropdown vide côté président. */
   showEmissionForm = false;
   isSubmittingReceipt = false;
 
@@ -199,7 +202,11 @@ export class PresidentDashboardComponent implements OnInit {
       error: () => {
         this.inboxLoading = false;
         done?.();
-        if (!this.receipts.length && !this.users.length) {
+        // Avant : `!this.users.length` (cache supprimé). On regarde
+        // l'annuaire discipline comme signal de « vraiment rien à
+        // montrer » pour ne pas afficher un loadError si le président
+        // n'a juste aucun contact rattaché.
+        if (!this.receipts.length && !this.contactsDir.length) {
           this.loadError = true;
         }
         this.toast.show('error', 'Impossible de charger la messagerie.');
@@ -281,11 +288,12 @@ export class PresidentDashboardComponent implements OnInit {
 
   openEmissionForm() {
     this.showEmissionForm = true;
-    if (!this.users.length) {
-      this.api.getAllUsers().subscribe({
-        next: (data) => (this.users = data),
-      });
-    }
+    // Le dropdown Bénéficiaire itère désormais sur `contactsDir` (annuaire
+    // discipline, déjà chargé au mount par `loadContactsDiscipline()`).
+    // Pas de nouvel appel HTTP ici : ouvrir le formulaire n'a aucun coût.
+    // Si l'annuaire est vide (discipline sans interlocuteur), le <select>
+    // n'affiche que l'option « — Sélectionner… — » — l'utilisateur peut
+    // annuler ou attendre un rechargement.
   }
 
   closeEmissionForm() {
