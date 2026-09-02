@@ -711,6 +711,64 @@
                ENTRAINEUR/PRESIDENT/ADMIN (revalidé côté backend) ; l'agenda est pour tous -->
           <app-schedule-call-form *ngIf="canScheduleCalls" (created)="onCallCreated()"></app-schedule-call-form>
           <app-my-calls></app-my-calls>
+
+          <!-- MES REÇUS DE SALAIRE & PRIME (C.21.v2) — staff
+               Mêmes règles que l'espace joueur : chaque user ne voit que SES
+               propres reçus, IDOR strict, badge "X nouveaux" via
+               lastSeenReceiptId_{userId} (localStorage), auto-vidage à
+               l'entrée dans le viewport (IntersectionObserver). -->
+          <div #mesRecusSection class="paper-card rounded-3xl p-6 md:p-8 animate-fade-in-up">
+            <div class="flex justify-between items-end mb-5 flex-wrap gap-3">
+              <div>
+                <h3 class="section-title-light font-display text-xl uppercase tracking-wider mb-1">
+                  Mes reçus
+                  <span *ngIf="unreadReceipts > 0"
+                        class="ml-2 inline-flex items-center justify-center min-w-[1.5rem] px-2 py-0.5 rounded-full bg-wydad-red text-white text-[11px] font-black align-middle">
+                    {{ unreadReceipts }}
+                  </span>
+                </h3>
+                <p class="text-ink-tertiary text-[10px] uppercase tracking-widest">
+                  Salaires & primes émis par le président
+                </p>
+              </div>
+            </div>
+
+            <p *ngIf="myReceiptsLoading" class="text-ink-secondary text-sm py-6 text-center">
+              Chargement…
+            </p>
+
+            <div *ngIf="!myReceiptsLoading && myReceipts.length === 0"
+                 class="rounded-2xl border border-paper-3 bg-paper-1 p-6 text-center">
+              <p class="text-ink-secondary text-xs">Aucun reçu pour l'instant.</p>
+            </div>
+
+            <ul *ngIf="!myReceiptsLoading && myReceipts.length > 0" class="space-y-2">
+              <li *ngFor="let r of myReceipts"
+                  class="rounded-xl border border-paper-3 bg-paper-1 p-3 flex flex-wrap items-center justify-between gap-2"
+                  [class.bg-amber-50]="unreadReceipts > 0 && r.id > (lastSeenReceiptIdValue ?? -1)">
+                <div class="min-w-0 flex-1">
+                  <div class="flex items-center gap-2 mb-1">
+                    <span class="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-widest"
+                          [class]="r.receiptType === 'SALAIRE' ? 'bg-blue-100 text-blue-800' : 'bg-amber-100 text-amber-800'">
+                      {{ r.receiptType }}
+                    </span>
+                    <span class="font-display font-black text-ink-primary text-sm">
+                      {{ r.amount | number:'1.2-2' }} {{ r.currency }}
+                    </span>
+                    <code class="text-[9px] text-ink-tertiary ml-auto">{{ r.reference }}</code>
+                  </div>
+                  <p class="text-[11px] text-ink-secondary truncate">
+                    {{ r.motif || r.periode || '—' }}
+                    <span *ngIf="r.issuedByName" class="text-ink-tertiary"> · émis par {{ r.issuedByName }}</span>
+                  </p>
+                </div>
+                <button (click)="downloadReceiptPdf(r)" [disabled]="downloadingReceiptId === r.id"
+                        class="bg-wydad-red hover:bg-wydad-red-dark disabled:opacity-50 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-colors shrink-0">
+                  {{ downloadingReceiptId === r.id ? '⏳' : '⬇ PDF' }}
+                </button>
+              </li>
+            </ul>
+          </div>
         </div>
       </div>
     </div>

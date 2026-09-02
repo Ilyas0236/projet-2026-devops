@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, ElementRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators, FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -15,7 +15,7 @@ import { ScheduleCallFormComponent } from '../../../components/my-calls/schedule
   imports: [CommonModule, ReactiveFormsModule, FormsModule, RouterModule, TeamChatComponent, MyCallsComponent, ScheduleCallFormComponent],
   templateUrl: './dashboard-staff.component.html'
 })
-export class DashboardStaffComponent implements OnInit {
+export class DashboardStaffComponent implements OnInit, OnDestroy {
   api = inject(ApiService);
   auth = inject(AuthService);
   fb = inject(FormBuilder);
@@ -104,6 +104,17 @@ export class DashboardStaffComponent implements OnInit {
 
   // Transparence financière — rapports publiés par le club
   rapportsFinanciers: any[] = [];
+
+  // C.21.v2 — Reçus de salaire/prime émis par le président du club.
+  // Même contrat que l'espace joueur : /mine côté serveur résout l'identité
+  // via X-User-Email, IDOR strict, badge lastSeen via localStorage.
+  myReceipts: any[] = [];
+  myReceiptsLoading = false;
+  unreadReceipts = 0;
+  lastSeenReceiptIdValue: number | null = null;
+  downloadingReceiptId: number | null = null;
+  @ViewChild('mesRecusSection') mesRecusSectionRef?: ElementRef<HTMLElement>;
+  private recuObserver: IntersectionObserver | null = null;
 
   loadRapportsFinanciers() {
     this.api.getRapportsFinanciers().subscribe({
@@ -205,6 +216,9 @@ export class DashboardStaffComponent implements OnInit {
       },
       error: () => {}
     });
+
+    // C.21.v2 — Reçus de salaire/prime du staff connecté (voir mesProps plus haut).
+    this.loadMyReceipts();
   }
 
   // ─────────────── §8/§9 — Feuille de match (convocations liées à un match) ───────────────
@@ -636,5 +650,129 @@ export class DashboardStaffComponent implements OnInit {
         this.toast.error(err?.error?.message || 'Publication impossible');
       }
     });
+  }
+
+  // ═══════════════════════════ Reçus de salaire/prime (C.21.v2) ═══════════════════════════
+
+  /**
+   * C.21.v2 — Charge les reçus de l'utilisateur connecté. Le serveur résout
+   * l'identité via X-User-Email (réécrit par la gateway depuis le JWT), donc
+   * impossible d'usurper l'identité d'un autre user en injectant un header.
+   */
+  loadMyReceipts() {
+    this.myReceiptsLoading = true;
+    this.api.getMySalaryReceipts().subscribe({
+      next: (data) => {
+        this.myReceipts = Array.isArray(data) ? data : [];
+        this.myReceiptsLoading = false;
+        this.computeUnreadReceipts();
+        setTimeout(() => this.observeMesRecusSection(), 0);
+      },
+      error: () => {
+        this.myReceiptsLoading = false;
+        this.toast.error('Impossible de charger vos reçus.');
+      },
+    });
+  }
+
+  /**
+   * C.21.v2 — Compte les reçus dont l'id dépasse la valeur stockée dans
+   * {@code localStorage.lastSeenReceiptId_{userId}}. Si la clé est absente
+   * (1er accès, nouveau navigateur) on considère TOUS les reçus comme non vus.
+   */
+  computeUnreadReceipts() {
+    const userId = this.auth.getCurrentUserId();
+    if (!userId) {
+      this.unreadReceipts = 0;
+      this.lastSeenReceiptIdValue = null;
+      return;
+    }
+    const key = `lastSeenReceiptId_${userId}`;
+    const raw = (() => {
+      try { return localStorage.getItem(key); } catch { return null; }
+    })();
+    const lastSeen = raw ? Number(raw) : null;
+    this.lastSeenReceiptIdValue = lastSeen;
+    if (lastSeen == null || Number.isNaN(lastSeen)) {
+      this.unreadReceipts = this.myReceipts.length;
+    } else {
+      this.unreadReceipts = this.myReceipts.filter((r) => r.id > lastSeen).length;
+    }
+  }
+
+  /**
+   * C.21.v2 — Marque tous les reçus courants comme vus. Écrit
+   * {@code lastSeenReceiptId_{userId}} = max(id) et remet le compteur à 0.
+   * Tolère un localStorage désactivé (private mode).
+   */
+  markReceiptsSeen() {
+    if (this.myReceipts.length === 0) {
+      this.unreadReceipts = 0;
+      return;
+    }
+    const userId = this.auth.getCurrentUserId();
+    if (!userId) return;
+    const maxId = Math.max(...this.myReceipts.map((r) => r.id));
+    try {
+      localStorage.setItem(`lastSeenReceiptId_${userId}`, String(maxId));
+    } catch {
+      // localStorage peut être désactivé (private mode) — on n'échoue pas l'UX.
+    }
+    this.lastSeenReceiptIdValue = maxId;
+    this.unreadReceipts = 0;
+  }
+
+  /**
+   * C.21.v2 — Téléchargement du PDF officiel d'un reçu. Pattern copié
+   * du dashboard joueur ({@link downloadReceiptPdf}). Bouton en loading
+   * state via {@code downloadingReceiptId}.
+   */
+  downloadReceiptPdf(receipt: any) {
+    if (!receipt?.id) return;
+    this.downloadingReceiptId = receipt.id;
+    this.api.getRecuPdf(receipt.id).subscribe({
+      next: (blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `recu-${receipt.reference}.pdf`;
+        a.click();
+        window.URL.revokeObjectURL(url);
+        this.downloadingReceiptId = null;
+      },
+      error: () => {
+        this.downloadingReceiptId = null;
+        this.toast.error('Téléchargement du PDF impossible.');
+      },
+    });
+  }
+
+  /**
+   * C.21.v2 — Auto-mark via IntersectionObserver : quand la section
+   * "Mes reçus" entre dans le viewport, on vide le badge. On observe
+   * une fois puis on disconnect.
+   */
+  private observeMesRecusSection() {
+    if (!this.mesRecusSectionRef?.nativeElement) return;
+    if (this.recuObserver) return;
+    this.recuObserver = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          if (e.isIntersecting) {
+            this.markReceiptsSeen();
+            this.recuObserver?.disconnect();
+            this.recuObserver = null;
+            break;
+          }
+        }
+      },
+      { threshold: 0.1 }
+    );
+    this.recuObserver.observe(this.mesRecusSectionRef.nativeElement);
+  }
+
+  ngOnDestroy() {
+    this.recuObserver?.disconnect();
+    this.recuObserver = null;
   }
 }
