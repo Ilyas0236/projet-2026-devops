@@ -23,21 +23,27 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Phase 2 / §3-§4 — Génération automatique des billets VIP joueurs.
+ * Phase 2 / §3-§4 — Génération automatique des billets VIP.
  *
- * À chaque match du Wydad À DOMICILE, chaque joueur DU GROUPE concerné
+ * À chaque match du Wydad À DOMICILE, chaque MEMBRE DU GROUPE concerné
  * (discipline + catégorie, §26) reçoit des billets VIP gratuits (invités du
  * club) : 4 billets pour les SENIOR, 2 billets pour les catégories jeunes
  * (U15/U17/U18/U20). Les billets sont attachés à son compte et
  * téléchargeables en PDF avec QR unique depuis son espace.
  *
+ * <p>B.29 — « MEMBRE » = JOUEUR + STAFF (entraineurs, manager, fitness,
+ * etc.) du groupe. Avant B.29 seuls les JOUEUR étaient servis (filtre
+ * {@code "JOUEUR".equals(...)} dans {@code SportsRosterClient}) — staff
+ * et entraineurs étaient droppés silencieusement.</p>
+ *
  * Règles métier :
  * - Match à l'extérieur → aucun billet (rejet explicite).
- * - §24/§26 : seuls les joueurs de la discipline+catégorie de l'événement
+ * - §24/§26 : seuls les membres de la discipline+catégorie de l'événement
  *   sont servis — jamais un joueur Football U17 sur un match Basketball U17.
- *   Événement sans catégorie (historique) → tous les joueurs actifs.
+ *   Événement sans catégorie (historique) → tous les joueurs actifs
+ *   (fallback auth, STAFF non couvert par ce fallback).
  * - Idempotent : relancer la génération pour un événement déjà traité ne
- *   crée AUCUN doublon — seuls les joueurs manquants sont servis.
+ *   crée AUCUN doublon — seuls les membres manquants sont servis.
  * - Hors circuit de vente : prix 0, statut PAID directement (offre du club),
  *   PAS de débit E-cash — ces billets ne passent jamais par PaymentClient.
  * - Les places VIP ne touchent pas au compteur public availableSeats :
@@ -48,10 +54,10 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class VipTicketService {
 
-    /** Billets VIP offerts par joueur SENIOR à domicile (§3). */
+    /** Billets VIP offerts par membre SENIOR à domicile (§3). */
     static final int BILLETS_PAR_JOUEUR_SENIOR = 4;
 
-    /** Billets VIP adaptés par joueur d'une catégorie jeune (§4). */
+    /** Billets VIP adaptés par membre d'une catégorie jeune (§4). */
     static final int BILLETS_PAR_JOUEUR_JEUNE = 2;
 
     private final EventRepository eventRepository;
@@ -64,6 +70,9 @@ public class VipTicketService {
 
     /**
      * Résultat d'une génération : compteurs pour journalisation et tests.
+     * <p>B.29 — {@code joueursServis} est renommé sémantiquement en
+     * « beneficiairesServis » côté réponse HTTP mais conserve ce nom en
+     * interne pour rétro-compat avec l'endpoint interne /vip-generate.</p>
      */
     public record VipGenerationResult(int joueursServis, int billetsCrees) {}
 
@@ -106,6 +115,7 @@ public class VipTicketService {
 
         List<Recipient> recipients = recipientsForEvent(event);
         int billets = 0;
+        int beneficiairesServis = 0;
 
         for (var recipient : recipients) {
             if (ticketRepository.existsByEventIdAndUserIdAndCategory(eventId, recipient.id(), TicketCategory.VIP)) {
@@ -131,16 +141,17 @@ public class VipTicketService {
             }
             sectionVip.setAvailableSeats(Math.max(sectionVip.getAvailableSeats() - recipient.billets(), 0));
             billets += recipient.billets();
+            beneficiairesServis++;
         }
 
         sectionRepository.save(sectionVip);
 
-        // Best-effort : prévenir chaque joueur nouvellement servi.
+        // Best-effort : prévenir chaque membre nouvellement servi.
         notifyPlayers(recipients, eventId, billets);
 
-        log.info("Génération VIP événement {} : {} bénéficiaire(s), {} billet(s)",
-                eventId, recipients.size(), billets);
-        return new VipGenerationResult(recipients.size(), billets);
+        log.info("Génération VIP événement {} : {} bénéficiaire(s) servi(s) ({} billet(s))",
+                eventId, beneficiairesServis, billets);
+        return new VipGenerationResult(beneficiairesServis, billets);
     }
 
     /** Un match est « à domicile » si le Wydad est l'équipe recevante. */
@@ -151,26 +162,37 @@ public class VipTicketService {
     }
 
     /**
-     * §24/§26 — destinataires des billets : les joueurs du groupe
+     * §24/§26 — destinataires des billets : les MEMBRES du groupe
      * discipline+catégorie de l'événement (roster serveur), 4 billets en
      * SENIOR et 2 en catégorie jeune. Sans catégorie renseignée
      * (événements historiques), repli sur tous les joueurs actifs avec le
-     * quota SENIOR.
+     * quota SENIOR (le staff n'a pas d'annuaire de repli — ces events
+     * historiques ne distribuent donc que les joueurs).
+     *
+     * <p>B.29 — utilise {@code fetchMembersOfGroup} (sans filtre JOUEUR) :
+     * JOUEUR + STAFF sont servis identiquement. Le rôle est mémorisé dans
+     * le {@code Recipient} pour adapter le texte de notification.</p>
      */
     private List<Recipient> recipientsForEvent(Event event) {
-        int billetsParJoueur = event.getCategory() == null
+        int billetsParMembre = event.getCategory() == null
                 ? BILLETS_PAR_JOUEUR_SENIOR
                 : billetsPourCategorie(event.getCategory().name());
 
         if (event.getCategory() == null) {
             return authClient.fetchActivePlayers().stream()
-                    .map(p -> new Recipient(p.id(), p.email(), p.displayName(), billetsParJoueur))
+                    .map(p -> new Recipient(p.id(), p.email(), p.displayName(),
+                            billetsParMembre, "JOUEUR"))
                     .toList();
         }
 
-        return rosterClient.fetchPlayersOfGroup(event.getEventType().name(), event.getCategory().name())
+        return rosterClient.fetchMembersOfGroup(event.getEventType().name(), event.getCategory().name())
                 .stream()
-                .map(m -> new Recipient(m.userId(), null, m.fullName(), billetsParJoueur))
+                .map(m -> new Recipient(
+                        m.userId(),
+                        null, // email : pas dans roster, on l'envoie sans (notification accepte null)
+                        m.fullName(),
+                        billetsParMembre,
+                        m.rosterRole() == null ? "JOUEUR" : m.rosterRole()))
                 .toList();
     }
 
@@ -179,17 +201,25 @@ public class VipTicketService {
         return "SENIOR".equalsIgnoreCase(category) ? BILLETS_PAR_JOUEUR_SENIOR : BILLETS_PAR_JOUEUR_JEUNE;
     }
 
-    /** Destinataire normalisé (auth-service ou roster sports-service). */
-    private record Recipient(Long id, String email, String displayName, int billets) {}
+    /**
+     * Destinataire normalisé. {@code role} = "JOUEUR" ou "STAFF" (couvre
+     * entraineurs, manager, fitness, etc. car le roster endpoint n'expose
+     * pas le StaffRole détaillé).
+     */
+    private record Recipient(Long id, String email, String displayName, int billets, String role) {}
 
     private void notifyPlayers(List<Recipient> recipients, Long eventId, int billetsCrees) {
         for (var recipient : recipients) {
             try {
+                String prefix = "STAFF".equalsIgnoreCase(recipient.role())
+                        ? "Vos (Staff technique)"
+                        : "Vos";
                 notificationClient.notifyUser(
                         recipient.id(),
                         recipient.email(),
                         "Billets VIP disponibles",
-                        recipient.billets() + " billet(s) VIP vous sont offerts pour ce match à domicile.",
+                        prefix + " " + recipient.billets()
+                                + " billet(s) VIP vous sont offerts pour ce match à domicile.",
                         "/joueur/billets");
             } catch (Exception e) {
                 log.warn("Notification VIP non envoyée à {}", recipient.displayName(), e);
