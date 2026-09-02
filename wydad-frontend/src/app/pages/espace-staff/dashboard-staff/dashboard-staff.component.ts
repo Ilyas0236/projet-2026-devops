@@ -50,9 +50,12 @@ export class DashboardStaffComponent implements OnInit, OnDestroy {
   isSubmittingStat = false;
   statForm!: FormGroup;
 
-  // B.3.a — convocation d'un joueur pour une séance
-  convoPlayer: any = null;
-  isSubmittingConvo = false;
+  // B.3.a — convocation groupée (B.3.a individuel abandonné : voir
+  // historique git, dédupliqué par le formulaire batch `showConvoForm`).
+  // Les propriétés `convoPlayer`/`isSubmittingConvo` ont été supprimées car
+  // la méthode `convoquer()` correspondante était du code mort (jamais
+  // appelée par le template — le bouton "Convoquer" du tableau ouvre
+  // directement le formulaire groupé, voir HTML ligne ~402).
 
   // Phase 3 — convocation groupée (« liste cochable ») + suivi des réponses
   showConvoForm = false;
@@ -397,23 +400,6 @@ export class DashboardStaffComponent implements OnInit, OnDestroy {
         console.error(err);
         this.isSubmittingStat = false;
         this.toast.error(err?.error?.message || 'Erreur lors de la saisie de la stat');
-      }
-    });
-  }
-
-  // ───────────────── B.3.a — Convocation d'un joueur ─────────────────
-
-  convoquer(player: any, sessionId: number) {
-    this.isSubmittingConvo = true;
-    this.api.createConvocation(player.userId, sessionId).subscribe({
-      next: () => {
-        this.toast.success(`${player.fullName} convoqué — notification envoyée`);
-        this.isSubmittingConvo = false;
-      },
-      error: (err) => {
-        console.error(err);
-        this.isSubmittingConvo = false;
-        this.toast.error(err?.error?.message || 'Convocation impossible');
       }
     });
   }
