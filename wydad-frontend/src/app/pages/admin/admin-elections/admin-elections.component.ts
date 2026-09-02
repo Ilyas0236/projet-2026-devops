@@ -123,9 +123,12 @@ import { ConfirmService } from '../../../services/confirm.service';
             </div>
 
             <div class="flex gap-2 flex-shrink-0 flex-wrap justify-end">
-              <!-- B.8 — Clôture seule (gèle, ne publie PAS) -->
+              <!-- B.8 — Clôture seule (gèle, ne publie PAS) — refusée par
+                   le back si moins de 2 candidats, on désactive l'UI. -->
               <button *ngIf="e.status === 'OPEN'" (click)="close(e)"
-                      class="border border-white/20 hover:border-blue-400 hover:text-blue-300 text-gray-300 px-4 py-2 rounded text-xs font-bold uppercase tracking-wider transition-colors">
+                      [disabled]="(e.candidates?.length || 0) < 2"
+                      [title]="(e.candidates?.length || 0) < 2 ? 'Ajoutez au moins 2 candidats avant de geler' : 'Geler les votes (sans publier)'"
+                      class="border border-white/20 hover:border-blue-400 hover:text-blue-300 disabled:opacity-40 disabled:cursor-not-allowed text-gray-300 px-4 py-2 rounded text-xs font-bold uppercase tracking-wider transition-colors">
                 Clôturer (geler)
               </button>
 

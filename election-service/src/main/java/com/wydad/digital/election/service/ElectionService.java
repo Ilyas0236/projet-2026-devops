@@ -61,8 +61,16 @@ public class ElectionService {
                 || request.getStartsAt().isEqual(request.getEndsAt())) {
             throw new IllegalArgumentException("La date de fin doit être postérieure à la date de début");
         }
-        if (request.getCandidates() == null || request.getCandidates().size() < 2) {
-            throw new IllegalArgumentException("Une élection doit compter au moins 2 candidats");
+        // B.8.c — On autorise désormais la création SANS candidats (le
+        // formulaire admin historique ne demandait que titre + dates).
+        // L'admin ajoute ensuite les candidats via le dropdown des
+        // titulaires actifs (POST /{id}/candidates). La garde-fou
+        // « minimum 2 candidats » est repoussée à la clôture et à la
+        // publication : impossible de geler ou publier un scrutin qui
+        // a moins de 2 candidats (scrutin invalide).
+        if (request.getCandidates() != null && request.getCandidates().size() == 1) {
+            throw new IllegalArgumentException(
+                "Une élection doit avoir 0 ou au moins 2 candidats — pas exactement 1.");
         }
 
         Election election = electionRepository.save(Election.builder()
@@ -74,11 +82,16 @@ public class ElectionService {
                 .createdByEmail(adminEmail)
                 .build());
 
-        for (AddCandidateRequest input : request.getCandidates()) {
+        // B.8.c — request.getCandidates() peut être null (formulaire
+        // admin historique qui n'envoie pas la clé), on tolère.
+        java.util.List<AddCandidateRequest> candidats = request.getCandidates() == null
+                ? java.util.List.of()
+                : request.getCandidates();
+        for (AddCandidateRequest input : candidats) {
             saveCandidate(election, input);
         }
         log.info("Election {} creee par {} ({} candidats)", election.getId(), adminEmail,
-                request.getCandidates().size());
+                candidats.size());
         return toView(election, UserContext.getCurrentUserId());
     }
 
@@ -442,6 +455,15 @@ public class ElectionService {
     private ElectionView closeOnlyInternal(Election election) {
         if (election.getStatus() == ElectionStatus.CLOSED) {
             return toView(election, UserContext.getCurrentUserId());
+        }
+        // B.8.c — Garde-fou : on refuse de geler une élection qui n'a
+        // pas au moins 2 candidats (sinon scrutin invalide, votes
+        // impossibles ou gagés). L'admin peut ajouter des candidats
+        // tant que l'élection est OPEN.
+        long nbCandidats = candidateRepository.findByElectionIdOrderByDisplayOrderAscIdAsc(election.getId()).size();
+        if (nbCandidats < 2) {
+            throw new IllegalStateException(
+                "Impossible de geler une élection qui a " + nbCandidats + " candidat(s) — il en faut au moins 2.");
         }
         election.setStatus(ElectionStatus.CLOSED);
         election.setPublished(false);

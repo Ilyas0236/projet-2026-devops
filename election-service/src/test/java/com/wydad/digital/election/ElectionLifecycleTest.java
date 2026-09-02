@@ -189,7 +189,7 @@ class ElectionLifecycleTest {
     }
 
     @Test
-    @DisplayName("Moins de 2 candidats : 400")
+    @DisplayName("Exactement 1 candidat : 400 (B.8.c — règle 0 OU ≥2)")
     void unSeulCandidat400() throws Exception {
         mockMvc.perform(asGateway(post("/api/elections"), null, ADMIN_EMAIL, "ADMIN")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -202,6 +202,21 @@ class ElectionLifecycleTest {
                                 }
                                 """.formatted(LocalDateTime.now(), LocalDateTime.now().plusDays(1))))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("B.8.c — 0 candidats : 201 (admin les ajoute après via /candidates)")
+    void zeroCandidat201() throws Exception {
+        mockMvc.perform(asGateway(post("/api/elections"), null, ADMIN_EMAIL, "ADMIN")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "title": "Election vide",
+                                  "startsAt": "%s",
+                                  "endsAt": "%s"
+                                }
+                                """.formatted(LocalDateTime.now().plusHours(1), LocalDateTime.now().plusDays(1))))
+                .andExpect(status().isCreated());
     }
 
     // ------------------------------------------------------------------
