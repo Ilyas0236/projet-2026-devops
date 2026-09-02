@@ -67,23 +67,99 @@
             </span>
           </header>
 
-          <!-- Participation X/Y (sans détail par candidat — décision B.8) -->
+          <!-- B.8.f — Participation X/Y + compteur titulaires restants.
+               Le compteur « X pas encore voté » = eligibleVotersCount - totalVotes.
+               C'est ce que le propriétaire a demandé : afficher combien
+               de titulaires n'ont pas encore voté. -->
           <div class="flex items-baseline gap-2 mb-2">
             <span class="font-display font-black text-3xl text-ink-primary tabular-nums">
               {{ e.totalVotes }}<span class="text-ink-tertiary text-xl">/{{ e.eligibleVotersCount }}</span>
             </span>
             <span class="text-xs text-ink-tertiary uppercase tracking-wider">titulaires ont voté</span>
           </div>
-          <div class="h-2.5 rounded-full bg-paper-2 overflow-hidden mb-3" role="progressbar"
+          <p class="text-xs text-ink-tertiary mb-2" *ngIf="e.eligibleVotersCount > 0">
+            <span class="font-bold text-ink-secondary">
+              {{ e.eligibleVotersCount - e.totalVotes }}
+            </span>
+            titulaire{{ (e.eligibleVotersCount - e.totalVotes) > 1 ? 's' : '' }}
+            n'a(ont) pas encore voté.
+          </p>
+          <div class="h-2.5 rounded-full bg-paper-2 overflow-hidden mb-4" role="progressbar"
                [attr.aria-valuenow]="e.participationPercent"
                aria-valuemin="0" aria-valuemax="100">
             <div class="h-full rounded-full bg-wydad-red transition-all duration-700"
                  [style.width.%]="e.participationPercent"></div>
           </div>
-          <p class="text-xs text-ink-tertiary">
+
+          <!-- B.8.f — Candidats qui se présentent (visible tout le temps,
+               qu'on soit en mode transparent ou masqué). -->
+          <div *ngIf="e.candidates?.length" class="space-y-3 mt-4 border-t border-paper-2 pt-4">
+            <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-ink-tertiary">
+              Candidats à la présidence ({{ e.candidates.length }})
+            </p>
+
+            <!-- B.8.f — Affichage des voix par candidat (temps réel).
+                 Caché si resultsHidden=true (l'admin a masqué via le toggle).
+                 On garde TOUJOURS la liste des candidats ci-dessus pour
+                 que le visiteur sache qui se présente. -->
+            <ng-container *ngIf="!e.resultsHidden && e.results?.length === e.candidates.length; else candidatsNoms">
+              <div *ngFor="let c of e.candidates; let i = index">
+                <div class="flex items-center gap-3 mb-1.5">
+                  <img *ngIf="c.photoUrl; else noPhotoLive"
+                       [src]="c.photoUrl" [alt]="'Photo de ' + c.fullName"
+                       class="w-9 h-9 rounded-full object-cover border border-paper-3 flex-shrink-0">
+                  <ng-template #noPhotoLive>
+                    <div class="w-9 h-9 rounded-full bg-paper-2 flex items-center justify-center border border-paper-3 flex-shrink-0">
+                      <svg class="w-5 h-5 text-ink-tertiary" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                        <path d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"/>
+                      </svg>
+                    </div>
+                  </ng-template>
+                  <div class="min-w-0 flex-1">
+                    <p class="text-sm font-semibold text-ink-primary truncate">{{ c.fullName }}</p>
+                    <p *ngIf="c.presentation" class="text-xs text-ink-tertiary line-clamp-1">{{ c.presentation }}</p>
+                  </div>
+                  <span class="text-sm font-display font-bold text-ink-secondary flex-shrink-0 tabular-nums">
+                    {{ e.percentages[i] }}% <span class="text-ink-tertiary font-normal">({{ e.results[i] }})</span>
+                  </span>
+                </div>
+                <div class="h-2 rounded-full bg-paper-2 overflow-hidden">
+                  <div class="h-full rounded-full bg-wydad-red/40 transition-all duration-700"
+                       [style.width.%]="e.percentages[i]"></div>
+                </div>
+              </div>
+            </ng-container>
+
+            <!-- Mode « résultats cachés » ou scrutin sans voix : juste
+                 la liste des noms + photos (le visiteur sait qui se
+                 présente, mais pas les scores en direct). -->
+            <ng-template #candidatsNoms>
+              <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                <div *ngFor="let c of e.candidates"
+                     class="flex items-center gap-2 bg-paper-2/40 rounded-lg p-2">
+                  <img *ngIf="c.photoUrl; else noPhotoListe"
+                       [src]="c.photoUrl" [alt]="'Photo de ' + c.fullName"
+                       class="w-9 h-9 rounded-full object-cover border border-paper-3 flex-shrink-0">
+                  <ng-template #noPhotoListe>
+                    <div class="w-9 h-9 rounded-full bg-paper-2 flex items-center justify-center border border-paper-3 flex-shrink-0">
+                      <svg class="w-5 h-5 text-ink-tertiary" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                        <path d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"/>
+                      </svg>
+                    </div>
+                  </ng-template>
+                  <p class="text-sm font-semibold text-ink-primary truncate">{{ c.fullName }}</p>
+                </div>
+              </div>
+              <p *ngIf="e.resultsHidden" class="text-xs text-ink-tertiary italic mt-2">
+                🔒 Résultats détaillés temporairement masqués par l'administration.
+                Seule la participation est affichée.
+              </p>
+            </ng-template>
+          </div>
+
+          <p *ngIf="!e.resultsHidden" class="text-xs text-ink-tertiary mt-3">
             {{ e.participationPercent }}% de participation.
-            Les résultats détaillés par candidat seront publiés à l'issue du scrutin, lorsque
-            tous les titulaires de carte d'abonnement auront voté.
+            Les résultats sont mis à jour en temps réel (toutes les 30 secondes).
           </p>
         </article>
       </div>
