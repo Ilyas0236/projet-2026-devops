@@ -325,6 +325,88 @@
             </div>
           </div>
 
+          <!-- MES REÇUS DE SALAIRE & PRIME (C.21.v2)
+               Source : GET /api/auth/salary-receipts/mine — chaque user ne voit que SES
+               propres reçus (ownership vérifié par SalaryReceiptController.mine() +
+               test mineNeRetourneQueSesPropresRecus). Téléchargement PDF via
+               getRecuPdf(id) — IDOR strict (test unJoueurNePeutPasTelechargerLeRecuDUnAutre).
+               Badge "X nouveaux" : localStorage lastSeenReceiptId_{userId} mis à jour
+               quand la section devient visible (IntersectionObserver déclenché par
+               observeMesRecusSection dans le TS). -->
+          <div #mesRecusSection class="paper-card rounded-3xl p-8">
+            <div class="flex justify-between items-end mb-6 flex-wrap gap-3">
+              <div>
+                <h3 class="section-title-light font-display text-2xl uppercase tracking-wider mb-1">
+                  Mes reçus de salaire & prime
+                  <span *ngIf="unreadReceipts > 0"
+                        class="ml-2 inline-flex items-center justify-center min-w-[1.5rem] px-2 py-0.5 rounded-full bg-wydad-red text-white text-[11px] font-black align-middle">
+                    {{ unreadReceipts }} nouveau{{ unreadReceipts > 1 ? 'x' : '' }}
+                  </span>
+                </h3>
+                <p class="text-ink-tertiary text-xs uppercase tracking-widest">
+                  Bulletins émis par le président du club · téléchargez le PDF officiel
+                </p>
+              </div>
+            </div>
+
+            <p *ngIf="myReceiptsLoading" class="text-ink-secondary text-sm py-8 text-center">
+              Chargement de vos reçus…
+            </p>
+
+            <div *ngIf="!myReceiptsLoading && myReceipts.length === 0"
+                 class="rounded-2xl border border-paper-3 bg-paper-1 p-8 text-center">
+              <p class="text-ink-secondary text-sm">
+                Aucun reçu pour l'instant. Le président vous enverra vos bulletins
+                de salaire ou de prime ici dès qu'il en émettra.
+              </p>
+            </div>
+
+            <div *ngIf="!myReceiptsLoading && myReceipts.length > 0" class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead>
+                  <tr class="text-left text-[10px] uppercase tracking-widest text-ink-secondary border-b-2 border-wydad-red">
+                    <th class="pb-3 pr-4 font-bold">Type</th>
+                    <th class="pb-3 pr-4 font-bold text-right">Montant</th>
+                    <th class="pb-3 pr-4 font-bold hidden md:table-cell">Période</th>
+                    <th class="pb-3 pr-4 font-bold">Motif</th>
+                    <th class="pb-3 pr-4 font-bold hidden md:table-cell">Émis par</th>
+                    <th class="pb-3 pr-4 font-bold hidden lg:table-cell">Date</th>
+                    <th class="pb-3 pr-4 font-bold text-right">Réf.</th>
+                    <th class="pb-3 font-bold text-right">PDF</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let r of myReceipts"
+                      class="border-b border-paper-3 hover:bg-paper-1 transition-colors"
+                      [class.bg-amber-50]="unreadReceipts > 0 && r.id > (lastSeenReceiptIdValue ?? -1)">
+                    <td class="py-3 pr-4">
+                      <span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest"
+                            [class]="r.receiptType === 'SALAIRE' ? 'bg-blue-100 text-blue-800' : 'bg-amber-100 text-amber-800'">
+                        {{ r.receiptType }}
+                      </span>
+                    </td>
+                    <td class="py-3 pr-4 text-right font-display font-black text-ink-primary whitespace-nowrap">
+                      {{ r.amount | number:'1.2-2' }} <span class="text-xs text-ink-tertiary">{{ r.currency }}</span>
+                    </td>
+                    <td class="py-3 pr-4 hidden md:table-cell text-ink-secondary text-xs">{{ r.periode || '—' }}</td>
+                    <td class="py-3 pr-4 text-ink-secondary text-xs">{{ r.motif || '—' }}</td>
+                    <td class="py-3 pr-4 hidden md:table-cell text-ink-secondary text-xs">{{ r.issuedByName || '—' }}</td>
+                    <td class="py-3 pr-4 hidden lg:table-cell text-ink-tertiary text-xs">{{ formatDate(r.paymentDate) }}</td>
+                    <td class="py-3 pr-4 text-right">
+                      <code class="text-[10px] text-ink-tertiary">{{ r.reference }}</code>
+                    </td>
+                    <td class="py-3 text-right">
+                      <button (click)="downloadReceiptPdf(r)" [disabled]="downloadingReceiptId === r.id"
+                              class="bg-wydad-red hover:bg-wydad-red-dark disabled:opacity-50 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-colors">
+                        {{ downloadingReceiptId === r.id ? '⏳' : '⬇ PDF' }}
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
           <!-- MES CONVOCATIONS (B.3.a) -->
           <div class="paper-card rounded-3xl p-8">
             <div class="flex justify-between items-end mb-8">
