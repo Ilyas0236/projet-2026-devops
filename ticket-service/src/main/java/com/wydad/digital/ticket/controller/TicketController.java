@@ -6,6 +6,7 @@ import com.wydad.digital.ticket.dto.ValidateTicketRequest;
 import com.wydad.digital.ticket.filter.UserContext;
 import com.wydad.digital.ticket.service.TicketPdfService;
 import com.wydad.digital.ticket.service.TicketService;
+import com.wydad.digital.ticket.service.VipTicketService;
 import com.wydad.digital.ticket.model.Ticket;
 import com.wydad.digital.ticket.repository.TicketRepository;
 import jakarta.validation.Valid;
@@ -16,6 +17,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/ticket/tickets")
@@ -25,6 +27,7 @@ public class TicketController {
     private final TicketService ticketService;
     private final TicketPdfService ticketPdfService;
     private final TicketRepository ticketRepository;
+    private final VipTicketService vipTicketService;
 
     @PostMapping("/purchase")
     @PreAuthorize("hasRole('ADHERENT') or hasRole('PARENT') or hasRole('ADMIN')")
@@ -59,6 +62,39 @@ public class TicketController {
             org.springframework.data.domain.Pageable pageable) {
         return ResponseEntity.ok(ticketService.adminFilter(
                 startDate, endDate, userEmail, eventId, pageable));
+    }
+
+    /**
+     * B.29 — Distribution bulk de 4 billets VIP par l'ADMIN à tous les
+     * membres SENIOR (JOUEUR + STAFF + ENTRAINEUR) du groupe
+     * discipline+catégorie de l'événement. Idempotent : peut être
+     * ré-appelé sans créer de doublon.
+     *
+     * <p>L'auto-trigger sports-service utilise l'endpoint interne
+     * {@code /internal/vip-generate} (gateway-bloqué) ; ce nouvel
+     * endpoint ADMIN public permet de relancer manuellement depuis
+     * l'UI billetterie (par exemple après ajout d'un membre, ou si la
+     * première génération a échoué pour cause de section VIP absente).</p>
+     */
+    @PostMapping("/events/{eventId}/vip-distribute")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> vipDistribute(@PathVariable Long eventId) {
+        try {
+            VipTicketService.VipGenerationResult result =
+                    vipTicketService.generateVipTicketsForEvent(eventId);
+            // B.29 — on expose les compteurs avec une sémantique
+            // « bénéficiaires » (inclut STAFF/ENTRAINEUR) plutôt que
+            // « joueurs ». Le record interne garde joueursServis par
+            // rétro-compat avec l'endpoint interne /vip-generate.
+            return ResponseEntity.ok(Map.of(
+                    "beneficiairesServis", result.joueursServis(),
+                    "billetsCrees", result.billetsCrees()));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.notFound().build();
+        } catch (IllegalStateException e) {
+            return ResponseEntity.unprocessableEntity()
+                    .body(Map.of("erreur", e.getMessage()));
+        }
     }
 
     @GetMapping("/number/{ticketNumber}")

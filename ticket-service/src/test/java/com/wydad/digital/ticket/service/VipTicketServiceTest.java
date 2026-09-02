@@ -203,7 +203,8 @@ class VipTicketServiceTest {
                 .build());
 
         // Le roster serveur ne renvoie que les DEUX joueurs Football U17.
-        org.mockito.BDDMockito.given(rosterClient.fetchPlayersOfGroup("FOOTBALL", "U17"))
+        // B.29 : le service appelle fetchMembersOfGroup (sans filtre JOUEUR).
+        org.mockito.BDDMockito.given(rosterClient.fetchMembersOfGroup("FOOTBALL", "U17"))
                 .willReturn(List.of(
                         new SportsRosterClient.RosterMember(JOUEUR_1_ID, "Youssef El Amrani", "JOUEUR"),
                         new SportsRosterClient.RosterMember(JOUEUR_2_ID, "Omar Naji", "JOUEUR")));
@@ -234,7 +235,8 @@ class VipTicketServiceTest {
     /** Roster vide (groupe sans joueur) : génération propre, zéro billet. */
     @Test
     void groupeSansJoueurNeGenereRien() {
-        org.mockito.BDDMockito.given(rosterClient.fetchPlayersOfGroup(anyString(), anyString()))
+        // B.29 : le service appelle fetchMembersOfGroup (sans filtre JOUEUR).
+        org.mockito.BDDMockito.given(rosterClient.fetchMembersOfGroup(anyString(), anyString()))
                 .willReturn(List.of());
 
         Event senior = eventRepository.save(Event.builder()
@@ -421,5 +423,143 @@ class VipTicketServiceTest {
                 .doesNotThrowAnyException();
         // Aucun billet créé (pas de section)
         assertThat(ticketRepository.findByUserIdOrderByCreatedAtDesc(JOUEUR_1_ID)).isEmpty();
+    }
+
+    // ---------- 8. B.29 — STAFF + ENTRAINEUR SENIOR reçoivent aussi 4 billets ----------
+
+    /** B.29 — Bug historique : le filtre JOUEUR-only droppait silencieusement
+     *  STAFF et ENTRAINEUR. Le nouveau client fetchMembersOfGroup les inclut. */
+    @Test
+    void staffEtEntraineurSeniorRecoiventQuatreBilletsCommeLesJoueurs() {
+        Long entraineurId = 201L;
+        Long staffId = 202L;
+        org.mockito.BDDMockito.given(rosterClient.fetchMembersOfGroup("FOOTBALL", "SENIOR"))
+                .willReturn(List.of(
+                        new SportsRosterClient.RosterMember(JOUEUR_1_ID, "Youssef El Amrani", "JOUEUR"),
+                        new SportsRosterClient.RosterMember(JOUEUR_2_ID, "Omar Naji", "JOUEUR"),
+                        new SportsRosterClient.RosterMember(entraineurId, "Ernesto Valverde", "STAFF"),
+                        new SportsRosterClient.RosterMember(staffId, "Khalid Lahlou", "STAFF")));
+
+        Event senior = eventRepository.save(Event.builder()
+                .title("WAC - Raja (SENIOR B.29)")
+                .eventType(com.wydad.digital.ticket.enums.EventType.FOOTBALL)
+                .category(com.wydad.digital.ticket.model.EventCategory.SENIOR)
+                .homeTeam("Wydad AC")
+                .awayTeam("Raja CA")
+                .venue("Complexe Mohammed V")
+                .eventDate(LocalDateTime.now().plusDays(7))
+                .basePrice(new BigDecimal("150.00"))
+                .totalCapacity(100)
+                .availableSeats(100)
+                .soldTickets(0)
+                .build());
+        sectionRepository.save(Section.builder()
+                .name("VIP senior B.29")
+                .category(TicketCategory.VIP)
+                .capacity(50)
+                .availableSeats(50)
+                .price(BigDecimal.ZERO)
+                .event(senior)
+                .build());
+
+        var result = vipTicketService.generateVipTicketsForEvent(senior.getId());
+
+        // 4 bénéficiaires × 4 billets SENIOR = 16 billets
+        assertThat(result.joueursServis()).isEqualTo(4);
+        assertThat(result.billetsCrees()).isEqualTo(16);
+
+        // JOUEUR + STAFF servis identiquement
+        assertThat(ticketRepository.findByUserIdOrderByCreatedAtDesc(JOUEUR_1_ID)).hasSize(4);
+        assertThat(ticketRepository.findByUserIdOrderByCreatedAtDesc(JOUEUR_2_ID)).hasSize(4);
+        assertThat(ticketRepository.findByUserIdOrderByCreatedAtDesc(entraineurId)).hasSize(4);
+        assertThat(ticketRepository.findByUserIdOrderByCreatedAtDesc(staffId)).hasSize(4);
+    }
+
+    /** B.29 — STAFF en catégorie jeune reçoit 2 billets (quota jeune). */
+    @Test
+    void staffEnCategorieJeuneRecoitDeuxBillets() {
+        Long staffId = 303L;
+        org.mockito.BDDMockito.given(rosterClient.fetchMembersOfGroup("FOOTBALL", "U17"))
+                .willReturn(List.of(
+                        new SportsRosterClient.RosterMember(JOUEUR_1_ID, "Youssef El Amrani", "JOUEUR"),
+                        new SportsRosterClient.RosterMember(staffId, "Khalid Lahlou", "STAFF")));
+
+        Event u17 = eventRepository.save(Event.builder()
+                .title("WAC U17 - Difaa (B.29 staff)")
+                .eventType(com.wydad.digital.ticket.enums.EventType.FOOTBALL)
+                .category(com.wydad.digital.ticket.model.EventCategory.U17)
+                .homeTeam("Wydad AC")
+                .awayTeam("Difaa El Jadidi")
+                .venue("Complexe Mohammed V")
+                .eventDate(LocalDateTime.now().plusDays(5))
+                .basePrice(new BigDecimal("40.00"))
+                .totalCapacity(60)
+                .availableSeats(60)
+                .soldTickets(0)
+                .build());
+        sectionRepository.save(Section.builder()
+                .name("VIP U17 B.29 staff")
+                .category(TicketCategory.VIP)
+                .capacity(20)
+                .availableSeats(20)
+                .price(BigDecimal.ZERO)
+                .event(u17)
+                .build());
+
+        var result = vipTicketService.generateVipTicketsForEvent(u17.getId());
+
+        assertThat(result.joueursServis()).isEqualTo(2);
+        assertThat(result.billetsCrees()).isEqualTo(4);
+        assertThat(ticketRepository.findByUserIdOrderByCreatedAtDesc(JOUEUR_1_ID)).hasSize(2);
+        assertThat(ticketRepository.findByUserIdOrderByCreatedAtDesc(staffId)).hasSize(2);
+    }
+
+    /** B.29 — Le texte de notification distingue Staff / Joueur. */
+    @Test
+    void notificationTexteDifferencieParRole() {
+        Long entraineurId = 404L;
+        org.mockito.BDDMockito.given(rosterClient.fetchMembersOfGroup("FOOTBALL", "SENIOR"))
+                .willReturn(List.of(
+                        new SportsRosterClient.RosterMember(JOUEUR_1_ID, "Youssef El Amrani", "JOUEUR"),
+                        new SportsRosterClient.RosterMember(entraineurId, "Ernesto Valverde", "STAFF")));
+
+        Event senior = eventRepository.save(Event.builder()
+                .title("WAC - Berkane (notif B.29)")
+                .eventType(com.wydad.digital.ticket.enums.EventType.FOOTBALL)
+                .category(com.wydad.digital.ticket.model.EventCategory.SENIOR)
+                .homeTeam("Wydad AC")
+                .awayTeam("RS Berkane")
+                .venue("Complexe Mohammed V")
+                .eventDate(LocalDateTime.now().plusDays(11))
+                .basePrice(new BigDecimal("120.00"))
+                .totalCapacity(80)
+                .availableSeats(80)
+                .soldTickets(0)
+                .build());
+        sectionRepository.save(Section.builder()
+                .name("VIP notif B.29")
+                .category(TicketCategory.VIP)
+                .capacity(20)
+                .availableSeats(20)
+                .price(BigDecimal.ZERO)
+                .event(senior)
+                .build());
+
+        vipTicketService.generateVipTicketsForEvent(senior.getId());
+
+        // Le staff reçoit la mention "(Staff technique)" dans le corps.
+        verify(notificationClient).notifyUser(
+                org.mockito.ArgumentMatchers.eq(entraineurId),
+                org.mockito.ArgumentMatchers.isNull(),
+                org.mockito.ArgumentMatchers.anyString(),
+                org.mockito.ArgumentMatchers.contains("(Staff technique)"),
+                org.mockito.ArgumentMatchers.anyString());
+        // Le joueur reçoit un message sans mention staff.
+        verify(notificationClient).notifyUser(
+                org.mockito.ArgumentMatchers.eq(JOUEUR_1_ID),
+                org.mockito.ArgumentMatchers.isNull(),
+                org.mockito.ArgumentMatchers.anyString(),
+                org.mockito.ArgumentMatchers.contains("VIP vous sont offerts"),
+                org.mockito.ArgumentMatchers.anyString());
     }
 }
