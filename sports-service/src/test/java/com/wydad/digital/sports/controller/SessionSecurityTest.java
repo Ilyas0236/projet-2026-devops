@@ -101,6 +101,17 @@ class SessionSecurityTest {
                  "location": "Stade Mohammed V",
                  "sessionDate": "2026-09-01T18:00:00",
                  "sportType": "FOOTBALL", "category": "U15",
+                 "createdByStaffId": 5,
+                 "joueurUserIds": [101, 102]}""".formatted(titre);
+    }
+
+    /** Body SANS joueurUserIds — V1 la liste est @NotEmpty, donc 400. */
+    private static String bodySansJoueurs(String titre) {
+        return """
+                {"title": "%s", "description": "Seance technique",
+                 "location": "Stade Mohammed V",
+                 "sessionDate": "2026-09-01T18:00:00",
+                 "sportType": "FOOTBALL", "category": "U15",
                  "createdByStaffId": 5}""".formatted(titre);
     }
 
@@ -173,7 +184,7 @@ class SessionSecurityTest {
 
     @Test
     void payloadInvalideRenvoie400EtRienNEstPersiste() throws Exception {
-        // Titre manquant
+        // Titre manquant (avec joueurs OK)
         mockMvc.perform(post(URL)
                         .header("X-User-Id", "301")
                         .header("X-User-Email", "coach@wydad.ma")
@@ -182,15 +193,25 @@ class SessionSecurityTest {
                         .content(body("")))
                 .andExpect(status().isBadRequest());
 
-        // Date manquante
+        // Date manquante (avec joueurs OK) — @NotNull sur sessionDate
         String sansDate = "{\"title\": \"Sans date\", \"sportType\": \"FOOTBALL\","
-                + "\"category\": \"U15\", \"createdByStaffId\": 5}";
+                + "\"category\": \"U15\", \"createdByStaffId\": 5,"
+                + "\"joueurUserIds\": [101, 102]}";
         mockMvc.perform(post(URL)
                         .header("X-User-Id", "301")
                         .header("X-User-Email", "coach@wydad.ma")
                         .header("X-User-Role", "STAFF")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(sansDate))
+                .andExpect(status().isBadRequest());
+
+        // Liste joueurs vide — @NotEmpty sur joueurUserIds (V1)
+        mockMvc.perform(post(URL)
+                        .header("X-User-Id", "301")
+                        .header("X-User-Email", "coach@wydad.ma")
+                        .header("X-User-Role", "STAFF")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(bodySansJoueurs("Sans joueurs")))
                 .andExpect(status().isBadRequest());
 
         assertThat(sessionRepository.count()).isZero();
