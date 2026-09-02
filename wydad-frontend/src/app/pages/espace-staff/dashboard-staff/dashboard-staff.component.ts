@@ -116,6 +116,15 @@ export class DashboardStaffComponent implements OnInit, OnDestroy {
   @ViewChild('mesRecusSection') mesRecusSectionRef?: ElementRef<HTMLElement>;
   private recuObserver: IntersectionObserver | null = null;
 
+  // ─── B.29 — Billets VIP offerts par match à domicile (SENIOR) ───
+  // Le staff encadrant SENIOR (médecin, kiné, manager…) reçoit 4 billets
+  // VIP par match à domicile, au même titre que les joueurs et l'entraîneur.
+  // Source identique à l'espace joueur : /api/ticket/tickets/user/{id}
+  // filtré par category='VIP' (toujours PAID, prix 0, distribué par club).
+  vipTickets: any[] = [];
+  vipTicketsLoading = false;
+  vipDownloadingId: number | null = null;
+
   loadRapportsFinanciers() {
     this.api.getRapportsFinanciers().subscribe({
       next: (list) => (this.rapportsFinanciers = Array.isArray(list) ? list.slice(0, 3) : []),
@@ -154,6 +163,10 @@ export class DashboardStaffComponent implements OnInit, OnDestroy {
     this.canScheduleCalls = tokenRole === 'ENTRAINEUR'
         || tokenRole === 'PRESIDENT' || tokenRole === 'ADMIN';
     if (userId) {
+      // B.29 — billets VIP : charge indépendamment de la fiche staff (un
+      // staff rattaché à un autre groupe peut quand même avoir reçu 4 billets
+      // pour un match où il officie). Cf. même logique côté entraineur.
+      this.loadVipTickets(userId);
       this.api.getStaffByUserId(userId).subscribe({
         next: (data) => {
           this.staff = data;
@@ -774,5 +787,60 @@ export class DashboardStaffComponent implements OnInit, OnDestroy {
   ngOnDestroy() {
     this.recuObserver?.disconnect();
     this.recuObserver = null;
+  }
+
+  // ─── B.29 — Billets VIP : chargement + téléchargement PDF ───
+
+  /**
+   * Charge les billets VIP du membre connecté (staff SENIOR : 4 billets par
+   * match à domicile). On s'appuie sur l'endpoint standard /tickets/user/{id}
+   * déjà utilisé pour la page /profil/billets, et on filtre par catégorie VIP
+   * côté client (cohérent avec l'espace joueur, pas de nouvel endpoint).
+   */
+  loadVipTickets(userId: number) {
+    this.vipTicketsLoading = true;
+    this.api.getTicketsByUser(userId).subscribe({
+      next: (data) => {
+        this.vipTickets = (data || [])
+          .filter((t: any) => t.category === 'VIP')
+          .sort((a: any, b: any) =>
+            new Date(a.eventDate).getTime() - new Date(b.eventDate).getTime());
+        this.vipTicketsLoading = false;
+      },
+      error: () => {
+        this.vipTicketsLoading = false;
+      }
+    });
+  }
+
+  /**
+   * Télécharge le PDF d'un billet VIP (génère un Blob puis déclenche un
+   * download). Pattern copié de l'espace joueur.
+   */
+  downloadVipPdf(ticket: any) {
+    if (this.vipDownloadingId != null) return;
+    this.vipDownloadingId = ticket.id;
+    this.api.getTicketPdf(ticket.id).subscribe({
+      next: (blob: Blob) => {
+        try {
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `billet-vip-${ticket.ticketNumber}.pdf`;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          window.URL.revokeObjectURL(url);
+        } catch (e) {
+          this.toast.error('Téléchargement impossible.');
+        } finally {
+          this.vipDownloadingId = null;
+        }
+      },
+      error: () => {
+        this.vipDownloadingId = null;
+        this.toast.error('Erreur lors du téléchargement du billet VIP.');
+      }
+    });
   }
 }

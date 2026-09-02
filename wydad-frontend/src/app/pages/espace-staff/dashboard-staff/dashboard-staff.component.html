@@ -769,6 +769,65 @@
               </li>
             </ul>
           </div>
+
+          <!-- ═══ B.29 — MES BILLETS VIP (SENIOR) ═══
+               Le staff encadrant SENIOR reçoit 4 billets VIP par match à
+               domicile du club (médecin, kiné, manager, etc.). Endpoint
+               identique à l'espace joueur : /api/ticket/tickets/user/{id},
+               filtré par category='VIP' côté client. Téléchargement PDF
+               avec QR code pour scan à l'entrée du stade. -->
+          <div class="paper-card rounded-3xl p-6 md:p-8 animate-fade-in-up">
+            <div class="flex justify-between items-end mb-5 flex-wrap gap-3">
+              <div>
+                <h3 class="section-title-light font-display text-xl uppercase tracking-wider mb-1">
+                  🎁 Mes billets VIP
+                </h3>
+                <p class="text-ink-tertiary text-[10px] uppercase tracking-widest">
+                  4 billets offerts par match à domicile SENIOR · PDF avec QR code
+                </p>
+              </div>
+              <span *ngIf="vipTickets.length > 0"
+                    class="px-2.5 py-1 rounded-full bg-wydad-red text-white text-[11px] font-black">
+                {{ vipTickets.length }}
+              </span>
+            </div>
+
+            <p *ngIf="vipTicketsLoading" class="text-ink-secondary text-sm py-6 text-center">
+              Chargement de vos billets VIP…
+            </p>
+
+            <div *ngIf="!vipTicketsLoading && vipTickets.length === 0"
+                 class="rounded-2xl border border-paper-3 bg-paper-1 p-6 text-center">
+              <p class="text-ink-secondary text-xs">
+                Aucun billet VIP pour le moment. Ils sont générés automatiquement
+                par l'ADMIN à chaque match à domicile SENIOR (4 billets par
+                membre du staff encadrant).
+              </p>
+            </div>
+
+            <div *ngIf="!vipTicketsLoading && vipTickets.length > 0"
+                 class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div *ngFor="let t of vipTickets"
+                   class="bg-white border border-paper-3 rounded-2xl p-4 flex flex-col gap-2 hover:border-wydad-red/40 transition-all shadow-sm">
+                <div class="flex items-center justify-between gap-2">
+                  <span class="px-2 py-0.5 rounded-full bg-wydad-red text-white text-[10px] font-bold uppercase tracking-widest">
+                    VIP
+                  </span>
+                  <code class="text-[10px] text-ink-tertiary truncate">{{ t.ticketNumber }}</code>
+                </div>
+                <div class="min-w-0">
+                  <h4 class="font-bold text-sm text-ink-primary truncate">{{ t.eventTitle }}</h4>
+                  <p class="text-ink-tertiary text-[11px] mt-0.5">
+                    {{ t.eventDate | date:'dd/MM/yyyy HH:mm' }} · {{ t.venue }}
+                  </p>
+                </div>
+                <button (click)="downloadVipPdf(t)" [disabled]="vipDownloadingId === t.id"
+                        class="mt-1 bg-wydad-red hover:bg-wydad-red-dark disabled:opacity-50 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-colors w-full">
+                  {{ vipDownloadingId === t.id ? '⏳ Téléchargement…' : '⬇ Télécharger le PDF' }}
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

@@ -27,7 +27,7 @@ import { ToastService } from '../../../services/toast.service';
 export class DashboardEntraineurComponent implements OnInit, OnDestroy {
   loading = true;
   loadError = false;
-  activeTab: 'effectif' | 'seances' | 'matchs' | 'messagerie' | 'video' | 'recus' = 'effectif';
+  activeTab: 'effectif' | 'seances' | 'matchs' | 'messagerie' | 'video' | 'recus' | 'vip' = 'effectif';
 
   api = inject(ApiService);
   auth = inject(AuthService);
@@ -77,6 +77,11 @@ export class DashboardEntraineurComponent implements OnInit, OnDestroy {
       this.loading = false;
       return;
     }
+
+    // B.29 — billets VIP du membre connecté (indépendants de la fiche staff
+    // : un coach SENIOR rattaché à un autre groupe peut quand même avoir
+    // reçu 4 billets pour un match où il officie).
+    this.loadVipTickets(userId);
 
     this.api.getStaffByUserId(userId).subscribe({
       next: (staff) => {
@@ -389,6 +394,47 @@ export class DashboardEntraineurComponent implements OnInit, OnDestroy {
       error: (err) => {
         this.downloadingReceiptId = null;
         this.toast.error(err?.error?.message || 'Téléchargement du PDF impossible.');
+      }
+    });
+  }
+
+  // ─── B.29 — Billets VIP offerts par match à domicile (SENIOR) ───
+  // L'ADMIN distribue 4 billets VIP par membre SENIOR (joueur+staff+entraineur)
+  // à chaque match à domicile. L'entraîneur SENIOR reçoit donc 4 billets comme
+  // tout le monde, affichés ici sur le même modèle que le dashboard joueur.
+  vipTickets: any[] = [];
+  vipTicketsLoading = false;
+  vipDownloadingId: number | null = null;
+
+  loadVipTickets(userId: number) {
+    this.vipTicketsLoading = true;
+    this.api.getTicketsByUser(userId).subscribe({
+      next: (data) => {
+        this.vipTickets = (data || [])
+          .filter((t: any) => t.category === 'VIP')
+          .sort((a: any, b: any) =>
+            new Date(a.eventDate).getTime() - new Date(b.eventDate).getTime());
+        this.vipTicketsLoading = false;
+      },
+      error: () => { this.vipTicketsLoading = false; }
+    });
+  }
+
+  downloadVipPdf(ticket: any) {
+    this.vipDownloadingId = ticket.id;
+    this.api.getTicketPdf(ticket.id).subscribe({
+      next: (blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `billet-vip-${ticket.ticketNumber}.pdf`;
+        a.click();
+        window.URL.revokeObjectURL(url);
+        this.vipDownloadingId = null;
+      },
+      error: () => {
+        this.toast.error('Erreur lors du téléchargement du billet VIP.');
+        this.vipDownloadingId = null;
       }
     });
   }
