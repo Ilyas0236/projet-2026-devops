@@ -91,6 +91,35 @@ public interface UserSubscriptionRepository extends JpaRepository<UserSubscripti
     boolean existsByPlan_Id(Long planId);
 
     /**
+     * B.8 — Liste des abonnements ACTIVE non expirés (validTo &gt; now).
+     * Utilisé par {@code InternalMembershipController.listActiveSubscribers}
+     * pour alimenter le dropdown « candidats président » côté election-service.
+     *
+     * <p>Filtre optionnel par saison (null = toutes saisons). Joint
+     * {@code User} côté JPQL (lazy fetch OK dans une @Transactional du
+     * contrôleur). Tri par email asc pour un affichage stable.</p>
+     */
+    @Query("SELECT s FROM UserSubscription s " +
+            "WHERE s.status = com.wydad.digital.auth.model.subscription.UserSubscriptionStatus.ACTIVE " +
+            "  AND s.validTo > :now " +
+            "  AND (:season IS NULL OR s.season = :season) " +
+            "ORDER BY s.user.email ASC")
+    List<UserSubscription> findAllActiveAt(@Param("now") LocalDateTime now,
+                                           @Param("season") String season);
+
+    /**
+     * B.8 — Compte des titulaires ACTIVE à un instant donné. Utilisé pour
+     * calculer le % de participation d'un scrutin président (election-service).
+     * Le paramètre est le {@code endsAt} de l'élection : on fige le snapshot
+     * au moment de la clôture (sinon un adhérent qui achète APRÈS clôture
+     * serait compté à tort comme « n'ayant pas voté »).
+     */
+    @Query("SELECT COUNT(DISTINCT s.user.id) FROM UserSubscription s " +
+            "WHERE s.status = com.wydad.digital.auth.model.subscription.UserSubscriptionStatus.ACTIVE " +
+            "  AND s.validTo > :at")
+    long countDistinctActiveUsersAt(@Param("at") LocalDateTime at);
+
+    /**
      * Backfill idempotent : pour chaque ligne {@code user_subscriptions}
      * dont {@code plan_id IS NULL}, on remplit {@code plan_id} à partir de
      * {@code zone_code} via la table {@code subscription_plans}. SQL natif

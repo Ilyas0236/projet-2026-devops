@@ -2,6 +2,7 @@ package com.wydad.digital.auth.service.subscription;
 
 import com.wydad.digital.auth.client.PaymentClient;
 import com.wydad.digital.auth.client.SportsClient;
+import com.wydad.digital.auth.dto.subscription.ActiveMemberDTO;
 import com.wydad.digital.auth.dto.subscription.PurchaseSubscriptionRequest;
 import com.wydad.digital.auth.dto.subscription.SubscriptionResponse;
 import com.wydad.digital.auth.dto.subscription.SubscriptionZoneResponse;
@@ -257,6 +258,45 @@ public class SubscriptionService {
                 .flatMap(subscriptionRepository::findActiveByUser)
                 .map(s -> s.getValidTo().isAfter(LocalDateTime.now()))
                 .orElse(false);
+    }
+
+    /**
+     * B.8 — Liste des titulaires actifs (abonnement ACTIVE non expiré),
+     * éventuellement filtrés par saison. Utilisé par election-service
+     * pour alimenter le dropdown « candidats président » côté admin,
+     * et plus généralement par tout service qui doit lister les
+     * membres en règle (B.8, transparence, futur module votes).
+     *
+     * <p>L'endpoint correspondant est interne (gateway block) et n'est
+     * pas exposé publiquement : la liste détaillée (email, prénom) n'a
+     * pas vocation à fuiter hors du périmètre microservices.</p>
+     *
+     * @param season saison sportive marocaine (ex. "2026-2027"), ou null
+     *               pour toutes saisons confondues
+     */
+    @Transactional(readOnly = true)
+    public List<ActiveMemberDTO> listActiveAdherents(String season) {
+        List<UserSubscription> subs = subscriptionRepository.findAllActiveAt(LocalDateTime.now(), season);
+        return subs.stream()
+                .filter(s -> s.getUser() != null) // paranoïa : FK user_id doit être non-null
+                .map(s -> ActiveMemberDTO.of(s.getUser(), s))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * B.8 — Compte des titulaires ACTIVE à un instant donné (snapshot).
+     * Utilisé par election-service pour calculer le % de participation
+     * d'un scrutin président et publier les résultats définitifs
+     * (tous les titulaires doivent avoir voté).
+     *
+     * <p>Le paramètre {@code at} est typiquement le {@code endsAt} de
+     * l'élection : on fige le snapshot au moment de la clôture, sinon
+     * un adhérent qui achète APRÈS clôture serait compté à tort comme
+     * « n'ayant pas voté ».</p>
+     */
+    @Transactional(readOnly = true)
+    public long countActiveAdherentsAt(LocalDateTime at) {
+        return subscriptionRepository.countDistinctActiveUsersAt(at);
     }
 
     // -------- helpers --------
