@@ -56,8 +56,18 @@
               {{ event.status }}
             </span>
           </td>
-          <td class="px-6 py-4 text-right">
+          <td class="px-6 py-4 text-right whitespace-nowrap">
             <button (click)="openEditModal(event)" class="text-blue-400 hover:text-blue-300 mr-3 transition-colors uppercase text-xs font-bold">Éditer</button>
+            <!-- B.29 — distribution 4 billets VIP aux JOUEUR+STAFF+ENTRAINEUR SENIOR -->
+            <button (click)="distributeVip(event)"
+                    [disabled]="!isHomeMatch(event)"
+                    [title]="isHomeMatch(event) ? 'Distribuer 4 (SENIOR) ou 2 (jeune) billets VIP aux joueurs, staff et entraineurs du groupe' : 'Réservé aux matchs à domicile'"
+                    class="mr-3 transition-colors uppercase text-xs font-bold"
+                    [ngClass]="isHomeMatch(event)
+                      ? 'text-yellow-400 hover:text-yellow-300'
+                      : 'text-gray-600 cursor-not-allowed'">
+              🎁 VIP
+            </button>
             <button (click)="deleteEvent(event.id)" class="text-red-400 hover:text-red-300 transition-colors uppercase text-xs font-bold">Supprimer</button>
           </td>
         </tr>

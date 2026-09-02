@@ -536,6 +536,23 @@ export class ApiService {
     return this.http.post<any[]>(`${this.baseUrl}/ticket/tickets/purchase`, purchaseRequest);
   }
 
+  /**
+   * B.29 — Distribution bulk de 4 billets VIP (SENIOR) ou 2 (catégorie
+   * jeune) à chaque bénéficiaire du groupe discipline+catégorie :
+   * JOUEUR + STAFF + ENTRAINEUR. Réservé ADMIN.
+   *
+   * <p>Idempotent : relancer ne crée pas de doublon. Refus 422 si la
+   * section VIP n'existe pas sur l'événement (l'admin doit d'abord
+   * l'éditer et la créer).</p>
+   */
+  distributeVipTickets(eventId: number): Observable<{
+    beneficiairesServis: number;
+    billetsCrees: number;
+  }> {
+    return this.http.post<{ beneficiairesServis: number; billetsCrees: number }>(
+      `${this.baseUrl}/ticket/tickets/events/${eventId}/vip-distribute`, {});
+  }
+
   getTicketsByUser(userId: number): Observable<any[]> {
     return this.http.get<any[]>(`${this.baseUrl}/ticket/tickets/user/${userId}`);
   }

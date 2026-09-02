@@ -376,4 +376,47 @@ export class AdminBilletterieComponent implements OnInit {
       }
     });
   }
+
+  // ─────────── B.29 — Distribution bulk 4 billets VIP (admin) ───────────
+
+  /**
+   * B.29 — Distribue 4 billets VIP à chaque membre du groupe
+   * discipline+catégorie de l'événement (JOUEUR + STAFF + ENTRAINEUR SENIOR,
+   * 2 par bénéficiaire en catégorie jeune). Refuse les matchs à l'extérieur
+   * (pas de logique de distribution chez l'adversaire).
+   */
+  isHomeMatch(event: any): boolean {
+    return (event?.homeTeam || '').toLowerCase().includes('wydad');
+  }
+
+  async distributeVip(event: any) {
+    if (!this.isHomeMatch(event)) {
+      this.toast.error('Distribution VIP réservée aux matchs à domicile.');
+      return;
+    }
+    const categorie = event.category || 'SENIOR';
+    const quota = categorie.toUpperCase() === 'SENIOR' ? 4 : 2;
+    const ok = await this.confirm.confirm({
+      title: '🎁 Distribuer les billets VIP',
+      message: `Cette action offre ${quota} billet(s) VIP à chaque joueur, membre du staff et entraineur de la catégorie ${categorie} pour : ${event.homeTeam} vs ${event.awayTeam}.\n\nAction idempotente : les bénéficiaires déjà servis ne seront pas re-servis.`,
+      confirmLabel: `Distribuer ${quota} billets`,
+      danger: false
+    });
+    if (!ok) return;
+    this.api.distributeVipTickets(event.id).subscribe({
+      next: (r) => {
+        this.toast.success(
+          `🎁 ${r.billetsCrees} billet(s) VIP créés pour ${r.beneficiairesServis} bénéficiaire(s) (joueurs + staff + entraineurs).`
+        );
+        // On ne recharge pas la liste : le bouton 🎁 n'agit pas sur les
+        // sections du tableau, et recharger ferait perdre d'éventuels
+        // filtres que l'admin aurait appliqués.
+      },
+      error: (err) => {
+        const msg = err?.error?.erreur || err?.error?.message
+          || 'Échec de la distribution VIP.';
+        this.toast.error(msg);
+      }
+    });
+  }
 }
