@@ -732,12 +732,44 @@ export class ApiService {
     return this.http.post<any>(`${this.baseUrl}/elections/${electionId}/unpublish`, {});
   }
 
+  /**
+   * B.8.e — Bascule « cacher/afficher les résultats partiels » pendant
+   * le scrutin. Renvoie la vue actualisée (avec resultsHidden à jour).
+   * Refusé 409 si l'élection est déjà publiée.
+   */
+  toggleResultsVisibility(electionId: number): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/elections/${electionId}/toggle-results-visibility`, {});
+  }
+
   voteElection(electionId: number, candidateId: number): Observable<any> {
     return this.http.post<any>(`${this.baseUrl}/elections/${electionId}/vote`, { candidateId });
   }
 
-  createElection(title: string, startsAt: string, endsAt: string): Observable<any> {
-    return this.http.post<any>(`${this.baseUrl}/elections`, { title, startsAt, endsAt });
+  /**
+   * B.8.d — Création d'élection AVEC ses candidats en une seule requête.
+   * L'admin saisit nom + photo + présentation pour chaque candidat dans
+   * le formulaire, on envoie tout d'un coup. Si {@code candidates} est
+   * vide / null, le back accepte (0 candidat) — l'admin peut en ajouter
+   * après via {@link addElectionCandidate}. Règle back : 0 OU ≥2 (jamais 1).
+   */
+  createElectionWithCandidates(
+    title: string,
+    startsAt: string,
+    endsAt: string,
+    candidates: Array<{ fullName: string; photoUrl?: string; presentation?: string }>
+  ): Observable<any> {
+    // Filtre les entrées vides (ligne « + Ajouter » non remplie) — évite
+    // d'envoyer des candidats avec fullName vide qui se font jeter en 400.
+    const clean = (candidates || [])
+      .map(c => ({
+        fullName: (c.fullName || '').trim(),
+        photoUrl: (c.photoUrl || '').trim() || undefined,
+        presentation: (c.presentation || '').trim() || undefined
+      }))
+      .filter(c => c.fullName.length > 0);
+    return this.http.post<any>(`${this.baseUrl}/elections`, {
+      title, startsAt, endsAt, candidates: clean
+    });
   }
 
   addElectionCandidate(electionId: number, fullName: string, presentation?: string,

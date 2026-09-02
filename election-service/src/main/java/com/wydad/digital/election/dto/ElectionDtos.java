@@ -122,5 +122,10 @@ public final class ElectionDtos {
         int participationPercent;
         /** B.8 — horodatage de la clôture (gèle, SANS publier). Null tant que OPEN. */
         LocalDateTime closedAt;
+        // -------- B.8.e — toggle admin --------
+        /** Résultats partiels cachés par l'admin ? Si true, la page
+         *  publique ne montre pas les voix par candidat pendant le
+         *  scrutin (mais garde la participation X/Y). */
+        boolean resultsHidden;
     }
 }

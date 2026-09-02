@@ -382,6 +382,26 @@ public class ElectionService {
         return toView(saved, UserContext.getCurrentUserId());
     }
 
+    /**
+     * B.8.e — Bascule l'affichage des résultats partiels pendant le
+     * scrutin. Sans effet une fois l'élection publiée (les résultats
+     * sont figés et publics de toute façon). Renvoie la vue actualisée.
+     */
+    @Transactional
+    public ElectionView toggleResultsHidden(Long electionId) {
+        Election election = getElection(electionId);
+        if (election.isPublished()) {
+            throw new IllegalStateException(
+                "Impossible de cacher les résultats d'une élection déjà publiée (résultats publics).");
+        }
+        election.setResultsHidden(!election.isResultsHidden());
+        Election saved = electionRepository.save(election);
+        log.info("Élection {} '{}' : résultats partiels {}",
+            electionId, election.getTitle(),
+            saved.isResultsHidden() ? "CACHÉS" : "AFFICHÉS");
+        return toView(saved, UserContext.getCurrentUserId());
+    }
+
     /** Détail d'une élection ; résultats exposés seulement si publiés. */
     @Transactional(readOnly = true)
     public ElectionView get(Long id) {
@@ -626,10 +646,15 @@ public class ElectionService {
                 candidateRepository.findByElectionIdOrderByDisplayOrderAscIdAsc(election.getId());
 
         boolean publishedResults = election.isPublished();
+        // B.8.e — Affichage des résultats partiels pendant le scrutin :
+        //  - published = TOUJOURS visible (résultats figés publics)
+        //  - OPEN + !resultsHidden = visible (transparence en direct)
+        //  - OPEN + resultsHidden = caché (admin a basculé le toggle)
+        boolean showLiveResults = publishedResults || !election.isResultsHidden();
         List<Long> results = new ArrayList<>();
         List<Integer> percentages = List.of();
         long total = 0;
-        if (publishedResults) {
+        if (showLiveResults) {
             for (ElectionCandidate c : candidates) {
                 long v = voteRepository.countByElectionIdAndCandidateId(election.getId(), c.getId());
                 results.add(v);
@@ -708,6 +733,7 @@ public class ElectionService {
                 .eligibleVotersCount(eligibleVotersCount)
                 .participationPercent(participationPercent)
                 .closedAt(election.getClosedAt())
+                .resultsHidden(election.isResultsHidden())
                 .build();
     }
 }

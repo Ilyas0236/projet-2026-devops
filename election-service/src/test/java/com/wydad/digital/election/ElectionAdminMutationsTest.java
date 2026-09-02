@@ -164,4 +164,44 @@ class ElectionAdminMutationsTest {
         assertTrue(ex.getMessage().toLowerCase().contains("publi"),
                 "Message attendu mentionne 'publi', trouvé : " + ex.getMessage());
     }
+
+    // ------------------------------------------------------------------
+    // B.8.e — Toggle cacher/afficher résultats partiels
+    // ------------------------------------------------------------------
+
+    @Test
+    @DisplayName("B.8.e — toggle sur scrutin OPEN : bascule hidden ↔ visible")
+    void toggle_resultsVisibility_ouvert_bascule() {
+        // Démarre visible (défaut)
+        ElectionView v0 = electionService.get(electionId);
+        assertFalse(v0.isResultsHidden(), "Par défaut les résultats sont visibles");
+
+        // Bascule 1 : on cache
+        ElectionView v1 = electionService.toggleResultsHidden(electionId);
+        assertTrue(v1.isResultsHidden(), "Après 1er toggle : caché");
+
+        // Bascule 2 : on réaffiche
+        ElectionView v2 = electionService.toggleResultsHidden(electionId);
+        assertFalse(v2.isResultsHidden(), "Après 2e toggle : visible");
+    }
+
+    @Test
+    @DisplayName("B.8.e — toggle sur scrutin publié : refusé")
+    void toggle_resultsVisibility_publie_refuse() {
+        // 3 votes distincts + close + publish (cf. test depublier_publiee_ok)
+        ElectionView v0 = electionService.get(electionId);
+        Long candA = v0.getCandidates().get(0).getId();
+        for (long uid : new long[]{201L, 202L, 203L}) {
+            UserContext.setCurrentUserId(uid);
+            electionService.vote(electionId, candA);
+        }
+        UserContext.setCurrentUserId(999L);
+        electionService.closeOnly(electionId);
+        electionService.publishResults(electionId);
+
+        IllegalStateException ex = assertThrows(IllegalStateException.class,
+                () -> electionService.toggleResultsHidden(electionId));
+        assertTrue(ex.getMessage().toLowerCase().contains("publi"),
+                "Message attendu mentionne 'publié', trouvé : " + ex.getMessage());
+    }
 }

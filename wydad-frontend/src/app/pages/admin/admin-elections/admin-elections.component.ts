@@ -52,6 +52,42 @@ import { ConfirmService } from '../../../services/confirm.service';
           </label>
         </div>
 
+        <!-- B.8.d — Candidats saisis DIRECTEMENT dans le formulaire
+             (nom + photo + présentation). Pas de dropdown titulaire, pas
+             de données en dur : tout vient de ce que tape l'admin. -->
+        <div class="border-t border-white/10 pt-3 space-y-2">
+          <div class="flex items-center justify-between">
+            <p class="text-xs text-gray-400 uppercase tracking-wider font-bold">
+              Candidats ({{ newCandidates.length }})
+              <span class="text-gray-500 normal-case font-normal">— saisis nom + photo + présentation</span>
+            </p>
+            <button type="button" (click)="addNewCandidateLine()"
+                    class="text-xs font-bold uppercase tracking-wider text-wydad-gold hover:text-yellow-300">
+              + Ajouter un candidat
+            </button>
+          </div>
+
+          <div *ngFor="let c of newCandidates; let i = index"
+               class="bg-white/[0.03] border border-white/10 rounded-lg p-3 space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400">
+                Candidat {{ i + 1 }}
+              </span>
+              <button type="button" *ngIf="newCandidates.length > 1" (click)="removeNewCandidateLine(i)"
+                      class="text-gray-500 hover:text-red-400 text-xs" aria-label="Retirer ce candidat">✕</button>
+            </div>
+            <input [(ngModel)]="c.fullName" placeholder="Nom complet (ex. Ahmed Alaoui)"
+                   class="w-full bg-white/5 border border-white/10 rounded px-3 py-2 text-sm text-white placeholder:text-gray-500 focus:outline-none focus:border-wydad-red">
+            <input [(ngModel)]="c.photoUrl" placeholder="URL photo (optionnel, ex. https://…)"
+                   class="w-full bg-white/5 border border-white/10 rounded px-3 py-2 text-sm text-white placeholder:text-gray-500 focus:outline-none focus:border-wydad-red">
+            <textarea [(ngModel)]="c.presentation" placeholder="Présentation courte (optionnel, ex. Projet sportif 2026-2030)"
+                      rows="2"
+                      class="w-full bg-white/5 border border-white/10 rounded px-3 py-2 text-sm text-white placeholder:text-gray-500 focus:outline-none focus:border-wydad-red resize-none"></textarea>
+          </div>
+
+          <p *ngIf="candidatesError" class="text-red-300 text-xs">{{ candidatesError }}</p>
+        </div>
+
         <p *ngIf="datesError" class="text-red-300 text-xs">{{ datesError }}</p>
 
         <button (click)="create()" [disabled]="creating || !canCreate()"
@@ -153,6 +189,19 @@ import { ConfirmService } from '../../../services/confirm.service';
                 Dépublier
               </button>
 
+              <!-- B.8.e — Toggle cacher/afficher résultats partiels
+                   (visible uniquement si scrutin non publié). -->
+              <button *ngIf="!e.published" (click)="toggleResults(e)"
+                      [title]="e.resultsHidden
+                        ? 'Afficher les résultats partiels sur le site'
+                        : 'Cacher les résultats partiels du site (les titulaires voient uniquement la participation X/Y)'"
+                      [ngClass]="e.resultsHidden
+                        ? 'border-orange-400/60 text-orange-300'
+                        : 'border-white/20 text-gray-300 hover:border-orange-400 hover:text-orange-300'"
+                      class="border px-4 py-2 rounded text-xs font-bold uppercase tracking-wider transition-colors">
+                {{ e.resultsHidden ? '👁‍🗨 Résultats cachés' : '👁 Résultats visibles' }}
+              </button>
+
               <!-- B.8.b — Supprimer (0 vote uniquement) -->
               <button *ngIf="e.totalVotes === 0 && editingId !== e.id"
                       (click)="delete(e)"
@@ -185,35 +234,28 @@ import { ConfirmService } from '../../../services/confirm.service';
             Résultats : {{ candidateResultsLine(e) }}
           </div>
 
-          <!-- Formulaire ajout candidat (élection non clôturée) -->
+          <!-- B.8.d — Ajout de candidat APRÈS création (élection OPEN,
+               0 vote). On garde un fallback si l'admin a créé une
+               élection sans candidats et veut en ajouter. -->
           <div *ngIf="e.status === 'OPEN'" class="border-t border-white/10 pt-3 space-y-2">
-            <p class="text-xs text-gray-400">
-              <span *ngIf="eligibleLoading">Chargement des titulaires actifs…</span>
-              <span *ngIf="!eligibleLoading && eligibleMembers.length === 0" class="text-yellow-300">
-                ⚠ Aucun titulaire actif pour la saison {{ currentSeason }} — impossible d'ajouter un candidat lié.
-              </span>
-              <span *ngIf="!eligibleLoading && eligibleMembers.length > 0">
-                {{ eligibleMembers.length }} titulaire(s) actif(s) — saison {{ currentSeason }}.
-              </span>
+            <p class="text-xs text-gray-400 uppercase tracking-wider font-bold">
+              Ajouter un candidat supplémentaire
             </p>
-
-            <div class="grid grid-cols-1 sm:grid-cols-[1fr_1fr_auto_auto] gap-2 items-end">
-              <select [(ngModel)]="candUserId[e.id]"
-                      [disabled]="eligibleMembers.length === 0"
-                      class="bg-white/5 border border-white/10 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-wydad-red">
-                <option [ngValue]="undefined">— Choisir un titulaire —</option>
-                <option *ngFor="let m of eligibleMembers" [ngValue]="m.id">
-                  {{ m.firstName }} {{ m.lastName }} ({{ m.email }})
-                </option>
-              </select>
-              <input [(ngModel)]="candPhoto[e.id]" placeholder="URL photo (optionnel)"
-                     class="bg-white/5 border border-white/10 rounded px-3 py-2 text-sm text-white placeholder:text-gray-500 focus:outline-none focus:border-wydad-red">
-              <input [(ngModel)]="candPresentation[e.id]" placeholder="Présentation courte (optionnel)"
-                     class="sm:col-span-2 bg-white/5 border border-white/10 rounded px-3 py-2 text-sm text-white placeholder:text-gray-500 focus:outline-none focus:border-wydad-red">
-              <button (click)="addCandidate(e)" [disabled]="!candUserId[e.id]"
-                      class="bg-wydad-gold/90 hover:bg-wydad-gold disabled:opacity-40 text-black px-4 py-2 rounded text-xs font-bold uppercase tracking-wider transition-colors">
-                + Candidat
-              </button>
+            <div class="grid grid-cols-1 sm:grid-cols-[1fr_2fr_auto] gap-2 items-start">
+              <div class="space-y-1">
+                <input [(ngModel)]="candFullName[e.id]" placeholder="Nom complet"
+                       class="w-full bg-white/5 border border-white/10 rounded px-3 py-2 text-sm text-white placeholder:text-gray-500 focus:outline-none focus:border-wydad-red">
+                <input [(ngModel)]="candPhoto[e.id]" placeholder="URL photo (optionnel)"
+                       class="w-full bg-white/5 border border-white/10 rounded px-3 py-2 text-sm text-white placeholder:text-gray-500 focus:outline-none focus:border-wydad-red">
+                <textarea [(ngModel)]="candPresentation[e.id]" placeholder="Présentation (optionnel)"
+                          rows="2"
+                          class="w-full bg-white/5 border border-white/10 rounded px-3 py-2 text-sm text-white placeholder:text-gray-500 focus:outline-none focus:border-wydad-red resize-none"></textarea>
+                <button (click)="addCandidate(e)"
+                        [disabled]="!(candFullName[e.id] || '').trim()"
+                        class="w-full bg-wydad-gold/90 hover:bg-wydad-gold disabled:opacity-40 text-black px-4 py-2 rounded text-xs font-bold uppercase tracking-wider transition-colors">
+                  + Candidat
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -231,13 +273,24 @@ export class AdminElectionsComponent implements OnInit {
   error = '';
   creating = false;
   datesError = '';
+  candidatesError = '';
 
   newTitle = '';
   newStartsAt = '';
   newEndsAt = '';
 
-  /** Champs du formulaire candidat, indexés par id d'élection. */
-  candUserId: Record<number, number | undefined> = {};
+  /**
+   * B.8.d — Candidats saisis dans le formulaire de création.
+   * Liste mutable : on commence à 1 ligne vide, l'admin peut en
+   * ajouter (« + Ajouter un candidat ») ou en retirer. Chaque ligne =
+   * nom + photo + présentation. Tout est tapé à la main, rien en dur.
+   */
+  newCandidates: Array<{ fullName: string; photoUrl: string; presentation: string }> = [
+    { fullName: '', photoUrl: '', presentation: '' }
+  ];
+
+  /** Champs du formulaire candidat APRÈS création, indexés par id d'élection. */
+  candFullName: Record<number, string> = {};
   candPhoto: Record<number, string> = {};
   candPresentation: Record<number, string> = {};
 
@@ -249,32 +302,8 @@ export class AdminElectionsComponent implements OnInit {
   editEndsAt: Record<number, string> = {};
   editError: Record<number, string> = {};
 
-  /** B.8 — Titulaires actifs (dropdown candidats). */
-  eligibleMembers: Array<{ id: number; email: string; firstName: string; lastName: string; season: string; validTo: string; subscriptionId: number }> = [];
-  eligibleLoading = false;
-  /** Saison marocaine courante (août N → août N+1). */
-  currentSeason = currentSeason();
-
   ngOnInit() {
-    this.loadEligibleMembers();
     this.load();
-  }
-
-  private loadEligibleMembers() {
-    this.eligibleLoading = true;
-    this.api.listEligibleMembers(this.currentSeason).subscribe({
-      next: (data: any[]) => {
-        this.eligibleMembers = data || [];
-        this.eligibleLoading = false;
-      },
-      error: () => {
-        this.eligibleMembers = [];
-        this.eligibleLoading = false;
-        // On ne fait pas échouer le composant — l'admin peut quand même
-        // consulter les élections existantes. Le warning visuel est dans
-        // le template.
-      }
-    });
   }
 
   private load() {
@@ -284,11 +313,23 @@ export class AdminElectionsComponent implements OnInit {
         this.elections = data || [];
         this.loading = false;
       },
-      error: () => {
-        this.error = 'Impossible de charger les élections.';
+      error: (err: any) => {
+        this.error = 'Impossible de charger les élections : ' + (err?.error?.message || err?.message || 'erreur inconnue');
         this.loading = false;
       }
     });
+  }
+
+  /**
+   * B.8.d — Gestion des lignes candidats dans le formulaire de création.
+   * On filtre les lignes vides (non remplies) au moment de l'envoi.
+   */
+  addNewCandidateLine() {
+    this.newCandidates.push({ fullName: '', photoUrl: '', presentation: '' });
+  }
+
+  removeNewCandidateLine(index: number) {
+    this.newCandidates.splice(index, 1);
   }
 
   canCreate(): boolean {
@@ -304,12 +345,29 @@ export class AdminElectionsComponent implements OnInit {
       return;
     }
     this.datesError = '';
+    this.candidatesError = '';
+    // B.8.d — On envoie les candidats directement avec la création.
+    // Règle back : 0 OU ≥2 (jamais exactement 1). On détecte ici pour
+    // un message d'erreur explicite avant l'envoi.
+    const filled = this.newCandidates.filter(c => (c.fullName || '').trim().length > 0);
+    if (filled.length === 1) {
+      this.candidatesError = 'Une élection doit avoir 0 ou au moins 2 candidats (pas exactement 1). Ajoutez un 2e candidat ou retirez celui-ci.';
+      return;
+    }
     this.creating = true;
-    this.api.createElection(this.newTitle.trim(), toIso(this.newStartsAt), toIso(this.newEndsAt))
+    this.api.createElectionWithCandidates(
+      this.newTitle.trim(),
+      toIso(this.newStartsAt),
+      toIso(this.newEndsAt),
+      filled
+    )
       .subscribe({
         next: () => {
-          this.toast.success('Session électorale ouverte.');
+          this.toast.success(filled.length > 0
+            ? `Session ouverte avec ${filled.length} candidat(s).`
+            : 'Session électorale ouverte (sans candidat).');
           this.newTitle = ''; this.newStartsAt = ''; this.newEndsAt = '';
+          this.newCandidates = [{ fullName: '', photoUrl: '', presentation: '' }];
           this.creating = false;
           this.load();
         },
@@ -321,18 +379,15 @@ export class AdminElectionsComponent implements OnInit {
   }
 
   addCandidate(e: any) {
-    const userId = this.candUserId[e.id];
-    if (!userId) { return; }
-    const member = this.eligibleMembers.find(m => m.id === userId);
-    const fullName = member ? `${member.firstName} ${member.lastName}` : '';
+    const fullName = (this.candFullName[e.id] || '').trim();
+    if (!fullName) { return; }
     this.api.addElectionCandidate(e.id, fullName,
         (this.candPresentation[e.id] || '').trim() || undefined,
-        (this.candPhoto[e.id] || '').trim() || undefined,
-        userId)
+        (this.candPhoto[e.id] || '').trim() || undefined)
       .subscribe({
         next: () => {
           this.toast.success('Candidat ajouté.');
-          this.candUserId[e.id] = undefined;
+          this.candFullName[e.id] = '';
           this.candPhoto[e.id] = '';
           this.candPresentation[e.id] = '';
           this.load();
@@ -456,6 +511,21 @@ export class AdminElectionsComponent implements OnInit {
       },
       error: (err: any) => {
         this.toast.error(err?.error?.message || 'Dépublication impossible.');
+      }
+    });
+  }
+
+  /** B.8.e — Bascule l'affichage public des résultats partiels. */
+  toggleResults(e: any) {
+    this.api.toggleResultsVisibility(e.id).subscribe({
+      next: () => {
+        this.toast.success(e.resultsHidden
+          ? 'Résultats partiels désormais affichés sur le site.'
+          : 'Résultats partiels masqués sur le site.');
+        this.load();
+      },
+      error: (err: any) => {
+        this.toast.error(err?.error?.message || 'Bascule impossible.');
       }
     });
   }

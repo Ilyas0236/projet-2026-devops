@@ -88,4 +88,17 @@ public class Election {
      * depuis X) sans pour autant publier les résultats.
      */
     private LocalDateTime closedAt;
+
+    /**
+     * B.8.e — Masquer les résultats partiels pendant le scrutin ?
+     * Si vrai, la page publique ne montre PAS les voix par candidat
+     * pendant que le scrutin est OPEN (seulement participation X/Y
+     * + candidats). L'admin peut basculer à la volée via
+     * {@code POST /api/elections/{id}/toggle-results-visibility}.
+     * Sans effet une fois publié (les résultats sont figés et
+     * publics de toute façon).
+     */
+    @Column(name = "results_hidden", nullable = false)
+    @Builder.Default
+    private boolean resultsHidden = false;
 }

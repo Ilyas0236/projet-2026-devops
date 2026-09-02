@@ -122,6 +122,18 @@ public class ElectionController {
         return ResponseEntity.ok(electionService.unpublishForAdmin(id));
     }
 
+    /**
+     * B.8.e — Bascule « cacher/afficher les résultats partiels ».
+     * Si l'admin active, la page publique cache les voix par candidat
+     * pendant le scrutin (seulement participation X/Y). Refusé si
+     * l'élection est déjà publiée (résultats publics de toute façon).
+     */
+    @PostMapping("/{id}/toggle-results-visibility")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ElectionView> toggleResultsVisibility(@PathVariable Long id) {
+        return ResponseEntity.ok(electionService.toggleResultsHidden(id));
+    }
+
     @PostMapping("/{id}/candidates")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ElectionView> addCandidate(@PathVariable Long id,
