@@ -680,11 +680,22 @@ public class ElectionService {
         }
 
         LocalDateTime now = LocalDateTime.now();
-        boolean canVote = !hasVoted
+        // B.8.h — canVote ne se contente plus de vérifier la fenêtre + le
+        // fait de ne pas avoir voté : il faut aussi que l'électeur soit
+        // TITULAIRE d'une carte d'abonnement ACTIVE (règle fixée avec le
+        // propriétaire : "acheter la carte pendant le scrutin = peut voter
+        // aussi", donc on check l'état au moment T du vote, pas un snapshot
+        // figé à startsAt).
+        //
+        // On n'appelle auth-service QUE si les conditions basiques sont
+        // remplies (userId, status OPEN, dans la fenêtre, pas déjà voté).
+        // Sinon le polling 30s du front multiplierait les appels inutiles.
+        boolean baseEligibility = !hasVoted
                 && election.getStatus() == ElectionStatus.OPEN
                 && userId != null
                 && !now.isBefore(election.getStartsAt())
                 && !now.isAfter(election.getEndsAt());
+        boolean canVote = baseEligibility && isEligibleVoter();
 
         List<CandidateView> candidateViews = candidates.stream()
                 .map(c -> CandidateView.builder()
@@ -735,5 +746,26 @@ public class ElectionService {
                 .closedAt(election.getClosedAt())
                 .resultsHidden(election.isResultsHidden())
                 .build();
+    }
+
+    /**
+     * B.8.h — Vérifie que l'utilisateur courant a un abonnement ACTIF
+     * (donc peut voter aux élections présidentielles). ADMIN est exempté
+     * (cohérent avec {@link #vote(Long, Long)} : un admin peut voter même
+     * si l'auth-service est momentanément down).
+     *
+     * <p>Best-effort : si auth-service est injoignable, on refuse (retour
+     * {@code false}). Le vote est un acte engageant, on préfère un faux
+     * négatif (refus à tort) à un faux positif (vote validé sans vérif).</p>
+     */
+    private boolean isEligibleVoter() {
+        if (UserContext.isAdmin()) {
+            return true;
+        }
+        String email = UserContext.getCurrentUserEmail();
+        if (email == null || email.isBlank()) {
+            return false;
+        }
+        return authSubscriptionClient.isActiveSubscriber(email);
     }
 }
