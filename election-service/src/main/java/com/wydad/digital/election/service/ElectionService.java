@@ -1,5 +1,6 @@
 package com.wydad.digital.election.service;
 
+import com.wydad.digital.election.client.ActiveMembersClient;
 import com.wydad.digital.election.client.AuthSubscriptionClient;
 import com.wydad.digital.election.client.NotificationClient;
 import com.wydad.digital.election.dto.ElectionDtos.AddCandidateRequest;
@@ -47,6 +48,7 @@ public class ElectionService {
     private final ElectionVoteRepository voteRepository;
     private final NotificationClient notificationClient;
     private final AuthSubscriptionClient authSubscriptionClient;
+    private final ActiveMembersClient activeMembersClient;
 
     // ------------------------------------------------------------------
     // Administration
@@ -227,6 +229,9 @@ public class ElectionService {
             return toView(election, userId);
         }
         // Non publiée : visible (candidats/période) mais sans aucun comptage.
+        // B.8 — on garde la participation X/Y même avant publication
+        // (transparence demandée) mais SANS winnerCandidateId, results
+        // ou percentages (toujours secrets avant clôture).
         ElectionView full = toView(election, userId);
         return ElectionView.builder()
                 .id(full.getId()).title(full.getTitle())
@@ -237,6 +242,8 @@ public class ElectionService {
                 .totalVotes(0).results(List.of()).percentages(List.of())
                 .myVoteIndex(full.getMyVoteIndex())
                 .canVote(full.isCanVote())
+                .eligibleVotersCount(full.getEligibleVotersCount())
+                .participationPercent(full.getParticipationPercent())
                 .build();
     }
 
@@ -444,6 +451,25 @@ public class ElectionService {
                         .build())
                 .toList();
 
+        // B.8 — participation X/Y.
+        //   - Si publiée : on fige le snapshot à endsAt (un adhérent
+        //     achetant APRÈS clôture ne doit pas être compté comme
+        //     « n'ayant pas voté »).
+        //   - Si en cours (OPEN) : snapshot = now() (approximation, on
+        //     accepte une petite dérive). C'est cohérent avec la
+        //     transparence demandée (« résultats partiels en temps réel »).
+        //   - Si 0 éligibles (auth-service down par ex.) : 0% pour
+        //     éviter une division par zéro. Le snapshot 0 ne casse pas
+        //     l'UI : l'admin verra « Participation 0/? » et saura
+        //     investiguer.
+        LocalDateTime snapshotAt = election.getEndsAt() != null && !election.getEndsAt().isAfter(now)
+                ? election.getEndsAt()
+                : now;
+        long eligibleVotersCount = activeMembersClient.countActiveAt(snapshotAt);
+        int participationPercent = eligibleVotersCount == 0
+                ? 0
+                : (int) Math.round(total * 100.0 / eligibleVotersCount);
+
         return ElectionView.builder()
                 .id(election.getId())
                 .title(election.getTitle())
@@ -458,6 +484,8 @@ public class ElectionService {
                 .percentages(percentages)
                 .myVoteIndex(myVoteIndex)
                 .canVote(canVote)
+                .eligibleVotersCount(eligibleVotersCount)
+                .participationPercent(participationPercent)
                 .build();
     }
 }

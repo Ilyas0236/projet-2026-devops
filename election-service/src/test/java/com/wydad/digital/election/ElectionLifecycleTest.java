@@ -1,5 +1,6 @@
 package com.wydad.digital.election;
 
+import com.wydad.digital.election.client.ActiveMembersClient;
 import com.wydad.digital.election.client.AuthSubscriptionClient;
 import com.wydad.digital.election.model.Election;
 import com.wydad.digital.election.model.ElectionStatus;
@@ -16,6 +17,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
@@ -53,6 +55,14 @@ class ElectionLifecycleTest {
      * la mécanique électorale, pas l'éligibilité supporter).
      */
     @MockBean AuthSubscriptionClient authSubscriptionClient;
+    /**
+     * B.8 — ElectionService.toView() consomme désormais
+     * {@code ActiveMembersClient.countActiveAt(at)} pour peupler
+     * {@code eligibleVotersCount} / {@code participationPercent}.
+     * On mocke ici : 3 titulaires par défaut (suffisant pour les
+     * asserts de participation des tests de cycle de vie).
+     */
+    @MockBean ActiveMembersClient activeMembersClient;
 
     private static final String ADMIN_EMAIL = "president.bureau@wydad.ma";
 
@@ -71,6 +81,10 @@ class ElectionLifecycleTest {
         // pas sur l'éligibilité supporter). Un test dédié (cf.
         // ElectionMembershipRequiredTest) couvre le cas inverse.
         when(authSubscriptionClient.isActiveSubscriber(anyString())).thenReturn(true);
+        // B.8 — snapshot par défaut : 3 titulaires actifs. Le test
+        // vérifie la mécanique de vote, pas le calcul de % lui-même
+        // (c'est ElectionPublishEligibilityTest qui s'en charge).
+        when(activeMembersClient.countActiveAt(any())).thenReturn(3L);
     }
 
     // ------------------------------------------------------------------

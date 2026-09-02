@@ -24,6 +24,10 @@ spring:
 wydad:
   internal-secret: ${WYDAD_INTERNAL_SECRET:}
   notification-service-uri: ${NOTIFICATION_SERVICE_URI:http://localhost:8086}
+  # B.8 — election-service consomme les endpoints internes auth-service
+  # (titulaires actifs) pour le dropdown candidats président et le calcul
+  # de participation. URI explicite pour traçabilité, fallback docker DNS.
+  auth-service-uri: ${AUTH_SERVICE_URI:http://auth-service:8081}
 
 logging:
   level:

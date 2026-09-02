@@ -66,9 +66,17 @@ public final class ElectionDtos {
     /**
      * Vue d'une élection.
      *
-     * Sécurité : `results` n'est peuplé QUE si l'élection est clôturée
-     * (published) — avant clôture les comptages restent secrets ; après,
-     * ils sont publics y compris aux visiteurs non connectés.
+     * <p>Sécurité des résultats : avant clôture, les comptages par
+     * candidat restent secrets ({@code results} vide, {@code totalVotes}=0).
+     * À la clôture, publication = résultats publics y compris visiteurs
+     * non connectés. <b>B.8 — rupture assumée :</b> on expose désormais
+     * la participation X/Y pendant le scrutin, c'est la transparence
+     * décidée avec l'équipe produit (résultats partiels = nombre de
+     * votants / nombre d'éligibles, SANS détail par candidat).</p>
+     *
+     * <p>{@code eligibleVotersCount} = nombre de titulaires ACTIVE au
+     * snapshot (figé à {@code endsAt} pour les publications, recalculé
+     * à l'instant T pour les scrutins en cours — approché).</p>
      */
     @Value
     @Builder
@@ -90,5 +98,10 @@ public final class ElectionDtos {
         /** Index du vote de l'utilisateur courant (null s'il n'a pas voté). */
         Integer myVoteIndex;
         boolean canVote;
+        // -------- B.8 — participation / éligibles (nouveau) --------
+        /** Nombre de titulaires ACTIVE éligibles (snapshot au endsAt si publié, sinon now). */
+        long eligibleVotersCount;
+        /** % de participation = totalVotes / eligibleVotersCount * 100 (entier arrondi). */
+        int participationPercent;
     }
 }

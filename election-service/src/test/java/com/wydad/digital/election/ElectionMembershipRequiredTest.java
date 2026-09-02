@@ -1,5 +1,6 @@
 package com.wydad.digital.election;
 
+import com.wydad.digital.election.client.ActiveMembersClient;
 import com.wydad.digital.election.client.AuthSubscriptionClient;
 import com.wydad.digital.election.dto.ElectionDtos.AddCandidateRequest;
 import com.wydad.digital.election.dto.ElectionDtos.CreateElectionRequest;
@@ -20,6 +21,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
@@ -47,6 +49,12 @@ class ElectionMembershipRequiredTest {
 
     @MockBean
     private AuthSubscriptionClient authSubscriptionClient;
+    /**
+     * B.8 — toView() consomme {@code countActiveAt} pour la participation.
+     * Mock par défaut : 3 titulaires (suffisant pour les asserts de ce test).
+     */
+    @MockBean
+    private ActiveMembersClient activeMembersClient;
 
     private Long electionId;
     private Long candidateId;
@@ -72,6 +80,8 @@ class ElectionMembershipRequiredTest {
         electionId = created.getId();
         candidateId = created.getCandidates().get(0).getId();
         UserContext.clear();
+        // B.8 — stub du snapshot participation
+        when(activeMembersClient.countActiveAt(any())).thenReturn(3L);
     }
 
     @AfterEach
