@@ -1,57 +1,63 @@
 package com.wydad.digital.sports.service;
 
-import com.wydad.digital.sports.client.NotificationClient;
 import com.wydad.digital.sports.dto.SessionDto;
 import com.wydad.digital.sports.enums.Category;
 import com.wydad.digital.sports.enums.SportType;
 import com.wydad.digital.sports.filter.SportsUserContext;
-import com.wydad.digital.sports.model.Player;
 import com.wydad.digital.sports.model.Session;
 import com.wydad.digital.sports.model.Staff;
-import com.wydad.digital.sports.repository.PlayerRepository;
 import com.wydad.digital.sports.repository.SessionRepository;
 import com.wydad.digital.sports.repository.StaffRepository;
-import com.wydad.digital.sports.util.TargetUrlResolver;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Création et consultation des séances d'entraînement.
+ *
+ * <p>La sélection des joueurs convoqués (notification personnalisée
+ * « Vous êtes convoqué ») est déléguée à {@link SessionConvocationService}.
+ * L'isolation §6/§24 est appliquée ici (sport/category/staffId forcés
+ * depuis la fiche Staff pour les non-ADMIN) ; l'anti-IDOR sur la liste
+ * des joueurs est appliqué dans le service de convocation.</p>
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class SessionService {
 
     private final SessionRepository sessionRepository;
-    private final PlayerRepository playerRepository;
     private final StaffRepository staffRepository;
-    private final NotificationClient notificationClient;
+    private final SessionConvocationService sessionConvocationService;
 
     /**
-     * Création d'une séance d'entraînement par le STAFF (ou l'ADMIN) pour un
-     * sport/catégorie donnés. Chaque joueur du groupe visé reçoit une
-     * notification IN_APP (best-effort : une panne de notification ne doit
-     * pas empêcher la création de la séance).
+     * Création d'une séance d'entraînement. Pour un non-ADMIN, sport/category
+     * sont forcés depuis la fiche Staff et createdByStaffId est la valeur
+     * réelle de la fiche (jamais le client). L'ADMIN peut cibler n'importe
+     * quel groupe.
      *
-     * <p>Isolation §6/§24 : un STAFF ne peut créer que pour SON groupe —
-     * sport/catégorie forcés depuis sa fiche, les valeurs du client sont
-     * ignorées. L'ADMIN peut cibler n'importe quel groupe.</p>
+     * <p>Les convocations et notifications in-app sont déléguées à
+     * {@link SessionConvocationService#createConvocationsAndNotify}.</p>
      */
+    @Transactional
     public SessionDto createSession(SessionDto dto) {
         SportType sportType = dto.getSportType();
         Category category = dto.getCategory();
         Long createdByStaffId = dto.getCreatedByStaffId();
+        Long callerUserId = SportsUserContext.getCurrentUserId();
 
         if (!SportsUserContext.isAdmin()) {
-            Staff fiche = staffRepository.findByUserId(SportsUserContext.getCurrentUserId())
+            Staff fiche = staffRepository.findByUserId(callerUserId)
                     .orElseThrow(() -> new AccessDeniedException(
                             "Aucun profil encadrement rattaché à ce compte"));
             sportType = fiche.getSportType();
             category = fiche.getAssignedCategory();
-            createdByStaffId = fiche.getId(); // ownership réel, jamais le client
+            createdByStaffId = fiche.getId();
         }
 
         Session session = Session.builder()
@@ -64,7 +70,16 @@ public class SessionService {
                 .createdByStaffId(createdByStaffId)
                 .build();
         Session saved = sessionRepository.save(session);
-        notifyGroup(saved);
+
+        // Convocations personnalisées : 1 ligne par joueur coché + 1 notif
+        // in-app par joueur. Best-effort : une notif en échec ne casse pas
+        // la création.
+        long callerStaffUserId = SportsUserContext.isAdmin() || callerUserId == null
+                ? 0L
+                : callerUserId;
+        sessionConvocationService.createConvocationsAndNotify(
+                saved, dto.getJoueurUserIds(), callerStaffUserId);
+
         return mapToDto(saved);
     }
 
@@ -76,29 +91,6 @@ public class SessionService {
     public List<SessionDto> getSessionsByStaff(Long staffId) {
         return sessionRepository.findByCreatedByStaffIdOrderBySessionDateDesc(staffId)
                 .stream().map(this::mapToDto).collect(Collectors.toList());
-    }
-
-    /** Notifie tous les joueurs du groupe (sport + catégorie) visé par la séance. */
-    private void notifyGroup(Session session) {
-        List<Player> players = playerRepository
-                .findBySportTypeAndCategory(session.getSportType(), session.getCategory());
-        String quand = session.getSessionDate().toLocalDate().toString();
-        for (Player player : players) {
-            if (player.getUserId() == null) continue;
-            try {
-                notificationClient.notifyUser(
-                        player.getUserId(),
-                        null,
-                        "Nouvelle séance d'entraînement",
-                        session.getTitle() + " le " + quand
-                                + (session.getLocation() != null ? " — " + session.getLocation() : "")
-                                + ". Consultez votre planning.",
-                        TargetUrlResolver.resolve("JOUEUR", "/seances"));
-            } catch (Exception e) {
-                log.warn("Notification séance non envoyée au joueur {}: {}",
-                        player.getId(), e.getMessage());
-            }
-        }
     }
 
     private SessionDto mapToDto(Session session) {

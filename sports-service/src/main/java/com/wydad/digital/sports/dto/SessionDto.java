@@ -3,10 +3,12 @@ package com.wydad.digital.sports.dto;
 import com.wydad.digital.sports.enums.Category;
 import com.wydad.digital.sports.enums.SportType;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 public class SessionDto {
@@ -21,4 +23,13 @@ public class SessionDto {
     private SportType sportType;
     private Category category;
     private Long createdByStaffId;
+
+    /**
+     * Liste des userId auth-service à convoquer à cette séance. V1 :
+     * obligatoire et non vide — l'entraîneur doit explicitement choisir
+     * les joueurs de son groupe qu'il convoque (sélection best-effort
+     * notifiée individuellement, anti-IDOR côté service).
+     */
+    @NotEmpty
+    private List<Long> joueurUserIds;
 }

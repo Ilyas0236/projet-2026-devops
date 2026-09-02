@@ -6,6 +6,7 @@ import com.wydad.digital.sports.model.Player;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -16,4 +17,6 @@ public interface PlayerRepository extends JpaRepository<Player, Long> {
     /** C.21 — tous les joueurs d'une discipline (toutes catégories confondues).
      * Utilisé par l'annuaire du président. */
     List<Player> findBySportType(SportType sportType);
+    /** Convocations de séance — charge les joueurs par leur userId auth-service. */
+    List<Player> findByUserIdIn(Collection<Long> userIds);
 }
