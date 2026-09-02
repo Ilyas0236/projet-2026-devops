@@ -35,6 +35,8 @@ export class DashboardJoueurComponent implements OnInit {
 
   // Convocations / présence / documents / stats détaillées
   convocations: any[] = [];
+  /** V1.3 — séances d'entraînement où le joueur est explicitement convoqué. */
+  myConvokedSessions: any[] = [];
   presence: any[] = [];
   documents: any[] = [];
   matchStats: any[] = [];
@@ -181,6 +183,11 @@ export class DashboardJoueurComponent implements OnInit {
     // §8 — MES convocations de MATCH (titulaire/remplaçant), ownership serveur.
     this.api.getMyMatchConvocations().subscribe({
       next: d => this.matchConvocations = Array.isArray(d) ? d : [],
+      error: () => {}
+    });
+    // V1.3 — séances d'entraînement où JE suis convoqué (sélection entraineur).
+    this.api.getMyConvokedSessions().subscribe({
+      next: d => this.myConvokedSessions = Array.isArray(d) ? d : [],
       error: () => {}
     });
     this.loadNotifications();

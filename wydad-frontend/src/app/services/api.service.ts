@@ -1023,6 +1023,17 @@ export class ApiService {
     return this.http.get<any[]>(`${this.baseUrl}/sports/sessions/filter?sportType=${sportType}&category=${category}`);
   }
 
+  /** Vue ADMIN : séances d'un groupe + joueurs convoqués (lecture seule). */
+  getSessionsForAdmin(sportType: string, category: string): Observable<any[]> {
+    return this.http.get<any[]>(
+        `${this.baseUrl}/sports/sessions/admin?sportType=${sportType}&category=${category}`);
+  }
+
+  /** Vue JOUEUR : séances où je suis convoqué. */
+  getMyConvokedSessions(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/sports/sessions/my`);
+  }
+
   getStaffByUserId(userId: number): Observable<any> {
     return this.http.get<any>(`${this.baseUrl}/sports/staff/user/${userId}`);
   }

@@ -419,6 +419,43 @@
             </div>
           </div>
 
+          <!-- V1.3 — MES CONVOCATIONS D'ENTRAÎNEMENT (sélection entraineur) -->
+          <div class="paper-card rounded-3xl p-8">
+            <div class="flex justify-between items-end mb-6">
+              <div>
+                <h3 class="section-title-light font-display text-2xl uppercase tracking-wider mb-1">Mes convocations d'entraînement</h3>
+                <p class="text-ink-tertiary text-xs uppercase tracking-widest">Séances où l'entraîneur vous a sélectionné</p>
+              </div>
+              <span *ngIf="myConvokedSessions.length > 0"
+                    class="bg-paper-2 text-ink-secondary border border-paper-3 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider">
+                {{ myConvokedSessions.length }}
+              </span>
+            </div>
+            <p *ngIf="myConvokedSessions.length === 0" class="text-ink-secondary text-sm py-6 text-center">
+              Aucune séance d'entraînement où vous êtes convoqué pour le moment.
+            </p>
+            <div class="space-y-3">
+              <div *ngFor="let s of myConvokedSessions"
+                   class="flex flex-wrap items-center justify-between gap-3 bg-white border border-paper-3 rounded-2xl p-5 shadow-sm hover:border-wydad-red/40 transition-all">
+                <div class="flex items-center gap-4 min-w-0">
+                  <div class="min-w-[70px] bg-paper-1 rounded-xl p-3 text-center border border-paper-3 shrink-0">
+                    <span class="text-wydad-red font-bold text-[10px] uppercase tracking-widest block">{{ s.sessionDate | date:'MMM' }}</span>
+                    <span class="text-2xl font-display font-black text-ink-primary">{{ s.sessionDate | date:'dd' }}</span>
+                  </div>
+                  <div class="min-w-0">
+                    <p class="font-bold text-sm text-ink-primary uppercase tracking-wide truncate">{{ s.title }}</p>
+                    <p class="text-[11px] uppercase tracking-widest text-ink-tertiary mt-0.5">
+                      {{ s.sessionDate | date:'HH:mm' }}<span *ngIf="s.location"> · {{ s.location }}</span>
+                    </p>
+                  </div>
+                </div>
+                <span class="px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest bg-wydad-red/10 text-wydad-red border border-wydad-red/30 shrink-0">
+                  Convoqué
+                </span>
+              </div>
+            </div>
+          </div>
+
           <!-- §8 — MES CONVOCATIONS DE MATCH (titulaire/remplaçant) -->
           <div class="paper-card rounded-3xl p-8">
             <div class="flex justify-between items-end mb-8">
