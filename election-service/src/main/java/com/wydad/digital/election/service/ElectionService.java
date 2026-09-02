@@ -285,6 +285,90 @@ public class ElectionService {
                 .toList();
     }
 
+    /**
+     * B.8.b — Suppression d'une élection par l'admin. Refusée si
+     * l'élection a des votes (sinon on perd l'historique d'un vrai
+     * scrutin). Pour les élections de test sans vote, on autorise
+     * la suppression complète (cascade votes + candidats).
+     */
+    @Transactional
+    public void deleteForAdmin(Long electionId) {
+        Election election = getElection(electionId);
+        long votes = voteRepository.countByElectionId(electionId);
+        if (votes > 0) {
+            throw new IllegalStateException(
+                "Impossible de supprimer une élection qui a reçu " + votes + " vote(s) — utiliser 'Dépublier' à la place.");
+        }
+        // Cascade : on supprime d'abord les candidats (pas de vote
+        // possible, mais leurs rattachements userId doivent partir).
+        long nbCandidats = candidateRepository.findByElectionIdOrderByDisplayOrderAscIdAsc(electionId).size();
+        candidateRepository.deleteByElectionId(electionId);
+        electionRepository.delete(election);
+        log.warn("Élection {} '{}' supprimée par admin ({} candidat(s), 0 vote)",
+                electionId, election.getTitle(), nbCandidats);
+    }
+
+    /**
+     * B.8.b — Modification d'une élection (titre, dates) par l'admin.
+     * Refusée si status != OPEN (impossible de modifier une élection
+     * déjà clôturée — risque de désynchronisation participation /
+     * fenêtre de vote). Refusée aussi si des votes existent (modif
+     * de dates après des votes = perturbation du scrutin).
+     */
+    @Transactional
+    public ElectionView updateForAdmin(Long electionId,
+                                       String newTitle,
+                                       LocalDateTime newStartsAt,
+                                       LocalDateTime newEndsAt) {
+        Election election = getElection(electionId);
+        if (election.getStatus() != ElectionStatus.OPEN) {
+            throw new IllegalStateException(
+                "Impossible de modifier une élection clôturée ou publiée (statut " + election.getStatus() + ").");
+        }
+        long votes = voteRepository.countByElectionId(electionId);
+        if (votes > 0) {
+            throw new IllegalStateException(
+                "Impossible de modifier une élection qui a déjà reçu des votes.");
+        }
+        if (newTitle == null || newTitle.isBlank()) {
+            throw new IllegalArgumentException("Titre obligatoire.");
+        }
+        if (newStartsAt == null || newEndsAt == null) {
+            throw new IllegalArgumentException("Dates de début et fin obligatoires.");
+        }
+        if (!newEndsAt.isAfter(newStartsAt)) {
+            throw new IllegalArgumentException("La date de fin doit être postérieure à la date de début.");
+        }
+        election.setTitle(newTitle.trim());
+        election.setStartsAt(newStartsAt);
+        election.setEndsAt(newEndsAt);
+        Election saved = electionRepository.save(election);
+        log.info("Élection {} modifiée par admin : titre='{}', fenêtre={} → {}",
+                electionId, newTitle, newStartsAt, newEndsAt);
+        return toView(saved, UserContext.getCurrentUserId());
+    }
+
+    /**
+     * B.8.b — Dépublication d'une élection par l'admin. Inverse de
+     * {@link #publishResults}. Ramène published=false sans toucher au
+     * statut (reste CLOSED) ni au gagnant déjà calculé. Utile si
+     * l'admin a publié par erreur (scrutin de test par ex).
+     */
+    @Transactional
+    public ElectionView unpublishForAdmin(Long electionId) {
+        Election election = getElection(electionId);
+        if (!election.isPublished()) {
+            throw new IllegalStateException("Élection non publiée — rien à dépublier.");
+        }
+        election.setPublished(false);
+        // On ne réinitialise PAS winnerCandidateId : si l'admin re-publie,
+        // on garde le même gagnant calculé. Si on le remet à null, on
+        // devrait aussi recalculer, ce qui complique pour rien.
+        Election saved = electionRepository.save(election);
+        log.warn("Élection {} '{}' dépubliée par admin", electionId, election.getTitle());
+        return toView(saved, UserContext.getCurrentUserId());
+    }
+
     /** Détail d'une élection ; résultats exposés seulement si publiés. */
     @Transactional(readOnly = true)
     public ElectionView get(Long id) {

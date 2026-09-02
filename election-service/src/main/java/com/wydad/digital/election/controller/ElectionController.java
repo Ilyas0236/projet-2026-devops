@@ -3,6 +3,7 @@ package com.wydad.digital.election.controller;
 import com.wydad.digital.election.dto.ElectionDtos.AddCandidateRequest;
 import com.wydad.digital.election.dto.ElectionDtos.CreateElectionRequest;
 import com.wydad.digital.election.dto.ElectionDtos.ElectionView;
+import com.wydad.digital.election.dto.ElectionDtos.UpdateElectionRequest;
 import com.wydad.digital.election.service.ElectionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -84,6 +85,41 @@ public class ElectionController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<ElectionView>> listAllForAdmin() {
         return ResponseEntity.ok(electionService.listAllForAdmin());
+    }
+
+    /**
+     * B.8.b — Suppression d'une élection (uniquement si 0 vote).
+     * Pour les élections clôturées/publiées sans vote (scrutins de
+     * test par exemple), l'admin peut faire le ménage. Renvoie 204.
+     */
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> delete(@PathVariable Long id) {
+        electionService.deleteForAdmin(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * B.8.b — Modification d'une élection (titre + dates).
+     * Refusé si status != OPEN ou si votes > 0.
+     */
+    @PatchMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ElectionView> update(@PathVariable Long id,
+                                                @Valid @RequestBody UpdateElectionRequest request) {
+        return ResponseEntity.ok(electionService.updateForAdmin(id,
+                request.getTitle(), request.getStartsAt(), request.getEndsAt()));
+    }
+
+    /**
+     * B.8.b — Dépublication d'une élection (annule un publishResults).
+     * Ramène published=false sans toucher au statut (reste CLOSED) ni
+     * au winner déjà calculé. Utile si l'admin a publié par erreur.
+     */
+    @PostMapping("/{id}/unpublish")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ElectionView> unpublish(@PathVariable Long id) {
+        return ResponseEntity.ok(electionService.unpublishForAdmin(id));
     }
 
     @PostMapping("/{id}/candidates")

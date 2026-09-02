@@ -17,4 +17,7 @@ public interface ElectionCandidateRepository extends JpaRepository<ElectionCandi
      * de sécurité final (gérée par {@code ddl-auto: update}).
      */
     Optional<ElectionCandidate> findByElectionIdAndUserId(Long electionId, Long userId);
+
+    /** B.8.b — Suppression en cascade des candidats d'une élection. */
+    void deleteByElectionId(Long electionId);
 }

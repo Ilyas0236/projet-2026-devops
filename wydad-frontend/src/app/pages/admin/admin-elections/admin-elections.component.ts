@@ -94,7 +94,35 @@ import { ConfirmService } from '../../../services/confirm.service';
               </p>
             </div>
 
-            <div class="flex gap-2 flex-shrink-0">
+            <!-- B.8.b — Formulaire d'édition inline (visible si editingId === e.id) -->
+            <div *ngIf="editingId === e.id" class="border-t border-white/10 pt-3 space-y-2">
+              <p class="text-xs text-yellow-300 uppercase tracking-wider font-bold">Modifier l'élection</p>
+              <input [(ngModel)]="editTitle[e.id]" placeholder="Titre"
+                     class="w-full bg-white/5 border border-white/10 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-wydad-red">
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <label class="text-xs text-gray-400 uppercase tracking-wider">Début du vote
+                  <input type="datetime-local" [(ngModel)]="editStartsAt[e.id]"
+                         class="mt-1 w-full bg-white/5 border border-white/10 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-wydad-red">
+                </label>
+                <label class="text-xs text-gray-400 uppercase tracking-wider">Fin du vote
+                  <input type="datetime-local" [(ngModel)]="editEndsAt[e.id]"
+                         class="mt-1 w-full bg-white/5 border border-white/10 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-wydad-red">
+                </label>
+              </div>
+              <p *ngIf="editError[e.id]" class="text-red-300 text-xs">{{ editError[e.id] }}</p>
+              <div class="flex gap-2">
+                <button (click)="saveEdit(e)" [disabled]="editing"
+                        class="bg-wydad-red hover:bg-red-700 disabled:opacity-40 text-white px-4 py-2 rounded text-xs font-bold uppercase tracking-wider transition-colors">
+                  {{ editing ? 'Enregistrement…' : 'Enregistrer' }}
+                </button>
+                <button (click)="cancelEdit()"
+                        class="border border-white/20 text-gray-300 px-4 py-2 rounded text-xs font-bold uppercase tracking-wider transition-colors">
+                  Annuler
+                </button>
+              </div>
+            </div>
+
+            <div class="flex gap-2 flex-shrink-0 flex-wrap justify-end">
               <!-- B.8 — Clôture seule (gèle, ne publie PAS) -->
               <button *ngIf="e.status === 'OPEN'" (click)="close(e)"
                       class="border border-white/20 hover:border-blue-400 hover:text-blue-300 text-gray-300 px-4 py-2 rounded text-xs font-bold uppercase tracking-wider transition-colors">
@@ -107,6 +135,27 @@ import { ConfirmService } from '../../../services/confirm.service';
                       [title]="e.participationPercent < 100 ? 'Tous les titulaires doivent avoir voté' : 'Publier les résultats définitifs'"
                       class="bg-wydad-red hover:bg-red-700 disabled:opacity-40 disabled:cursor-not-allowed text-white px-4 py-2 rounded text-xs font-bold uppercase tracking-wider transition-colors">
                 Publier ({{ e.participationPercent }}%)
+              </button>
+
+              <!-- B.8.b — Modifier (status=OPEN et 0 vote uniquement) -->
+              <button *ngIf="e.status === 'OPEN' && e.totalVotes === 0 && editingId !== e.id"
+                      (click)="startEdit(e)"
+                      class="border border-white/20 hover:border-yellow-400 hover:text-yellow-300 text-gray-300 px-4 py-2 rounded text-xs font-bold uppercase tracking-wider transition-colors">
+                Modifier
+              </button>
+
+              <!-- B.8.b — Dépublier (publiée uniquement) -->
+              <button *ngIf="e.published" (click)="unpublish(e)"
+                      class="border border-white/20 hover:border-orange-400 hover:text-orange-300 text-gray-300 px-4 py-2 rounded text-xs font-bold uppercase tracking-wider transition-colors">
+                Dépublier
+              </button>
+
+              <!-- B.8.b — Supprimer (0 vote uniquement) -->
+              <button *ngIf="e.totalVotes === 0 && editingId !== e.id"
+                      (click)="delete(e)"
+                      title="Supprimer l'élection (uniquement si aucun vote)"
+                      class="border border-white/20 hover:border-red-400 hover:text-red-300 text-gray-300 px-4 py-2 rounded text-xs font-bold uppercase tracking-wider transition-colors">
+                Supprimer
               </button>
             </div>
           </div>
@@ -188,6 +237,14 @@ export class AdminElectionsComponent implements OnInit {
   candUserId: Record<number, number | undefined> = {};
   candPhoto: Record<number, string> = {};
   candPresentation: Record<number, string> = {};
+
+  /** B.8.b — Édition inline d'une élection (1 seule à la fois). */
+  editingId: number | null = null;
+  editing = false;
+  editTitle: Record<number, string> = {};
+  editStartsAt: Record<number, string> = {};
+  editEndsAt: Record<number, string> = {};
+  editError: Record<number, string> = {};
 
   /** B.8 — Titulaires actifs (dropdown candidats). */
   eligibleMembers: Array<{ id: number; email: string; firstName: string; lastName: string; season: string; validTo: string; subscriptionId: number }> = [];
@@ -336,6 +393,88 @@ export class AdminElectionsComponent implements OnInit {
     return (e.candidates || [])
       .map((c: any, i: number) => `${c.fullName} ${e.percentages[i]}% (${e.results[i]})`)
       .join(' · ');
+  }
+
+  /** B.8.b — Ouvre le formulaire d'édition inline pour une élection. */
+  startEdit(e: any) {
+    this.editingId = e.id;
+    this.editError[e.id] = '';
+    // datetime-local attend du "YYYY-MM-DDTHH:mm" ; on tronque les
+    // secondes de l'ISO reçu du back.
+    this.editTitle[e.id] = e.title;
+    this.editStartsAt[e.id] = (e.startsAt || '').substring(0, 16);
+    this.editEndsAt[e.id] = (e.endsAt || '').substring(0, 16);
+  }
+
+  cancelEdit() {
+    this.editingId = null;
+  }
+
+  saveEdit(e: any) {
+    this.editError[e.id] = '';
+    const title = (this.editTitle[e.id] || '').trim();
+    const startsAt = this.editStartsAt[e.id];
+    const endsAt = this.editEndsAt[e.id];
+    if (!title) { this.editError[e.id] = 'Titre obligatoire.'; return; }
+    if (!startsAt || !endsAt) { this.editError[e.id] = 'Dates obligatoires.'; return; }
+    if (Date.parse(startsAt) >= Date.parse(endsAt)) {
+      this.editError[e.id] = 'La date de fin doit être postérieure à la date de début.';
+      return;
+    }
+    this.editing = true;
+    this.api.updateElection(e.id, title, toIso(startsAt), toIso(endsAt))
+      .subscribe({
+        next: () => {
+          this.toast.success('Élection modifiée.');
+          this.editing = false;
+          this.editingId = null;
+          this.load();
+        },
+        error: (err: any) => {
+          this.editing = false;
+          this.editError[e.id] = err?.error?.message || 'Modification impossible.';
+        }
+      });
+  }
+
+  /** B.8.b — Dépublier (annule un publishResults). */
+  async unpublish(e: any) {
+    const ok = await this.confirm.confirm({
+      title: 'Dépublier cette élection ?',
+      message: `Les résultats de « ${e.title} » ne seront plus visibles publiquement.`,
+      confirmLabel: 'Dépublier',
+      danger: true
+    });
+    if (!ok) { return; }
+    this.api.unpublishElection(e.id).subscribe({
+      next: () => {
+        this.toast.success('Élection dépubliée.');
+        this.load();
+      },
+      error: (err: any) => {
+        this.toast.error(err?.error?.message || 'Dépublication impossible.');
+      }
+    });
+  }
+
+  /** B.8.b — Supprimer une élection (uniquement si 0 vote). */
+  async delete(e: any) {
+    const ok = await this.confirm.confirm({
+      title: 'Supprimer cette élection ?',
+      message: `« ${e.title} » sera supprimée définitivement avec ses candidats. Action irréversible.`,
+      confirmLabel: 'Supprimer',
+      danger: true
+    });
+    if (!ok) { return; }
+    this.api.deleteElection(e.id).subscribe({
+      next: () => {
+        this.toast.success('Élection supprimée.');
+        this.load();
+      },
+      error: (err: any) => {
+        this.toast.error(err?.error?.message || 'Suppression impossible.');
+      }
+    });
   }
 }
 

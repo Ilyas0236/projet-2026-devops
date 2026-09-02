@@ -32,6 +32,23 @@ public final class ElectionDtos {
     }
 
     /**
+     * B.8.b — Modification partielle d'une élection par l'admin (titre
+     * + dates uniquement). Les candidats se gèrent via /candidates
+     * (add/remove). Refusé côté service si status != OPEN ou si des
+     * votes existent déjà.
+     */
+    @Value
+    @Builder
+    public static class UpdateElectionRequest {
+        @NotBlank(message = "Le titre de l'élection est obligatoire")
+        String title;
+        @NotNull(message = "La date de début est obligatoire")
+        LocalDateTime startsAt;
+        @NotNull(message = "La date de fin est obligatoire")
+        LocalDateTime endsAt;
+    }
+
+    /**
      * Candidat (création et ajout) : photo déjà uploadée côté front (URL Cloudinary publique).
      *
      * <p>B.8 — le champ {@code userId} est désormais obligatoire pour qu'un

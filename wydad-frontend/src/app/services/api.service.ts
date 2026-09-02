@@ -710,6 +710,28 @@ export class ApiService {
     return this.http.get<any[]>(`${this.baseUrl}/elections/admin/all`);
   }
 
+  /**
+   * B.8.b — Modifier le titre / les dates d'une élection (status=OPEN
+   * et 0 vote uniquement, sinon le back renvoie 409).
+   */
+  updateElection(electionId: number, title: string, startsAt: string, endsAt: string): Observable<any> {
+    return this.http.patch<any>(`${this.baseUrl}/elections/${electionId}`, { title, startsAt, endsAt });
+  }
+
+  /**
+   * B.8.b — Supprimer une élection (0 vote uniquement).
+   */
+  deleteElection(electionId: number): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/elections/${electionId}`);
+  }
+
+  /**
+   * B.8.b — Dépublier une élection (annule un publishResults).
+   */
+  unpublishElection(electionId: number): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/elections/${electionId}/unpublish`, {});
+  }
+
   voteElection(electionId: number, candidateId: number): Observable<any> {
     return this.http.post<any>(`${this.baseUrl}/elections/${electionId}/vote`, { candidateId });
   }
