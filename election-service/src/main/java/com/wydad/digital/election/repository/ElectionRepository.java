@@ -11,4 +11,7 @@ public interface ElectionRepository extends JpaRepository<Election, Long> {
     List<Election> findByStatusOrderByStartsAtDesc(ElectionStatus status);
 
     List<Election> findByStatus(ElectionStatus status);
+
+    /** B.8 — Vue admin : toutes les élections, plus récente d'abord. */
+    List<Election> findAllByOrderByCreatedAtDesc();
 }

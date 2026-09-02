@@ -74,6 +74,18 @@ public class ElectionController {
         return ResponseEntity.status(HttpStatus.CREATED).body(electionService.create(request, email));
     }
 
+    /**
+     * B.8 — Vue ADMIN : toutes les élections (tous statuts), plus récente
+     * d'abord. Indispensable pour pouvoir gérer (retirer un candidat
+     * oublié, republier, dépublier…) les élections clôturées ou publiées
+     * qui ont disparu de {@link #getOpenElections()}.
+     */
+    @GetMapping("/admin/all")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<ElectionView>> listAllForAdmin() {
+        return ResponseEntity.ok(electionService.listAllForAdmin());
+    }
+
     @PostMapping("/{id}/candidates")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ElectionView> addCandidate(@PathVariable Long id,

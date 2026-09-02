@@ -219,7 +219,7 @@ export class AdminElectionsComponent implements OnInit {
 
   private load() {
     this.loading = true;
-    this.api.getOpenElections().subscribe({
+    this.api.listAllElections().subscribe({
       next: (data: any[]) => {
         this.elections = data || [];
         this.loading = false;

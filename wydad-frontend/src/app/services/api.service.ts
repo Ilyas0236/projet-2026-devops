@@ -701,6 +701,15 @@ export class ApiService {
     return this.http.get<any[]>(`${this.baseUrl}/elections/open`);
   }
 
+  /**
+   * B.8 — Vue admin : TOUTES les élections (OPEN, CLOSED non publié,
+   * CLOSED publié), plus récente d'abord. Indispensable pour pouvoir
+   * gérer les élections clôturées qui ont disparu de /open.
+   */
+  listAllElections(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/elections/admin/all`);
+  }
+
   voteElection(electionId: number, candidateId: number): Observable<any> {
     return this.http.post<any>(`${this.baseUrl}/elections/${electionId}/vote`, { candidateId });
   }

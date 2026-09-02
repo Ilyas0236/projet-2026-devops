@@ -271,6 +271,20 @@ public class ElectionService {
                 .toList();
     }
 
+    /**
+     * B.8 — Toutes les élections, tous statuts, pour l'espace ADMIN.
+     * Triées par date de création desc (la plus récente en haut). Sans
+     * cette vue, l'admin perd la trace des élections clôturées ou
+     * publiées et ne peut plus rien faire dessus (retirer un candidat
+     * oublié, republier, dépublier…).
+     */
+    @Transactional(readOnly = true)
+    public List<ElectionView> listAllForAdmin() {
+        return electionRepository.findAllByOrderByCreatedAtDesc().stream()
+                .map(e -> toView(e, UserContext.getCurrentUserId()))
+                .toList();
+    }
+
     /** Détail d'une élection ; résultats exposés seulement si publiés. */
     @Transactional(readOnly = true)
     public ElectionView get(Long id) {
