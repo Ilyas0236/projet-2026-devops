@@ -61,8 +61,11 @@ class ElectionMembershipRequiredTest {
                 .startsAt(LocalDateTime.now().minusHours(1))
                 .endsAt(LocalDateTime.now().plusHours(1))
                 .candidates(List.of(
-                        new AddCandidateRequest("Candidat A", null, null, 0),
-                        new AddCandidateRequest("Candidat B", null, null, 1)
+                        // B.8 — userId=null (rétro-compat : candidats
+                        // « externes » saisis en texte libre, jamais liés
+                        // à un titulaire actif). Acceptés par le service.
+                        new AddCandidateRequest("Candidat A", null, null, 0, null),
+                        new AddCandidateRequest("Candidat B", null, null, 1, null)
                 ))
                 .build();
         ElectionView created = electionService.create(req, "admin@wac.ma");

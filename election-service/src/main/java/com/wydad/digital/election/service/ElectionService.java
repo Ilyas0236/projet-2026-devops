@@ -351,6 +351,16 @@ public class ElectionService {
         if (input.getFullName() == null || input.getFullName().isBlank()) {
             throw new IllegalArgumentException("Le nom du candidat est obligatoire");
         }
+        // B.8 — si l'admin a lié un titulaire (userId) au candidat, on
+        // refuse d'avance les doublons (election, userId). La contrainte
+        // SQL uk_election_candidate_user est un filet de sécurité mais
+        // on préfère un 409 propre côté service. Les userId null
+        // (rétro-compat) ne déclenchent pas ce check.
+        if (input.getUserId() != null
+                && candidateRepository.findByElectionIdAndUserId(election.getId(), input.getUserId()).isPresent()) {
+            throw new IllegalStateException(
+                    "Ce titulaire est déjà candidat à cette élection (userId=" + input.getUserId() + ")");
+        }
         int order = input.getDisplayOrder() != null ? input.getDisplayOrder() : nextDisplayOrder(election.getId());
         candidateRepository.save(ElectionCandidate.builder()
                 .election(election)
@@ -358,6 +368,7 @@ public class ElectionService {
                 .presentation(input.getPresentation())
                 .photoUrl(input.getPhotoUrl())
                 .displayOrder(order)
+                .userId(input.getUserId())
                 .build());
     }
 
@@ -429,6 +440,7 @@ public class ElectionService {
                         .presentation(c.getPresentation())
                         .photoUrl(c.getPhotoUrl())
                         .displayOrder(c.getDisplayOrder())
+                        .userId(c.getUserId())
                         .build())
                 .toList();
 

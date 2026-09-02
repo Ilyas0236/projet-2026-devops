@@ -31,7 +31,16 @@ public final class ElectionDtos {
         List<AddCandidateRequest> candidates;
     }
 
-    /** Candidat (création et ajout) : photo déjà uploadée côté front (URL Cloudinary publique). */
+    /**
+     * Candidat (création et ajout) : photo déjà uploadée côté front (URL Cloudinary publique).
+     *
+     * <p>B.8 — le champ {@code userId} est désormais obligatoire pour qu'un
+     * candidat puisse figurer sur un scrutin (il doit être titulaire d'une
+     * carte d'abonnement active). Il reste techniquement nullable au niveau
+     * API pour permettre la saisie en 2 temps (admin crée le candidat
+     * « externe » puis lie le titulaire avant clôture) — la validation
+     * d'éligibilité est faite côté service (cf. {@code ElectionService.saveCandidate}).</p>
+     */
     @Value
     public static class AddCandidateRequest {
         @NotBlank(message = "Le nom du candidat est obligatoire")
@@ -40,6 +49,7 @@ public final class ElectionDtos {
         String presentation;
         String photoUrl;
         Integer displayOrder;
+        Long userId;
     }
 
     @Value
@@ -50,6 +60,7 @@ public final class ElectionDtos {
         String presentation;
         String photoUrl;
         int displayOrder;
+        Long userId;
     }
 
     /**
