@@ -14,7 +14,13 @@ import { ToastService } from '../../../services/toast.service';
  *   - Sponsors : upload image (redim auto selon tier) OU URL externe + select tier
  *   - Backgrounds visiteur : carrousel multi-photos par page (8 pages cibles)
  *   - Stade : champ coverImageUrl (photo de couverture)
- *   - Bandeau garde-fou ADMIN en haut : aucun achat possible depuis ce panneau
+ *   - Compteur de photos par page dans le sélecteur (fix 2026-09-03 #2)
+ *
+ * admin-parametres fix 2026-09-03 :
+ *   - Bandeau garde-fou ADMIN supprimé (l'admin n'a pas besoin qu'on lui rappelle)
+ *   - Validation JSON déclenchée sur (blur) au lieu de (ngModelChange) — fini le « JSON
+ *     invalide » qui s'affiche dès qu'on clique dans un textarea vide
+ *   - Compteur « X photos » ajouté au sélecteur de page cible + badges récapitulatifs
  */
 @Component({
   selector: 'app-admin-settings',
@@ -22,20 +28,6 @@ import { ToastService } from '../../../services/toast.service';
   imports: [CommonModule, FormsModule],
   template: `
     <div class="space-y-6">
-
-      <!-- ═══ BANDEAU GARDE-FOU ADMIN (rappel permanent) ═══
-           L'ADMIN NE PEUT PAS ACHETER. Aucun endpoint d'achat ne lui est ouvert. -->
-      <div class="bg-red-900/30 border-2 border-red-600/50 rounded-lg p-4 flex items-start gap-3">
-        <span class="text-2xl shrink-0">🛡️</span>
-        <div class="text-sm">
-          <p class="font-display font-bold text-red-200 uppercase tracking-wider mb-1">Rôle ADMIN — gestion uniquement</p>
-          <p class="text-red-300/80">
-            Vous gérez la configuration du site depuis cet écran : coordonnées, sponsors, réseaux sociaux, photos, stade.
-            <strong class="text-red-200">Aucun achat n'est possible avec un compte ADMIN</strong> (panier, billet, abonnement, don).
-            Si vous voyez un bouton d'achat accessible, déclarez-le comme un bug.
-          </p>
-        </div>
-      </div>
 
       <div>
         <h2 class="text-2xl font-display font-bold uppercase tracking-wider text-white">Paramètres du Club</h2>
@@ -61,7 +53,7 @@ import { ToastService } from '../../../services/toast.service';
 
           <textarea
             [(ngModel)]="drafts[s.key]"
-            (ngModelChange)="validate(s.key)"
+            (blur)="validate(s.key)"
             rows="8"
             class="admin-input font-mono !text-sm"
             spellcheck="false"></textarea>
@@ -272,9 +264,25 @@ import { ToastService } from '../../../services/toast.service';
             <label class="block text-[10px] font-display font-bold uppercase tracking-widest text-gray-400 mb-2">Page cible</label>
             <select [(ngModel)]="bgFilterPage" (ngModelChange)="filterBackgrounds()"
                     class="admin-input !text-sm max-w-xs">
-              <option value="">— Toutes les pages —</option>
-              <option *ngFor="let p of BG_PAGES" [value]="p.key">{{ p.label }}</option>
+              <option value="">— Toutes les pages ({{ backgrounds.length }}) —</option>
+              <option *ngFor="let p of BG_PAGES" [value]="p.key">
+                {{ p.label }} ({{ countBackgroundsForPage(p.key) }} photo{{ countBackgroundsForPage(p.key) > 1 ? 's' : '' }})
+              </option>
             </select>
+
+            <!-- Récapitulatif rapide : nombre de photos actives par page (admin-parametres fix 2026-09-03) -->
+            <div class="mt-2 flex flex-wrap gap-2">
+              <span *ngFor="let p of BG_PAGES"
+                    class="text-[10px] uppercase tracking-widest px-2 py-1 rounded-full border"
+                    [class.bg-white]="countBackgroundsForPage(p.key) === 0"
+                    [class.text-gray-400]="countBackgroundsForPage(p.key) === 0"
+                    [class.border-white]="countBackgroundsForPage(p.key) === 0"
+                    [class.bg-wydad-red]="countBackgroundsForPage(p.key) > 0"
+                    [class.text-white]="countBackgroundsForPage(p.key) > 0"
+                    [class.border-wydad-red]="countBackgroundsForPage(p.key) > 0">
+                {{ p.key }} · {{ countBackgroundsForPage(p.key) }}
+              </span>
+            </div>
           </div>
 
           <div *ngIf="filteredBackgrounds.length === 0" class="text-sm text-gray-500 py-2">
@@ -330,7 +338,9 @@ import { ToastService } from '../../../services/toast.service';
                 <label class="block text-[10px] font-display font-bold uppercase tracking-widest text-gray-400 mb-1">Page cible *</label>
                 <select [(ngModel)]="bgDraft.pageKey" name="bg-page" required class="admin-input !text-sm">
                   <option value="" disabled>Choisir une page</option>
-                  <option *ngFor="let p of BG_PAGES" [value]="p.key">{{ p.label }}</option>
+                  <option *ngFor="let p of BG_PAGES" [value]="p.key">
+                    {{ p.label }} ({{ countBackgroundsForPage(p.key) }})
+                  </option>
                 </select>
               </div>
               <div>
@@ -638,6 +648,15 @@ export class AdminSettingsComponent implements OnInit {
     }
   }
 
+  /**
+   * Nombre de backgrounds ACTIFS pour une page (utilisé dans le sélecteur et les
+   * badges récapitulatifs). 0 si la page n'a aucune photo.
+   */
+  countBackgroundsForPage(pageKey: string): number {
+    if (!pageKey) return 0;
+    return this.backgrounds.filter((b: any) => b.pageKey === pageKey && b.active).length;
+  }
+
   canCreateBackground(): boolean {
     return !!(this.bgDraft.pageKey && this.bgDraft.imageUrl);
   }
@@ -735,10 +754,22 @@ export class AdminSettingsComponent implements OnInit {
     });
   }
 
-  /** Valide le brouillon à chaque frappe (bouton désactivé si invalide). */
+  /**
+   * Valide le brouillon JSON au sortir du champ (blur).
+   * <p>
+   * Pas d'erreur si vide (l'utilisateur n'a encore rien tapé — on ne veut pas le
+   * harceler avec un message rouge dès qu'il clique dans un textarea).
+   * Erreur uniquement si la chaîne tapée n'est pas un objet/array JSON valide.
+   * Déclenché par {@code (blur)} côté template, et par {@code save(key)} avant PUT.
+   */
   validate(key: string): boolean {
+    const draft = (this.drafts[key] || '').trim();
+    if (!draft) {
+      this.validationErrors[key] = false;
+      return true;
+    }
     try {
-      const parsed = JSON.parse(this.drafts[key]);
+      const parsed = JSON.parse(draft);
       if (typeof parsed !== 'object' || parsed === null) {
         this.validationErrors[key] = true;
         return false;
