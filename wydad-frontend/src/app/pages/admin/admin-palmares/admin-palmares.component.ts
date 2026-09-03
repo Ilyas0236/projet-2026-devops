@@ -124,9 +124,22 @@ import { ConfirmService } from '../../../services/confirm.service';
             </div>
           </div>
           <div class="admin-field">
-            <label class="admin-label" for="tr-image">URL de l'image (logo du trophée)</label>
-            <input id="tr-image" type="url" [(ngModel)]="form.imageUrl" class="admin-input"
-                   placeholder="https://… (laisser vide si aucune)">
+            <label class="admin-label">Photo du trophée</label>
+            <div class="flex items-center gap-3">
+              <input id="tr-image" type="url" [(ngModel)]="form.imageUrl" class="admin-input flex-1"
+                     placeholder="URL https://… ou laisser vide si upload ci-dessous">
+              <label class="admin-btn-secondary cursor-pointer whitespace-nowrap">
+                <input type="file" accept="image/*" class="hidden" (change)="uploadTrophyImage($event)" [disabled]="uploadingImage">
+                {{ uploadingImage ? 'Envoi…' : '📤 Choisir une photo' }}
+              </label>
+            </div>
+            <p *ngIf="uploadError" class="text-xs text-red-400 mt-1">{{ uploadError }}</p>
+            <p class="text-xs text-gray-500 mt-1">JPEG/PNG/GIF/WEBP — 25 Mo max. Upload = stocké sur le serveur, URL = lien externe.</p>
+            <div *ngIf="form.imageUrl" class="mt-2">
+              <img [src]="previewUrl()" alt="Aperçu trophée"
+                   class="h-20 w-auto rounded border border-white/10 bg-black/30 object-contain"
+                   (error)="onPreviewError()">
+            </div>
           </div>
           <div class="admin-field flex items-center gap-2">
             <input id="tr-active" type="checkbox" [(ngModel)]="form.active" class="w-4 h-4">
@@ -165,6 +178,8 @@ export class AdminPalmaresComponent implements OnInit {
   saving = false;
   busy = false;
   saveError = '';
+  uploadingImage = false;
+  uploadError = '';
 
   form = this.emptyForm();
 
@@ -204,6 +219,7 @@ export class AdminPalmaresComponent implements OnInit {
     this.editing = false;
     this.editingId = null;
     this.saveError = '';
+    this.uploadError = '';
     this.form = { ...this.emptyForm(), category: this.filterCategory || 'FOOTBALL' };
     this.showModal = true;
   }
@@ -212,6 +228,7 @@ export class AdminPalmaresComponent implements OnInit {
     this.editing = true;
     this.editingId = t.id;
     this.saveError = '';
+    this.uploadError = '';
     this.form = {
       title: t.title, category: t.category, season: t.season, count: t.count,
       imageUrl: t.imageUrl || '', displayOrder: t.displayOrder || 0, active: !!t.active
@@ -221,6 +238,42 @@ export class AdminPalmaresComponent implements OnInit {
 
   closeModal() {
     this.showModal = false;
+  }
+
+  /**
+   * Upload de la photo du trophée : envoie le fichier à
+   * {@code /api/content/media/upload} (ADMIN only, magic-bytes validés),
+   * récupère l'URL relative et l'écrit dans {@code form.imageUrl}. Le
+   * pattern est copié sur admin-actualites/admin-boutique.
+   */
+  uploadTrophyImage(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const file = input.files && input.files[0];
+    if (!file) return;
+    this.uploadingImage = true;
+    this.uploadError = '';
+    this.api.uploadMedia(file).subscribe({
+      next: (res) => {
+        this.form.imageUrl = res.url;
+        this.uploadingImage = false;
+        input.value = ''; // reset pour pouvoir re-uploader le même fichier
+        this.toast.success('Photo envoyée.');
+      },
+      error: (err) => {
+        this.uploadingImage = false;
+        this.uploadError = err.error?.message || 'Échec de l\'upload de la photo.';
+        input.value = '';
+      }
+    });
+  }
+
+  /** URL d'aperçu : passe par getMediaUrl (gère URL absolue + chemin relatif). */
+  previewUrl(): string {
+    return this.api.getMediaUrl(this.form.imageUrl);
+  }
+
+  onPreviewError() {
+    this.uploadError = 'URL invalide ou image inaccessible.';
   }
 
   canSave(): boolean {
