@@ -128,7 +128,7 @@ class SubscriptionServiceChildTest {
         assertEquals(ACADEMY_ID, resp.beneficiaryAcademyMemberId());
         assertEquals(PARENT_EMAIL, resp.parentPayerEmail());
         // L'abonnement doit être rattaché à l'User shadow du fils
-        assertEquals("enfant-" + ACADEMY_ID + "@wac.parent", resp.email());
+        assertEquals("enfant-" + ACADEMY_ID + "@wac.parent", resp.userEmail());
 
         // 5) L'User shadow doit exister en base
         User shadow = userRepository.findByEmail("enfant-" + ACADEMY_ID + "@wac.parent")
@@ -164,6 +164,6 @@ class SubscriptionServiceChildTest {
         // Pas de traçabilité enfant pour un achat "pour soi"
         assertEquals(null, resp.beneficiaryAcademyMemberId());
         assertEquals(null, resp.parentPayerEmail());
-        assertEquals(PARENT_EMAIL, resp.email());
+        assertEquals(PARENT_EMAIL, resp.userEmail());
     }
 }

@@ -23,7 +23,8 @@ import java.time.LocalDateTime;
  */
 public record SubscriptionResponse(
         Long id,
-        String email,
+        String userEmail,
+        String userFullName,
         String planCode,
         String planName,
         Long planId,
@@ -61,6 +62,7 @@ public record SubscriptionResponse(
         return new SubscriptionResponse(
                 s.getId(),
                 s.getUser().getEmail(),
+                userFullName(s),
                 planCode,
                 planName,
                 plan != null ? plan.getId() : null,
@@ -79,5 +81,20 @@ public record SubscriptionResponse(
                 s.getBeneficiaryAcademyMemberId(),
                 s.getParentPayerEmail()
         );
+    }
+
+    /**
+     * Concatène prénom + nom de l'utilisateur lié à la subscription.
+     * Si l'un des deux manque, on retombe sur l'autre, puis sur l'email.
+     * Null-safe pour les subscriptions historiques (relation JPA
+     * parfois absente sur d'anciens enregistrements migrés).
+     */
+    private static String userFullName(UserSubscription s) {
+        if (s.getUser() == null) return null;
+        String fn = s.getUser().getFirstName();
+        String ln = s.getUser().getLastName();
+        String full = ((fn != null ? fn : "") + " " + (ln != null ? ln : "")).trim();
+        if (!full.isEmpty()) return full;
+        return s.getUser().getEmail();
     }
 }

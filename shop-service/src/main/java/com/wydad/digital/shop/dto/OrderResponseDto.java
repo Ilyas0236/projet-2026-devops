@@ -10,15 +10,18 @@ import java.util.List;
 @Data
 @Builder
 public class OrderResponseDto {
+    private Long id;
+    private String userEmail;
+    private String userFullName;
     private String orderNumber;
     private String status;
     private String paymentStatus;
     private BigDecimal subtotal;
     private BigDecimal shippingCost;
-    private BigDecimal discountAmount;
+    private BigDecimal discount;
     /** B.12 — part de la réduction totale venant de l'avantage ADHÉRENT (15%). */
     private BigDecimal adherentDiscount;
-    private BigDecimal totalAmount;
+    private BigDecimal total;
     private String trackingNumber;
     private LocalDateTime createdAt;
     private List<OrderItemDto> items;

@@ -31,6 +31,15 @@
           <button type="button" (click)="reset()" class="btn btn-outline-secondary btn-sm">×</button>
         </div>
       </div>
+      <div class="export-bar mt-3">
+        <button type="button" class="export-btn" (click)="downloadCsv(tab)">
+          📥 Télécharger CSV ({{ tabLabel(tab) }})
+        </button>
+        <button type="button" class="export-btn pdf" (click)="downloadPdf(tab)">
+          📄 Générer PDF mensuel
+        </button>
+        <small class="text-muted ms-2">L'export utilise les filtres actifs et la page courante.</small>
+      </div>
     </form>
   </div>
 
@@ -44,6 +53,9 @@
     <button class="tab-btn" [class.active]="tab==='subs'" (click)="switchTab('subs')">
       Abonnements saisonniers ({{ totalSubs }})
     </button>
+    <button class="tab-btn" [class.active]="tab==='dons'" (click)="switchTab('dons')">
+      Dons ({{ totalDonations }})
+    </button>
   </div>
 
   <div *ngIf="error" class="alert alert-danger">{{ error }}</div>
@@ -51,6 +63,9 @@
 
   <!-- COMMANDES BOUTIQUE -->
   <div *ngIf="tab==='orders' && !loading">
+    <div class="print-header">
+      Inventaire WAC — Commandes boutique — {{ monthLabelNow() }}
+    </div>
     <table class="inv">
       <thead>
         <tr>
@@ -103,6 +118,9 @@
 
   <!-- BILLETS -->
   <div *ngIf="tab==='tickets' && !loading">
+    <div class="print-header">
+      Inventaire WAC — Billets — {{ monthLabelNow() }}
+    </div>
     <table class="inv">
       <thead>
         <tr>
@@ -142,6 +160,9 @@
 
   <!-- ABONNEMENTS -->
   <div *ngIf="tab==='subs' && !loading">
+    <div class="print-header">
+      Inventaire WAC — Abonnements — {{ monthLabelNow() }}
+    </div>
     <table class="inv">
       <thead>
         <tr>
@@ -159,7 +180,10 @@
         <tr *ngFor="let s of subs">
           <td>#{{ s.id }}</td>
           <td>{{ s.paidAt | date:'dd/MM/yy HH:mm' }}</td>
-          <td>{{ s.userEmail }}</td>
+          <td>
+            {{ s.userFullName || s.userEmail }}<br>
+            <small class="text-muted">{{ s.userEmail }}</small>
+          </td>
           <td><strong>{{ s.zoneCode }}</strong></td>
           <td>{{ s.season }}</td>
           <td>{{ s.paidAmount | number:'1.2-2' }} DH</td>
@@ -177,4 +201,48 @@
       <button (click)="goSubsPage(1)" [disabled]="subs.length < pageSize">Suivant ›</button>
     </div>
   </div>
+
+  <!-- DONS -->
+  <div *ngIf="tab==='dons' && !loading">
+    <div class="print-header">
+      Inventaire WAC — Dons — {{ monthLabelNow() }}
+    </div>
+    <table class="inv">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Date</th>
+          <th>Donateur</th>
+          <th>Montant</th>
+          <th>Description</th>
+          <th>Référence</th>
+          <th>Statut</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let d of donations">
+          <td>#{{ d.id }}</td>
+          <td>{{ d.createdAt | date:'dd/MM/yy HH:mm' }}</td>
+          <td>
+            {{ d.userFullName || d.userEmail }}<br>
+            <small class="text-muted">{{ d.userEmail }}</small>
+          </td>
+          <td><strong>{{ d.amount | number:'1.2-2' }} DH</strong></td>
+          <td>{{ d.description || '—' }}</td>
+          <td><code>{{ d.reference || '—' }}</code></td>
+          <td><span [class]="badgeClass(d.status)">{{ d.status }}</span></td>
+        </tr>
+        <tr *ngIf="donations.length === 0">
+          <td colspan="7" class="text-center text-muted py-3">Aucun don pour cette période</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="pager mt-2">
+      <button (click)="goDonationsPage(-1)" [disabled]="donationsPage === 0">‹ Précédent</button>
+      <span>Page {{ donationsPage + 1 }}</span>
+      <button (click)="goDonationsPage(1)" [disabled]="donations.length < pageSize">Suivant ›</button>
+    </div>
+  </div>
+
+  <div *ngIf="toastMsg" class="toast">{{ toastMsg }}</div>
 </div>

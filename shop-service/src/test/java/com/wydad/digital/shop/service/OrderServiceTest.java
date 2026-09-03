@@ -151,7 +151,7 @@ class OrderServiceTest {
         verify(loyaltyClient).creditPointsForPurchase(
                 eq(42L), eq(new BigDecimal("628.00")), anyString());
 
-        assertEquals(0, new BigDecimal("628.00").compareTo(order.getTotalAmount()),
+        assertEquals(0, new BigDecimal("628.00").compareTo(order.getTotal()),
                 "Total = 2 x 299 DH (prix base) + 30 DH livraison, jamais une valeur client");
         verify(paymentClient).debitEcash(eq(EMAIL),
                 eq(new BigDecimal("628.00")), anyString());

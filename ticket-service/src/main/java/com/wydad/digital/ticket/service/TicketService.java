@@ -292,6 +292,7 @@ public class TicketService {
                 .id(ticket.getId())
                 .ticketNumber(ticket.getTicketNumber())
                 .userId(ticket.getUserId())
+                .userEmail(ticket.getUserEmail())
                 .userFullName(ticket.getUserFullName())
                 .eventId(ticket.getEvent().getId())
                 .eventTitle(ticket.getEvent().getTitle())

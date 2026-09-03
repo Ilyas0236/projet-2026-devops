@@ -13,6 +13,7 @@ public class TicketResponse {
     private Long id;
     private String ticketNumber;
     private Long userId;
+    private String userEmail;
     private String userFullName;
     private Long eventId;
     private String eventTitle;

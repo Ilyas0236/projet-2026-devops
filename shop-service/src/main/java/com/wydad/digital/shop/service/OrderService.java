@@ -32,6 +32,7 @@ public class OrderService {
     private final com.wydad.digital.shop.client.PaymentClient paymentClient;
     private final com.wydad.digital.shop.client.LoyaltyClient loyaltyClient;
     private final com.wydad.digital.shop.client.AdherentClient adherentClient;
+    private final com.wydad.digital.shop.client.UserClient userClient;
     private final CartItemRepository cartItemRepository;
     private final ProductVariantRepository productVariantRepository;
     private final PromoCodeRepository promoCodeRepository;
@@ -241,9 +242,12 @@ public class OrderService {
             String userEmail,
             String productName,
             Pageable pageable) {
-        return shopOrderRepository.adminFilter(
-                        startDate, endDate, userEmail, productName, pageable)
-                .map(this::mapToDto);
+        Page<ShopOrder> page = shopOrderRepository.adminFilter(
+                startDate, endDate, userEmail, productName, pageable);
+        // 1 batch lookup vers auth-service pour récupérer tous les fullNames
+        // de la page en cours (admin = rôle autorisé sur /api/auth/admin/users).
+        java.util.Map<String, String> fullNames = userClient.getAllFullNamesByEmail();
+        return page.map(o -> mapToDto(o, fullNames));
     }
 
     /**
@@ -321,15 +325,29 @@ public class OrderService {
     }
 
     private OrderResponseDto mapToDto(ShopOrder o) {
+        return mapToDto(o, java.util.Map.of());
+    }
+
+    /**
+     * Mapper enrichi : si {@code fullNames} contient l'email de la commande,
+     * on renseigne {@code userFullName}. Sinon on retombe sur l'email (fallback
+     * transparent côté front). Le caller (adminFilter) fait 1 batch lookup
+     * vers auth-service pour éviter le N+1.
+     */
+    private OrderResponseDto mapToDto(ShopOrder o, java.util.Map<String, String> fullNames) {
+        String fullName = fullNames.getOrDefault(o.getUserEmail(), o.getUserEmail());
         return OrderResponseDto.builder()
+                .id(o.getId())
+                .userEmail(o.getUserEmail())
+                .userFullName(fullName)
                 .orderNumber(o.getOrderNumber())
                 .status(o.getStatus().name())
                 .paymentStatus(o.getPaymentStatus().name())
                 .subtotal(o.getSubtotal())
                 .shippingCost(o.getShippingCost())
-                .discountAmount(o.getDiscountAmount())
+                .discount(o.getDiscountAmount())
                 .adherentDiscount(o.getAdherentDiscount())
-                .totalAmount(o.getTotalAmount())
+                .total(o.getTotalAmount())
                 .trackingNumber(o.getTrackingNumber())
                 .createdAt(o.getCreatedAt())
                 .items(o.getItems().stream()
