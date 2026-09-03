@@ -117,6 +117,11 @@ public class ChallengeService {
         validate(c);
         c.setId(null);
         c.setCreatedAt(null);
+        // Par défaut le défi est ACTIF à la création — l'admin peut le désactiver
+        // explicitement via PUT. Sans ce set, un front qui n'envoie pas le champ
+        // `active` le laisse à `false` (valeur par défaut de la primitive boolean)
+        // et le défi devient invisible côté fan, ce qui a piégé plus d'un admin.
+        c.setActive(true);
         return challengeRepository.save(c);
     }
 
@@ -177,6 +182,16 @@ public class ChallengeService {
             }
             userChallengeRepository.save(p);
         }
+    }
+
+    /** Évalue un défi REACH_POINTS pour tous les utilisateurs (boucle bornée).
+     *  Rend public pour permettre à l'admin de forcer l'évaluation d'UN défi
+     *  via POST /api/gamification/admin/challenges/{id}/evaluate. */
+    public int evaluateOne(Long challengeId) {
+        Challenge c = challengeRepository.findById(challengeId)
+                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException(
+                        "Défi non trouvé: " + challengeId));
+        return evaluateOne(c);
     }
 
     /** Évalue les défis REACH_POINTS pour tous les utilisateurs (boucle bornée). */

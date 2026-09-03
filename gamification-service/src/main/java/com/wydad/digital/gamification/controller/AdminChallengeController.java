@@ -49,6 +49,17 @@ public class AdminChallengeController {
     }
 
     /**
+     * Force l'évaluation immédiate d'UN défi (utile quand l'admin ferme la
+     * fenêtre manuellement ou que le cron n'est pas encore passé). Renvoie
+     * le nombre d'utilisateurs impactés (récompenses créditées).
+     */
+    @PostMapping("/{id}/evaluate")
+    public ResponseEntity<Map<String, Object>> evaluateOne(@PathVariable Long id) {
+        int touched = challengeService.evaluateOne(id);
+        return ResponseEntity.ok(Map.of("touched", touched));
+    }
+
+    /**
      * Force l'évaluation immédiate de tous les défis ouverts.
      * Renvoie le nombre d'utilisateurs impactés (récompenses créditées).
      */

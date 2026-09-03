@@ -7,8 +7,12 @@
         <span class="club-underline !mx-0"></span>
         <p class="text-ink-secondary mt-3">Gagnez des points, débloquez des badges et prouvez votre ferveur !</p>
       </div>
-      <!-- Liens admin si connecté en ADMIN (Tâche #53) -->
+      <!-- Liens admin si connecté en ADMIN (Tâche #53 + audit gamification 03/09) -->
       <div *ngIf="isAdmin()" class="flex flex-wrap items-center gap-2">
+        <a routerLink="/admin/matchs"
+           class="text-xs font-bold uppercase tracking-wider px-3 py-2 border border-paper-3 rounded hover:border-wydad-red hover:text-wydad-red text-ink-secondary transition-colors">
+          🏟 Matchs
+        </a>
         <a routerLink="/admin/badges"
            class="text-xs font-bold uppercase tracking-wider px-3 py-2 border border-paper-3 rounded hover:border-wydad-red hover:text-wydad-red text-ink-secondary transition-colors">
           🏆 Badges

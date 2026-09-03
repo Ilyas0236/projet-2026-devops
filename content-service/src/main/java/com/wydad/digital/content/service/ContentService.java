@@ -8,7 +8,9 @@ import com.wydad.digital.content.repository.*;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.Objects;
@@ -203,6 +205,15 @@ public class ContentService {
     public MatchResponse updateMatchResult(Long id, Integer scoreWydad, Integer scoreAdversaire) {
         Match match = matchRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Match non trouvé"));
+        // Garde anti-réécriture : un match déjà finalisé (TERMINE) verrouille son
+        // score, sinon on pourrait modifier frauduleusement les points déjà crédités
+        // aux pronostics gagnants (EXACT_SCORE / bon signe). Pour corriger un
+        // résultat fautif, il faudra un endpoint admin dédié (V2 : force-resolve).
+        if (match.getStatut() == MatchStatut.TERMINE) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Le match #" + id + " est déjà finalisé (statut=" + match.getStatut()
+                            + "). Impossible de modifier le score.");
+        }
         match.setScoreWydad(scoreWydad);
         match.setScoreAdversaire(scoreAdversaire);
         match.setStatut(MatchStatut.TERMINE);
