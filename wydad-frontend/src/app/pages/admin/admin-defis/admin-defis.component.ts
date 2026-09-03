@@ -75,6 +75,7 @@ import { ConfirmService } from '../../../services/confirm.service';
                 </span>
               </td>
               <td class="px-6 py-4 text-right whitespace-nowrap">
+                <button (click)="evaluateOne(c)" class="text-emerald-400 hover:text-emerald-300 uppercase text-xs font-bold mr-3 transition-colors">Évaluer</button>
                 <button (click)="edit(c)" class="text-blue-400 hover:text-blue-300 uppercase text-xs font-bold mr-3 transition-colors">Éditer</button>
                 <button (click)="remove(c)" class="text-red-400 hover:text-red-300 uppercase text-xs font-bold transition-colors">Supprimer</button>
               </td>
@@ -305,6 +306,20 @@ export class AdminDefisComponent implements OnInit {
       error: (err) => {
         console.error('Erreur évaluation', err);
         this.toast.error(err.error?.message || 'Erreur lors de l\'évaluation.');
+      }
+    });
+  }
+
+  /** Évalue un défi en particulier (utile quand le cron n'est pas encore passé). */
+  evaluateOne(c: any) {
+    this.api.evaluateChallengeOne(c.id).subscribe({
+      next: (res) => {
+        this.toast.success(`Défi « ${c.title} » évalué. ${res.touched} récompense(s) créditée(s).`);
+        this.load();
+      },
+      error: (err) => {
+        console.error('Erreur évaluation défi', err);
+        this.toast.error(err.error?.message || 'Erreur lors de l\'évaluation du défi.');
       }
     });
   }

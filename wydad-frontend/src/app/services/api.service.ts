@@ -1315,6 +1315,12 @@ export class ApiService {
       `${this.baseUrl}/gamification/admin/challenges/evaluate`, {});
   }
 
+  /** ADMIN — force l'évaluation immédiate d'UN seul défi (par son id). */
+  evaluateChallengeOne(id: number): Observable<{ touched: number }> {
+    return this.http.post<{ touched: number }>(
+      `${this.baseUrl}/gamification/admin/challenges/${id}/evaluate`, {});
+  }
+
   // ==========================================
   // MEDIA UPLOAD
   // ==========================================
