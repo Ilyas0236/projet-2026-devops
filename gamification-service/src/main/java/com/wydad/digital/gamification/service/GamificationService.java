@@ -24,6 +24,7 @@ public class GamificationService {
     private final com.wydad.digital.gamification.client.ContentClient contentClient;
     private final com.wydad.digital.gamification.client.NotificationClient notificationClient;
     private final BadgeService badgeService;
+    private final ChallengeService challengeService;
 
     public UserPointsDto getUserPoints(Long userId) {
         UserPoints points = userPointsRepository.findById(userId)
@@ -65,6 +66,9 @@ public class GamificationService {
         addPoints(request.getUserId(), 10, "PREDICTION", request.getMatchId(),
                 "Pronostic soumis (match #" + request.getMatchId() + ")");
 
+        // B.8.c : incrémente les défis SUBMIT_PREDICTIONS en cours.
+        challengeService.onPredictionSubmitted(request.getUserId());
+
         return predictionRepository.save(prediction);
     }
 
@@ -76,6 +80,7 @@ public class GamificationService {
     @Transactional
     public int resolvePredictionsForMatch(Long matchId, int scoreWydad, int scoreAdversaire) {
         List<Prediction> pending = predictionRepository.findByMatchIdAndStatus(matchId, "PENDING");
+        int exactScoresAwarded = 0;
         for (Prediction p : pending) {
             boolean exactScore = p.getPredictedHomeScore().equals(scoreWydad)
                     && p.getPredictedAwayScore().equals(scoreAdversaire);
@@ -86,6 +91,7 @@ public class GamificationService {
             if (exactScore) {
                 status = "WON";
                 pts = 25;
+                exactScoresAwarded++;
             } else if (outcome) {
                 status = "WON";
                 pts = 10;
@@ -107,6 +113,13 @@ public class GamificationService {
                         "/espace-fan");
             }
             predictionRepository.save(p);
+        }
+
+        // B.8.c : incrémente les défis WIN_EXACT_SCORES du nombre de scores exacts validés.
+        for (Prediction p : pending) {
+            if ("WON".equals(p.getStatus()) && p.getPointsEarned() == 25) {
+                challengeService.onPredictionsResolved(p.getUserId(), 1);
+            }
         }
         return pending.size();
     }

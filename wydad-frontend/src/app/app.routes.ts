@@ -64,6 +64,7 @@ import { AdminElectionsComponent } from './pages/admin/admin-elections/admin-ele
 import { AdminCommandesComponent } from './pages/admin/admin-commandes/admin-commandes.component';
 import { AdminAchatsComponent } from './pages/admin/admin-achats/admin-achats.component';
 import { AdminBadgesComponent } from './pages/admin/admin-badges/admin-badges.component';
+import { AdminDefisComponent } from './pages/admin/admin-defis/admin-defis.component';
 import { AdminSeancesComponent } from './pages/admin/admin-seances/admin-seances.component';
 import { AdminJoueursPublicComponent } from './pages/admin/admin-joueurs-public/admin-joueurs-public.component';
 import { AdminPalmaresComponent } from './pages/admin/admin-palmares/admin-palmares.component';
@@ -108,6 +109,7 @@ export const routes: Routes = [
       { path: 'sondages', component: AdminSondagesComponent },
       { path: 'elections', component: AdminElectionsComponent },
       { path: 'badges', component: AdminBadgesComponent },
+      { path: 'defis', component: AdminDefisComponent },
       { path: 'parametres', component: AdminSettingsComponent }
     ]
   },

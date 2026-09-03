@@ -1276,6 +1276,35 @@ export class ApiService {
     return this.http.delete<void>(`${this.baseUrl}/gamification/badges/${badgeId}`);
   }
 
+  // CHALLENGES / DEFIS TEMPORELS (B.8.c)
+  /** Défis actifs avec progression de l'utilisateur courant. */
+  getMyChallenges(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/gamification/challenges/me`);
+  }
+
+  /** ADMIN — liste de tous les défis (actifs + clôturés). */
+  getAllChallenges(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/gamification/admin/challenges`);
+  }
+
+  createChallenge(challenge: any): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/gamification/admin/challenges`, challenge);
+  }
+
+  updateChallenge(id: number, challenge: any): Observable<any> {
+    return this.http.put<any>(`${this.baseUrl}/gamification/admin/challenges/${id}`, challenge);
+  }
+
+  deleteChallenge(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/gamification/admin/challenges/${id}`);
+  }
+
+  /** ADMIN — force l'évaluation immédiate des défis ouverts. */
+  evaluateChallenges(): Observable<{ touched: number }> {
+    return this.http.post<{ touched: number }>(
+      `${this.baseUrl}/gamification/admin/challenges/evaluate`, {});
+  }
+
   // ==========================================
   // MEDIA UPLOAD
   // ==========================================

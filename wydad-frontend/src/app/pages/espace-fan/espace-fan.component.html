@@ -73,6 +73,42 @@
           </div>
         </div>
 
+        <!-- B.8.c Défis temporels -->
+        <div *ngIf="myChallenges.length > 0" class="club-card p-6">
+          <h3 class="font-bold text-xl text-ink-primary flex items-center gap-2 mb-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+            Défis du moment
+          </h3>
+          <p class="text-xs text-ink-secondary mb-5">Validez l'objectif avant la fin de la fenêtre pour gagner des points bonus.</p>
+
+          <div class="space-y-4">
+            <div *ngFor="let c of myChallenges" class="border border-paper-3 rounded-xl p-4">
+              <div class="flex flex-wrap items-start justify-between gap-2 mb-2">
+                <div>
+                  <p class="font-bold text-ink-primary text-base">{{ c.challenge.title }}</p>
+                  <p class="text-[11px] text-ink-tertiary">{{ challengeTypeLabel(c.challenge.challengeType) }} • jusqu'au {{ c.challenge.endsAt | date:'dd/MM/yyyy' }}</p>
+                </div>
+                <div class="flex items-center gap-1 bg-amber-50 text-amber-700 border border-amber-200 rounded-full px-2 py-1 text-xs font-bold whitespace-nowrap">
+                  +{{ c.challenge.rewardPoints }} pts
+                </div>
+              </div>
+              <p *ngIf="c.challenge.description" class="text-sm text-ink-secondary mb-3">{{ c.challenge.description }}</p>
+
+              <div class="w-full bg-paper-2 rounded-full h-2 mb-2 overflow-hidden">
+                <div class="h-2 rounded-full transition-all duration-700"
+                     [class.bg-emerald-500]="c.progress.status === 'COMPLETED'"
+                     [class.bg-wydad-red]="c.progress.status !== 'COMPLETED'"
+                     [style.width.%]="challengePercent(c)"></div>
+              </div>
+              <div class="flex justify-between text-[11px]">
+                <span class="text-ink-secondary">{{ c.progress.progress }} / {{ c.challenge.target }}</span>
+                <span *ngIf="c.progress.status === 'COMPLETED'" class="text-emerald-600 font-bold">✓ Validé</span>
+                <span *ngIf="c.progress.status !== 'COMPLETED'" class="text-ink-tertiary">{{ challengePercent(c) }}%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- B.8.b Historique des gains de points -->
         <div *ngIf="pointHistory.length > 0" class="club-card p-6">
           <h3 class="font-bold text-xl text-ink-primary flex items-center gap-2 mb-2">

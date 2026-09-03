@@ -28,6 +28,8 @@ export class EspaceFanComponent implements OnInit {
   myBadges: any[] = [];
   /** Historique des gains de points (50 dernières) — Commit 1 gamification. */
   pointHistory: any[] = [];
+  /** B.8.c : défis temporels actifs avec ma progression. */
+  myChallenges: any[] = [];
   
   // Pour le formulaire de pronostic
   predictionForm: { [matchId: number]: { homeScore: number, awayScore: number } } = {};
@@ -105,6 +107,28 @@ export class EspaceFanComponent implements OnInit {
       next: (data: any) => (this.pointHistory = data || []),
       error: (err: any) => console.error('Erreur historique points', err)
     });
+
+    // B.8.c : défis en cours avec ma progression
+    this.api.getMyChallenges().subscribe({
+      next: (data: any) => (this.myChallenges = data || []),
+      error: (err: any) => console.error('Erreur défis', err)
+    });
+  }
+
+  /** Libellé humain d'un type de défi. */
+  challengeTypeLabel(type: string): string {
+    switch (type) {
+      case 'SUBMIT_PREDICTIONS': return 'Soumettre des pronostics';
+      case 'WIN_EXACT_SCORES': return 'Scores exacts validés';
+      case 'REACH_POINTS': return 'Atteindre un solde de points';
+      default: return type;
+    }
+  }
+
+  /** % de progression du défi (0-100). */
+  challengePercent(c: any): number {
+    if (!c?.progress || !c?.challenge?.target) return 0;
+    return Math.min(100, Math.round((c.progress.progress / c.challenge.target) * 100));
   }
 
   /** Libellé humain d'une source de points (pour l'affichage historique). */
