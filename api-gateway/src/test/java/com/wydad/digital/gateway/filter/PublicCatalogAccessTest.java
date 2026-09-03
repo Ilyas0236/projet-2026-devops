@@ -28,6 +28,11 @@ class PublicCatalogAccessTest {
             "/api/shop/products/1",
             "/api/ticket/events",
             "/api/ticket/events/upcoming",
+            // Feuilles de match publiées : le site public doit consulter
+            // la feuille d'un match PUBLIEE sans compte (cf. fix gateway
+            // 03/09/2026 — sans cette ligne le filtre JWT global bloque
+            // l'accès en 401, alors que le back est permitAll).
+            "/api/sports/match-convocations/public/match/1",
     };
 
     @Autowired

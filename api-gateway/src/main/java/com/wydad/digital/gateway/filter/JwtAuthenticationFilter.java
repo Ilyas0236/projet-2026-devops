@@ -143,6 +143,20 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
             return chain.filter(exchange);
         }
 
+        // Feuilles de match publiées : le site public (visiteur non connecté)
+        // doit pouvoir consulter la feuille d'un match PUBLIEE. Le back
+        // (MatchConvocationController.publicView) a un permitAll sur
+        // /public/match/{id} (SecurityConfig sports-service) ; la gateway
+        // doit aussi laisser passer l'anonyme sinon le site public renvoie
+        // 401 (signalé le 03/09/2026 — test E2E admin : OK / public : KO).
+        if ("GET".equals(method) && path.startsWith("/api/sports/match-convocations/public/")) {
+            String matchConvHeader = request.getHeaders().getFirst("Authorization");
+            if (matchConvHeader != null && matchConvHeader.startsWith("Bearer ")) {
+                return validateAndForward(exchange, chain);
+            }
+            return chain.filter(exchange);
+        }
+
         // Gamification : leaderboard consultable sans compte — le service fait
         // déjà permitAll sur ce GET (SecurityConfig gamification) ; la gateway
         // doit laisser passer l'anonyme, sinon incohérence 401 côté visiteur.
