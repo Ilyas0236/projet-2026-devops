@@ -88,7 +88,18 @@
                 Actions
                 <svg class="w-3 h-3 transition-transform" [class.rotate-180]="actionsMenuOpen" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
               </button>
-              <div *ngIf="actionsMenuOpen" class="absolute right-0 mt-2 w-72 bg-white border border-paper-3 rounded-2xl shadow-2xl z-40 overflow-hidden">
+
+              <!-- Backdrop transparent pour fermer le menu au clic extérieur -->
+              <div *ngIf="actionsMenuOpen"
+                   class="fixed inset-0 z-[59] bg-transparent cursor-default"
+                   (click)="actionsMenuOpen = false"
+                   aria-hidden="true"></div>
+
+              <!-- Menu Actions : z-60 au-dessus de tout (y compris les KPI cards
+                   qui contiennent "X à publier" en-dessous), backdrop dédié pour
+                   fermer au clic extérieur, ring rouge pour signaler l'ouverture. -->
+              <div *ngIf="actionsMenuOpen"
+                   class="absolute right-0 mt-2 w-72 bg-white border-2 border-wydad-red rounded-2xl shadow-2xl z-[60] overflow-hidden ring-4 ring-wydad-red/10">
                 <button (click)="showConvoForm = !showConvoForm; actionsMenuOpen = false"
                         class="w-full text-left flex items-center gap-3 px-5 py-3.5 hover:bg-paper-1 transition-colors border-b border-paper-2 group">
                   <span class="w-9 h-9 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 group-hover:bg-blue-100">

@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, inject, ElementRef, ViewChild } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, ElementRef, ViewChild, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators, FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -959,5 +959,14 @@ export class DashboardStaffComponent implements OnInit, OnDestroy {
         this.toast.error('Erreur lors du téléchargement du billet VIP.');
       }
     });
+  }
+
+  /**
+   * Ferme le menu "Actions" sur Échap — UX standard pour un menu déroulant.
+   * (Le clic extérieur est déjà géré par le backdrop dans le template.)
+   */
+  @HostListener('document:keydown.escape')
+  onEscape(): void {
+    if (this.actionsMenuOpen) this.actionsMenuOpen = false;
   }
 }
