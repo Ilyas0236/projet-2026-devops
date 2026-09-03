@@ -41,8 +41,8 @@ describe('DashboardJoueur — billets VIP', () => {
   /** Répond aux appels déclenchés par ngOnInit. */
   function flushPlayerCalls() {
     httpMock.expectOne(`${base}/sports/players/user/5`).flush(joueur);
-    // Sessions + espace + rapports : réponses vides suffisent
-    const pend = httpMock.match((r) => r.url.includes('/sports/') || r.url.includes('/content/') || r.url.includes('/notification/'));
+    // Sessions + espace + rapports + reçus : réponses vides suffisent
+    const pend = httpMock.match((r) => r.url.includes('/sports/') || r.url.includes('/content/') || r.url.includes('/notification/') || r.url.includes('/auth/'));
     pend.forEach((r) => r.flush(r.request.responseType === 'blob' ? new Blob() : Array.isArray(r.request.body) ? [] : {}));
   }
 

@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, inject, ElementRef, ViewChild } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, ElementRef, ViewChild, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { RouterModule } from '@angular/router';
@@ -100,6 +100,56 @@ export class DashboardJoueurComponent implements OnInit, OnDestroy {
 
   // Transparence financière — rapports publiés par le club
   rapportsFinanciers: any[] = [];
+
+  // ═══════════════════════════ Refonte pro (header + KPI + onglets) ═══════════════════════════
+
+  /** Refonte pro — menu "Actions" du header (toggle au clic, fermeture Échap). */
+  actionsMenuOpen = false;
+
+  /** Refonte pro — onglet actif de la zone principale 8/4. */
+  sidebarTab: 'daily' | 'convocs' | 'docs' | 'comms' = 'daily';
+
+  /** Refonte pro — initiales de l'avatar du header (jusqu'à 2 lettres). */
+  get staffInitials(): string {
+    const name = (this.player?.fullName || '').trim();
+    if (!name) return '?';
+    const parts = name.split(/\s+/);
+    const a = parts[0]?.[0] || '';
+    const b = parts[1]?.[0] || '';
+    return (a + b).toUpperCase() || a.toUpperCase() || '?';
+  }
+
+  /** Refonte pro — KPI 1 : nombre de matchs joués. */
+  get kpiMatchsJoues(): number {
+    return this.player?.matchesPlayed || 0;
+  }
+
+  /** Refonte pro — KPI 2 : buts (chiffre seul). */
+  get kpiButs(): number {
+    return this.player?.goals || 0;
+  }
+
+  /** Refonte pro — KPI 3 : passes décisives (chiffre seul). */
+  get kpiPasses(): number {
+    return this.player?.assists || 0;
+  }
+
+  /** Refonte pro — KPI 4 : convocations de séance sans réponse (à confirmer). */
+  get convocationsSansReponse(): number {
+    return this.convocations.filter(c => !c.responseStatus).length;
+  }
+
+  /** Refonte pro — placeholder V2 : signaler une indisponibilité. */
+  signalerIndisponibilite(): void {
+    this.actionsMenuOpen = false;
+    this.toast.info('Bientôt disponible — la fonctionnalité arrive en V2.');
+  }
+
+  /** Refonte pro — ferme le menu Actions à la touche Échap. */
+  @HostListener('document:keydown.escape')
+  onEscape(): void {
+    if (this.actionsMenuOpen) this.actionsMenuOpen = false;
+  }
 
   loadRapportsFinanciers() {
     this.api.getRapportsFinanciers().subscribe({
