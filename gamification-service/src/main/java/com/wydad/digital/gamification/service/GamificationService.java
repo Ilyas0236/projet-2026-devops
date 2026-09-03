@@ -25,12 +25,14 @@ public class GamificationService {
     private final com.wydad.digital.gamification.client.NotificationClient notificationClient;
     private final BadgeService badgeService;
     private final ChallengeService challengeService;
+    private final PointRuleService pointRuleService;
 
     public UserPointsDto getUserPoints(Long userId) {
         UserPoints points = userPointsRepository.findById(userId)
                 .orElse(UserPoints.builder().userId(userId).totalPoints(0).level(1).build());
-        
-        int pointsToNextLevel = (points.getLevel() * 500) - points.getTotalPoints();
+
+        int pointsPerLevel = pointRuleService.get(PointRuleService.KEY_LEVEL_POINTS, 500);
+        int pointsToNextLevel = (points.getLevel() * pointsPerLevel) - points.getTotalPoints();
         if (pointsToNextLevel < 0) pointsToNextLevel = 0;
 
         return UserPointsDto.builder()
@@ -62,8 +64,9 @@ public class GamificationService {
                 .predictedAwayScore(request.getPredictedAwayScore())
                 .build();
 
-        // Bonus: 10 points for just predicting — tracé dans l'historique utilisateur.
-        addPoints(request.getUserId(), 10, "PREDICTION", request.getMatchId(),
+        // Bonus de participation — barème paramétrable par admin (B.8).
+        int bonus = pointRuleService.get(PointRuleService.KEY_PREDICTION_BONUS, 10);
+        addPoints(request.getUserId(), bonus, "PREDICTION", request.getMatchId(),
                 "Pronostic soumis (match #" + request.getMatchId() + ")");
 
         // B.8.c : incrémente les défis SUBMIT_PREDICTIONS en cours.
@@ -75,10 +78,12 @@ public class GamificationService {
     /**
      * Résout tous les pronostics PENDING d'un match à partir du score final.
      * Appelé par content-service quand l'ADMIN saisit un résultat.
-     * Barème : score exact = 25 pts, bon signe (1X2) = 10 pts, sinon 0.
+     * Barème paramétrable par admin (B.8) : score exact / bon signe.
      */
     @Transactional
     public int resolvePredictionsForMatch(Long matchId, int scoreWydad, int scoreAdversaire) {
+        int ptsExact = pointRuleService.get(PointRuleService.KEY_PREDICTION_EXACT, 25);
+        int ptsSigne = pointRuleService.get(PointRuleService.KEY_PREDICTION_SIGN, 10);
         List<Prediction> pending = predictionRepository.findByMatchIdAndStatus(matchId, "PENDING");
         int exactScoresAwarded = 0;
         for (Prediction p : pending) {
@@ -90,11 +95,11 @@ public class GamificationService {
             int pts;
             if (exactScore) {
                 status = "WON";
-                pts = 25;
+                pts = ptsExact;
                 exactScoresAwarded++;
             } else if (outcome) {
                 status = "WON";
-                pts = 10;
+                pts = ptsSigne;
             } else {
                 status = "LOST";
                 pts = 0;
@@ -115,9 +120,10 @@ public class GamificationService {
             predictionRepository.save(p);
         }
 
-        // B.8.c : incrémente les défis WIN_EXACT_SCORES du nombre de scores exacts validés.
+        // B.8.c : incrémente les défis WIN_EXACT_SCORES du nombre de scores exacts validés
+        // (on compare avec la valeur courante du barème, pas un 25 hardcodé).
         for (Prediction p : pending) {
-            if ("WON".equals(p.getStatus()) && p.getPointsEarned() == 25) {
+            if ("WON".equals(p.getStatus()) && p.getPointsEarned() == ptsExact) {
                 challengeService.onPredictionsResolved(p.getUserId(), 1);
             }
         }
@@ -147,8 +153,9 @@ public class GamificationService {
 
         points.setTotalPoints(points.getTotalPoints() + amount);
 
-        // Level up logic (every 500 points = 1 level)
-        int newLevel = (points.getTotalPoints() / 500) + 1;
+        // Level up : barème paramétrable (par défaut 500 pts / niveau, B.8).
+        int pointsPerLevel = pointRuleService.get(PointRuleService.KEY_LEVEL_POINTS, 500);
+        int newLevel = (points.getTotalPoints() / pointsPerLevel) + 1;
         points.setLevel(newLevel);
 
         userPointsRepository.save(points);

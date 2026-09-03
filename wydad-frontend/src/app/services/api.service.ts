@@ -1232,6 +1232,16 @@ export class ApiService {
       { params: { limit } });
   }
 
+  /** ADMIN — liste des règles du barème de points (B.8). */
+  getPointRules(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/gamification/admin/point-rules`);
+  }
+
+  /** ADMIN — met à jour la valeur d'une règle du barème (B.8). */
+  updatePointRule(key: string, value: number): Observable<any> {
+    return this.http.put<any>(`${this.baseUrl}/gamification/admin/point-rules/${key}`, { value });
+  }
+
   /** ADMIN — attributions de badges les plus récentes (tous utilisateurs). */
   getRecentBadgeAwards(limit = 50): Observable<any[]> {
     return this.http.get<any[]>(`${this.baseUrl}/gamification/admin/badges/recent`,
