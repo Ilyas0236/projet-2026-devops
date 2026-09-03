@@ -7,6 +7,21 @@
         <span class="club-underline !mx-0"></span>
         <p class="text-ink-secondary mt-3">Gagnez des points, débloquez des badges et prouvez votre ferveur !</p>
       </div>
+      <!-- Liens admin si connecté en ADMIN (Tâche #53) -->
+      <div *ngIf="isAdmin()" class="flex flex-wrap items-center gap-2">
+        <a routerLink="/admin/badges"
+           class="text-xs font-bold uppercase tracking-wider px-3 py-2 border border-paper-3 rounded hover:border-wydad-red hover:text-wydad-red text-ink-secondary transition-colors">
+          🏆 Badges
+        </a>
+        <a routerLink="/admin/bareme-points"
+           class="text-xs font-bold uppercase tracking-wider px-3 py-2 border border-paper-3 rounded hover:border-wydad-red hover:text-wydad-red text-ink-secondary transition-colors">
+          ⚖ Barème
+        </a>
+        <a routerLink="/admin/defis"
+           class="text-xs font-bold uppercase tracking-wider px-3 py-2 border border-paper-3 rounded hover:border-wydad-red hover:text-wydad-red text-ink-secondary transition-colors">
+          ⚡ Défis
+        </a>
+      </div>
     </div>
 
     <!-- Non connecté -->
@@ -25,196 +40,423 @@
       <div class="club-skeleton h-64 !rounded-2xl"></div>
     </div>
 
-    <div *ngIf="userId && !loading" class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <div *ngIf="userId && !loading" class="space-y-8">
 
-      <!-- Colonne de gauche (Dashboard & Pronostics) -->
-      <div class="lg:col-span-2 space-y-8">
-
-        <!-- Dashboard Points : bandeau rouge Club animé -->
-        <div class="club-hero rounded-2xl shadow-glow-red/30 p-8 relative overflow-hidden animate-fade-in-up" style="opacity:0;">
-          <div class="absolute top-0 right-0 p-8 opacity-15">
-            <svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 24 24" fill="#fff"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+      <!-- ═══════════════ HERO "Mon classement" (Tâche #53) ═══════════════ -->
+      <div class="club-hero rounded-2xl shadow-glow-red/30 p-8 relative overflow-hidden animate-fade-in-up" style="opacity:0;">
+        <div class="absolute top-0 right-0 p-8 opacity-15">
+          <svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 24 24" fill="#fff"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+        </div>
+        <div class="relative z-10 flex flex-col md:flex-row items-center gap-8">
+          <!-- Avatar / Initiales -->
+          <div class="w-24 h-24 bg-white/15 rounded-full border-4 border-white/60 flex items-center justify-center flex-shrink-0 backdrop-blur-sm">
+            <span class="font-display font-bold text-3xl text-white">{{ userInitials(userId) }}</span>
           </div>
-          <div class="relative z-10 flex flex-col md:flex-row items-center gap-8">
-            <div class="w-24 h-24 bg-white/15 rounded-full border-4 border-white/60 flex items-center justify-center flex-shrink-0 backdrop-blur-sm">
-              <span class="font-display font-bold text-3xl text-white">Niv {{ pointsData?.level }}</span>
-            </div>
-            <div class="flex-1 text-center md:text-left">
-              <h2 class="text-3xl font-bold mb-1 text-white">{{ pointsData?.totalPoints }} PTS</h2>
-              <p class="text-white/75 text-sm mb-4">Total accumulé</p>
-
+          <div class="flex-1 text-center md:text-left w-full">
+            <!-- Si classé : Top X% + Rang / Total / Niveau -->
+            <ng-container *ngIf="myRank() > 0; else notRanked">
+              <div class="flex flex-wrap items-center gap-3 justify-center md:justify-start mb-2">
+                <span class="inline-flex items-center gap-2 bg-white/15 backdrop-blur-sm border border-white/30 text-white text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded-full">
+                  🏆 Top {{ myPercentile() }}%
+                </span>
+                <span class="text-white/70 text-sm">Classement général des supporters</span>
+              </div>
+              <div class="flex flex-wrap items-baseline gap-6 justify-center md:justify-start mb-4">
+                <div>
+                  <p class="text-[11px] text-white/60 uppercase tracking-wider">Rang</p>
+                  <p class="font-display font-bold text-3xl text-white">#{{ myRank() }}</p>
+                </div>
+                <div>
+                  <p class="text-[11px] text-white/60 uppercase tracking-wider">Total</p>
+                  <p class="font-display font-bold text-3xl text-white">{{ pointsData?.totalPoints }} <span class="text-base text-white/70">pts</span></p>
+                </div>
+                <div>
+                  <p class="text-[11px] text-white/60 uppercase tracking-wider">Niveau</p>
+                  <p class="font-display font-bold text-3xl text-wydad-gold-light">{{ pointsData?.level }}</p>
+                </div>
+              </div>
               <!-- Barre de progression -->
               <div class="w-full bg-black/25 rounded-full h-2 mb-2 overflow-hidden">
-                <div class="bg-gradient-to-r from-white to-wydad-gold-light h-2 rounded-full transition-all duration-700" [style.width.%]="(pointsData?.totalPoints % 500) / 500 * 100"></div>
+                <div class="bg-gradient-to-r from-white to-wydad-gold-light h-2 rounded-full transition-all duration-700" [style.width.%]="progressPercent()"></div>
               </div>
-              <p class="text-xs text-white/70 text-right">{{ pointsData?.pointsToNextLevel }} pts avant le niveau {{ pointsData?.level + 1 }}</p>
-            </div>
-          </div>
-        </div>
-
-        <!-- B.8 : Badges de fidélité (attribution automatique par le serveur) -->
-        <div *ngIf="badgeCatalog.length > 0" class="club-card p-6">
-          <h3 class="font-bold text-xl text-ink-primary flex items-center gap-2 mb-2">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-wydad-gold-dark" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/></svg>
-            Badges de fidélité
-          </h3>
-          <p class="text-xs text-ink-secondary mb-5">Les badges se débloquent automatiquement quand vos points atteignent le seuil.</p>
-
-          <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div *ngFor="let badge of badgeCatalog"
-                 class="rounded-xl p-4 text-center border transition-all duration-300 hover:-translate-y-1"
-                 [ngClass]="ownsBadge(badge.id)
-                   ? {'bg-wydad-red': true, 'text-white': true, 'border-wydad-red': true, 'shadow-glow-red': true}
-                   : {'bg-paper-1': true, 'border-paper-3': true, 'opacity-70': true, 'hover:opacity-100': true}">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mx-auto mb-2" [ngClass]="{'text-wydad-gold-light': ownsBadge(badge.id), 'text-ink-tertiary': !ownsBadge(badge.id)}" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-              <div class="font-bold text-sm">{{ badge.name }}</div>
-              <div class="text-[11px] mt-1" [ngClass]="{'text-white opacity-80': ownsBadge(badge.id), 'text-ink-secondary': !ownsBadge(badge.id)}">{{ badge.minPoints }} pts</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- B.8.c Défis temporels -->
-        <div *ngIf="myChallenges.length > 0" class="club-card p-6">
-          <h3 class="font-bold text-xl text-ink-primary flex items-center gap-2 mb-2">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-            Défis du moment
-          </h3>
-          <p class="text-xs text-ink-secondary mb-5">Validez l'objectif avant la fin de la fenêtre pour gagner des points bonus.</p>
-
-          <div class="space-y-4">
-            <div *ngFor="let c of myChallenges" class="border border-paper-3 rounded-xl p-4">
-              <div class="flex flex-wrap items-start justify-between gap-2 mb-2">
-                <div>
-                  <p class="font-bold text-ink-primary text-base">{{ c.challenge.title }}</p>
-                  <p class="text-[11px] text-ink-tertiary">{{ challengeTypeLabel(c.challenge.challengeType) }} • jusqu'au {{ c.challenge.endsAt | date:'dd/MM/yyyy' }}</p>
-                </div>
-                <div class="flex items-center gap-1 bg-amber-50 text-amber-700 border border-amber-200 rounded-full px-2 py-1 text-xs font-bold whitespace-nowrap">
-                  +{{ c.challenge.rewardPoints }} pts
-                </div>
+              <p class="text-xs text-white/70 text-right mb-3">{{ pointsData?.pointsToNextLevel }} pts avant le niveau {{ (pointsData?.level || 1) + 1 }}</p>
+              <!-- Contexte : devant / derrière -->
+              <div class="flex flex-wrap gap-x-6 gap-y-1 text-xs text-white/85 justify-center md:justify-start">
+                <span *ngIf="pointsBehindNext() > 0">🎯 {{ pointsBehindNext() }} pts derrière #{{ myRank() - 1 }}</span>
+                <span *ngIf="pointsBehindNext() === 0 && myRank() > 1" class="text-wydad-gold-light font-bold">👑 Vous êtes sur le podium !</span>
+                <span *ngIf="myRank() === 1" class="text-wydad-gold-light font-bold">👑 Vous êtes #1 du classement</span>
+                <span *ngIf="pointsAheadOfBelow() > 0 && pointsBehindNext() > 0" class="text-white/30">|</span>
+                <span *ngIf="pointsAheadOfBelow() > 0">🛡️ {{ pointsAheadOfBelow() }} pts devant #{{ myRank() + 1 }}</span>
+                <span *ngIf="pointsAheadOfBelow() === 0" class="text-white/60">Dernier du top {{ leaderboard.length }}</span>
               </div>
-              <p *ngIf="c.challenge.description" class="text-sm text-ink-secondary mb-3">{{ c.challenge.description }}</p>
-
-              <div class="w-full bg-paper-2 rounded-full h-2 mb-2 overflow-hidden">
-                <div class="h-2 rounded-full transition-all duration-700"
-                     [class.bg-emerald-500]="c.progress.status === 'COMPLETED'"
-                     [class.bg-wydad-red]="c.progress.status !== 'COMPLETED'"
-                     [style.width.%]="challengePercent(c)"></div>
+            </ng-container>
+            <ng-template #notRanked>
+              <div class="flex flex-wrap items-center gap-3 justify-center md:justify-start mb-2">
+                <span class="inline-flex items-center gap-2 bg-white/15 backdrop-blur-sm border border-white/30 text-white text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded-full">
+                  🎯 Hors top {{ leaderboard.length }}
+                </span>
               </div>
-              <div class="flex justify-between text-[11px]">
-                <span class="text-ink-secondary">{{ c.progress.progress }} / {{ c.challenge.target }}</span>
-                <span *ngIf="c.progress.status === 'COMPLETED'" class="text-emerald-600 font-bold">✓ Validé</span>
-                <span *ngIf="c.progress.status !== 'COMPLETED'" class="text-ink-tertiary">{{ challengePercent(c) }}%</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- B.8.b Historique des gains de points -->
-        <div *ngIf="pointHistory.length > 0" class="club-card p-6">
-          <h3 class="font-bold text-xl text-ink-primary flex items-center gap-2 mb-2">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-            Historique de mes points
-          </h3>
-          <p class="text-xs text-ink-secondary mb-5">Les 10 dernières opérations sur votre solde de points.</p>
-
-          <div class="divide-y divide-paper-2">
-            <div *ngFor="let tx of pointHistory.slice(0, 10)" class="py-3 flex items-center justify-between gap-4">
-              <div class="flex-1 min-w-0">
-                <p class="text-sm font-semibold text-ink-primary truncate">{{ tx.label || sourceLabel(tx.source) }}</p>
-                <p class="text-[11px] text-ink-tertiary">{{ sourceLabel(tx.source) }} • {{ tx.createdAt | date:'dd/MM/yyyy HH:mm' }}</p>
-              </div>
-              <div class="font-display font-bold text-lg flex-shrink-0" [ngClass]="sourceColorClass(tx.source, tx.amount)">
-                {{ tx.amount > 0 ? '+' : '' }}{{ tx.amount }} pts
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Section Pronostics -->
-        <div class="club-card p-6">
-          <div class="flex items-center justify-between mb-6">
-            <h3 class="font-bold text-xl text-ink-primary flex items-center gap-2">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-wydad-red" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
-              Pronostics (+10 pts)
-            </h3>
-            <span class="bg-emerald-50 text-emerald-700 text-xs font-bold px-2 py-1 rounded border border-emerald-200">Score Exact = +25 pts</span>
-          </div>
-
-          <div class="space-y-4">
-            <div *ngIf="matches.length === 0" class="text-center text-ink-tertiary py-6">
-              Aucun match à venir pour le moment.
-            </div>
-
-            <div *ngFor="let match of matches" class="border border-paper-3 rounded-xl p-4 flex flex-col md:flex-row items-center justify-between gap-4 hover:border-wydad-red/40 hover:shadow-paper-card-hover transition-all">
-              <!-- Info Match -->
-              <div class="flex-1 text-center md:text-left">
-                <p class="text-xs text-ink-tertiary font-bold mb-2">{{ match.competition }} • {{ match.date | date:'dd/MM/yyyy' }} {{ match.heure }}</p>
-                <div class="flex items-center justify-center md:justify-start gap-4 font-display font-bold text-lg text-ink-primary">
-                  <span class="w-24 text-right">WAC</span>
-                  <span class="text-ink-tertiary">VS</span>
-                  <span class="w-24 text-left">{{ match.adversaire }}</span>
-                </div>
-              </div>
-
-              <!-- Formulaire ou Résultat -->
-              <div *ngIf="!hasPredicted(match.id)" class="flex items-center gap-3">
-                <input type="number" [(ngModel)]="predictionForm[match.id].homeScore" min="0" max="15" class="w-14 h-12 text-center text-xl font-bold border border-paper-3 rounded focus:border-wydad-red outline-none text-ink-primary">
-                <span class="font-bold text-ink-tertiary">-</span>
-                <input type="number" [(ngModel)]="predictionForm[match.id].awayScore" min="0" max="15" class="w-14 h-12 text-center text-xl font-bold border border-paper-3 rounded focus:border-wydad-red outline-none text-ink-primary">
-
-                <button (click)="submitPrediction(match.id)" [disabled]="submittingMatchId === match.id" class="ml-2 paper-btn-primary !px-3 !py-3 disabled:opacity-50" aria-label="Valider le pronostic">
-                  <svg *ngIf="submittingMatchId !== match.id" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>
-                  <div *ngIf="submittingMatchId === match.id" class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                </button>
-              </div>
-
-              <div *ngIf="hasPredicted(match.id)" class="bg-red-50 px-6 py-2 rounded-lg border border-wydad-red/25 text-center">
-                <p class="text-xs text-ink-secondary mb-1">Votre Pronostic</p>
-                <div class="font-display font-bold text-2xl text-wydad-red tracking-widest">
-                  {{ getPrediction(match.id).predictedHomeScore }} - {{ getPrediction(match.id).predictedAwayScore }}
-                </div>
-              </div>
-
-            </div>
+              <p class="text-white text-2xl font-bold mb-2">Vous n'êtes pas encore classé</p>
+              <p class="text-white/75 text-sm mb-3">Faites un pronostic sur le prochain match pour entrer dans le top {{ leaderboard.length }} supporters !</p>
+            </ng-template>
           </div>
         </div>
       </div>
 
-      <!-- Colonne de droite (Leaderboard) -->
-      <div>
-        <div class="club-card overflow-hidden sticky top-32">
-          <div class="bg-gradient-to-r from-wydad-red to-wydad-red-dark p-6 flex items-center justify-between">
-            <h3 class="font-bold text-lg text-white flex items-center gap-2">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-wydad-gold-light" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 2a1 1 0 01.932.638l2.15 5.518 5.926.476a1 1 0 01.564 1.748l-4.5 3.82.49 5.864a1 1 0 01-1.5.952L10 17.51l-5.062 3.504a1 1 0 01-1.5-.952l.49-5.864-4.5-3.82a1 1 0 01.564-1.748l5.926-.476 2.15-5.518A1 1 0 0110 2z" clip-rule="evenodd" /></svg>
-              Classement Général
-            </h3>
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+        <!-- ═══════════ Colonne principale : 4 onglets (Tâche #53) ═══════════ -->
+        <div class="lg:col-span-2 space-y-6">
+
+          <!-- Barre d'onglets -->
+          <div class="flex flex-wrap gap-1 bg-white/5 border border-paper-3 rounded-xl p-1">
+            <button (click)="setTab('overview')"
+                    [ngClass]="activeTab === 'overview' ? 'bg-wydad-red text-white shadow-glow-red' : 'text-ink-secondary hover:bg-paper-2'"
+                    class="flex-1 min-w-[120px] px-3 py-2.5 rounded-lg font-bold text-xs uppercase tracking-wider transition-all">
+              📊 Vue d'ensemble
+            </button>
+            <button (click)="setTab('predictions')"
+                    [ngClass]="activeTab === 'predictions' ? 'bg-wydad-red text-white shadow-glow-red' : 'text-ink-secondary hover:bg-paper-2'"
+                    class="flex-1 min-w-[120px] px-3 py-2.5 rounded-lg font-bold text-xs uppercase tracking-wider transition-all">
+              ⚽ Pronostics
+            </button>
+            <button (click)="setTab('challenges')"
+                    [ngClass]="activeTab === 'challenges' ? 'bg-wydad-red text-white shadow-glow-red' : 'text-ink-secondary hover:bg-paper-2'"
+                    class="flex-1 min-w-[120px] px-3 py-2.5 rounded-lg font-bold text-xs uppercase tracking-wider transition-all">
+              ⚡ Défis
+              <span *ngIf="activeChallengesCount() > 0" class="ml-1 inline-block bg-amber-400 text-amber-900 text-[10px] font-bold rounded-full px-1.5">{{ activeChallengesCount() }}</span>
+            </button>
+            <button (click)="setTab('gains')"
+                    [ngClass]="activeTab === 'gains' ? 'bg-wydad-red text-white shadow-glow-red' : 'text-ink-secondary hover:bg-paper-2'"
+                    class="flex-1 min-w-[120px] px-3 py-2.5 rounded-lg font-bold text-xs uppercase tracking-wider transition-all">
+              💰 Mes gains
+            </button>
           </div>
 
-          <div class="divide-y divide-paper-2">
+          <!-- ═══ Onglet 1 : Vue d'ensemble ═══ -->
+          <div *ngIf="activeTab === 'overview'" class="space-y-6 animate-fade-in-up">
+            <!-- 4 KPI cards -->
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <div class="club-card p-5 text-center">
+                <p class="text-[11px] text-ink-tertiary uppercase tracking-wider mb-1">Solde de points</p>
+                <p class="font-display font-bold text-3xl text-wydad-red">{{ pointsData?.totalPoints }}</p>
+                <p class="text-[11px] text-ink-secondary mt-1">Niveau {{ pointsData?.level }}</p>
+              </div>
+              <div class="club-card p-5 text-center">
+                <p class="text-[11px] text-ink-tertiary uppercase tracking-wider mb-1">Badges débloqués</p>
+                <p class="font-display font-bold text-3xl text-wydad-gold-dark">{{ unlockedBadgesCount() }} <span class="text-base text-ink-tertiary">/ {{ badgeCatalog.length }}</span></p>
+                <p class="text-[11px] text-ink-secondary mt-1">fidélité</p>
+              </div>
+              <div class="club-card p-5 text-center">
+                <p class="text-[11px] text-ink-tertiary uppercase tracking-wider mb-1">Défis en cours</p>
+                <p class="font-display font-bold text-3xl text-orange-500">{{ activeChallengesCount() }}</p>
+                <p class="text-[11px] text-ink-secondary mt-1">à valider</p>
+              </div>
+              <div class="club-card p-5 text-center">
+                <p class="text-[11px] text-ink-tertiary uppercase tracking-wider mb-1">Pronostics soumis</p>
+                <p class="font-display font-bold text-3xl text-emerald-600">{{ predictionsCount() }}</p>
+                <p class="text-[11px] text-ink-secondary mt-1">tous matchs</p>
+              </div>
+            </div>
+
+            <!-- Encart pédagogique : comment gagner des points -->
+            <div class="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-6">
+              <h4 class="font-bold text-ink-primary flex items-center gap-2 mb-3">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                Qu'est-ce qui me rapporte des points ?
+              </h4>
+              <ul class="text-sm text-ink-secondary space-y-1.5">
+                <li class="flex items-baseline gap-2"><span class="text-wydad-red font-bold w-16 flex-shrink-0">+10</span> Soumettre un pronostic sur un match à venir</li>
+                <li class="flex items-baseline gap-2"><span class="text-emerald-600 font-bold w-16 flex-shrink-0">+25</span> Pronostic score exact (bon score final)</li>
+                <li class="flex items-baseline gap-2"><span class="text-emerald-500 font-bold w-16 flex-shrink-0">+10</span> Bon signe (1X2) — victoire, nul ou défaite correctement pronostiqué</li>
+                <li class="flex items-baseline gap-2"><span class="text-orange-500 font-bold w-16 flex-shrink-0">variable</span> Récompense défi temporel (selon défi)</li>
+              </ul>
+              <p class="text-[11px] text-ink-tertiary mt-3 italic">
+                Le barème est paramétrable par l'admin dans « Barème de points » — les valeurs ci-dessus correspondent aux réglages en vigueur.
+              </p>
+            </div>
+
+            <!-- Liens rapides vers les 4 sections -->
+            <div class="club-card p-6">
+              <h4 class="font-bold text-ink-primary mb-3">🚀 Actions rapides</h4>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <button (click)="setTab('predictions')"
+                        class="text-left p-3 border border-paper-3 rounded-lg hover:border-wydad-red hover:bg-red-50/40 transition-colors">
+                  <p class="font-bold text-ink-primary text-sm">⚽ Soumettre un pronostic</p>
+                  <p class="text-xs text-ink-secondary">{{ matches.length }} match(s) à venir</p>
+                </button>
+                <button (click)="setTab('challenges')"
+                        class="text-left p-3 border border-paper-3 rounded-lg hover:border-orange-500 hover:bg-orange-50/40 transition-colors">
+                  <p class="font-bold text-ink-primary text-sm">⚡ Voir mes défis</p>
+                  <p class="text-xs text-ink-secondary">{{ myChallenges.length }} défi(s) en cours</p>
+                </button>
+                <button (click)="setTab('gains')"
+                        class="text-left p-3 border border-paper-3 rounded-lg hover:border-emerald-500 hover:bg-emerald-50/40 transition-colors">
+                  <p class="font-bold text-ink-primary text-sm">💰 Mon historique de gains</p>
+                  <p class="text-xs text-ink-secondary">{{ pointHistory.length }} transaction(s) récente(s)</p>
+                </button>
+                <button (click)="setTab('gains')"
+                        class="text-left p-3 border border-paper-3 rounded-lg hover:border-wydad-gold-dark hover:bg-amber-50/40 transition-colors">
+                  <p class="font-bold text-ink-primary text-sm">🏆 Catalogue de badges</p>
+                  <p class="text-xs text-ink-secondary">{{ unlockedBadgesCount() }} / {{ badgeCatalog.length }} débloqués</p>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- ═══ Onglet 2 : Pronostics ═══ -->
+          <div *ngIf="activeTab === 'predictions'" class="space-y-6 animate-fade-in-up">
+            <div class="club-card p-6">
+              <div class="flex items-center justify-between mb-6">
+                <h3 class="font-bold text-xl text-ink-primary flex items-center gap-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-wydad-red" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
+                  Pronostics à venir
+                </h3>
+                <span class="bg-emerald-50 text-emerald-700 text-xs font-bold px-2 py-1 rounded border border-emerald-200">Score Exact = +25 pts</span>
+              </div>
+
+              <div class="space-y-4">
+                <div *ngIf="matches.length === 0" class="text-center text-ink-tertiary py-6">
+                  Aucun match à venir pour le moment.
+                </div>
+
+                <div *ngFor="let match of matches" class="border border-paper-3 rounded-xl p-4 flex flex-col md:flex-row items-center justify-between gap-4 hover:border-wydad-red/40 hover:shadow-paper-card-hover transition-all">
+                  <div class="flex-1 text-center md:text-left">
+                    <p class="text-xs text-ink-tertiary font-bold mb-2">{{ match.competition }} • {{ match.date | date:'dd/MM/yyyy' }} {{ match.heure }}</p>
+                    <div class="flex items-center justify-center md:justify-start gap-4 font-display font-bold text-lg text-ink-primary">
+                      <span class="w-24 text-right">WAC</span>
+                      <span class="text-ink-tertiary">VS</span>
+                      <span class="w-24 text-left">{{ match.adversaire }}</span>
+                    </div>
+                  </div>
+
+                  <div *ngIf="!hasPredicted(match.id)" class="flex items-center gap-3">
+                    <input type="number" [(ngModel)]="predictionForm[match.id].homeScore" min="0" max="15" class="w-14 h-12 text-center text-xl font-bold border border-paper-3 rounded focus:border-wydad-red outline-none text-ink-primary">
+                    <span class="font-bold text-ink-tertiary">-</span>
+                    <input type="number" [(ngModel)]="predictionForm[match.id].awayScore" min="0" max="15" class="w-14 h-12 text-center text-xl font-bold border border-paper-3 rounded focus:border-wydad-red outline-none text-ink-primary">
+
+                    <button (click)="submitPrediction(match.id)" [disabled]="submittingMatchId === match.id" class="ml-2 paper-btn-primary !px-3 !py-3 disabled:opacity-50" aria-label="Valider le pronostic">
+                      <svg *ngIf="submittingMatchId !== match.id" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>
+                      <div *ngIf="submittingMatchId === match.id" class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    </button>
+                  </div>
+
+                  <div *ngIf="hasPredicted(match.id)" class="bg-red-50 px-6 py-2 rounded-lg border border-wydad-red/25 text-center">
+                    <p class="text-xs text-ink-secondary mb-1">Votre Pronostic</p>
+                    <div class="font-display font-bold text-2xl text-wydad-red tracking-widest">
+                      {{ getPrediction(match.id).predictedHomeScore }} - {{ getPrediction(match.id).predictedAwayScore }}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ═══ Onglet 3 : Défis ═══ -->
+          <div *ngIf="activeTab === 'challenges'" class="space-y-6 animate-fade-in-up">
+            <div *ngIf="myChallenges.length === 0" class="club-card p-12 text-center text-ink-tertiary">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto mb-3 text-ink-tertiary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+              <p class="font-bold text-ink-primary mb-1">Aucun défi en cours</p>
+              <p class="text-sm text-ink-secondary">L'admin publie régulièrement de nouveaux défis — revenez bientôt !</p>
+            </div>
+
+            <div *ngIf="myChallenges.length > 0" class="club-card p-6">
+              <h3 class="font-bold text-xl text-ink-primary flex items-center gap-2 mb-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                Défis du moment
+              </h3>
+              <p class="text-xs text-ink-secondary mb-5">Validez l'objectif avant la fin de la fenêtre pour gagner des points bonus.</p>
+
+              <div class="space-y-4">
+                <div *ngFor="let c of myChallenges" class="border border-paper-3 rounded-xl p-4">
+                  <div class="flex flex-wrap items-start justify-between gap-2 mb-2">
+                    <div>
+                      <p class="font-bold text-ink-primary text-base">{{ c.challenge.title }}</p>
+                      <p class="text-[11px] text-ink-tertiary">{{ challengeTypeLabel(c.challenge.challengeType) }} • jusqu'au {{ c.challenge.endsAt | date:'dd/MM/yyyy' }}</p>
+                    </div>
+                    <div class="flex items-center gap-1 bg-amber-50 text-amber-700 border border-amber-200 rounded-full px-2 py-1 text-xs font-bold whitespace-nowrap">
+                      +{{ c.challenge.rewardPoints }} pts
+                    </div>
+                  </div>
+                  <p *ngIf="c.challenge.description" class="text-sm text-ink-secondary mb-3">{{ c.challenge.description }}</p>
+
+                  <div class="w-full bg-paper-2 rounded-full h-2 mb-2 overflow-hidden">
+                    <div class="h-2 rounded-full transition-all duration-700"
+                         [class.bg-emerald-500]="c.progress.status === 'COMPLETED'"
+                         [class.bg-wydad-red]="c.progress.status !== 'COMPLETED'"
+                         [style.width.%]="challengePercent(c)"></div>
+                  </div>
+                  <div class="flex justify-between text-[11px]">
+                    <span class="text-ink-secondary">{{ c.progress.progress }} / {{ c.challenge.target }}</span>
+                    <span *ngIf="c.progress.status === 'COMPLETED'" class="text-emerald-600 font-bold">✓ Validé</span>
+                    <span *ngIf="c.progress.status !== 'COMPLETED'" class="text-ink-tertiary">{{ challengePercent(c) }}%</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ═══ Onglet 4 : Mes gains ═══ -->
+          <div *ngIf="activeTab === 'gains'" class="space-y-6 animate-fade-in-up">
+            <!-- 4 cartes résumé -->
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <div class="club-card p-5 text-center">
+                <p class="text-[11px] text-ink-tertiary uppercase tracking-wider mb-1">Ce mois-ci</p>
+                <p class="font-display font-bold text-3xl text-emerald-600">+{{ pointsThisMonth() }}</p>
+                <p class="text-[11px] text-ink-secondary mt-1">pts gagnés</p>
+              </div>
+              <div class="club-card p-5 text-center">
+                <p class="text-[11px] text-ink-tertiary uppercase tracking-wider mb-1">Total</p>
+                <p class="font-display font-bold text-3xl text-wydad-red">{{ pointsData?.totalPoints }}</p>
+                <p class="text-[11px] text-ink-secondary mt-1">pts cumulés</p>
+              </div>
+              <div class="club-card p-5 text-center">
+                <p class="text-[11px] text-ink-tertiary uppercase tracking-wider mb-1">Badges</p>
+                <p class="font-display font-bold text-3xl text-wydad-gold-dark">{{ unlockedBadgesCount() }}</p>
+                <p class="text-[11px] text-ink-secondary mt-1">débloqués</p>
+              </div>
+              <div class="club-card p-5 text-center">
+                <p class="text-[11px] text-ink-tertiary uppercase tracking-wider mb-1">Transactions</p>
+                <p class="font-display font-bold text-3xl text-blue-600">{{ pointHistory.length }}</p>
+                <p class="text-[11px] text-ink-secondary mt-1">au total</p>
+              </div>
+            </div>
+
+            <!-- Historique des gains -->
+            <div *ngIf="pointHistory.length > 0" class="club-card p-6">
+              <h3 class="font-bold text-xl text-ink-primary flex items-center gap-2 mb-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                Historique de mes points
+              </h3>
+              <p class="text-xs text-ink-secondary mb-5">Les 50 dernières opérations sur votre solde de points.</p>
+
+              <div class="divide-y divide-paper-2">
+                <div *ngFor="let tx of pointHistory" class="py-3 flex items-center justify-between gap-4">
+                  <div class="flex-1 min-w-0">
+                    <p class="text-sm font-semibold text-ink-primary truncate">{{ tx.label || sourceLabel(tx.source) }}</p>
+                    <p class="text-[11px] text-ink-tertiary">{{ sourceLabel(tx.source) }} • {{ tx.createdAt | date:'dd/MM/yyyy HH:mm' }}</p>
+                  </div>
+                  <div class="font-display font-bold text-lg flex-shrink-0" [ngClass]="sourceColorClass(tx.source, tx.amount)">
+                    {{ tx.amount > 0 ? '+' : '' }}{{ tx.amount }} pts
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Catalogue de badges -->
+            <div *ngIf="badgeCatalog.length > 0" class="club-card p-6">
+              <h3 class="font-bold text-xl text-ink-primary flex items-center gap-2 mb-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-wydad-gold-dark" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/></svg>
+                Badges de fidélité
+              </h3>
+              <p class="text-xs text-ink-secondary mb-5">Les badges se débloquent automatiquement quand vos points atteignent le seuil.</p>
+
+              <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div *ngFor="let badge of badgeCatalog"
+                     class="rounded-xl p-4 text-center border transition-all duration-300 hover:-translate-y-1"
+                     [ngClass]="ownsBadge(badge.id)
+                       ? {'bg-wydad-red': true, 'text-white': true, 'border-wydad-red': true, 'shadow-glow-red': true}
+                       : {'bg-paper-1': true, 'border-paper-3': true, 'opacity-70': true, 'hover:opacity-100': true}">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mx-auto mb-2" [ngClass]="{'text-wydad-gold-light': ownsBadge(badge.id), 'text-ink-tertiary': !ownsBadge(badge.id)}" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                  <div class="font-bold text-sm">{{ badge.name }}</div>
+                  <div class="text-[11px] mt-1" [ngClass]="{'text-white opacity-80': ownsBadge(badge.id), 'text-ink-secondary': !ownsBadge(badge.id)}">{{ badge.minPoints }} pts</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- ═══════════ Colonne droite : Podium + Leaderboard (Tâche #53) ═══════════ -->
+        <div>
+          <div class="club-card overflow-hidden sticky top-32">
+            <div class="bg-gradient-to-r from-wydad-red to-wydad-red-dark p-6 flex items-center justify-between">
+              <h3 class="font-bold text-lg text-white flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-wydad-gold-light" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 2a1 1 0 01.932.638l2.15 5.518 5.926.476a1 1 0 01.564 1.748l-4.5 3.82.49 5.864a1 1 0 01-1.5.952L10 17.51l-5.062 3.504a1 1 0 01-1.5-.952l.49-5.864-4.5-3.82a1 1 0 01.564-1.748l5.926-.476 2.15-5.518A1 1 0 0110 2z" clip-rule="evenodd" /></svg>
+                Classement Général
+              </h3>
+            </div>
+
+            <!-- Podium top 3 -->
+            <div *ngIf="podiumTop3().length >= 3" class="p-4 bg-gradient-to-b from-amber-50/50 to-transparent">
+              <div class="grid grid-cols-3 gap-2 items-end">
+                <!-- #2 Argent -->
+                <div class="text-center">
+                  <div class="relative mx-auto mb-2 w-14 h-14 rounded-full bg-gradient-to-br from-gray-300 to-gray-400 flex items-center justify-center text-white font-display font-bold text-lg shadow-md border-2 border-gray-200">
+                    {{ userInitials(podiumTop3()[1].userId) }}
+                    <span class="absolute -bottom-1 -right-1 text-2xl">🥈</span>
+                  </div>
+                  <p class="text-[11px] font-bold text-ink-primary truncate">#{{ podiumTop3()[1].userId }}</p>
+                  <p class="text-[10px] text-ink-secondary">Niv {{ podiumTop3()[1].level }}</p>
+                  <p class="font-display font-bold text-sm text-ink-primary mt-1">{{ podiumTop3()[1].totalPoints }}</p>
+                </div>
+                <!-- #1 Or -->
+                <div class="text-center">
+                  <div class="relative mx-auto mb-2 w-20 h-20 rounded-full bg-gradient-to-br from-wydad-gold-dark to-amber-500 flex items-center justify-center text-white font-display font-bold text-2xl shadow-lg border-4 border-wydad-gold-light">
+                    {{ userInitials(podiumTop3()[0].userId) }}
+                    <span class="absolute -bottom-2 -right-2 text-3xl">🥇</span>
+                  </div>
+                  <p class="text-[11px] font-bold text-wydad-red truncate">#{{ podiumTop3()[0].userId }}</p>
+                  <p class="text-[10px] text-ink-secondary">Niv {{ podiumTop3()[0].level }}</p>
+                  <p class="font-display font-bold text-lg text-wydad-red mt-1">{{ podiumTop3()[0].totalPoints }}</p>
+                </div>
+                <!-- #3 Bronze -->
+                <div class="text-center">
+                  <div class="relative mx-auto mb-2 w-14 h-14 rounded-full bg-gradient-to-br from-orange-500 to-orange-700 flex items-center justify-center text-white font-display font-bold text-lg shadow-md border-2 border-orange-300">
+                    {{ userInitials(podiumTop3()[2].userId) }}
+                    <span class="absolute -bottom-1 -right-1 text-2xl">🥉</span>
+                  </div>
+                  <p class="text-[11px] font-bold text-ink-primary truncate">#{{ podiumTop3()[2].userId }}</p>
+                  <p class="text-[10px] text-ink-secondary">Niv {{ podiumTop3()[2].level }}</p>
+                  <p class="font-display font-bold text-sm text-ink-primary mt-1">{{ podiumTop3()[2].totalPoints }}</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Reste du leaderboard (4-N) -->
+            <div *ngIf="restOfLeaderboard().length > 0" class="divide-y divide-paper-2">
+              <div *ngFor="let user of restOfLeaderboard(); let i = index" class="p-3 flex items-center gap-3 hover:bg-red-50/60 transition-colors" [class.bg-red-50]="user.userId === userId">
+                <div class="w-8 font-display font-bold text-sm text-center text-paper-3">
+                  #{{ i + 4 }}
+                </div>
+                <div class="w-8 h-8 rounded-full bg-gradient-to-br from-wydad-red to-wydad-red-dark flex items-center justify-center text-white font-bold text-xs shadow-sm">
+                  {{ userInitials(user.userId) }}
+                </div>
+                <div class="flex-1 min-w-0">
+                  <p class="font-bold text-ink-primary text-xs truncate">Supporter #{{ user.userId }}</p>
+                  <p class="text-[10px] text-ink-secondary">Niv {{ user.level }}</p>
+                </div>
+                <div class="font-bold text-wydad-red text-sm">
+                  {{ user.totalPoints }}
+                </div>
+              </div>
+            </div>
+
             <div *ngIf="leaderboard.length === 0" class="p-6 text-center text-ink-tertiary text-sm">
               Aucun classement pour le moment.
             </div>
 
-            <div *ngFor="let user of leaderboard; let i = index" class="p-4 flex items-center gap-4 hover:bg-red-50/60 transition-colors" [class.bg-red-50]="user.userId === userId">
-              <div class="w-8 font-display font-bold text-lg text-center"
-                   [ngClass]="{'text-wydad-gold-dark': i === 0, 'text-ink-tertiary': i === 1, 'text-orange-500': i === 2, 'text-paper-3': i > 2}">
-                #{{ i + 1 }}
-              </div>
-              <div class="w-10 h-10 rounded-full bg-gradient-to-br from-wydad-red to-wydad-red-dark flex items-center justify-center text-white font-bold text-sm shadow-sm">
-                {{ user.userId }}
-              </div>
-              <div class="flex-1">
-                <p class="font-bold text-ink-primary text-sm">Supporter #{{ user.userId }}</p>
-                <p class="text-xs text-ink-secondary">Niveau {{ user.level }}</p>
-              </div>
-              <div class="font-bold text-wydad-red">
-                {{ user.totalPoints }}
+            <div *ngIf="leaderboard.length > 0 && leaderboard.length < 3" class="divide-y divide-paper-2">
+              <div *ngFor="let user of leaderboard; let i = index" class="p-3 flex items-center gap-3 hover:bg-red-50/60 transition-colors" [class.bg-red-50]="user.userId === userId">
+                <div class="w-8 font-display font-bold text-sm text-center text-paper-3">
+                  #{{ i + 1 }}
+                </div>
+                <div class="w-8 h-8 rounded-full bg-gradient-to-br from-wydad-red to-wydad-red-dark flex items-center justify-center text-white font-bold text-xs shadow-sm">
+                  {{ userInitials(user.userId) }}
+                </div>
+                <div class="flex-1 min-w-0">
+                  <p class="font-bold text-ink-primary text-xs truncate">Supporter #{{ user.userId }}</p>
+                  <p class="text-[10px] text-ink-secondary">Niv {{ user.level }}</p>
+                </div>
+                <div class="font-bold text-wydad-red text-sm">
+                  {{ user.totalPoints }}
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
+      </div>
     </div>
   </div>
 </div>

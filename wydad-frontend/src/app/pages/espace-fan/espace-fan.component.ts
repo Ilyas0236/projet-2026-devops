@@ -35,6 +35,9 @@ export class EspaceFanComponent implements OnInit {
   predictionForm: { [matchId: number]: { homeScore: number, awayScore: number } } = {};
   submittingMatchId: number | null = null;
 
+  // Tâche #53 — onglets de la colonne principale
+  activeTab: 'overview' | 'predictions' | 'challenges' | 'gains' = 'overview';
+
   ngOnInit() {
     this.userId = this.auth.getCurrentUserId();
     if (this.userId) {
@@ -194,7 +197,7 @@ export class EspaceFanComponent implements OnInit {
       next: (res: any) => {
         this.predictions.unshift(res); // Ajouter à l'historique
         this.submittingMatchId = null;
-        
+
         // Mettre à jour les points (bonus de participation)
         this.api.getUserPoints(this.userId as number).subscribe((data: any) => this.pointsData = data);
       },
@@ -204,5 +207,110 @@ export class EspaceFanComponent implements OnInit {
         this.submittingMatchId = null;
       }
     });
+  }
+
+  // ─────────────────────────────────────────────────────────────────────
+  // Tâche #53 — getters pour le hero "Mon classement" + podium
+  // ─────────────────────────────────────────────────────────────────────
+
+  /** Vrai si l'utilisateur connecté a le rôle ADMIN (affiche les liens d'admin). */
+  isAdmin(): boolean {
+    return this.auth.getRole() === 'ADMIN';
+  }
+
+  /** Rang de l'utilisateur dans le leaderboard (1-based), 0 si non classé. */
+  myRank(): number {
+    if (!this.userId || !this.leaderboard?.length) return 0;
+    const idx = this.leaderboard.findIndex((u: any) => u.userId === this.userId);
+    return idx >= 0 ? idx + 1 : 0;
+  }
+
+  /** Percentile "Top X%" — approximation sur le top 50 du leaderboard. */
+  myPercentile(): number {
+    const rank = this.myRank();
+    const total = this.leaderboard?.length || 0;
+    if (rank === 0 || total === 0) return 0;
+    return Math.max(1, Math.round(100 - ((rank - 1) / total) * 100));
+  }
+
+  /** Points d'écart avec le supporter juste en dessous de moi (rang N+1) — pour "devant". */
+  pointsAheadOfBelow(): number {
+    const rank = this.myRank();
+    if (rank === 0 || rank >= this.leaderboard.length) return 0;
+    const me = this.pointsData?.totalPoints || 0;
+    const below = this.leaderboard[rank]?.totalPoints || 0; // rank 1-based → index rank = juste après moi
+    return Math.max(0, me - below);
+  }
+
+  /** Points d'écart avec le supporter juste au-dessus de moi (rang N-1) — pour "derrière". */
+  pointsBehindNext(): number {
+    const rank = this.myRank();
+    if (rank <= 1) return 0;
+    const me = this.pointsData?.totalPoints || 0;
+    const above = this.leaderboard[rank - 2]?.totalPoints || 0; // rank 1-based → index rank-2
+    return Math.max(0, above - me);
+  }
+
+  /** Top 3 du leaderboard pour le podium. */
+  podiumTop3(): any[] {
+    return (this.leaderboard || []).slice(0, 3);
+  }
+
+  /** Reste du leaderboard à partir du rang 4. */
+  restOfLeaderboard(): any[] {
+    return (this.leaderboard || []).slice(3);
+  }
+
+  /** Initiales déterministes A-Z à partir d'un userId (le leaderboard n'a pas firstName). */
+  userInitials(userId: number): string {
+    const code = (userId % 26) + 65; // 65 = 'A'
+    return String.fromCharCode(code);
+  }
+
+  /** % de progression vers le prochain niveau (utilise les données déjà calculées par le back). */
+  progressPercent(): number {
+    const level = this.pointsData?.level || 1;
+    const toNext = this.pointsData?.pointsToNextLevel || 0;
+    // Le back fournit pointsToNextLevel = level * pointsPerLevel - totalPoints
+    // donc 100% = au début du palier, 0% = juste promu
+    const pointsPerLevel = 500; // cohérent avec la valeur seed par défaut
+    const cap = level * pointsPerLevel;
+    if (cap <= 0) return 0;
+    return Math.max(0, Math.min(100, Math.round(((cap - toNext) / cap) * 100)));
+  }
+
+  /** Nombre de badges débloqués. */
+  unlockedBadgesCount(): number {
+    return this.myBadges?.length || 0;
+  }
+
+  /** Nombre de défis en cours (non terminés). */
+  activeChallengesCount(): number {
+    if (!this.myChallenges?.length) return 0;
+    return this.myChallenges.filter((c: any) => c.progress?.status !== 'COMPLETED').length;
+  }
+
+  /** Nombre de pronostics validés. */
+  predictionsCount(): number {
+    return this.predictions?.length || 0;
+  }
+
+  /** Points gagnés ce mois (transactions positives du mois courant). */
+  pointsThisMonth(): number {
+    if (!this.pointHistory?.length) return 0;
+    const now = new Date();
+    const month = now.getMonth();
+    const year = now.getFullYear();
+    return this.pointHistory
+      .filter((tx: any) => {
+        const d = new Date(tx.createdAt);
+        return tx.amount > 0 && d.getMonth() === month && d.getFullYear() === year;
+      })
+      .reduce((sum: number, tx: any) => sum + (tx.amount || 0), 0);
+  }
+
+  /** Setter d'onglet (template doit appeler une méthode, pas une assignation). */
+  setTab(tab: 'overview' | 'predictions' | 'challenges' | 'gains'): void {
+    this.activeTab = tab;
   }
 }
