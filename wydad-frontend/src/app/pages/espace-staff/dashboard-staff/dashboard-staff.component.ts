@@ -31,6 +31,10 @@ export class DashboardStaffComponent implements OnInit, OnDestroy {
   sessions: any[] = [];
   loading = true;
   staffNotFound = false;
+  /** Refonte pro — menu déroulant "Actions" (4 actions secondaires groupées). */
+  actionsMenuOpen = false;
+  /** Refonte pro — chip filtre actif du tableau effectif ('all' | 'apt' | 'inj' | 'gardien' | 'defenseur' | 'milieu' | 'attaquant'). */
+  rosterFilter: 'all' | 'apt' | 'inj' | string = 'all';
   /** Phase 5 — le président n'a pas de fiche staff : vue réduite aux appels programmés. */
   isPresident = false;
   /**
@@ -444,9 +448,62 @@ export class DashboardStaffComponent implements OnInit, OnDestroy {
     if (!q) return this.players;
     const norm = (s: string) => (s || '').toLowerCase()
       .normalize('NFD').replace(/[̀-ͯ]/g, '');
-    return this.players.filter(p =>
+    let result = this.players.filter(p =>
       norm(p.fullName).includes(norm(q)) || norm(p.position || '').includes(norm(q))
     );
+    result = this.applyRosterFilter(result);
+    return result;
+  }
+
+  /** Refonte pro — initiales de l'avatar (jusqu'à 2 lettres). */
+  get staffInitials(): string {
+    const name = (this.staff?.fullName || '').trim();
+    if (!name) return '?';
+    const parts = name.split(/\s+/);
+    const a = parts[0]?.[0] || '';
+    const b = parts[1]?.[0] || '';
+    return (a + b).toUpperCase() || a.toUpperCase() || '?';
+  }
+
+  /** Refonte pro — chip filtre effectif (après recherche texte). */
+  private applyRosterFilter(list: any[]): any[] {
+    switch (this.rosterFilter) {
+      case 'apt':  return list.filter(p => p.medicalStatus !== 'INAPTE');
+      case 'inj':  return list.filter(p => p.medicalStatus === 'INAPTE');
+      case 'gardien':   return list.filter(p => this.matchPos(p, 'gardien'));
+      case 'defenseur': return list.filter(p => this.matchPos(p, 'defenseur'));
+      case 'milieu':    return list.filter(p => this.matchPos(p, 'milieu'));
+      case 'attaquant': return list.filter(p => this.matchPos(p, 'attaquant'));
+      default: return list;
+    }
+  }
+
+  private matchPos(p: any, role: string): boolean {
+    return (p.position || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').includes(role);
+  }
+
+  /** Refonte pro — compteurs de chips filtre effectif. */
+  get rosterCounts(): { all: number; apt: number; inj: number } {
+    return {
+      all: this.players.length,
+      apt: this.players.filter(p => p.medicalStatus !== 'INAPTE').length,
+      inj: this.players.filter(p => p.medicalStatus === 'INAPTE').length,
+    };
+  }
+
+  /** Refonte pro — KPIs synthétiques pour le bandeau du dashboard. */
+  get kpiJoueurs(): number { return this.players.length; }
+  get kpiAptes(): number { return this.players.filter(p => p.medicalStatus !== 'INAPTE').length; }
+  get kpiInaptes(): number { return this.players.filter(p => p.medicalStatus === 'INAPTE').length; }
+  get kpiSeancesAVenir(): number {
+    const now = Date.now();
+    return this.sessions.filter(s => s.sessionDate && new Date(s.sessionDate).getTime() >= now).length;
+  }
+  get kpiMatchsProgramme(): number { return this.programmeMatches.length; }
+  get kpiConvoEnAttente(): number {
+    // Nb de joueurs actuellement cochés dans le formulaire de convocation
+    // (action immédiate prête à être publiée). 0 si rien en cours.
+    return this.selectedPlayerIds.size;
   }
 
   get tousSelectionnes(): boolean {
