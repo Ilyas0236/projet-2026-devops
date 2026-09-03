@@ -4,6 +4,7 @@ import com.wydad.digital.auth.model.User;
 import com.wydad.digital.auth.model.press.PressAccreditation;
 import com.wydad.digital.auth.model.press.PressAccreditationStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -22,4 +23,15 @@ public interface PressAccreditationRepository extends JpaRepository<PressAccredi
 
     /** Anti-doublon : un journaliste ne peut pas créer 2 demandes pour le même match. */
     boolean existsByUserAndMatchId(User user, Long matchId);
+
+    /**
+     * Historique complet (traçabilité admin) : toutes les demandes, triées
+     * par date de décision DESC. Les EN_ATTENTE (sans decidedAt) remontent
+     * via COALESCE → createdAt, donc elles apparaissent en tête, suivies
+     * des VALIDE/REFUSE les plus récentes. @Query obligatoire car Spring
+     * Data ne gère pas nativement un COALESCE dans un ORDER BY.
+     */
+    @Query("SELECT p FROM PressAccreditation p " +
+           "ORDER BY COALESCE(p.decidedAt, p.createdAt) DESC")
+    List<PressAccreditation> findAllOrderByDecisionDateDesc();
 }

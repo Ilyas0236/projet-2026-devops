@@ -175,6 +175,21 @@ public class PressAccreditationService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Historique complet (traçabilité admin) : TOUTES les demandes,
+     * triées par date de décision DESC (fallback createdAt pour les
+     * EN_ATTENTE). Aucun filtre statut — l'admin doit pouvoir auditer
+     * les décisions passées ET voir les EN_ATTENTE en attente.
+     * Les demandes VALIDÉES/REFUSÉES ne sont jamais supprimées côté BDD,
+     * on se contente d'exposer la vue.
+     */
+    @Transactional(readOnly = true)
+    public List<PressAccreditationResponse> listHistory() {
+        return repository.findAllOrderByDecisionDateDesc().stream()
+                .map(a -> PressAccreditationResponse.from(a, true))
+                .collect(Collectors.toList());
+    }
+
     /** Valide une demande : passe VALIDE, déclenche la génération du badge. */
     @Transactional
     public PressAccreditationResponse validate(Long id, String adminEmail) {

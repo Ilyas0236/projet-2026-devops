@@ -1470,6 +1470,17 @@ export class ApiService {
     return this.http.get<any[]>(`${this.baseUrl}/auth/admin/press/accreditations/pending`);
   }
 
+  /**
+   * Historique complet des demandes d'accréditation (traçabilité).
+   * Renvoie TOUTES les demandes, tous statuts confondus, triées par date
+   * de décision DESC (les EN_ATTENTE en tête). Les données ne sont jamais
+   * supprimées côté back : cette vue permet à l'admin d'auditer les
+   * décisions passées + suivre les EN_ATTENTE.
+   */
+  adminGetPressAccreditationHistory(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/auth/admin/press/accreditations/history`);
+  }
+
   /** Valide une demande d'accréditation → badge généré. */
   adminValidatePressAccreditation(id: number): Observable<any> {
     return this.http.patch<any>(

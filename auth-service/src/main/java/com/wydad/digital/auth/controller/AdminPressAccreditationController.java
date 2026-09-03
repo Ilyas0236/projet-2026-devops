@@ -12,7 +12,8 @@ import java.util.List;
 
 /**
  * B.17 — Endpoints admin pour traiter la file des demandes d'accréditation.
- *   - GET  /api/auth/admin/press/accreditations/pending : file EN_ATTENTE
+ *   - GET  /api/auth/admin/press/accreditations/pending  : file EN_ATTENTE
+ *   - GET  /api/auth/admin/press/accreditations/history  : historique complet (tous statuts)
  *   - PATCH /api/auth/admin/press/accreditations/{id}/validate : VALIDE
  *   - PATCH /api/auth/admin/press/accreditations/{id}/refuse   : REFUSE + motif
  *
@@ -33,6 +34,23 @@ public class AdminPressAccreditationController {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
         return ResponseEntity.ok(service.listPending());
+    }
+
+    /**
+     * Historique complet des demandes d'accréditation (traçabilité admin).
+     * Renvoie TOUTES les demandes, triées par date de décision DESC
+     * (les EN_ATTENTE en tête via COALESCE sur createdAt). Les données
+     * ne sont jamais supprimées côté BDD : cette vue permet à l'admin
+     * d'auditer les décisions passées + voir les EN_ATTENTE.
+     */
+    @GetMapping("/accreditations/history")
+    public ResponseEntity<List<PressAccreditationResponse>> listHistory(
+            @RequestHeader(value = "X-User-Email", required = false) String email,
+            @RequestHeader(value = "X-User-Role", required = false) String role) {
+        if (email == null || !"ADMIN".equals(role)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        return ResponseEntity.ok(service.listHistory());
     }
 
     @PatchMapping("/accreditations/{id}/validate")

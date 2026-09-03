@@ -24,8 +24,11 @@ import { ErrorBannerComponent } from '../../../components/error-banner/error-ban
 export class AdminPresseDemandesComponent implements OnInit {
   loading = true;
   demandes: any[] = [];
-  /** File "traitées" pour consultation rapide (validées + refusées récentes). */
+  /** Historique complet (tous statuts) pour traçabilité admin. Chargé en
+   *  parallèle de la file "en attente", affiché via l'onglet "Historique". */
   historique: any[] = [];
+  loadingHistorique = false;
+  /** Onglet actif : false = En attente (défaut), true = Historique. */
   showHistorique = false;
 
   busyId: number | null = null;
@@ -39,9 +42,57 @@ export class AdminPresseDemandesComponent implements OnInit {
 
   ngOnInit() {
     this.load();
+    this.loadHistory();
   }
 
   retry() { this.load(); }
+
+  /** Charge l'historique complet (traçabilité : tous statuts confondus). */
+  loadHistory() {
+    this.loadingHistorique = true;
+    this.api.adminGetPressAccreditationHistory().subscribe({
+      next: (list) => {
+        this.historique = list || [];
+        this.loadingHistorique = false;
+      },
+      error: (err) => {
+        console.error('Error fetching accreditation history', err);
+        this.historique = [];
+        this.loadingHistorique = false;
+        this.toast.show('error', 'Erreur lors du chargement de l\'historique des accréditations.');
+      }
+    });
+  }
+
+  /**
+   * Bascule entre l'onglet "En attente" et "Historique". L'historique est
+   * pré-chargé dans ngOnInit donc le switch est instantané ; on force un
+   * refresh au cas où l'admin a validé/refusé une demande depuis.
+   */
+  toggleHistory() {
+    this.showHistorique = !this.showHistorique;
+    if (this.showHistorique) {
+      this.loadHistory();
+    }
+  }
+
+  /** Libellé français des 3 statuts d'accréditation. */
+  statutLabel(statut: string): string {
+    return ({
+      VALIDE: 'Validée',
+      EN_ATTENTE: 'En attente',
+      REFUSE: 'Refusée'
+    } as Record<string, string>)[statut] || statut || '—';
+  }
+
+  /** Classes Tailwind du badge statut (cohérent avec admin-users). */
+  statutBadgeClass(statut: string): string {
+    return ({
+      VALIDE: 'bg-green-100 text-green-800 border-green-300',
+      EN_ATTENTE: 'bg-amber-100 text-amber-800 border-amber-300',
+      REFUSE: 'bg-red-100 text-red-800 border-red-300'
+    } as Record<string, string>)[statut] || 'bg-gray-100 text-gray-700 border-gray-300';
+  }
 
   load() {
     this.loading = true;
