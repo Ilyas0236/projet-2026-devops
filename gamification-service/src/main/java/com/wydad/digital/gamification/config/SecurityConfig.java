@@ -30,6 +30,8 @@ public class SecurityConfig {
                         .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
                 // Défense de titre : public (classement visible de tous)
                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/gamification/leaderboard").permitAll()
+                // B.8.f — barème public pour l'encart pédagogique espace-fan
+                .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/gamification/point-rules/public", "/api/gamification/point-rules/public/**").permitAll()
                 // Endpoints internes service-à-service : authentifiés par le secret
                 // partagé X-Internal-Secret au niveau contrôleur (jamais exposés
                 // via la gateway)

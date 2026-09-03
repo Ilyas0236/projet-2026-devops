@@ -33,6 +33,12 @@ class PublicCatalogAccessTest {
             // 03/09/2026 — sans cette ligne le filtre JWT global bloque
             // l'accès en 401, alors que le back est permitAll).
             "/api/sports/match-convocations/public/match/1",
+            // Barème gamification public pour l'encart pédagogique espace-fan
+            // (B.8.f — l'admin pilote le barème, l'espace-fan le reflète en
+            // temps réel, visiteurs inclus). Sans cette ligne, le filtre
+            // global renvoie 401 sur /api/gamification/point-rules/public.
+            "/api/gamification/point-rules/public",
+            "/api/gamification/point-rules/public/all",
     };
 
     @Autowired

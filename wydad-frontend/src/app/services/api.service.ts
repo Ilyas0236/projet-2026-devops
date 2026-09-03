@@ -1252,6 +1252,15 @@ export class ApiService {
     return this.http.get<any[]>(`${this.baseUrl}/gamification/leaderboard`);
   }
 
+  /** PUBLIC — barème de points (B.8.f) pour l'encart pédagogique espace-fan.
+   *  Renvoie { predictionBonus, predictionExact, predictionSign }.
+   *  L'admin peut modifier ces valeurs via /admin/bareme-points ; le front
+   *  les reflète en temps réel sans recharger la page. */
+  getPublicPointRules(): Observable<{ [k: string]: number }> {
+    return this.http.get<{ [k: string]: number }>(
+      `${this.baseUrl}/gamification/point-rules/public`);
+  }
+
   submitPrediction(prediction: any): Observable<any> {
     return this.http.post<any>(`${this.baseUrl}/gamification/predictions`, prediction);
   }

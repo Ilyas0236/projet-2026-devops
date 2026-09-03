@@ -30,7 +30,12 @@ export class EspaceFanComponent implements OnInit {
   pointHistory: any[] = [];
   /** B.8.c : défis temporels actifs avec ma progression. */
   myChallenges: any[] = [];
-  
+  /** B.8.f : barème de points public — affiché dans l'encart pédagogique
+   *  « Qu'est-ce qui me rapporte des points ? ». Valeurs chargées depuis
+   *  /api/gamification/point-rules/public (modifiable par l'admin via
+   *  /admin/bareme-points) — AUCUNE valeur en dur dans le HTML. */
+  pointRules: { [k: string]: number } = { predictionBonus: 10, predictionExact: 25, predictionSign: 10 };
+
   // Pour le formulaire de pronostic
   predictionForm: { [matchId: number]: { homeScore: number, awayScore: number } } = {};
   submittingMatchId: number | null = null;
@@ -39,6 +44,14 @@ export class EspaceFanComponent implements OnInit {
   activeTab: 'overview' | 'predictions' | 'challenges' | 'gains' = 'overview';
 
   ngOnInit() {
+    // Le barème est PUBLIC — doit être chargé même pour un visiteur
+    // non connecté qui ouvre l'espace-fan (encart pédagogique toujours
+    // visible côté front).
+    this.api.getPublicPointRules().subscribe({
+      next: (data) => this.pointRules = data || this.pointRules,
+      error: (err) => console.warn('Barème public indisponible, valeurs par défaut conservées', err)
+    });
+
     this.userId = this.auth.getCurrentUserId();
     if (this.userId) {
       this.loadGamificationData();

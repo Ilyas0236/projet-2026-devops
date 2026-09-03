@@ -170,9 +170,9 @@
                 Qu'est-ce qui me rapporte des points ?
               </h4>
               <ul class="text-sm text-ink-secondary space-y-1.5">
-                <li class="flex items-baseline gap-2"><span class="text-wydad-red font-bold w-16 flex-shrink-0">+10</span> Soumettre un pronostic sur un match à venir</li>
-                <li class="flex items-baseline gap-2"><span class="text-emerald-600 font-bold w-16 flex-shrink-0">+25</span> Pronostic score exact (bon score final)</li>
-                <li class="flex items-baseline gap-2"><span class="text-emerald-500 font-bold w-16 flex-shrink-0">+10</span> Bon signe (1X2) — victoire, nul ou défaite correctement pronostiqué</li>
+                <li class="flex items-baseline gap-2"><span class="text-wydad-red font-bold w-16 flex-shrink-0">+{{ pointRules['predictionBonus'] }}</span> Soumettre un pronostic sur un match à venir</li>
+                <li class="flex items-baseline gap-2"><span class="text-emerald-600 font-bold w-16 flex-shrink-0">+{{ pointRules['predictionExact'] }}</span> Pronostic score exact (bon score final)</li>
+                <li class="flex items-baseline gap-2"><span class="text-emerald-500 font-bold w-16 flex-shrink-0">+{{ pointRules['predictionSign'] }}</span> Bon signe (1X2) — victoire, nul ou défaite correctement pronostiqué</li>
                 <li class="flex items-baseline gap-2"><span class="text-orange-500 font-bold w-16 flex-shrink-0">variable</span> Récompense défi temporel (selon défi)</li>
               </ul>
               <p class="text-[11px] text-ink-tertiary mt-3 italic">
@@ -216,7 +216,7 @@
                   <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-wydad-red" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
                   Pronostics à venir
                 </h3>
-                <span class="bg-emerald-50 text-emerald-700 text-xs font-bold px-2 py-1 rounded border border-emerald-200">Score Exact = +25 pts</span>
+                <span class="bg-emerald-50 text-emerald-700 text-xs font-bold px-2 py-1 rounded border border-emerald-200">Score Exact = +{{ pointRules['predictionExact'] }} pts</span>
               </div>
 
               <div class="space-y-4">

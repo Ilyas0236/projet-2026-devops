@@ -168,6 +168,18 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
             return chain.filter(exchange);
         }
 
+        // Gamification : barème public pour l'encart pédagogique espace-fan
+        // (B.8.f). Le service a permitAll sur /point-rules/public — la
+        // gateway laisse passer l'anonyme (cf. même pattern que leaderboard).
+        if ("GET".equals(method) && (path.equals("/api/gamification/point-rules/public")
+                || path.equals("/api/gamification/point-rules/public/all"))) {
+            String gamiBaremeHeader = request.getHeaders().getFirst("Authorization");
+            if (gamiBaremeHeader != null && gamiBaremeHeader.startsWith("Bearer ")) {
+                return validateAndForward(exchange, chain);
+            }
+            return chain.filter(exchange);
+        }
+
         // Newsletter : inscription anonyme depuis le footer public du site.
         // Le service revalide deja via permitAll + validation serveur du format
         // email et de l'unicite (NewsletterSecurityTest) — la gateway ne doit
