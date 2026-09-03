@@ -2,11 +2,12 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { ApiService } from '../../services/api.service';
+import { BackgroundCarouselComponent } from '../../shared/background-carousel/background-carousel.component';
 
 @Component({
   selector: 'app-actualites',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, BackgroundCarouselComponent],
   templateUrl: './actualites.component.html',
   styles: []
 })

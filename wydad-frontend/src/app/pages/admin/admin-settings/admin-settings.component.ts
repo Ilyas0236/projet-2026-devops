@@ -60,7 +60,6 @@ import { ToastService } from '../../../services/toast.service';
 
           <div class="flex justify-between items-center mt-3">
             <span *ngIf="validationErrors[s.key]" class="text-xs text-red-400">JSON invalide — correction requise avant enregistrement</span>
-            <span *ngIf="!validationErrors[s.key]" class="text-xs text-gray-600">Modifiez puis enregistrez. Impact immédiat sur le site public.</span>
             <button (click)="save(s.key)"
                     [disabled]="validationErrors[s.key]"
                     class="px-4 py-2 bg-wydad-red disabled:opacity-40 disabled:cursor-not-allowed hover:bg-red-700 text-white uppercase text-xs font-bold tracking-wider">
@@ -392,7 +391,7 @@ export class AdminSettingsComponent implements OnInit {
     { key: 'EFFECTIF', label: 'Effectif (/effectif)' },
     { key: 'LEGENDES', label: 'Légendes (/legendes)' },
     { key: 'ACTUALITES', label: 'Actualités (/actualites)' },
-    { key: 'CLASSEMENT', label: 'Classement (/classement)' }
+    { key: 'CLASSEMENT', label: 'Classements (/classements)' }
   ];
 
   settings: { key: string; value: any }[] = [];

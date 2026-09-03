@@ -1,6 +1,12 @@
 <!-- ═══════════════════════════════════════════════════════════ -->
 <!-- WYDAD DIGITAL — CLASSEMENTS (thème clair blanc/rouge)     -->
 <!-- ═══════════════════════════════════════════════════════════ -->
+<!-- ─── BACKGROUND CAROUSEL (admin-parametres 2026-09-03) ───
+     Carrousel d'images de fond géré par l'admin depuis /admin/parametres.
+     Hauteur 320px — la page fait ~1600px (1.8 vh), le carrousel occupe ~20%.
+     pageKey reste "CLASSEMENT" (constante back) même si la route est /classements (avec S). -->
+<app-background-carousel pageKey="CLASSEMENT" [height]="320" />
+
 <div class="min-h-screen bg-paper-1 light-page text-ink-primary pt-28 pb-24">
 
   <!-- Header -->

@@ -4,11 +4,12 @@ import { Router, RouterModule } from '@angular/router';
 import { ApiService } from '../../services/api.service';
 import { AuthService } from '../../services/auth.service';
 import { ErrorBannerComponent } from '../../components/error-banner/error-banner.component';
+import { BackgroundCarouselComponent } from '../../shared/background-carousel/background-carousel.component';
 
 @Component({
   selector: 'app-billetterie',
   standalone: true,
-  imports: [CommonModule, ErrorBannerComponent, RouterModule],
+  imports: [CommonModule, ErrorBannerComponent, RouterModule, BackgroundCarouselComponent],
   templateUrl: './billetterie.component.html',
   styleUrls: ['./billetterie.component.scss']
 })

@@ -1,11 +1,12 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ApiService } from '../../services/api.service';
+import { BackgroundCarouselComponent } from '../../shared/background-carousel/background-carousel.component';
 
 @Component({
   selector: 'app-effectif',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, BackgroundCarouselComponent],
   templateUrl: './effectif.component.html',
 })
 export class EffectifComponent implements OnInit {

@@ -1,6 +1,7 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ApiService } from '../../services/api.service';
+import { BackgroundCarouselComponent } from '../../shared/background-carousel/background-carousel.component';
 
 /**
  * Page publique « Légendes » (Hall of Fame) — lit /content/legends/public
@@ -9,19 +10,24 @@ import { ApiService } from '../../services/api.service';
 @Component({
   selector: 'app-legendes',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, BackgroundCarouselComponent],
   template: `
+    <!-- ─── BACKGROUND CAROUSEL (admin-parametres 2026-09-03) ───
+         Carrousel d'images de fond géré par l'admin depuis /admin/parametres.
+         Hauteur 360px — la page fait ~1400px (1.5 vh), le carrousel occupe ~25%. -->
+    <app-background-carousel pageKey="LEGENDES" [height]="360" />
+
     <div class="min-h-screen light-page pt-0 pb-24">
 
-      <!-- Héros Club : rouge profond animé -->
-      <div class="club-hero pt-28 pb-20 mb-16">
+      <!-- Héros Club : rouge profond animé (réduit pour ne pas doublonner avec le carrousel) -->
+      <div class="club-hero pt-12 pb-10 mb-12">
         <div class="container-wydad text-center relative z-10">
           <span class="club-badge-gold mb-4 block w-fit mx-auto animate-fade-in-up" style="animation-delay: 0.1s; opacity: 0;">Hall of Fame</span>
-          <h1 class="club-hero-title text-hero uppercase tracking-tighter relative animate-fade-in-up" style="animation-delay: 0.2s; opacity: 0;">
+          <h1 class="text-5xl md:text-6xl font-display font-black uppercase tracking-tighter text-white relative animate-fade-in-up" style="animation-delay: 0.2s; opacity: 0;">
             Les légendes du club
           </h1>
           <span class="club-underline"></span>
-          <p class="mt-6 max-w-2xl mx-auto text-white/85 relative animate-fade-in-up" style="animation-delay: 0.35s; opacity: 0;">
+          <p class="mt-4 max-w-2xl mx-auto text-white/85 relative animate-fade-in-up" style="animation-delay: 0.35s; opacity: 0;">
             Ceux et celles qui ont marqué l'histoire du Wydad Athletic Club à jamais.
           </p>
         </div>
