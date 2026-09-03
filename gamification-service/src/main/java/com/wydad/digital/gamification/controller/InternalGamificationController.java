@@ -60,12 +60,25 @@ public class InternalGamificationController {
         }
         int points = request.amountDh().intValue() / 10; // 1 pt / 10 DH
         if (points > 0) {
-            gamificationService.addPoints(request.userId(), points);
+            String source = request.source() == null || request.source().isBlank() ? "BUY" : request.source();
+            String label = "Achat (" + request.amountDh().intValue() + " DH, " + points + " pts)";
+            Long refId = request.refId() == null ? request.orderId() : request.refId();
+            gamificationService.addPoints(request.userId(), points, source, refId, label);
         }
         return ResponseEntity.ok(new CreditResult(request.userId(), points));
     }
 
-    public record CreditRequest(Long userId, java.math.BigDecimal amountDh) {
+    /**
+     * @param source code source traçable (BUY_SHOP, BUY_TICKET, DON, …).
+     *               Vaut "BUY" si non fourni.
+     * @param refId  référence métier (orderId, ticketId, …). Alias historique
+     *               de orderId conservé pour rétrocompat.
+     */
+    public record CreditRequest(Long userId, java.math.BigDecimal amountDh,
+                                String source, Long refId, Long orderId) {
+        public CreditRequest(Long userId, java.math.BigDecimal amountDh) {
+            this(userId, amountDh, null, null, null);
+        }
     }
 
     public record CreditResult(Long userId, int pointsCredited) {

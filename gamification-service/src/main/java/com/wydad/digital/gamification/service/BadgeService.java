@@ -49,6 +49,14 @@ public class BadgeService {
         return userBadgeRepository.findByUserIdOrderByAwardedAtDesc(userId);
     }
 
+    /** Toutes les attributions de badges (admin), du plus récent au plus ancien. */
+    @Transactional(readOnly = true)
+    public List<UserBadge> getRecentAwards(int limit) {
+        int safe = Math.max(1, Math.min(limit, 500));
+        return userBadgeRepository.findAllByOrderByAwardedAtDesc(
+                org.springframework.data.domain.PageRequest.of(0, safe));
+    }
+
     // ---------- Administration (contrôleur @PreAuthorize ADMIN) ----------
 
     @Transactional

@@ -1220,6 +1220,24 @@ export class ApiService {
     return this.http.get<any>(`${this.baseUrl}/gamification/points/${userId}`);
   }
 
+  /** Historique des gains/pertes de points d'un utilisateur (self ou admin). */
+  getUserPointHistory(userId: number, limit = 50): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/gamification/points/${userId}/history`,
+      { params: { limit } });
+  }
+
+  /** ADMIN — flux global des derniers gains de points. */
+  getRecentPointTransactions(limit = 100): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/gamification/admin/points/recent`,
+      { params: { limit } });
+  }
+
+  /** ADMIN — attributions de badges les plus récentes (tous utilisateurs). */
+  getRecentBadgeAwards(limit = 50): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/gamification/admin/badges/recent`,
+      { params: { limit } });
+  }
+
   getLeaderboard(): Observable<any[]> {
     return this.http.get<any[]>(`${this.baseUrl}/gamification/leaderboard`);
   }

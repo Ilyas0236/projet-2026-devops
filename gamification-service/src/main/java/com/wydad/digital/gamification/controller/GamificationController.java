@@ -56,7 +56,16 @@ public class GamificationController {
         assertSelfOrAdmin(userId);
         return ResponseEntity.ok(gamificationService.getUserBadges(userId));
     }
-    
+
+    /** Historique de points d'un utilisateur — consultation self ou ADMIN. */
+    @GetMapping("/points/{userId}/history")
+    public ResponseEntity<List<com.wydad.digital.gamification.model.PointTransaction>> getPointHistory(
+            @PathVariable Long userId,
+            @RequestParam(defaultValue = "50") int limit) {
+        assertSelfOrAdmin(userId);
+        return ResponseEntity.ok(gamificationService.getUserPointHistory(userId, limit));
+    }
+
     @PostMapping("/points/add")
     public ResponseEntity<String> addPoints(
             @RequestParam Long userId,

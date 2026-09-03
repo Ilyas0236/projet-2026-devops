@@ -9,5 +9,8 @@ public interface UserBadgeRepository extends JpaRepository<UserBadge, Long> {
 
     List<UserBadge> findByUserIdOrderByAwardedAtDesc(Long userId);
 
+    /** Toutes les attributions de badges, du plus récent au plus ancien. */
+    List<UserBadge> findAllByOrderByAwardedAtDesc(org.springframework.data.domain.Pageable pageable);
+
     boolean existsByUserIdAndBadgeId(Long userId, Long badgeId);
 }

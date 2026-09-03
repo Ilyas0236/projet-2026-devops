@@ -2,11 +2,14 @@ package com.wydad.digital.gamification.service;
 
 import com.wydad.digital.gamification.dto.PredictionRequest;
 import com.wydad.digital.gamification.dto.UserPointsDto;
+import com.wydad.digital.gamification.model.PointTransaction;
 import com.wydad.digital.gamification.model.Prediction;
 import com.wydad.digital.gamification.model.UserPoints;
+import com.wydad.digital.gamification.repository.PointTransactionRepository;
 import com.wydad.digital.gamification.repository.PredictionRepository;
 import com.wydad.digital.gamification.repository.UserPointsRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,6 +20,7 @@ import java.util.List;
 public class GamificationService {
     private final UserPointsRepository userPointsRepository;
     private final PredictionRepository predictionRepository;
+    private final PointTransactionRepository pointTransactionRepository;
     private final com.wydad.digital.gamification.client.ContentClient contentClient;
     private final com.wydad.digital.gamification.client.NotificationClient notificationClient;
     private final BadgeService badgeService;
@@ -57,8 +61,9 @@ public class GamificationService {
                 .predictedAwayScore(request.getPredictedAwayScore())
                 .build();
 
-        // Bonus: 10 points for just predicting
-        addPoints(request.getUserId(), 10);
+        // Bonus: 10 points for just predicting — tracé dans l'historique utilisateur.
+        addPoints(request.getUserId(), 10, "PREDICTION", request.getMatchId(),
+                "Pronostic soumis (match #" + request.getMatchId() + ")");
 
         return predictionRepository.save(prediction);
     }
@@ -91,7 +96,9 @@ public class GamificationService {
             p.setStatus(status);
             p.setPointsEarned(pts);
             if (pts > 0) {
-                addPoints(p.getUserId(), pts);
+                String src = exactScore ? "EXACT_SCORE" : "PREDICTION_WIN";
+                addPoints(p.getUserId(), pts, src, matchId,
+                        "Pronostic " + status.toLowerCase() + " sur le match #" + matchId);
                 notificationClient.notifyUser(
                         p.getUserId(),
                         null,
@@ -110,6 +117,18 @@ public class GamificationService {
 
     @Transactional
     public void addPoints(Long userId, int amount) {
+        addPoints(userId, amount, "ADMIN_BONUS", null, "Ajustement de points");
+    }
+
+    /**
+     * Variante tracée : met à jour le solde agrégé ET insère une ligne dans
+     * point_transactions (utilisée par le code applicatif qui connaît
+     * l'origine métier du gain : pronostic, achat, score exact, etc.).
+     * Si amount == 0, on ne fait rien (évite les lignes vides).
+     */
+    @Transactional
+    public void addPoints(Long userId, int amount, String source, Long refId, String label) {
+        if (amount == 0) return;
         UserPoints points = userPointsRepository.findById(userId)
                 .orElse(UserPoints.builder().userId(userId).totalPoints(0).level(1).build());
 
@@ -121,8 +140,31 @@ public class GamificationService {
 
         userPointsRepository.save(points);
 
+        // Trace d'audit : alimente l'historique côté front + l'audit admin.
+        pointTransactionRepository.save(PointTransaction.builder()
+                .userId(userId)
+                .amount(amount)
+                .source(source)
+                .refId(refId)
+                .label(label)
+                .build());
+
         // B.8 : attribution automatique des badges franchis par ce gain
         badgeService.awardEligibleBadges(userId);
+    }
+
+    /** Historique de points d'un utilisateur (self ou ADMIN). */
+    @Transactional(readOnly = true)
+    public List<PointTransaction> getUserPointHistory(Long userId, int limit) {
+        int safe = Math.max(1, Math.min(limit, 200));
+        return pointTransactionRepository.findByUserIdOrderByCreatedAtDesc(userId, PageRequest.of(0, safe));
+    }
+
+    /** Pour l'admin : flux global des derniers gains/pertes de points. */
+    @Transactional(readOnly = true)
+    public List<PointTransaction> getRecentPointTransactions(int limit) {
+        int safe = Math.max(1, Math.min(limit, 500));
+        return pointTransactionRepository.findAllByOrderByCreatedAtDesc(PageRequest.of(0, safe));
     }
 
     /** Badges de l'utilisateur (B.8). */

@@ -73,6 +73,27 @@
           </div>
         </div>
 
+        <!-- B.8.b Historique des gains de points -->
+        <div *ngIf="pointHistory.length > 0" class="club-card p-6">
+          <h3 class="font-bold text-xl text-ink-primary flex items-center gap-2 mb-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            Historique de mes points
+          </h3>
+          <p class="text-xs text-ink-secondary mb-5">Les 10 dernières opérations sur votre solde de points.</p>
+
+          <div class="divide-y divide-paper-2">
+            <div *ngFor="let tx of pointHistory.slice(0, 10)" class="py-3 flex items-center justify-between gap-4">
+              <div class="flex-1 min-w-0">
+                <p class="text-sm font-semibold text-ink-primary truncate">{{ tx.label || sourceLabel(tx.source) }}</p>
+                <p class="text-[11px] text-ink-tertiary">{{ sourceLabel(tx.source) }} • {{ tx.createdAt | date:'dd/MM/yyyy HH:mm' }}</p>
+              </div>
+              <div class="font-display font-bold text-lg flex-shrink-0" [ngClass]="sourceColorClass(tx.source, tx.amount)">
+                {{ tx.amount > 0 ? '+' : '' }}{{ tx.amount }} pts
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Section Pronostics -->
         <div class="club-card p-6">
           <div class="flex items-center justify-between mb-6">
@@ -80,7 +101,7 @@
               <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-wydad-red" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
               Pronostics (+10 pts)
             </h3>
-            <span class="bg-emerald-50 text-emerald-700 text-xs font-bold px-2 py-1 rounded border border-emerald-200">Score Exact = +100 pts</span>
+            <span class="bg-emerald-50 text-emerald-700 text-xs font-bold px-2 py-1 rounded border border-emerald-200">Score Exact = +25 pts</span>
           </div>
 
           <div class="space-y-4">

@@ -26,6 +26,8 @@ export class EspaceFanComponent implements OnInit {
   /** B.8 : catalogue des badges actifs + badges possédés par l'utilisateur */
   badgeCatalog: any[] = [];
   myBadges: any[] = [];
+  /** Historique des gains de points (50 dernières) — Commit 1 gamification. */
+  pointHistory: any[] = [];
   
   // Pour le formulaire de pronostic
   predictionForm: { [matchId: number]: { homeScore: number, awayScore: number } } = {};
@@ -97,6 +99,36 @@ export class EspaceFanComponent implements OnInit {
       next: (data: any) => (this.myBadges = data || []),
       error: (err: any) => console.error('Erreur badges utilisateur', err)
     });
+
+    // Historique des gains de points (50 dernières transactions)
+    this.api.getUserPointHistory(this.userId as number, 50).subscribe({
+      next: (data: any) => (this.pointHistory = data || []),
+      error: (err: any) => console.error('Erreur historique points', err)
+    });
+  }
+
+  /** Libellé humain d'une source de points (pour l'affichage historique). */
+  sourceLabel(source: string): string {
+    switch (source) {
+      case 'PREDICTION': return 'Pronostic soumis';
+      case 'EXACT_SCORE': return 'Score exact';
+      case 'PREDICTION_WIN': return 'Bon signe (1X2)';
+      case 'BUY':
+      case 'BUY_SHOP':
+      case 'BUY_TICKET': return 'Achat';
+      case 'DON': return 'Don';
+      case 'ADMIN_BONUS': return 'Ajustement admin';
+      default: return source;
+    }
+  }
+
+  /** Couleur Tailwind associée au type de transaction. */
+  sourceColorClass(source: string, amount: number): string {
+    if (amount < 0) return 'text-red-400';
+    if (source === 'EXACT_SCORE') return 'text-emerald-600 font-bold';
+    if (source === 'PREDICTION_WIN') return 'text-emerald-500';
+    if (source?.startsWith('BUY')) return 'text-blue-500';
+    return 'text-wydad-red';
   }
 
   /** B.8 : le badge est-il possédé par l'utilisateur ? */
