@@ -208,4 +208,33 @@ export class AuthService {
   changeUserRole(userId: number, role: string): Observable<any> {
     return this.http.patch(`${this.baseUrl}/admin/users/${userId}/role?newRole=${role}`, {}, { responseType: 'text' });
   }
+
+  /**
+   * Création d'un compte par l'ADMIN — pour les rôles sportifs
+   * (JOUEUR / ENTRAINEUR / STAFF) les champs discipline + categorie sont
+   * OBLIGATOIRES. Pour les autres rôles, ils sont simplement ignorés.
+   * Réponse : UserProfileResponse (statut VALIDE, compte actif, sans token).
+   */
+  adminCreateUser(payload: {
+    email: string;
+    phone?: string;
+    password: string;
+    firstName: string;
+    lastName: string;
+    role: string;
+    discipline?: string;
+    categorie?: string;
+  }): Observable<any> {
+    return this.http.post(`${this.baseUrl}/admin/users/create`, payload);
+  }
+
+  /**
+   * Suppression DÉFINITIVE d'un compte par l'admin. Refusée (400) si on
+   * tente de supprimer le dernier ADMIN du système. Best-effort sur la
+   * fiche roster côté sports-service (le user auth disparaît dans tous
+   * les cas).
+   */
+  adminDeleteUser(userId: number): Observable<string> {
+    return this.http.delete(`${this.baseUrl}/admin/users/${userId}`, { responseType: 'text' });
+  }
 }

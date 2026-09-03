@@ -443,6 +443,20 @@ public class AuthController {
         return ResponseEntity.ok("Rôle utilisateur mis à jour");
     }
 
+    /**
+     * Suppression DÉFINITIVE d'un compte par l'admin. Contrairement à
+     * {@code PATCH /activate} qui ne fait que désactiver, cet endpoint
+     * efface le user + sessions actives + KYC + fiche roster (best-effort
+     * côté sports-service). Un garde-fou refuse la suppression du dernier
+     * ADMIN pour ne pas verrouiller la console.
+     */
+    @DeleteMapping("/admin/users/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<String> adminDeleteUser(@PathVariable Long id) {
+        authService.adminDeleteUser(id);
+        return ResponseEntity.ok("Utilisateur #" + id + " supprimé");
+    }
+
     // ============================================
     // Phase 0 — Circuit de validation des comptes
     // ============================================

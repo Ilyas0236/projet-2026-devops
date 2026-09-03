@@ -880,6 +880,37 @@ public class AuthService {
         }
 
         Role role = Role.valueOf(request.role().toUpperCase());
+
+        // Rôles sportifs : discipline + catégorie OBLIGATOIRES et validées.
+        // Cohérent avec la voie d'inscription auto (cf. register() lignes
+        // 130-145) — un compte sportif est TOUJOURS rattaché à un couple
+        // discipline+catégorie, qu'il vienne d'une inscription publique ou
+        // d'une création admin.
+        String discipline = null;
+        String categorie = null;
+        if (role == Role.JOUEUR || role == Role.ENTRAINEUR || role == Role.STAFF) {
+            if (request.discipline() == null || request.discipline().isBlank()) {
+                throw new IllegalArgumentException(
+                        "La discipline est obligatoire pour un compte " + role + " (FOOTBALL/BASKETBALL/HANDBALL/...)");
+            }
+            if (request.categorie() == null || request.categorie().isBlank()) {
+                throw new IllegalArgumentException(
+                        "La catégorie est obligatoire pour un compte " + role + " (U15/U17/U18/U20/SENIOR)");
+            }
+            String d = request.discipline().trim().toUpperCase();
+            String c = request.categorie().trim().toUpperCase();
+            if (!DISCIPLINES_VALIDES.contains(d)) {
+                throw new IllegalArgumentException(
+                        "Discipline invalide — valeurs acceptées : " + DISCIPLINES_VALIDES);
+            }
+            if (!CATEGORIES_VALIDES.contains(c)) {
+                throw new IllegalArgumentException(
+                        "Catégorie invalide — valeurs acceptées : " + CATEGORIES_VALIDES);
+            }
+            discipline = d;
+            categorie = c;
+        }
+
         // Pas de membershipLevel : l'admin crée un compte vide. La carte
         // viendra après l'achat d'un abonnement. Le champ reste en BDD
         // pour rétro-compat avec les anciens comptes migrés.
@@ -891,6 +922,8 @@ public class AuthService {
                 .firstName(request.firstName())
                 .lastName(request.lastName())
                 .role(role)
+                .disciplineDemandee(discipline)
+                .categorieDemandee(categorie)
                 .membershipExpiresAt(LocalDateTime.now().plusYears(1))
                 .referralCode(UUID.randomUUID().toString().substring(0, 8).toUpperCase())
                 .active(true)
@@ -921,5 +954,56 @@ public class AuthService {
                 user.getMatchSouhaite(),
                 user.getMotifRefus()
         );
+    }
+
+    /**
+     * Suppression DEFINITIVE d'un compte par l'admin (vs {@link #toggleUserActiveStatus}
+     * qui ne fait que désactiver). Workflow identique à {@link #deleteAccount}
+     * (suppression sessions actives, fiche KYC, fiche roster côté sports-service)
+     * mais avec garde-fou admin : on refuse de supprimer le DERNIER compte
+     * ADMIN du système pour ne pas verrouiller la console d'administration.
+     */
+    @Transactional
+    public void adminDeleteUser(Long id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new UserNotFoundException("id=" + id));
+
+        // Garde-fou : ne jamais supprimer le dernier admin. L'admin doit
+        // d'abord promouvoir un autre compte ADMIN avant de pouvoir
+        // supprimer le sien (ou celui de l'avant-dernier admin).
+        if (user.getRole() == Role.ADMIN) {
+            long adminCount = userRepository.findAll().stream()
+                    .filter(u -> u.getRole() == Role.ADMIN)
+                    .count();
+            if (adminCount <= 1) {
+                throw new IllegalStateException(
+                        "Impossible de supprimer le dernier compte ADMIN du système. "
+                      + "Promouvez d'abord un autre compte au rôle ADMIN.");
+            }
+        }
+
+        // Réutilisation du même nettoyage que self-delete : sessions actives
+        // et fiche KYC doivent disparaître pour ne pas laisser de données
+        // orphelines pointant sur un user effacé.
+        String email = user.getEmail();
+        activeSessionRepository.deleteByEmail(email);
+        kycDocumentRepository.findByEmail(email).ifPresent(doc ->
+                kycDocumentRepository.deleteById(doc.getId())
+        );
+
+        // Best-effort : suppression de la fiche roster côté sports-service
+        // (joueur/entraîneur/staff) — si le service est injoignable on
+        // continue, le compte auth est supprimé (cf. deleteAccount).
+        if (user.getRole() == Role.JOUEUR || user.getRole() == Role.ENTRAINEUR
+                || user.getRole() == Role.STAFF) {
+            try {
+                sportsClient.deleteRosterEntry(user.getId());
+            } catch (Exception e) {
+                log.error("Impossible de supprimer la fiche roster du user {} ({} {}) : {} — fiche orpheline à nettoyer",
+                        user.getId(), user.getFirstName(), user.getLastName(), e.getMessage());
+            }
+        }
+
+        userRepository.delete(user);
     }
 }
