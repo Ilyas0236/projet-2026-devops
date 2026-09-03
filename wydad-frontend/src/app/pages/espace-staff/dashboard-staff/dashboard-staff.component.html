@@ -659,399 +659,436 @@
         </div>
 
         <!-- SIDEBAR (Calendar + Messagerie) -->
-        <div class="lg:col-span-4 animate-fade-in-up space-y-8" style="animation-delay: 0.3s; opacity: 0;">
-          <div class="paper-card p-6 md:p-8 h-full flex flex-col">
-            <h3 class="font-display font-bold text-xl uppercase tracking-wider border-b border-paper-2 pb-6 mb-6 flex justify-between items-center">
-              Planning
-              <span class="text-xs text-ink-secondary bg-paper-2 px-3 py-1 rounded-full">{{ sessions.length }}</span>
-            </h3>
+        <div class="lg:col-span-4 animate-fade-in-up" style="animation-delay: 0.3s; opacity: 0;">
 
-            <div *ngIf="sessions.length === 0" class="flex-1 flex flex-col items-center justify-center text-ink-tertiary py-10">
-              <div class="w-14 h-14 rounded-full bg-paper-2 border border-paper-3 flex items-center justify-center mb-3">
-                <svg class="w-7 h-7 text-ink-tertiary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-              </div>
-              <p class="text-sm uppercase tracking-widest text-center">Aucune séance</p>
-            </div>
-
-            <div class="space-y-4 flex-1">
-              <div *ngFor="let session of sessions" (click)="trackSession(session.id)"
-                   class="cursor-pointer flex gap-4 p-4 rounded-2xl bg-paper-1 border transition-colors group"
-                   [ngClass]="trackedSessionId === session.id
-                     ? 'border-wydad-red bg-wydad-red/5'
-                     : 'border-paper-3 hover:border-wydad-red/40 hover:bg-paper-2'">
-
-                <div class="flex flex-col items-center justify-center min-w-[70px] bg-white rounded-xl border border-paper-3 p-2 shrink-0 group-hover:border-wydad-red/40">
-                  <span class="text-wydad-red font-bold text-[10px] uppercase tracking-widest">{{ session.sessionDate | date:'MMM' }}</span>
-                  <span class="text-2xl font-display font-black text-ink-primary">{{ session.sessionDate | date:'dd' }}</span>
-                </div>
-
-                <div class="flex-1 flex flex-col justify-center min-w-0">
-                  <h4 class="font-bold text-sm text-ink-primary mb-1 leading-tight truncate group-hover:text-wydad-red transition-colors">{{ session.title }}</h4>
-                  <div class="flex items-center gap-2 text-[10px] uppercase tracking-widest text-ink-secondary font-bold mb-1">
-                    <span class="w-1.5 h-1.5 rounded-full bg-wydad-red"></span>
-                    {{ session.sessionDate | date:'HH:mm' }}
-                  </div>
-                  <div class="text-xs text-ink-tertiary truncate flex items-center gap-1" [title]="session.location">
-                    <svg class="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                    <span class="truncate">{{ session.location }}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Phase 3 — SUIVI DES RÉPONSES de la séance sélectionnée -->
-            <div *ngIf="trackedSessionId && sessionSummary" class="mt-6 pt-6 border-t border-paper-2">
-              <h4 class="text-[11px] font-bold uppercase tracking-widest text-ink-secondary mb-4">
-                Suivi — {{ trackedSessionTitle }}
-              </h4>
-
-              <!-- Compteurs -->
-              <div class="grid grid-cols-4 gap-2 mb-5">
-                <div class="rounded-xl bg-paper-1 border border-paper-3 p-2.5 text-center">
-                  <p class="font-display font-black text-lg text-ink-primary leading-none">{{ sessionSummary.confirmed }}</p>
-                  <p class="text-[9px] uppercase tracking-widest text-green-600 font-bold mt-1">Confirmés</p>
-                </div>
-                <div class="rounded-xl bg-paper-1 border border-paper-3 p-2.5 text-center">
-                  <p class="font-display font-black text-lg text-wydad-red leading-none">{{ sessionSummary.absent }}</p>
-                  <p class="text-[9px] uppercase tracking-widest text-ink-secondary font-bold mt-1">Absents</p>
-                </div>
-                <div class="rounded-xl bg-paper-1 border border-paper-3 p-2.5 text-center">
-                  <p class="font-display font-black text-lg text-amber-500 leading-none">{{ sessionSummary.pending }}</p>
-                  <p class="text-[9px] uppercase tracking-widest text-ink-secondary font-bold mt-1">En attente</p>
-                </div>
-                <div class="rounded-xl bg-paper-1 border border-paper-3 p-2.5 text-center">
-                  <p class="font-display font-black text-lg text-ink-primary leading-none">{{ sessionSummary.unread }}</p>
-                  <p class="text-[9px] uppercase tracking-widest text-ink-secondary font-bold mt-1">Non lus</p>
-                </div>
-              </div>
-
-              <!-- Liste joueur par joueur -->
-              <div class="space-y-2 max-h-64 overflow-y-auto pr-1">
-                <div *ngFor="let r of sessionResponses" class="flex items-center justify-between gap-2 p-3 rounded-xl bg-paper-1 border border-paper-3">
-                  <span class="min-w-0 flex-1 truncate text-sm font-medium text-ink-primary">{{ r.joueurName }}</span>
-                  <span class="flex items-center gap-1.5 shrink-0">
-                    <!-- Accusé de lecture -->
-                    <span class="w-2 h-2 rounded-full" [ngClass]="r.readAt ? 'bg-blue-500' : 'bg-paper-3'"
-                          [title]="r.readAt ? 'Lu le ' + (r.readAt | date:'dd/MM HH:mm') : 'Pas encore vu'"></span>
-                    <!-- Réponse présence -->
-                    <span *ngIf="r.responseStatus" class="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-widest"
-                          [ngClass]="{
-                            'bg-green-100 text-green-700': r.responseStatus === 'CONFIRME',
-                            'bg-red-100 text-red-600': r.responseStatus === 'ABSENT',
-                            'bg-amber-100 text-amber-600': r.responseStatus === 'RETARD'
-                          }">{{ r.responseStatus }}</span>
-                    <span *ngIf="!r.responseStatus" class="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-widest bg-paper-2 text-ink-tertiary">—</span>
-                  </span>
-                </div>
-              </div>
-              <p *ngIf="loadingResponses" class="text-[10px] uppercase tracking-widest text-ink-tertiary mt-2">Chargement…</p>
+          <!-- ═══════ SIDEBAR ONGLET : navigation 4 sections ═══════ -->
+          <div class="paper-card p-2 mb-4 sticky top-4 z-30" role="tablist" aria-label="Sections de la sidebar">
+            <div class="grid grid-cols-4 gap-1">
+              <button type="button" (click)="sidebarTab = 'daily'"
+                      [class.bg-wydad-red]="sidebarTab === 'daily'"
+                      [class.text-white]="sidebarTab === 'daily'"
+                      [class.shadow-md]="sidebarTab === 'daily'"
+                      [class.text-ink-secondary]="sidebarTab !== 'daily'"
+                      class="flex flex-col items-center gap-1 py-2.5 rounded-xl transition-all"
+                      role="tab"
+                      [attr.aria-selected]="sidebarTab === 'daily'">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                <span class="text-[9px] font-bold uppercase tracking-widest">Quotidien</span>
+              </button>
+              <button type="button" (click)="sidebarTab = 'comms'"
+                      [class.bg-wydad-red]="sidebarTab === 'comms'"
+                      [class.text-white]="sidebarTab === 'comms'"
+                      [class.shadow-md]="sidebarTab === 'comms'"
+                      [class.text-ink-secondary]="sidebarTab !== 'comms'"
+                      class="flex flex-col items-center gap-1 py-2.5 rounded-xl transition-all"
+                      role="tab"
+                      [attr.aria-selected]="sidebarTab === 'comms'">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+                <span class="text-[9px] font-bold uppercase tracking-widest">Comms</span>
+              </button>
+              <button type="button" (click)="sidebarTab = 'media'"
+                      [class.bg-wydad-red]="sidebarTab === 'media'"
+                      [class.text-white]="sidebarTab === 'media'"
+                      [class.shadow-md]="sidebarTab === 'media'"
+                      [class.text-ink-secondary]="sidebarTab !== 'media'"
+                      class="flex flex-col items-center gap-1 py-2.5 rounded-xl transition-all"
+                      role="tab"
+                      [attr.aria-selected]="sidebarTab === 'media'">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                <span class="text-[9px] font-bold uppercase tracking-widest">Médias</span>
+              </button>
+              <button type="button" (click)="sidebarTab = 'calls'"
+                      [class.bg-wydad-red]="sidebarTab === 'calls'"
+                      [class.text-white]="sidebarTab === 'calls'"
+                      [class.shadow-md]="sidebarTab === 'calls'"
+                      [class.text-ink-secondary]="sidebarTab !== 'calls'"
+                      class="flex flex-col items-center gap-1 py-2.5 rounded-xl transition-all"
+                      role="tab"
+                      [attr.aria-selected]="sidebarTab === 'calls'">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                <span class="text-[9px] font-bold uppercase tracking-widest">Visio</span>
+              </button>
             </div>
           </div>
 
-          <!-- TRANSPARENCE FINANCIÈRE — rapports publiés par le club -->
-          <div class="paper-card p-6 md:p-8" *ngIf="rapportsFinanciers.length > 0">            <h3 class="font-display font-bold text-xl uppercase tracking-wider border-b border-paper-2 pb-6 mb-6 flex justify-between items-center">
-              Transparence financière
-              <a routerLink="/transparence" class="text-wydad-red hover:underline text-[10px] font-bold uppercase tracking-widest">Tout voir</a>
-            </h3>
-            <div class="space-y-3">
-              <a *ngFor="let r of rapportsFinanciers" [href]="api.getMediaUrl(r.fileUrl)" target="_blank" rel="noopener"
-                 class="flex items-center gap-3 p-3 rounded-2xl bg-paper-1 border border-paper-3 hover:border-wydad-red/40 transition-colors group">
-                <span class="shrink-0 w-11 text-center px-1.5 py-1 rounded-lg bg-wydad-red text-white text-xs font-bold">{{ r.annee }}</span>
-                <span class="min-w-0 flex-1">
-                  <span class="block font-bold text-xs text-ink-primary truncate">{{ r.titre }}</span>
-                  <span class="block text-[10px] uppercase tracking-widest text-ink-tertiary mt-0.5">Publié le {{ r.publieLe | date:'dd/MM/yyyy' }}</span>
+          <!-- ═══════ ONGLET QUOTIDIEN : Planning + Suivi + Reçus + Billets VIP ═══════ -->
+          <div *ngIf="sidebarTab === 'daily'" class="space-y-6">
+            <!-- Planning + Suivi -->
+            <div class="paper-card p-6 md:p-8">
+              <h3 class="font-display font-bold text-xl uppercase tracking-wider border-b border-paper-2 pb-5 mb-5 flex justify-between items-center">
+                <span class="flex items-center gap-2">
+                  <svg class="w-5 h-5 text-wydad-red" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                  Planning
                 </span>
-                <svg class="w-4 h-4 text-ink-tertiary group-hover:text-wydad-red transition-colors shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
-              </a>
-            </div>
-          </div>
+                <span class="text-xs text-ink-secondary bg-paper-2 px-3 py-1 rounded-full">{{ sessions.length }}</span>
+              </h3>
 
-          <!-- Phase 3 — MÉDIAS ENVOYÉS (historique des envois staff) -->
-          <div class="paper-card p-6 md:p-8" *ngIf="sentMedia.length > 0">
-            <h3 class="font-display font-bold text-xl uppercase tracking-wider border-b border-paper-2 pb-6 mb-6 flex items-center gap-3">
-              <svg class="w-5 h-5 text-ink-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
-              Médias envoyés
-            </h3>
-            <div class="space-y-3">
-              <a *ngFor="let m of sentMedia.slice(0, 5)" [href]="m.url" target="_blank" rel="noopener"
-                 class="flex items-center gap-3 p-3 rounded-2xl bg-paper-1 border border-paper-3 hover:border-wydad-red/40 transition-colors group">
-                <span class="shrink-0 px-2 py-1 rounded-lg text-[9px] font-bold uppercase tracking-widest"
-                      [ngClass]="{
-                        'bg-purple-100 text-purple-700': m.mediaType === 'VIDEO',
-                        'bg-blue-100 text-blue-700': m.mediaType === 'PHOTO',
-                        'bg-paper-2 text-ink-secondary': m.mediaType === 'DOCUMENT'
-                      }">{{ m.mediaType }}</span>
-                <span class="min-w-0 flex-1">
-                  <span class="block font-bold text-xs text-ink-primary truncate">{{ m.title }}</span>
-                  <span class="block text-[10px] text-ink-tertiary truncate">
-                    {{ m.senderName ? '' : '' }}{{ m.message || 'Sans message' }}
-                  </span>
-                </span>
-                <span class="shrink-0 text-[10px] uppercase tracking-widest text-ink-tertiary">{{ m.dateAjout | date:'dd/MM' }}</span>
-              </a>
-            </div>
-            <p class="text-[10px] uppercase tracking-widest text-ink-tertiary mt-4">Liens signés valables 1 heure — rouvrez depuis l'espace joueur pour un lien frais.</p>
-          </div>
+              <div *ngIf="sessions.length === 0" class="flex flex-col items-center justify-center text-ink-tertiary py-8">
+                <div class="w-12 h-12 rounded-full bg-paper-2 border border-paper-3 flex items-center justify-center mb-3">
+                  <svg class="w-6 h-6 text-ink-tertiary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                </div>
+                <p class="text-xs uppercase tracking-widest text-center">Aucune séance planifiée</p>
+              </div>
 
-          <!-- B.5 — MESSAGERIE : messages reçus des joueurs -->
-          <div class="paper-card p-6 md:p-8">
-            <h3 class="font-display font-bold text-xl uppercase tracking-wider border-b border-paper-2 pb-6 mb-6 flex items-center gap-3">
-              <svg class="w-5 h-5 text-ink-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-              Messagerie
-              <span *ngIf="conversationWith" class="text-[10px] text-ink-secondary bg-paper-2 px-3 py-1 rounded-full normal-case tracking-normal">avec {{ conversationWith.name }}</span>
-            </h3>
-
-            <ng-container *ngIf="!conversationWith">
-              <p *ngIf="inbox.length === 0" class="text-ink-tertiary text-xs uppercase tracking-widest py-4">
-                Aucun message reçu.
-              </p>
               <div class="space-y-3">
-                <button *ngFor="let m of inbox" (click)="openConversation(m.senderUserId, m.senderName)"
-                        class="w-full text-left flex items-start justify-between gap-3 bg-paper-1 hover:bg-paper-2 rounded-2xl p-4 border border-paper-3 hover:border-wydad-red/40 transition-colors group">
-                  <div class="min-w-0">
-                    <p class="text-sm font-bold truncate text-ink-primary">{{ m.senderName }} <span class="text-[10px] uppercase tracking-widest text-ink-tertiary font-normal">{{ m.senderRole }}</span></p>
-                    <p class="text-xs text-ink-secondary truncate mt-0.5">{{ m.content }}</p>
+                <div *ngFor="let session of sessions" (click)="trackSession(session.id)"
+                     class="cursor-pointer flex gap-3 p-3 rounded-2xl bg-paper-1 border transition-colors group"
+                     [ngClass]="trackedSessionId === session.id
+                       ? 'border-wydad-red bg-wydad-red/5'
+                       : 'border-paper-3 hover:border-wydad-red/40 hover:bg-paper-2'">
+                  <div class="flex flex-col items-center justify-center min-w-[60px] bg-white rounded-xl border border-paper-3 p-1.5 shrink-0 group-hover:border-wydad-red/40">
+                    <span class="text-wydad-red font-bold text-[9px] uppercase tracking-widest">{{ session.sessionDate | date:'MMM' }}</span>
+                    <span class="text-xl font-display font-black text-ink-primary">{{ session.sessionDate | date:'dd' }}</span>
                   </div>
-                  <p class="shrink-0 text-[10px] uppercase tracking-widest text-ink-tertiary">{{ m.createdAt | date:'dd/MM HH:mm' }}</p>
-                </button>
-              </div>
-              <button (click)="closeConversation()" class="mt-3 text-[10px] uppercase tracking-widest text-ink-tertiary hover:text-wydad-red transition-colors">
-                Actualiser la boîte de réception
-              </button>
-            </ng-container>
-
-            <ng-container *ngIf="conversationWith">
-              <div class="space-y-3 max-h-72 overflow-y-auto mb-4 pr-1">
-                <div class="flex" [ngClass]="auth.getCurrentUserId() == msg.senderUserId ? 'justify-end' : 'justify-start'"
-                     *ngFor="let msg of conversation">
-                  <div class="max-w-[85%] rounded-2xl px-4 py-3 border"
-                       [ngClass]="auth.getCurrentUserId() == msg.senderUserId
-                         ? 'bg-wydad-red/10 border-wydad-red/30'
-                         : 'bg-paper-1 border-paper-3'">
-                    <p class="text-sm whitespace-pre-line break-words text-ink-primary">{{ msg.content }}</p>
-                    <p class="text-[10px] uppercase tracking-widest text-ink-tertiary mt-1">{{ msg.createdAt | date:'dd/MM HH:mm' }}</p>
+                  <div class="flex-1 flex flex-col justify-center min-w-0">
+                    <h4 class="font-bold text-xs text-ink-primary mb-0.5 leading-tight truncate group-hover:text-wydad-red transition-colors">{{ session.title }}</h4>
+                    <div class="flex items-center gap-1.5 text-[9px] uppercase tracking-widest text-ink-secondary font-bold">
+                      <span class="w-1.5 h-1.5 rounded-full bg-wydad-red"></span>
+                      {{ session.sessionDate | date:'HH:mm' }}
+                    </div>
+                    <div class="text-[11px] text-ink-tertiary truncate">{{ session.location }}</div>
                   </div>
                 </div>
               </div>
-              <div class="flex gap-2">
-                <label class="sr-only" for="staff-message-draft">Votre message</label>
-                <input id="staff-message-draft" type="text" [(ngModel)]="messageDraft" maxlength="500"
-                       (keyup.enter)="sendMessageToPlayer()"
-                       placeholder="Répondre à {{ conversationWith.name }}…"
-                       class="paper-input flex-1 rounded-xl px-4 py-3 text-sm">
-                <button (click)="sendMessageToPlayer()" [disabled]="!messageDraft.trim() || sendingMessage"
-                        class="bg-wydad-red hover:bg-wydad-red-dark disabled:opacity-40 text-white px-5 py-3 rounded-xl text-xs font-bold uppercase tracking-widest transition-colors">
-                  {{ sendingMessage ? '…' : 'Envoyer' }}
-                </button>
+
+              <!-- Suivi des réponses -->
+              <div *ngIf="trackedSessionId && sessionSummary" class="mt-5 pt-5 border-t border-paper-2">
+                <h4 class="text-[10px] font-bold uppercase tracking-widest text-ink-secondary mb-3 flex items-center gap-2">
+                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                  Suivi — {{ trackedSessionTitle }}
+                </h4>
+                <div class="grid grid-cols-4 gap-1.5 mb-4">
+                  <div class="rounded-lg bg-emerald-50 border border-emerald-200 p-2 text-center">
+                    <p class="font-display font-black text-base text-emerald-700 leading-none">{{ sessionSummary.confirmed }}</p>
+                    <p class="text-[8px] uppercase tracking-widest text-emerald-700 font-bold mt-1">Confirmés</p>
+                  </div>
+                  <div class="rounded-lg bg-wydad-red/5 border border-wydad-red/20 p-2 text-center">
+                    <p class="font-display font-black text-base text-wydad-red leading-none">{{ sessionSummary.absent }}</p>
+                    <p class="text-[8px] uppercase tracking-widest text-wydad-red font-bold mt-1">Absents</p>
+                  </div>
+                  <div class="rounded-lg bg-amber-50 border border-amber-200 p-2 text-center">
+                    <p class="font-display font-black text-base text-amber-600 leading-none">{{ sessionSummary.pending }}</p>
+                    <p class="text-[8px] uppercase tracking-widest text-amber-700 font-bold mt-1">Attente</p>
+                  </div>
+                  <div class="rounded-lg bg-paper-1 border border-paper-3 p-2 text-center">
+                    <p class="font-display font-black text-base text-ink-primary leading-none">{{ sessionSummary.unread }}</p>
+                    <p class="text-[8px] uppercase tracking-widest text-ink-secondary font-bold mt-1">Non lus</p>
+                  </div>
+                </div>
+                <div class="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+                  <div *ngFor="let r of sessionResponses" class="flex items-center justify-between gap-2 p-2 rounded-lg bg-paper-1 border border-paper-3">
+                    <span class="min-w-0 flex-1 truncate text-xs font-medium text-ink-primary">{{ r.joueurName }}</span>
+                    <span class="flex items-center gap-1.5 shrink-0">
+                      <span class="w-1.5 h-1.5 rounded-full" [ngClass]="r.readAt ? 'bg-blue-500' : 'bg-paper-3'"
+                            [title]="r.readAt ? 'Lu le ' + (r.readAt | date:'dd/MM HH:mm') : 'Pas encore vu'"></span>
+                      <span *ngIf="r.responseStatus" class="px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-widest"
+                            [ngClass]="{
+                              'bg-emerald-100 text-emerald-700': r.responseStatus === 'CONFIRME',
+                              'bg-wydad-red/10 text-wydad-red': r.responseStatus === 'ABSENT',
+                              'bg-amber-100 text-amber-700': r.responseStatus === 'RETARD'
+                            }">{{ r.responseStatus }}</span>
+                      <span *ngIf="!r.responseStatus" class="text-[8px] text-ink-tertiary">—</span>
+                    </span>
+                  </div>
+                </div>
               </div>
-              <button (click)="closeConversation()" class="mt-3 text-[10px] uppercase tracking-widest text-ink-tertiary hover:text-wydad-red transition-colors">
-                &larr; Boîte de réception
-              </button>
-            </ng-container>
-          </div>
-
-          <!-- B.6 — MODAL STATUT MEDICAL (staff médical uniquement, contrôle serveur) -->
-          <div *ngIf="showMedicalForm && medicalPlayer" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" (click)="closeMedicalForm()" role="dialog" aria-modal="true">
-            <div class="bg-white rounded-3xl border border-purple-300 p-8 w-full max-w-md animate-fade-in relative z-10 shadow-lg" (click)="$event.stopPropagation()">
-              <h2 class="font-display text-xl font-bold uppercase tracking-wider mb-1 text-ink-primary">
-                Statut médical — <span class="text-purple-700">{{ medicalPlayer.fullName }}</span>
-              </h2>
-              <p class="text-ink-tertiary text-xs uppercase tracking-widest mb-6">
-                Réservé au staff médical · le serveur revalide (403 sinon)
-              </p>
-
-              <label class="block text-[11px] font-bold uppercase tracking-widest text-ink-secondary mb-2" for="medical-note-input">Motif / note médicale</label>
-              <textarea id="medical-note-input" rows="3" maxlength="500" [(ngModel)]="medicalNoteDraft"
-                        placeholder="Ex : entorse cheville droite, repos 3 semaines…"
-                        class="paper-input py-3 resize-none mb-6"></textarea>
-
-              <div class="flex gap-3">
-                <button (click)="setPlayerMedicalStatus('APT')" [disabled]="isSubmittingMedical"
-                        class="flex-1 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white rounded-xl py-3 text-xs font-bold uppercase tracking-widest transition-colors">
-                  Déclarer APT
-                </button>
-                <button (click)="setPlayerMedicalStatus('INAPTE')" [disabled]="isSubmittingMedical || !medicalNoteDraft.trim()"
-                        class="flex-1 bg-wydad-red hover:bg-wydad-red-dark disabled:opacity-50 text-white rounded-xl py-3 text-xs font-bold uppercase tracking-widest transition-colors">
-                  Déclarer INAPTE
-                </button>
-              </div>
-              <button type="button" (click)="closeMedicalForm()"
-                      class="mt-3 w-full bg-paper-1 hover:bg-paper-2 text-ink-primary border border-paper-3 rounded-xl py-2.5 text-xs font-bold uppercase tracking-widest transition-colors">Annuler</button>
             </div>
-          </div>
 
-          <!-- B.4 — MODAL SAISIE STAT DE MATCH -->
-          <div *ngIf="showStatForm && statPlayer" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" (click)="closeStatForm()" role="dialog" aria-modal="true">
-            <div class="bg-white rounded-3xl border border-wydad-red/40 p-8 w-full max-w-lg animate-fade-in relative z-10 shadow-lg" (click)="$event.stopPropagation()">
-              <h2 class="font-display text-2xl font-bold uppercase tracking-wider mb-1 text-ink-primary">
-                Stat de match — <span class="text-wydad-red">{{ statPlayer.fullName }}</span>
-              </h2>
-              <p class="text-ink-tertiary text-xs uppercase tracking-widest mb-6">Une ligne par rencontre — totaux recalculés automatiquement</p>
-
-              <form [formGroup]="statForm" (ngSubmit)="submitStat()">
-                <div class="grid grid-cols-2 gap-4 mb-6">
-                  <div class="col-span-2">
-                    <label class="block text-[11px] font-bold uppercase tracking-widest text-ink-secondary mb-2" for="stat-opponent">Adversaire *</label>
-                    <input id="stat-opponent" type="text" formControlName="opponent" placeholder="Ex : Raja U19" class="paper-input py-3">
-                  </div>
-                  <div>
-                    <label class="block text-[11px] font-bold uppercase tracking-widest text-ink-secondary mb-2" for="stat-date">Date du match *</label>
-                    <input id="stat-date" type="date" formControlName="matchDate" class="paper-input py-3 [color-scheme:light]">
-                  </div>
-                  <div>
-                    <label class="block text-[11px] font-bold uppercase tracking-widest text-ink-secondary mb-2" for="stat-competition">Compétition</label>
-                    <input id="stat-competition" type="text" formControlName="competition" placeholder="Championnat U19…" class="paper-input py-3">
-                  </div>
-                  <div>
-                    <label class="block text-[11px] font-bold uppercase tracking-widest text-ink-secondary mb-2" for="stat-goals">Buts</label>
-                    <input id="stat-goals" type="number" min="0" formControlName="goals" class="paper-input py-3">
-                  </div>
-                  <div>
-                    <label for="stat-assists" class="block text-[11px] font-bold uppercase tracking-widest text-ink-secondary mb-2">Passes décisives</label>
-                    <input id="stat-assists" type="number" min="0" formControlName="assists" class="paper-input py-3">
-                  </div>
-                  <div class="col-span-2">
-                    <label class="block text-[11px] font-bold uppercase tracking-widest text-ink-secondary mb-2" for="stat-minutes">Minutes jouées</label>
-                    <input id="stat-minutes" type="number" min="0" max="120" formControlName="minutesPlayed" class="paper-input py-3">
-                  </div>
+            <!-- MES REÇUS -->
+            <div #mesRecusSection class="paper-card rounded-3xl p-6 md:p-8">
+              <div class="flex justify-between items-end mb-4">
+                <div>
+                  <h3 class="font-display text-lg uppercase tracking-wider mb-1 flex items-center gap-2">
+                    <svg class="w-5 h-5 text-wydad-red" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                    Mes reçus
+                    <span *ngIf="unreadReceipts > 0"
+                          class="inline-flex items-center justify-center min-w-[1.25rem] px-1.5 py-0.5 rounded-full bg-wydad-red text-white text-[10px] font-black">
+                      {{ unreadReceipts }}
+                    </span>
+                  </h3>
+                  <p class="text-ink-tertiary text-[10px] uppercase tracking-widest">Salaires &amp; primes du président</p>
                 </div>
-                <div class="flex justify-end gap-3">
-                  <button type="button" (click)="closeStatForm()"
-                          class="bg-paper-1 hover:bg-paper-2 text-ink-primary border border-paper-3 rounded-xl px-6 py-3 text-xs font-bold uppercase tracking-widest transition-colors">Annuler</button>
-                  <button type="submit" [disabled]="statForm.invalid || isSubmittingStat"
-                          class="paper-btn-primary px-8 py-3 disabled:opacity-50">
-                    {{ isSubmittingStat ? 'Enregistrement…' : 'Enregistrer la stat' }}
+              </div>
+              <p *ngIf="myReceiptsLoading" class="text-ink-secondary text-xs py-4 text-center">Chargement…</p>
+              <div *ngIf="!myReceiptsLoading && myReceipts.length === 0" class="rounded-xl border border-paper-3 bg-paper-1 p-4 text-center">
+                <p class="text-ink-secondary text-xs">Aucun reçu pour l'instant.</p>
+              </div>
+              <ul *ngIf="!myReceiptsLoading && myReceipts.length > 0" class="space-y-1.5">
+                <li *ngFor="let r of myReceipts"
+                    class="rounded-lg border border-paper-3 bg-paper-1 p-2.5 flex items-center justify-between gap-2"
+                    [class.bg-amber-50]="unreadReceipts > 0 && r.id > (lastSeenReceiptIdValue ?? -1)">
+                  <div class="min-w-0 flex-1">
+                    <div class="flex items-center gap-1.5 mb-0.5">
+                      <span class="px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-widest"
+                            [class]="r.receiptType === 'SALAIRE' ? 'bg-blue-100 text-blue-800' : 'bg-amber-100 text-amber-800'">
+                        {{ r.receiptType }}
+                      </span>
+                      <span class="font-display font-black text-ink-primary text-xs">{{ r.amount | number:'1.2-2' }} {{ r.currency }}</span>
+                      <code class="text-[8px] text-ink-tertiary ml-auto">{{ r.reference }}</code>
+                    </div>
+                    <p class="text-[10px] text-ink-secondary truncate">
+                      {{ r.motif || r.periode || '—' }}
+                      <span *ngIf="r.issuedByName" class="text-ink-tertiary"> · {{ r.issuedByName }}</span>
+                    </p>
+                  </div>
+                  <button (click)="downloadReceiptPdf(r)" [disabled]="downloadingReceiptId === r.id"
+                          class="bg-wydad-red hover:bg-wydad-red-dark disabled:opacity-50 text-white px-2.5 py-1 rounded text-[9px] font-bold uppercase tracking-widest shrink-0">
+                    {{ downloadingReceiptId === r.id ? '⏳' : '⬇ PDF' }}
+                  </button>
+                </li>
+              </ul>
+            </div>
+
+            <!-- BILLETS VIP -->
+            <div class="paper-card rounded-3xl p-6 md:p-8">
+              <div class="flex justify-between items-end mb-4">
+                <div>
+                  <h3 class="font-display text-lg uppercase tracking-wider mb-1 flex items-center gap-2">
+                    <span>🎁</span>
+                    Mes billets VIP
+                  </h3>
+                  <p class="text-ink-tertiary text-[10px] uppercase tracking-widest">4 billets / match à domicile SENIOR</p>
+                </div>
+                <span *ngIf="vipTickets.length > 0" class="px-2 py-0.5 rounded-full bg-wydad-red text-white text-[10px] font-black">
+                  {{ vipTickets.length }}
+                </span>
+              </div>
+              <p *ngIf="vipTicketsLoading" class="text-ink-secondary text-xs py-4 text-center">Chargement…</p>
+              <div *ngIf="!vipTicketsLoading && vipTickets.length === 0" class="rounded-xl border border-paper-3 bg-paper-1 p-4 text-center">
+                <p class="text-ink-secondary text-[11px]">Aucun billet VIP. Générés à chaque match à domicile SENIOR par l'ADMIN.</p>
+              </div>
+              <div *ngIf="!vipTicketsLoading && vipTickets.length > 0" class="space-y-2">
+                <div *ngFor="let t of vipTickets.slice(0, 4)"
+                     class="bg-white border border-paper-3 rounded-xl p-3 flex flex-col gap-1.5 hover:border-wydad-red/40 transition-colors">
+                  <div class="flex items-center justify-between gap-2">
+                    <span class="px-1.5 py-0.5 rounded bg-wydad-red text-white text-[9px] font-bold uppercase tracking-widest">VIP</span>
+                    <code class="text-[9px] text-ink-tertiary truncate">{{ t.ticketNumber }}</code>
+                  </div>
+                  <h4 class="font-bold text-xs text-ink-primary truncate">{{ t.eventTitle }}</h4>
+                  <p class="text-ink-tertiary text-[10px]">{{ t.eventDate | date:'dd/MM/yyyy HH:mm' }} · {{ t.venue }}</p>
+                  <button (click)="downloadVipPdf(t)" [disabled]="vipDownloadingId === t.id"
+                          class="bg-wydad-red hover:bg-wydad-red-dark disabled:opacity-50 text-white px-2 py-1 rounded text-[9px] font-bold uppercase tracking-widest">
+                    {{ vipDownloadingId === t.id ? '⏳' : '⬇ PDF' }}
                   </button>
                 </div>
-              </form>
-            </div>
-          </div>
-
-          <!-- CHAT DE GROUPE « ÉQUIPE » (Phase 4) — temps réel WebSocket -->
-          <div *ngIf="staff.sportType && (staff.assignedCategory || staff.category)" class="animate-fade-in-up">
-            <app-team-chat [sportType]="staff.sportType" [category]="staff.assignedCategory || staff.category"></app-team-chat>
-          </div>
-
-          <!-- APPELS VIDÉO/VOCaux programmés (Phase 5) — programmation réservée
-               ENTRAINEUR/PRESIDENT/ADMIN (revalidé côté backend) ; l'agenda est pour tous -->
-          <app-schedule-call-form *ngIf="canScheduleCalls" (created)="onCallCreated()"></app-schedule-call-form>
-          <app-my-calls></app-my-calls>
-
-          <!-- MES REÇUS DE SALAIRE & PRIME (C.21.v2) — staff
-               Mêmes règles que l'espace joueur : chaque user ne voit que SES
-               propres reçus, IDOR strict, badge "X nouveaux" via
-               lastSeenReceiptId_{userId} (localStorage), auto-vidage à
-               l'entrée dans le viewport (IntersectionObserver). -->
-          <div #mesRecusSection class="paper-card rounded-3xl p-6 md:p-8 animate-fade-in-up">
-            <div class="flex justify-between items-end mb-5 flex-wrap gap-3">
-              <div>
-                <h3 class="section-title-light font-display text-xl uppercase tracking-wider mb-1">
-                  Mes reçus
-                  <span *ngIf="unreadReceipts > 0"
-                        class="ml-2 inline-flex items-center justify-center min-w-[1.5rem] px-2 py-0.5 rounded-full bg-wydad-red text-white text-[11px] font-black align-middle">
-                    {{ unreadReceipts }}
-                  </span>
-                </h3>
-                <p class="text-ink-tertiary text-[10px] uppercase tracking-widest">
-                  Salaires & primes émis par le président
+                <p *ngIf="vipTickets.length > 4" class="text-[10px] uppercase tracking-widest text-ink-tertiary text-center">
+                  + {{ vipTickets.length - 4 }} billet(s) supplémentaire(s)
                 </p>
               </div>
             </div>
+          </div>
 
-            <p *ngIf="myReceiptsLoading" class="text-ink-secondary text-sm py-6 text-center">
-              Chargement…
-            </p>
-
-            <div *ngIf="!myReceiptsLoading && myReceipts.length === 0"
-                 class="rounded-2xl border border-paper-3 bg-paper-1 p-6 text-center">
-              <p class="text-ink-secondary text-xs">Aucun reçu pour l'instant.</p>
-            </div>
-
-            <ul *ngIf="!myReceiptsLoading && myReceipts.length > 0" class="space-y-2">
-              <li *ngFor="let r of myReceipts"
-                  class="rounded-xl border border-paper-3 bg-paper-1 p-3 flex flex-wrap items-center justify-between gap-2"
-                  [class.bg-amber-50]="unreadReceipts > 0 && r.id > (lastSeenReceiptIdValue ?? -1)">
-                <div class="min-w-0 flex-1">
-                  <div class="flex items-center gap-2 mb-1">
-                    <span class="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-widest"
-                          [class]="r.receiptType === 'SALAIRE' ? 'bg-blue-100 text-blue-800' : 'bg-amber-100 text-amber-800'">
-                      {{ r.receiptType }}
-                    </span>
-                    <span class="font-display font-black text-ink-primary text-sm">
-                      {{ r.amount | number:'1.2-2' }} {{ r.currency }}
-                    </span>
-                    <code class="text-[9px] text-ink-tertiary ml-auto">{{ r.reference }}</code>
-                  </div>
-                  <p class="text-[11px] text-ink-secondary truncate">
-                    {{ r.motif || r.periode || '—' }}
-                    <span *ngIf="r.issuedByName" class="text-ink-tertiary"> · émis par {{ r.issuedByName }}</span>
-                  </p>
+          <!-- ═══════ ONGLET COMMS : Messagerie + Team chat ═══════ -->
+          <div *ngIf="sidebarTab === 'comms'" class="space-y-6">
+            <div class="paper-card p-6 md:p-8">
+              <h3 class="font-display font-bold text-lg uppercase tracking-wider border-b border-paper-2 pb-4 mb-5 flex items-center gap-2">
+                <svg class="w-5 h-5 text-wydad-red" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                Messagerie
+                <span *ngIf="conversationWith" class="text-[9px] text-ink-secondary bg-paper-2 px-2 py-0.5 rounded-full normal-case tracking-normal">· {{ conversationWith.name }}</span>
+              </h3>
+              <ng-container *ngIf="!conversationWith">
+                <p *ngIf="inbox.length === 0" class="text-ink-tertiary text-xs uppercase tracking-widest py-4 text-center">
+                  Aucun message reçu.
+                </p>
+                <div class="space-y-2">
+                  <button *ngFor="let m of inbox" (click)="openConversation(m.senderUserId, m.senderName)"
+                          class="w-full text-left flex items-start justify-between gap-2 bg-paper-1 hover:bg-paper-2 rounded-xl p-3 border border-paper-3 hover:border-wydad-red/40 transition-colors group">
+                    <div class="min-w-0">
+                      <p class="text-xs font-bold truncate text-ink-primary">{{ m.senderName }} <span class="text-[9px] uppercase tracking-widest text-ink-tertiary font-normal">{{ m.senderRole }}</span></p>
+                      <p class="text-[11px] text-ink-secondary truncate mt-0.5">{{ m.content }}</p>
+                    </div>
+                    <p class="shrink-0 text-[9px] uppercase tracking-widest text-ink-tertiary">{{ m.createdAt | date:'dd/MM HH:mm' }}</p>
+                  </button>
                 </div>
-                <button (click)="downloadReceiptPdf(r)" [disabled]="downloadingReceiptId === r.id"
-                        class="bg-wydad-red hover:bg-wydad-red-dark disabled:opacity-50 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-colors shrink-0">
-                  {{ downloadingReceiptId === r.id ? '⏳' : '⬇ PDF' }}
+                <button (click)="closeConversation()" class="mt-3 text-[10px] uppercase tracking-widest text-ink-tertiary hover:text-wydad-red transition-colors">
+                  ↻ Actualiser
                 </button>
-              </li>
-            </ul>
-          </div>
-
-          <!-- ═══ B.29 — MES BILLETS VIP (SENIOR) ═══
-               Le staff encadrant SENIOR reçoit 4 billets VIP par match à
-               domicile du club (médecin, kiné, manager, etc.). Endpoint
-               identique à l'espace joueur : /api/ticket/tickets/user/{id},
-               filtré par category='VIP' côté client. Téléchargement PDF
-               avec QR code pour scan à l'entrée du stade. -->
-          <div class="paper-card rounded-3xl p-6 md:p-8 animate-fade-in-up">
-            <div class="flex justify-between items-end mb-5 flex-wrap gap-3">
-              <div>
-                <h3 class="section-title-light font-display text-xl uppercase tracking-wider mb-1">
-                  🎁 Mes billets VIP
-                </h3>
-                <p class="text-ink-tertiary text-[10px] uppercase tracking-widest">
-                  4 billets offerts par match à domicile SENIOR · PDF avec QR code
-                </p>
-              </div>
-              <span *ngIf="vipTickets.length > 0"
-                    class="px-2.5 py-1 rounded-full bg-wydad-red text-white text-[11px] font-black">
-                {{ vipTickets.length }}
-              </span>
+              </ng-container>
+              <ng-container *ngIf="conversationWith">
+                <div class="space-y-2 max-h-72 overflow-y-auto mb-3 pr-1">
+                  <div class="flex" [ngClass]="auth.getCurrentUserId() == msg.senderUserId ? 'justify-end' : 'justify-start'"
+                       *ngFor="let msg of conversation">
+                    <div class="max-w-[85%] rounded-xl px-3 py-2 border text-xs"
+                         [ngClass]="auth.getCurrentUserId() == msg.senderUserId
+                           ? 'bg-wydad-red/10 border-wydad-red/30'
+                           : 'bg-paper-1 border-paper-3'">
+                      <p class="whitespace-pre-line break-words text-ink-primary">{{ msg.content }}</p>
+                      <p class="text-[9px] uppercase tracking-widest text-ink-tertiary mt-0.5">{{ msg.createdAt | date:'dd/MM HH:mm' }}</p>
+                    </div>
+                  </div>
+                </div>
+                <div class="flex gap-2">
+                  <label class="sr-only" for="staff-message-draft">Votre message</label>
+                  <input id="staff-message-draft" type="text" [(ngModel)]="messageDraft" maxlength="500"
+                         (keyup.enter)="sendMessageToPlayer()"
+                         placeholder="Répondre à {{ conversationWith.name }}…"
+                         class="paper-input flex-1 rounded-lg px-3 py-2 text-xs">
+                  <button (click)="sendMessageToPlayer()" [disabled]="!messageDraft.trim() || sendingMessage"
+                          class="bg-wydad-red hover:bg-wydad-red-dark disabled:opacity-40 text-white px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest">
+                    {{ sendingMessage ? '…' : 'Envoyer' }}
+                  </button>
+                </div>
+                <button (click)="closeConversation()" class="mt-2 text-[10px] uppercase tracking-widest text-ink-tertiary hover:text-wydad-red transition-colors">
+                  ← Boîte de réception
+                </button>
+              </ng-container>
             </div>
 
-            <p *ngIf="vipTicketsLoading" class="text-ink-secondary text-sm py-6 text-center">
-              Chargement de vos billets VIP…
-            </p>
+            <!-- Team chat (Phase 4) — WebSocket temps réel -->
+            <div *ngIf="staff.sportType && (staff.assignedCategory || staff.category)">
+              <app-team-chat [sportType]="staff.sportType" [category]="staff.assignedCategory || staff.category"></app-team-chat>
+            </div>
+          </div>
 
-            <div *ngIf="!vipTicketsLoading && vipTickets.length === 0"
-                 class="rounded-2xl border border-paper-3 bg-paper-1 p-6 text-center">
-              <p class="text-ink-secondary text-xs">
-                Aucun billet VIP pour le moment. Ils sont générés automatiquement
-                par l'ADMIN à chaque match à domicile SENIOR (4 billets par
-                membre du staff encadrant).
+          <!-- ═══════ ONGLET MÉDIAS : Médias envoyés + Transparence ═══════ -->
+          <div *ngIf="sidebarTab === 'media'" class="space-y-6">
+            <div class="paper-card p-6 md:p-8" *ngIf="sentMedia.length > 0; else noMedia">
+              <h3 class="font-display font-bold text-lg uppercase tracking-wider border-b border-paper-2 pb-4 mb-5 flex items-center gap-2">
+                <svg class="w-5 h-5 text-wydad-red" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                Médias envoyés
+              </h3>
+              <div class="space-y-2">
+                <a *ngFor="let m of sentMedia.slice(0, 5)" [href]="m.url" target="_blank" rel="noopener"
+                   class="flex items-center gap-2 p-2.5 rounded-xl bg-paper-1 border border-paper-3 hover:border-wydad-red/40 transition-colors group">
+                  <span class="shrink-0 px-2 py-0.5 rounded text-[8px] font-bold uppercase tracking-widest"
+                        [ngClass]="{
+                          'bg-purple-100 text-purple-700': m.mediaType === 'VIDEO',
+                          'bg-blue-100 text-blue-700': m.mediaType === 'PHOTO',
+                          'bg-paper-2 text-ink-secondary': m.mediaType === 'DOCUMENT'
+                        }">{{ m.mediaType }}</span>
+                  <span class="min-w-0 flex-1">
+                    <span class="block font-bold text-[11px] text-ink-primary truncate">{{ m.title }}</span>
+                    <span class="block text-[9px] text-ink-tertiary truncate">{{ m.message || 'Sans message' }}</span>
+                  </span>
+                  <span class="shrink-0 text-[9px] uppercase tracking-widest text-ink-tertiary">{{ m.dateAjout | date:'dd/MM' }}</span>
+                </a>
+              </div>
+              <p class="text-[9px] uppercase tracking-widest text-ink-tertiary mt-3 text-center">
+                Liens signés valables 1 heure
               </p>
             </div>
+            <ng-template #noMedia>
+              <div class="paper-card p-6 md:p-8 text-center">
+                <h3 class="font-display font-bold text-lg uppercase tracking-wider mb-3 flex items-center justify-center gap-2">
+                  <svg class="w-5 h-5 text-ink-tertiary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                  Médias envoyés
+                </h3>
+                <p class="text-ink-tertiary text-[11px]">Aucun média partagé pour l'instant.</p>
+              </div>
+            </ng-template>
 
-            <div *ngIf="!vipTicketsLoading && vipTickets.length > 0"
-                 class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div *ngFor="let t of vipTickets"
-                   class="bg-white border border-paper-3 rounded-2xl p-4 flex flex-col gap-2 hover:border-wydad-red/40 transition-all shadow-sm">
-                <div class="flex items-center justify-between gap-2">
-                  <span class="px-2 py-0.5 rounded-full bg-wydad-red text-white text-[10px] font-bold uppercase tracking-widest">
-                    VIP
+            <div class="paper-card p-6 md:p-8" *ngIf="rapportsFinanciers.length > 0; else noRapports">
+              <h3 class="font-display font-bold text-lg uppercase tracking-wider border-b border-paper-2 pb-4 mb-5 flex items-center justify-between">
+                <span class="flex items-center gap-2">
+                  <svg class="w-5 h-5 text-wydad-red" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2a2 2 0 00-2-2H5a2 2 0 00-2-2V7a2 2 0 012-2h2a2 2 0 002-2v-.5A2.5 2.5 0 019.5 2h5A2.5 2.5 0 0117 4.5V5a2 2 0 002 2h2a2 2 0 012 2v6a2 2 0 01-2 2h-2a2 2 0 00-2 2v2a2 2 0 01-2 2H9.5a2.5 2.5 0 01-2.5-2.5V17a2 2 0 00-2-2z"/></svg>
+                  Transparence financière
+                </span>
+                <a routerLink="/transparence" class="text-wydad-red hover:underline text-[9px] font-bold uppercase tracking-widest">Tout voir</a>
+              </h3>
+              <div class="space-y-2">
+                <a *ngFor="let r of rapportsFinanciers" [href]="api.getMediaUrl(r.fileUrl)" target="_blank" rel="noopener"
+                   class="flex items-center gap-2 p-2.5 rounded-xl bg-paper-1 border border-paper-3 hover:border-wydad-red/40 transition-colors group">
+                  <span class="shrink-0 w-9 text-center px-1.5 py-0.5 rounded bg-wydad-red text-white text-[10px] font-bold">{{ r.annee }}</span>
+                  <span class="min-w-0 flex-1">
+                    <span class="block font-bold text-[11px] text-ink-primary truncate">{{ r.titre }}</span>
+                    <span class="block text-[9px] uppercase tracking-widest text-ink-tertiary mt-0.5">Publié le {{ r.publieLe | date:'dd/MM/yyyy' }}</span>
                   </span>
-                  <code class="text-[10px] text-ink-tertiary truncate">{{ t.ticketNumber }}</code>
-                </div>
-                <div class="min-w-0">
-                  <h4 class="font-bold text-sm text-ink-primary truncate">{{ t.eventTitle }}</h4>
-                  <p class="text-ink-tertiary text-[11px] mt-0.5">
-                    {{ t.eventDate | date:'dd/MM/yyyy HH:mm' }} · {{ t.venue }}
-                  </p>
-                </div>
-                <button (click)="downloadVipPdf(t)" [disabled]="vipDownloadingId === t.id"
-                        class="mt-1 bg-wydad-red hover:bg-wydad-red-dark disabled:opacity-50 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-colors w-full">
-                  {{ vipDownloadingId === t.id ? '⏳ Téléchargement…' : '⬇ Télécharger le PDF' }}
-                </button>
+                  <svg class="w-3.5 h-3.5 text-ink-tertiary group-hover:text-wydad-red transition-colors shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+                </a>
               </div>
             </div>
+            <ng-template #noRapports>
+              <div class="paper-card p-6 md:p-8 text-center">
+                <h3 class="font-display font-bold text-lg uppercase tracking-wider mb-3 flex items-center justify-center gap-2">
+                  <svg class="w-5 h-5 text-ink-tertiary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2a2 2 0 00-2-2H5a2 2 0 00-2-2V7a2 2 0 012-2h2a2 2 0 002-2v-.5A2.5 2.5 0 019.5 2h5A2.5 2.5 0 0117 4.5V5a2 2 0 002 2h2a2 2 0 012 2v6a2 2 0 01-2 2h-2a2 2 0 00-2 2v2a2 2 0 01-2 2H9.5a2.5 2.5 0 01-2.5-2.5V17a2 2 0 00-2-2z"/></svg>
+                  Transparence financière
+                </h3>
+                <p class="text-ink-tertiary text-[11px]">Aucun rapport publié.</p>
+              </div>
+            </ng-template>
+          </div>
+
+          <!-- ═══════ ONGLET VISIO : Schedule call + My calls ═══════ -->
+          <div *ngIf="sidebarTab === 'calls'" class="space-y-6">
+            <app-schedule-call-form *ngIf="canScheduleCalls" (created)="onCallCreated()"></app-schedule-call-form>
+            <app-my-calls></app-my-calls>
+          </div>
+
+        </div>
+
+        <!-- ═══════ MODALES HORS SIDEBAR (fix : étaient nichées dans lg:col-span-4, mal placées) ═══════ -->
+
+        <!-- B.6 — MODAL STATUT MEDICAL (staff médical uniquement, contrôle serveur) -->
+        <div *ngIf="showMedicalForm && medicalPlayer" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" (click)="closeMedicalForm()" role="dialog" aria-modal="true">
+          <div class="bg-white rounded-3xl border border-purple-300 p-8 w-full max-w-md animate-fade-in relative z-10 shadow-lg" (click)="$event.stopPropagation()">
+            <h2 class="font-display text-xl font-bold uppercase tracking-wider mb-1 text-ink-primary">
+              Statut médical — <span class="text-purple-700">{{ medicalPlayer.fullName }}</span>
+            </h2>
+            <p class="text-ink-tertiary text-xs uppercase tracking-widest mb-6">
+              Réservé au staff médical · le serveur revalide (403 sinon)
+            </p>
+            <label class="block text-[11px] font-bold uppercase tracking-widest text-ink-secondary mb-2" for="medical-note-input">Motif / note médicale</label>
+            <textarea id="medical-note-input" rows="3" maxlength="500" [(ngModel)]="medicalNoteDraft"
+                      placeholder="Ex : entorse cheville droite, repos 3 semaines…"
+                      class="paper-input py-3 resize-none mb-6"></textarea>
+            <div class="flex gap-3">
+              <button (click)="setPlayerMedicalStatus('APT')" [disabled]="isSubmittingMedical"
+                      class="flex-1 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white rounded-xl py-3 text-xs font-bold uppercase tracking-widest transition-colors">
+                Déclarer APT
+              </button>
+              <button (click)="setPlayerMedicalStatus('INAPTE')" [disabled]="isSubmittingMedical || !medicalNoteDraft.trim()"
+                      class="flex-1 bg-wydad-red hover:bg-wydad-red-dark disabled:opacity-50 text-white rounded-xl py-3 text-xs font-bold uppercase tracking-widest transition-colors">
+                Déclarer INAPTE
+              </button>
+            </div>
+            <button type="button" (click)="closeMedicalForm()"
+                    class="mt-3 w-full bg-paper-1 hover:bg-paper-2 text-ink-primary border border-paper-3 rounded-xl py-2.5 text-xs font-bold uppercase tracking-widest transition-colors">Annuler</button>
+          </div>
+        </div>
+
+        <!-- B.4 — MODAL SAISIE STAT DE MATCH -->
+        <div *ngIf="showStatForm && statPlayer" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" (click)="closeStatForm()" role="dialog" aria-modal="true">
+          <div class="bg-white rounded-3xl border border-wydad-red/40 p-8 w-full max-w-lg animate-fade-in relative z-10 shadow-lg" (click)="$event.stopPropagation()">
+            <h2 class="font-display text-2xl font-bold uppercase tracking-wider mb-1 text-ink-primary">
+              Stat de match — <span class="text-wydad-red">{{ statPlayer.fullName }}</span>
+            </h2>
+            <p class="text-ink-tertiary text-xs uppercase tracking-widest mb-6">Une ligne par rencontre — totaux recalculés automatiquement</p>
+            <form [formGroup]="statForm" (ngSubmit)="submitStat()">
+              <div class="grid grid-cols-2 gap-4 mb-6">
+                <div class="col-span-2">
+                  <label class="block text-[11px] font-bold uppercase tracking-widest text-ink-secondary mb-2" for="stat-opponent">Adversaire *</label>
+                  <input id="stat-opponent" type="text" formControlName="opponent" placeholder="Ex : Raja U19" class="paper-input py-3">
+                </div>
+                <div>
+                  <label class="block text-[11px] font-bold uppercase tracking-widest text-ink-secondary mb-2" for="stat-date">Date du match *</label>
+                  <input id="stat-date" type="date" formControlName="matchDate" class="paper-input py-3 [color-scheme:light]">
+                </div>
+                <div>
+                  <label class="block text-[11px] font-bold uppercase tracking-widest text-ink-secondary mb-2" for="stat-competition">Compétition</label>
+                  <input id="stat-competition" type="text" formControlName="competition" placeholder="Championnat U19…" class="paper-input py-3">
+                </div>
+                <div>
+                  <label class="block text-[11px] font-bold uppercase tracking-widest text-ink-secondary mb-2" for="stat-goals">Buts</label>
+                  <input id="stat-goals" type="number" min="0" formControlName="goals" class="paper-input py-3">
+                </div>
+                <div>
+                  <label for="stat-assists" class="block text-[11px] font-bold uppercase tracking-widest text-ink-secondary mb-2">Passes décisives</label>
+                  <input id="stat-assists" type="number" min="0" formControlName="assists" class="paper-input py-3">
+                </div>
+                <div class="col-span-2">
+                  <label class="block text-[11px] font-bold uppercase tracking-widest text-ink-secondary mb-2" for="stat-minutes">Minutes jouées</label>
+                  <input id="stat-minutes" type="number" min="0" max="120" formControlName="minutesPlayed" class="paper-input py-3">
+                </div>
+              </div>
+              <div class="flex justify-end gap-3">
+                <button type="button" (click)="closeStatForm()"
+                        class="bg-paper-1 hover:bg-paper-2 text-ink-primary border border-paper-3 rounded-xl px-6 py-3 text-xs font-bold uppercase tracking-widest transition-colors">Annuler</button>
+                <button type="submit" [disabled]="statForm.invalid || isSubmittingStat"
+                        class="paper-btn-primary px-8 py-3 disabled:opacity-50">
+                  {{ isSubmittingStat ? 'Enregistrement…' : 'Enregistrer la stat' }}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       </div>

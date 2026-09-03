@@ -35,6 +35,8 @@ export class DashboardStaffComponent implements OnInit, OnDestroy {
   actionsMenuOpen = false;
   /** Refonte pro — chip filtre actif du tableau effectif ('all' | 'apt' | 'inj' | 'gardien' | 'defenseur' | 'milieu' | 'attaquant'). */
   rosterFilter: 'all' | 'apt' | 'inj' | string = 'all';
+  /** Refonte pro — onglet actif de la sidebar droite (au lieu d'un mur de 8 sections). */
+  sidebarTab: 'daily' | 'comms' | 'media' | 'calls' = 'daily';
   /** Phase 5 — le président n'a pas de fiche staff : vue réduite aux appels programmés. */
   isPresident = false;
   /**
