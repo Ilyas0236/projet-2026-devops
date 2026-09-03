@@ -63,7 +63,7 @@
 
         <!-- §8 — feuille de match (convocations liées à un match réel) -->
         <button *ngIf="programmeMatches.length > 0" (click)="toggleMatchSheetForm()"
-                class="paper-btn-primary py-3 px-6 shrink-0 flex items-center gap-2">
+                class="bg-white hover:bg-paper-2 text-ink-primary border border-paper-3 hover:border-wydad-red/40 rounded-xl py-3 px-6 text-xs font-bold uppercase tracking-widest transition-colors shrink-0 flex items-center gap-2 shadow-sm">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
           Feuille de match
         </button>
@@ -348,9 +348,22 @@
 
             <div class="p-6 md:p-8 border-b border-paper-2 flex flex-wrap justify-between items-center gap-4 bg-paper-1/60">
               <h3 class="section-title-light font-display font-bold text-2xl uppercase tracking-wider flex items-center gap-3">Mon Effectif</h3>
-              <span class="bg-paper-2 border border-paper-3 px-4 py-1.5 rounded-xl text-xs font-bold uppercase tracking-widest text-ink-secondary">
-                {{ players.length }} Joueurs
-              </span>
+              <div class="flex flex-wrap items-center gap-3">
+                <!-- Trou #2 — recherche par nom ou poste -->
+                <div class="relative">
+                  <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-tertiary pointer-events-none"
+                       fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z"/>
+                  </svg>
+                  <input type="text" [(ngModel)]="playerFilter" name="playerFilter"
+                         placeholder="Rechercher un joueur ou un poste…"
+                         aria-label="Filtrer l'effectif"
+                         class="paper-input pl-10 pr-3 py-2 text-sm w-64">
+                </div>
+                <span class="bg-paper-2 border border-paper-3 px-4 py-1.5 rounded-xl text-xs font-bold uppercase tracking-widest text-ink-secondary">
+                  {{ filteredPlayers.length }} / {{ players.length }} Joueurs
+                </span>
+              </div>
             </div>
 
             <div class="flex-1 overflow-x-auto">
@@ -366,7 +379,7 @@
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-paper-2">
-                  <tr *ngFor="let player of players" class="hover:bg-paper-1 transition-colors group">
+                  <tr *ngFor="let player of filteredPlayers" class="hover:bg-paper-1 transition-colors group">
                     <td class="p-5 font-display font-black text-2xl text-ink-tertiary text-center w-20 group-hover:text-wydad-red transition-colors">
                       {{ player.jerseyNumber || '-' }}
                     </td>
@@ -427,6 +440,15 @@
                   <svg class="w-8 h-8 text-ink-tertiary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
                 </div>
                 <div class="font-display text-lg uppercase tracking-wider">Aucun joueur assigné.</div>
+              </div>
+              <!-- Trou #2 — état "0 résultat du filtre" (effectif non vide mais recherche infructueuse) -->
+              <div *ngIf="players.length > 0 && filteredPlayers.length === 0"
+                   class="flex flex-col items-center justify-center py-16 text-ink-tertiary">
+                <div class="font-display text-lg uppercase tracking-wider mb-2">Aucun joueur ne correspond à « {{ playerFilter }} »</div>
+                <button type="button" (click)="playerFilter = ''"
+                        class="text-xs font-bold uppercase tracking-widest text-wydad-red hover:underline">
+                  Effacer le filtre
+                </button>
               </div>
             </div>
 

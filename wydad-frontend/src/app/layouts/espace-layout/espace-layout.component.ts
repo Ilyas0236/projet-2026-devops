@@ -2,6 +2,7 @@ import { Component, inject } from '@angular/core';
 import { Router, RouterOutlet } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { NotificationBellComponent } from '../../components/notification-bell/notification-bell.component';
+import { ConfirmDialogComponent } from '../../components/confirm-dialog/confirm-dialog.component';
 
 /**
  * Layout des espaces connectés (joueur, staff/entraîneur, président,
@@ -12,7 +13,7 @@ import { NotificationBellComponent } from '../../components/notification-bell/no
 @Component({
   selector: 'app-espace-layout',
   standalone: true,
-  imports: [RouterOutlet, NotificationBellComponent],
+  imports: [RouterOutlet, NotificationBellComponent, ConfirmDialogComponent],
   templateUrl: './espace-layout.component.html',
   styleUrls: ['./espace-layout.component.scss']
 })

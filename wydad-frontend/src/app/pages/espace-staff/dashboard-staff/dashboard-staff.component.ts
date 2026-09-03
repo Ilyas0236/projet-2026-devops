@@ -5,6 +5,7 @@ import { RouterModule } from '@angular/router';
 import { ApiService } from '../../../services/api.service';
 import { AuthService } from '../../../services/auth.service';
 import { ToastService } from '../../../services/toast.service';
+import { ConfirmService } from '../../../services/confirm.service';
 import { TeamChatComponent } from '../../../components/team-chat/team-chat.component';
 import { MyCallsComponent } from '../../../components/my-calls/my-calls.component';
 import { ScheduleCallFormComponent } from '../../../components/my-calls/schedule-call-form.component';
@@ -20,9 +21,13 @@ export class DashboardStaffComponent implements OnInit, OnDestroy {
   auth = inject(AuthService);
   fb = inject(FormBuilder);
   toast = inject(ToastService);
+  /** Trou #3 — confirmation modale avant actions à fort impact (annonce club, INAPTE, soumission feuille). */
+  confirmSvc = inject(ConfirmService);
 
   staff: any = null;
   players: any[] = [];
+  /** Trou #2 — filtre texte du tableau effectif (nom OU poste, insensible casse/accents). */
+  playerFilter = '';
   sessions: any[] = [];
   loading = true;
   staffNotFound = false;
@@ -309,10 +314,28 @@ export class DashboardStaffComponent implements OnInit, OnDestroy {
   submitMatchSheet() {
     const matchId = this.selectedMatchId ? Number(this.selectedMatchId) : null;
     if (!matchId || this.matchRoles.size === 0) { return; }
-    this.isSubmittingMatchSheet = true;
     const players = [...this.matchRoles.entries()].map(([joueurUserId, playerRole]) =>
       ({ joueurUserId, playerRole }));
+    const titulaires = players.filter(p => p.playerRole === 'TITULAIRE').length;
+    const remplacants = players.filter(p => p.playerRole === 'REMPLACANT').length;
+    const match = this.selectedMatch;
 
+    // Trou #3 — confirmation avant soumission (les joueurs sont notifiés et
+    // la feuille part à l'admin pour publication publique).
+    this.confirmSvc.confirm({
+      title: 'Soumettre la feuille à l\'Admin ?',
+      message: `${titulaires} titulaire(s) et ${remplacants} remplaçant(s) pour ${match?.homeTeam ?? '?'} vs ${match?.awayTeam ?? '?'}. Une notification sera envoyée à chaque joueur et la feuille sera transmise à l'Admin pour publication.`,
+      confirmLabel: 'Soumettre la feuille',
+      danger: false
+    }).then(ok => {
+      if (!ok) return;
+      this.doSubmitMatchSheet(matchId, players);
+    });
+  }
+
+  /** Trou #3 — appel réel après confirmation. */
+  private doSubmitMatchSheet(matchId: number, players: { joueurUserId: number; playerRole: string }[]) {
+    this.isSubmittingMatchSheet = true;
     this.api.convocateBatchForMatch(matchId, players).subscribe({
       next: (res) => {
         // Soumission immédiate à l'Admin (workflow §9 complet en un geste).
@@ -409,6 +432,21 @@ export class DashboardStaffComponent implements OnInit, OnDestroy {
   /** Joueurs aptes (un INAPTE serait rejeté par le serveur). */
   get joueursAptes(): any[] {
     return this.players.filter(p => p.medicalStatus !== 'INAPTE');
+  }
+
+  /**
+   * Trou #2 — effectif filtré par le champ de recherche. Insensible à la casse
+   * et aux accents (le prénom « Youssef » matche « youssef », « Hàkim » aussi).
+   * Si le filtre est vide → renvoie tout.
+   */
+  get filteredPlayers(): any[] {
+    const q = this.playerFilter.trim().toLowerCase();
+    if (!q) return this.players;
+    const norm = (s: string) => (s || '').toLowerCase()
+      .normalize('NFD').replace(/[̀-ͯ]/g, '');
+    return this.players.filter(p =>
+      norm(p.fullName).includes(norm(q)) || norm(p.position || '').includes(norm(q))
+    );
   }
 
   get tousSelectionnes(): boolean {
@@ -566,10 +604,29 @@ export class DashboardStaffComponent implements OnInit, OnDestroy {
       this.toast.error('Un motif est requis pour déclarer un joueur inapte');
       return;
     }
+    // Trou #3 — confirmation si on déclare INAPTE (impact match : le joueur
+    // ne sera plus convoqué par l'entraineur). APT reste silencieux (action
+    // de "rétablissement" sans danger).
+    if (status === 'INAPTE') {
+      this.confirmSvc.confirm({
+        title: 'Déclarer ce joueur inapte ?',
+        message: `${this.medicalPlayer.fullName} sera marqué INAPTE et ne pourra plus être convoqué aux prochaines séances / matchs tant que son statut n'est pas repassé APT. Motif : « ${note} ».`,
+        confirmLabel: 'Oui, déclarer inapte',
+        danger: true
+      }).then(ok => {
+        if (ok) this.doSetMedicalStatus(status, note);
+      });
+      return;
+    }
+    this.doSetMedicalStatus(status, note);
+  }
+
+  /** Trou #3 — appel réel après confirmation (factorisé pour rester lisible). */
+  private doSetMedicalStatus(status: 'APT' | 'INAPTE', note: string) {
     this.isSubmittingMedical = true;
-    this.api.setMedicalStatus(this.medicalPlayer.userId, status, note || undefined).subscribe({
+    this.api.setMedicalStatus(this.medicalPlayer!.userId, status, note || undefined).subscribe({
       next: (res) => {
-        this.toast.success(`Statut médical de ${this.medicalPlayer.fullName} : ${res.status}`);
+        this.toast.success(`Statut médical de ${this.medicalPlayer!.fullName} : ${res.status}`);
         this.isSubmittingMedical = false;
         this.closeMedicalForm();
         this.loadDashboardData();
@@ -624,31 +681,46 @@ export class DashboardStaffComponent implements OnInit, OnDestroy {
 
   submitAnnouncement() {
     if (this.announcementForm.invalid) { return; }
-    this.isSubmittingAnnouncement = true;
     const sport = this.staff?.sportType as string | undefined;
     const category = (this.staff?.assignedCategory || this.staff?.category) as string | undefined;
+    const scope = this.announcementForm.value.scope as 'club' | 'category';
+    const payload = {
+      title: this.announcementForm.value.title,
+      body: this.announcementForm.value.body
+    };
 
-    // 'club' → sans ciblage ; 'category' → sport + catégorie du staff.
-    // Le serveur revalide le rôle ; le filtrage à la lecture est serveur.
-    const publish$ = this.announcementForm.value.scope === 'club' || !sport
-      ? this.api.publishAnnouncement({ title: this.announcementForm.value.title, body: this.announcementForm.value.body })
-      : this.api.publishAnnouncement(
-          { title: this.announcementForm.value.title, body: this.announcementForm.value.body },
-          sport, category);
+    // Trou #3 — confirmation si portée = "club" (impact maximal : tous les
+    // rôles la voient). Portée "category" = confirmation silencieuse.
+    const doPublish = () => {
+      this.isSubmittingAnnouncement = true;
+      const publish$ = scope === 'club' || !sport
+        ? this.api.publishAnnouncement(payload)
+        : this.api.publishAnnouncement(payload, sport!, category!);
+      publish$.subscribe({
+        next: () => {
+          this.toast.success('Annonce publiée');
+          this.isSubmittingAnnouncement = false;
+          this.showAnnouncementForm = false;
+          this.announcementForm.reset({ title: '', body: '', scope: 'category' });
+        },
+        error: (err) => {
+          console.error(err);
+          this.isSubmittingAnnouncement = false;
+          this.toast.error(err?.error?.message || 'Publication impossible');
+        }
+      });
+    };
 
-    publish$.subscribe({
-      next: () => {
-        this.toast.success('Annonce publiée');
-        this.isSubmittingAnnouncement = false;
-        this.showAnnouncementForm = false;
-        this.announcementForm.reset({ title: '', body: '', scope: 'category' });
-      },
-      error: (err) => {
-        console.error(err);
-        this.isSubmittingAnnouncement = false;
-        this.toast.error(err?.error?.message || 'Publication impossible');
-      }
-    });
+    if (scope === 'club') {
+      this.confirmSvc.confirm({
+        title: 'Publier pour tout le club ?',
+        message: 'Cette annonce sera visible par tous les rôles (joueurs, staff, entraîneurs, supporters…). Confirmez la portée « club entier ».',
+        confirmLabel: 'Publier pour tout le club',
+        danger: false
+      }).then(ok => { if (ok) doPublish(); });
+    } else {
+      doPublish();
+    }
   }
 
   // ═══════════════════════════ Reçus de salaire/prime (C.21.v2) ═══════════════════════════
