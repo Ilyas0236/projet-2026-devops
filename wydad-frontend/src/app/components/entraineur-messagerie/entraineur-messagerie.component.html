@@ -1,0 +1,112 @@
+<!-- ════════════════════════════════════════════════════════════════════ -->
+<!-- V2.4 — Messagerie entraîneur → joueurs (groupe / individuel + photo) -->
+<!-- ════════════════════════════════════════════════════════════════════ -->
+
+<div class="space-y-4">
+  <!-- ─── 2 sous-onglets ─── -->
+  <div class="flex gap-2 border-b border-white/10 pb-2">
+    <button type="button" (click)="subTab = 'equipe'"
+            class="px-4 py-2 rounded-t-lg font-display font-bold uppercase text-xs tracking-wider transition-all"
+            [ngClass]="subTab === 'equipe'
+              ? 'bg-wydad-red text-white border-b-2 border-wydad-red'
+              : 'bg-white/5 text-gray-300 hover:bg-white/10'">
+      👥 Mon équipe ({{ joueurs.length }})
+    </button>
+    <button type="button" (click)="subTab = 'individuel'"
+            class="px-4 py-2 rounded-t-lg font-display font-bold uppercase text-xs tracking-wider transition-all"
+            [ngClass]="subTab === 'individuel'
+              ? 'bg-wydad-red text-white border-b-2 border-wydad-red'
+              : 'bg-white/5 text-gray-300 hover:bg-white/10'">
+      🎯 Individuel ({{ selectedIds.size }})
+    </button>
+  </div>
+
+  <!-- ─── Sous-onglet "équipe" : toute la catégorie en 1 clic ─── -->
+  <div *ngIf="subTab === 'equipe'" class="paper-card p-4 space-y-2">
+    <p class="text-sm text-gray-300">
+      Envoyer un message à tous les <strong>{{ joueurs.length }}</strong>
+      joueurs de la catégorie
+      <strong class="text-wydad-red">{{ staff?.assignedCategory || staff?.category || '—' }}</strong>
+      en un seul envoi.
+    </p>
+    <ul *ngIf="joueurs.length > 0"
+        class="text-xs text-gray-400 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 mt-2 max-h-40 overflow-y-auto">
+      <li *ngFor="let j of joueurs">• {{ displayName(j) }} <span *ngIf="jerseyNumber(j)" class="text-gray-500">{{ jerseyNumber(j) }}</span></li>
+    </ul>
+    <p *ngIf="joueurs.length === 0" class="text-xs text-amber-400">
+      ⚠ Aucun joueur trouvé pour cette catégorie. Vérifie la fiche staff.
+    </p>
+  </div>
+
+  <!-- ─── Sous-onglet "individuel" : checkboxes par joueur ─── -->
+  <div *ngIf="subTab === 'individuel'" class="paper-card p-4 space-y-2">
+    <p class="text-sm text-gray-300 mb-2">
+      Coche un ou plusieurs joueurs à qui envoyer le message.
+    </p>
+    <div class="space-y-1 max-h-72 overflow-y-auto">
+      <label *ngFor="let j of joueurs"
+             class="flex items-center gap-3 py-1.5 px-2 rounded hover:bg-white/5 cursor-pointer transition-colors">
+        <input type="checkbox"
+               class="w-4 h-4 accent-wydad-red"
+               [checked]="isSelected(j.userId)"
+               (change)="toggleJoueur(j.userId)">
+        <span class="flex-1 text-sm text-gray-200">{{ displayName(j) }}</span>
+        <span *ngIf="jerseyNumber(j)" class="text-xs text-gray-500">{{ jerseyNumber(j) }}</span>
+      </label>
+    </div>
+    <div class="flex gap-2 pt-2 border-t border-white/10">
+      <button type="button" (click)="selectAll()"
+              class="px-3 py-1.5 text-xs uppercase tracking-wider bg-white/5 hover:bg-white/10 text-gray-300 rounded">
+        Tout cocher
+      </button>
+      <button type="button" (click)="selectNone()"
+              class="px-3 py-1.5 text-xs uppercase tracking-wider bg-white/5 hover:bg-white/10 text-gray-300 rounded">
+        Tout décocher
+      </button>
+    </div>
+  </div>
+
+  <!-- ─── Zone de saisie commune aux 2 sous-onglets ─── -->
+  <div class="paper-card p-4 space-y-3">
+    <label class="block text-xs uppercase tracking-wider text-gray-400 font-bold">
+      Message
+    </label>
+    <textarea [(ngModel)]="draft" rows="4" maxlength="500"
+              placeholder="Écris ton message ici (500 car. max)…"
+              class="w-full bg-white/5 border border-white/10 rounded-lg p-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-wydad-red resize-y"></textarea>
+    <div class="text-right text-xs text-gray-500">{{ draft.length }} / 500</div>
+
+    <!-- Bouton photo (cf. pattern dashboard-joueur) -->
+    <div class="flex items-center gap-3 flex-wrap">
+      <label class="px-3 py-1.5 bg-white/5 hover:bg-white/10 rounded text-xs uppercase tracking-wider text-gray-300 cursor-pointer transition-colors inline-flex items-center gap-2"
+             [class.opacity-50]="!!pendingAttachment || photoUploading">
+        📎 Joindre une photo
+        <input type="file" accept="image/*" (change)="onPhotoSelected($event)" class="hidden"
+               [disabled]="!!pendingAttachment || photoUploading">
+      </label>
+      <span *ngIf="pendingAttachment" class="text-xs text-green-400 flex items-center gap-2">
+        ✓ {{ pendingAttachment.fileName }}
+        <button type="button" (click)="removePhoto()"
+                class="text-red-400 hover:text-red-300" title="Retirer la photo">✕</button>
+      </span>
+      <span *ngIf="photoUploading" class="text-xs text-wydad-gold animate-pulse">
+        Upload en cours…
+      </span>
+      <span *ngIf="pendingAttachment" class="text-[10px] text-gray-500">
+        ({{ (pendingAttachment.sizeBytes / 1024) | number:'1.0-0' }} Ko)
+      </span>
+    </div>
+
+    <!-- Aperçu destinataires + bouton Envoyer -->
+    <div class="flex items-center justify-between gap-3 pt-2 border-t border-white/10">
+      <div class="text-xs text-gray-400">
+        À : <strong class="text-gray-200">{{ recipientsLabel() }}</strong>
+      </div>
+      <button type="button" (click)="send()"
+              [disabled]="!canSend() || sending"
+              class="px-5 py-2 bg-wydad-red disabled:opacity-40 disabled:cursor-not-allowed hover:bg-red-700 text-white uppercase text-xs font-bold tracking-wider rounded transition-colors">
+        {{ sending ? 'Envoi…' : 'Envoyer' }}
+      </button>
+    </div>
+  </div>
+</div>

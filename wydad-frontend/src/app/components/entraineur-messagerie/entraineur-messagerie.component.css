@@ -1,0 +1,29 @@
+/* V2.4 — styles scoped du composant EntraineurMessagerieComponent.
+   Le composant vit dans l'espace sombre de l'espace entraîneur
+   (dashboard-entraineur) — palette white/5 + wydad-red. */
+
+:host {
+  display: block;
+  width: 100%;
+}
+
+/* paper-card est définie globalement (espace staff) — fallback local si
+   l'espace entraîneur ne l'importe pas. */
+.paper-card {
+  background-color: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 0.75rem;
+}
+
+input[type="checkbox"] {
+  cursor: pointer;
+}
+
+textarea {
+  font-family: inherit;
+  line-height: 1.4;
+}
+
+textarea:focus {
+  box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.3);
+}

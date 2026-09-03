@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 
 /**
@@ -1014,6 +1015,56 @@ export class ApiService {
         }
       : { content };
     return this.http.post<any>(`${this.baseUrl}/sports/messaging/send`, body, { params });
+  }
+
+  /**
+   * V2.4 — envoi à 1..N destinataires (mode groupe ou individuel selon
+   * l'UI entraîneur). Délègue à POST /api/sports/messaging/send-batch qui
+   * fait le fan-out applicatif côté back (1 message persisté par
+   * destinataire, IDOR strict vérifié pour chacun via sameGroup).
+   *
+   * <p>Pour 1 seul destinataire on garde {@link sendMessage} (rétro-compat
+   * et log plus simple) — cette méthode n'est appelée qu'à partir de N=2.</p>
+   *
+   * @param toUserIds 1..50 userIds de JOUEURS de la catégorie de l'appelant
+   * @param content texte (500 car. max côté UI)
+   * @param attachment optionnel (cf. {@link uploadMessageAttachment})
+   */
+  sendMessageBatch(
+    toUserIds: number[],
+    content: string,
+    attachment?: {
+      publicId: string;
+      secureUrl: string;
+      resourceType: string;
+      fileName: string;
+      sizeBytes: number;
+    }
+  ): Observable<any[]> {
+    if (!toUserIds || toUserIds.length === 0) {
+      throw new Error('Aucun destinataire');
+    }
+    if (toUserIds.length > 50) {
+      throw new Error('Maximum 50 destinataires par envoi');
+    }
+    if (toUserIds.length === 1) {
+      // 1 seul destinataire → endpoint 1-to-1 (rétro-compat)
+      return this.sendMessage(toUserIds[0], content, attachment).pipe(
+        map((m) => [m])
+      );
+    }
+    const body = attachment
+      ? {
+          toUserIds,
+          content,
+          attachmentPublicId: attachment.publicId,
+          attachmentSecureUrl: attachment.secureUrl,
+          attachmentResourceType: attachment.resourceType,
+          attachmentFileName: attachment.fileName,
+          attachmentSizeBytes: attachment.sizeBytes
+        }
+      : { toUserIds, content };
+    return this.http.post<any[]>(`${this.baseUrl}/sports/messaging/send-batch`, body);
   }
 
   /**

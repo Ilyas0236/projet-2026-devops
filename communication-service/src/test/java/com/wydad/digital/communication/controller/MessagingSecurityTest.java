@@ -217,4 +217,48 @@ class MessagingSecurityTest {
 
         assertThat(announcementRepository.findAll()).isEmpty();
     }
+
+    // ─────────────────────── V2.4 — BATCH IDOR ──────────────────────────
+
+    @Test
+    void staffEcritABatchDeJoueursDeSaCategorie_OK() throws Exception {
+        // 1 coach FOOTBALL/U19, 3 joueurs U19 de la même catégorie
+        rosterStaff(651L, "Coach Foot U19", "FOOTBALL", "U19");
+        rosterJoueur(652L, "Joueur 1", "FOOTBALL", "U19");
+        rosterJoueur(653L, "Joueur 2", "FOOTBALL", "U19");
+        rosterJoueur(654L, "Joueur 3", "FOOTBALL", "U19");
+
+        mvc.perform(post("/api/sports/messaging/send-batch")
+                        .header("X-User-Email", EMAIL)
+                        .header("X-User-Role", "STAFF")
+                        .header("X-User-Id", "651")
+                        .contentType("application/json")
+                        .content("{\"toUserIds\":[652,653,654],\"content\":\"Match samedi 15h\"}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$", hasSize(3)));
+
+        assertThat(messageRepository.findAll()).hasSize(3);
+    }
+
+    @Test
+    void staffEcritABatchIncluantJoueurAutreCategorie_403() throws Exception {
+        // 1 coach FOOTBALL/U19 ; batch = 2 U19 + 1 U17
+        // → AccessDeniedException "Vous ne pouvez écrire qu'aux joueurs de votre catégorie"
+        // → 0 message persisté (rollback transactionnel)
+        rosterStaff(661L, "Coach Foot U19", "FOOTBALL", "U19");
+        rosterJoueur(662L, "Joueur U19-A", "FOOTBALL", "U19");
+        rosterJoueur(663L, "Joueur U19-B", "FOOTBALL", "U19");
+        rosterJoueur(664L, "Joueur U17", "FOOTBALL", "U17");
+
+        mvc.perform(post("/api/sports/messaging/send-batch")
+                        .header("X-User-Email", EMAIL)
+                        .header("X-User-Role", "STAFF")
+                        .header("X-User-Id", "661")
+                        .contentType("application/json")
+                        .content("{\"toUserIds\":[662,663,664],\"content\":\"Test IDOR\"}"))
+                .andExpect(status().isForbidden());
+
+        // Atomicité : 0 message persisté (pas de demi-envoi)
+        assertThat(messageRepository.findAll()).isEmpty();
+    }
 }

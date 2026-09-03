@@ -146,6 +146,37 @@ public class MessagingService {
         return saved;
     }
 
+    /**
+     * V2.4 — envoi d'un même message à N destinataires (mode groupe ou
+     * individuel selon l'UI entraîneur). Fan-out applicatif : on délègue
+     * à {@link #sendToStaffOrPlayer} pour CHAQUE destinataire, ce qui
+     * réutilise TOUTE la logique IDOR existante (sameGroup mine/theirs)
+     * — pas de duplication, pas de risque d'IDOR caché.
+     *
+     * <p>Atomicité transactionnelle : si UN destinataire échoue à l'IDOR,
+     * l'exception remonte immédiatement et la transaction est rollback —
+     * on ne persiste aucun des N messages (pas de demi-envoi).</p>
+     */
+    @Transactional
+    public List<Message> sendBatchToPlayers(List<Long> toUserIds, String content, Attachment attachment) {
+        if (toUserIds == null || toUserIds.isEmpty()) {
+            throw new IllegalArgumentException("Aucun destinataire");
+        }
+        if (toUserIds.size() > 50) {
+            throw new IllegalArgumentException("Maximum 50 destinataires par envoi");
+        }
+        // Dédoublonner (l'UI peut envoyer le même id 2 fois)
+        List<Long> unique = toUserIds.stream().distinct().toList();
+        List<Message> sent = new java.util.ArrayList<>();
+        for (Long recipientId : unique) {
+            // sendToStaffOrPlayer applique l'IDOR strict sameGroup — pas
+            // besoin de re-vérifier ici. Toute violation → AccessDeniedException
+            // → rollback transactionnel de tous les messages déjà persistés.
+            sent.add(sendToStaffOrPlayer(recipientId, content, attachment));
+        }
+        return sent;
+    }
+
     /** Conversation entre l'utilisateur courant et une autre personne. */
     public List<Message> getConversationWith(Long otherUserId) {
         Long me = requireCurrentUserId();

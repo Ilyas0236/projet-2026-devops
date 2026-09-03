@@ -59,6 +59,31 @@ public class MessagingController {
     }
 
     /**
+     * V2.4 — envoi groupé à 1..50 destinataires (mode entraîneur). L'UI
+     * envoie ici quand N ≥ 2 (1 destinataire passe par {@code /send} pour
+     * préserver les logs et le comportement joueur existant).
+     *
+     * <p>Atomicité : si UN destinataire échoue à l'IDOR strict côté
+     * service, la transaction est rollback — aucun message n'est persisté.
+     * Côté UI, un toast d'erreur s'affiche.</p>
+     */
+    @PostMapping("/send-batch")
+    @PreAuthorize("hasAnyRole('ENTRAINEUR','STAFF','ADMIN','PRESIDENT')")
+    public ResponseEntity<List<Message>> sendBatch(@RequestBody SendBatchRequest body) {
+        MessagingService.Attachment att = (body.attachmentPublicId() == null
+                || body.attachmentPublicId().isBlank())
+                ? null
+                : new MessagingService.Attachment(
+                        body.attachmentPublicId(),
+                        body.attachmentSecureUrl(),
+                        body.attachmentResourceType(),
+                        body.attachmentFileName(),
+                        body.attachmentSizeBytes());
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(messagingService.sendBatchToPlayers(body.toUserIds(), body.content(), att));
+    }
+
+    /**
      * V2.3 — upload d'une pièce jointe (image / PDF / doc, max 10 Mo).
      * Renvoie les métadonnées à passer ensuite à {@code POST /send}.
      */
@@ -153,5 +178,16 @@ public class MessagingController {
     }
 
     public record PublishRequest(String title, String body) {
+    }
+
+    /** V2.4 — body de {@code POST /send-batch}. 1..50 destinataires (dédupliqués côté service). */
+    public record SendBatchRequest(
+            List<Long> toUserIds,
+            String content,
+            String attachmentPublicId,
+            String attachmentSecureUrl,
+            String attachmentResourceType,
+            String attachmentFileName,
+            Long attachmentSizeBytes) {
     }
 }

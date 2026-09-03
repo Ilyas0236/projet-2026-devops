@@ -199,17 +199,18 @@
           <app-schedule-call-form></app-schedule-call-form>
         </section>
 
-        <!-- ═══ V1.3 — MESSAGERIE (Phase 4 — TeamChat de groupe) ═══ -->
-        <!-- Le chat de groupe « WhatsApp » de la discipline+catégorie : même
-             composant que dans l'espace joueur/staff, isolation côté serveur.
-             L'entraîneur peut ainsi échanger avec les joueurs ET le staff de
-             sa catégorie. Texte uniquement (500 car.), temps réel STOMP. -->
+        <!-- ═══ V2.4 — MESSAGERIE (entraîneur → joueurs) ═══ -->
+        <!-- Nouveau composant EntraineurMessagerieComponent : 2 sous-onglets
+             (Mon équipe / Individuel) + bouton photo. Remplace le team-chat
+             de groupe Phase 4 qui ne répondait pas au besoin de cibler
+             précisément 1 ou N joueurs. Le team-chat reste utilisé côté
+             joueur et staff. -->
         <section *ngIf="activeTab === 'messagerie'" class="animate-fade-in-up">
-          <app-team-chat
+          <app-entraineur-messagerie
             *ngIf="staff?.sportType && (staff?.assignedCategory || staff?.category)"
-            [sportType]="staff.sportType"
-            [category]="staff.assignedCategory || staff.category">
-          </app-team-chat>
+            [staff]="staff"
+            [joueurs]="joueurs">
+          </app-entraineur-messagerie>
           <p *ngIf="!staff?.sportType || !(staff?.assignedCategory || staff?.category)"
              class="text-center text-ink-tertiary py-12">
             Affectation en attente — la messagerie s'activera dès que votre

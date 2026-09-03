@@ -6,7 +6,7 @@ import { AuthService } from '../../../services/auth.service';
 import { ErrorBannerComponent } from '../../../components/error-banner/error-banner.component';
 import { MyCallsComponent } from '../../../components/my-calls/my-calls.component';
 import { ScheduleCallFormComponent } from '../../../components/my-calls/schedule-call-form.component';
-import { TeamChatComponent } from '../../../components/team-chat/team-chat.component';
+import { EntraineurMessagerieComponent } from '../../../components/entraineur-messagerie/entraineur-messagerie.component';
 import { ToastService } from '../../../services/toast.service';
 
 /**
@@ -21,7 +21,7 @@ import { ToastService } from '../../../services/toast.service';
 @Component({
   selector: 'app-dashboard-entraineur',
   standalone: true,
-  imports: [CommonModule, FormsModule, ErrorBannerComponent, MyCallsComponent, ScheduleCallFormComponent, TeamChatComponent],
+  imports: [CommonModule, FormsModule, ErrorBannerComponent, MyCallsComponent, ScheduleCallFormComponent, EntraineurMessagerieComponent],
   templateUrl: './dashboard-entraineur.component.html'
 })
 export class DashboardEntraineurComponent implements OnInit, OnDestroy {
