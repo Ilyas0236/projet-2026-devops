@@ -246,7 +246,7 @@ export class AdminAchatsComponent implements OnInit {
     const f = this.filterForm.value;
     const params = this.getBaseParams(this.ordersPage, { productName: f.productName || '' });
     this.http.get<PageResp<ShopOrder>>(
-      `${environment.apiBaseUrl}/api/shop/orders/filter`,
+      `${environment.apiBaseUrl}/shop/orders/filter`,
       { params }
     ).subscribe({
       next: r => {
@@ -265,7 +265,7 @@ export class AdminAchatsComponent implements OnInit {
     const f = this.filterForm.value;
     const params = this.getBaseParams(this.ticketsPage, { eventId: f.eventId || '' });
     this.http.get<PageResp<TicketRow>>(
-      `${environment.apiBaseUrl}/api/ticket/tickets/admin/filter`,
+      `${environment.apiBaseUrl}/ticket/tickets/admin/filter`,
       { params }
     ).subscribe({
       next: r => {
@@ -279,7 +279,7 @@ export class AdminAchatsComponent implements OnInit {
   loadSubs(): void {
     const params = this.getBaseParams(this.subsPage);
     this.http.get<PageResp<SubscriptionRow>>(
-      `${environment.apiBaseUrl}/api/auth/subscriptions/admin/filter`,
+      `${environment.apiBaseUrl}/auth/subscriptions/admin/filter`,
       { params }
     ).subscribe({
       next: r => {
@@ -293,7 +293,7 @@ export class AdminAchatsComponent implements OnInit {
   loadDonations(): void {
     const params = this.getBaseParams(this.donationsPage);
     this.http.get<PageResp<DonationRow>>(
-      `${environment.apiBaseUrl}/api/payment/admin/donations/filter`,
+      `${environment.apiBaseUrl}/payment/admin/donations/filter`,
       { params }
     ).subscribe({
       next: r => {
