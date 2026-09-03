@@ -61,6 +61,21 @@ public class GlobalExceptionHandler {
         ));
     }
 
+    /**
+     * ResponseStatusException (levee volontairement par le service, ex. :
+     * match deja finalise) doit conserver son statut HTTP declare (409, 400, etc.)
+     * et ne PAS tomber dans le handler Exception.class generique qui renverrait 500.
+     */
+    @ExceptionHandler(org.springframework.web.server.ResponseStatusException.class)
+    public ResponseEntity<Map<String, Object>> handleResponseStatus(
+            org.springframework.web.server.ResponseStatusException ex) {
+        return ResponseEntity.status(ex.getStatusCode()).body(Map.of(
+                "error", ex.getStatusCode().toString(),
+                "message", ex.getReason() != null ? ex.getReason() : ex.getMessage(),
+                "timestamp", LocalDateTime.now().toString()
+        ));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> handleGeneral(Exception ex) {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
