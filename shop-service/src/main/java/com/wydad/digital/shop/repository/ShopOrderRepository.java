@@ -25,9 +25,9 @@ public interface ShopOrderRepository extends JpaRepository<ShopOrder, Long> {
      */
     @Query("""
             SELECT DISTINCT o FROM ShopOrder o
-              WHERE (:startDate IS NULL OR o.createdAt >= :startDate)
-                AND (:endDate   IS NULL OR o.createdAt <= :endDate)
-                AND (:userEmail IS NULL OR LOWER(o.userEmail) LIKE LOWER(CONCAT('%', :userEmail, '%')))
+              WHERE o.createdAt >= COALESCE(:startDate, o.createdAt)
+                AND o.createdAt <= COALESCE(:endDate,   o.createdAt)
+                AND LOWER(COALESCE(o.userEmail, '')) LIKE LOWER(CONCAT('%', COALESCE(:userEmail, ''), '%'))
                 AND (:productName IS NULL OR EXISTS (
                       SELECT 1 FROM OrderItem i
                        WHERE i.order = o

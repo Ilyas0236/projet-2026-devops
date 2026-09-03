@@ -23,9 +23,9 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
      */
     @Query("SELECT t FROM Transaction t " +
            "WHERE t.type = :type " +
-           "AND (:startDate IS NULL OR t.createdAt >= :startDate) " +
-           "AND (:endDate IS NULL OR t.createdAt <= :endDate) " +
-           "AND (:email IS NULL OR t.email = :email) " +
+           "AND t.createdAt >= COALESCE(:startDate, t.createdAt) " +
+           "AND t.createdAt <= COALESCE(:endDate,   t.createdAt) " +
+           "AND COALESCE(t.email, '') = COALESCE(:email, t.email) " +
            "ORDER BY t.createdAt DESC")
     Page<Transaction> adminFilterByTypeAndDates(
             @Param("type") TransactionType type,

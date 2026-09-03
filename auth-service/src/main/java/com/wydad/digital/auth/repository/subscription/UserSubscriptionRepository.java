@@ -72,9 +72,9 @@ public interface UserSubscriptionRepository extends JpaRepository<UserSubscripti
      */
     @Query("""
             SELECT s FROM UserSubscription s
-              WHERE (:startDate IS NULL OR s.paidAt >= :startDate)
-                AND (:endDate   IS NULL OR s.paidAt <= :endDate)
-                AND (:userEmail IS NULL OR LOWER(s.user.email) LIKE LOWER(CONCAT('%', :userEmail, '%')))
+              WHERE s.paidAt >= COALESCE(:startDate, s.paidAt)
+                AND s.paidAt <= COALESCE(:endDate,   s.paidAt)
+                AND LOWER(COALESCE(s.user.email, '')) LIKE LOWER(CONCAT('%', COALESCE(:userEmail, ''), '%'))
             ORDER BY s.paidAt DESC
             """)
     Page<UserSubscription> adminFilter(

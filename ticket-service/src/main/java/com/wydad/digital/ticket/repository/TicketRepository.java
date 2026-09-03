@@ -33,9 +33,9 @@ public interface TicketRepository extends JpaRepository<Ticket, Long> {
      */
     @Query("""
             SELECT t FROM Ticket t
-              WHERE (:startDate IS NULL OR t.createdAt >= :startDate)
-                AND (:endDate   IS NULL OR t.createdAt <= :endDate)
-                AND (:userEmail IS NULL OR LOWER(t.userEmail) LIKE LOWER(CONCAT('%', :userEmail, '%')))
+              WHERE t.createdAt >= COALESCE(:startDate, t.createdAt)
+                AND t.createdAt <= COALESCE(:endDate,   t.createdAt)
+                AND LOWER(COALESCE(t.userEmail, '')) LIKE LOWER(CONCAT('%', COALESCE(:userEmail, ''), '%'))
                 AND (:eventId   IS NULL OR t.event.id = :eventId)
             ORDER BY t.createdAt DESC
             """)
