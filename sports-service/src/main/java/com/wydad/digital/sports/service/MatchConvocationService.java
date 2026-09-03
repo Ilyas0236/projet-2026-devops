@@ -156,6 +156,19 @@ public class MatchConvocationService {
         return toResponses(repository.findByStatus(MatchConvocation.PublicationStatus.SOUMISE));
     }
 
+    /**
+     * Historique admin : PUBLIEE + REFUSEE, du plus récent au plus ancien.
+     * L'admin voit ainsi tout ce qu'il a déjà tranché sans devoir fouiller
+     * la BDD ; le front regroupe par matchId pour l'affichage (cf. fix
+     * "feuille vide alors que 3 PUBLIEE" du 03/09/2026).
+     */
+    public List<MatchConvocationResponse> historySheets() {
+        return toResponses(repository.findByStatusInOrderByIdDesc(
+                java.util.List.of(
+                        MatchConvocation.PublicationStatus.PUBLIEE,
+                        MatchConvocation.PublicationStatus.REFUSEE)));
+    }
+
     /** Publication ADMIN : toute la feuille du match passe PUBLIEE. */
     @Transactional
     public List<MatchConvocationResponse> publish(Long matchId) {
@@ -178,10 +191,12 @@ public class MatchConvocationService {
     @Transactional
     public List<MatchConvocationResponse> reject(Long matchId, String reason) {
         List<MatchConvocation> sheet = repository.findByMatchIdOrderByPlayerRoleAscIdAsc(matchId);
+        java.time.LocalDateTime now = java.time.LocalDateTime.now();
         for (MatchConvocation c : sheet) {
             if (c.getStatus() == MatchConvocation.PublicationStatus.SOUMISE) {
                 c.setStatus(MatchConvocation.PublicationStatus.REFUSEE);
                 c.setRejectionReason(reason == null ? "Non conforme" : reason);
+                c.setRejectedAt(now);
             }
         }
         return toResponses(repository.saveAll(sheet));
@@ -301,8 +316,10 @@ public class MatchConvocationService {
                 .joueurName(name)
                 .playerRole(c.getPlayerRole())
                 .status(c.getStatus())
+                .rejectionReason(c.getRejectionReason())
                 .submittedAt(c.getSubmittedAt())
                 .publishedAt(c.getPublishedAt())
+                .rejectedAt(c.getRejectedAt())
                 .createdAt(c.getCreatedAt())
                 .build();
     }

@@ -78,6 +78,17 @@ public class MatchConvocationController {
         return ResponseEntity.ok(service.submittedSheets());
     }
 
+    /**
+     * Historique des feuilles traitées par l'ADMIN (PUBLIÉES + REFUSÉES),
+     * trié du plus récent au plus ancien. Permet à l'admin de voir ce
+     * qu'il a déjà fait sans devoir fouiller la BDD.
+     */
+    @GetMapping("/admin/history")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<MatchConvocationResponse>> history() {
+        return ResponseEntity.ok(service.historySheets());
+    }
+
     /** Publication de la feuille d'un match (site public, §9). */
     @PostMapping("/admin/match/{matchId}/publish")
     @PreAuthorize("hasRole('ADMIN')")

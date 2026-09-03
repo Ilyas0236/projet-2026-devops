@@ -22,12 +22,15 @@ import { ToastService } from '../../../services/toast.service';
         </p>
       </div>
 
+      <!-- ────────────── À TRAITER (SOUMISES) ────────────── -->
+      <h3 class="text-xs font-bold uppercase tracking-[0.2em] text-wydad-red pt-2">À traiter</h3>
+
       <div *ngIf="loading" class="flex justify-center py-20">
         <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-wydad-red"></div>
       </div>
 
       <div *ngIf="!loading && feuilles.length === 0"
-           class="bg-white/5 border border-white/10 rounded-lg p-12 text-center text-gray-400 text-sm uppercase tracking-widest">
+           class="bg-white/5 border border-white/10 rounded-lg p-8 text-center text-gray-400 text-sm uppercase tracking-widest">
         Aucune feuille en attente de validation.
       </div>
 
@@ -80,6 +83,43 @@ import { ToastService } from '../../../services/toast.service';
         <p *ngIf="f.refusMotif" class="px-5 pb-4 text-xs text-red-400">{{ f.refusMotif }}</p>
       </div>
 
+      <!-- ────────────── HISTORIQUE (PUBLIÉES + REFUSÉES) ────────────── -->
+      <h3 class="text-xs font-bold uppercase tracking-[0.2em] text-gray-300 pt-6 border-t border-white/10">
+        Historique (feuilles traitées)
+      </h3>
+
+      <div *ngIf="loadingHistory" class="flex justify-center py-8">
+        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-400"></div>
+      </div>
+
+      <div *ngIf="!loadingHistory && history.length === 0"
+           class="bg-white/5 border border-white/10 rounded-lg p-6 text-center text-gray-500 text-xs uppercase tracking-widest">
+        Aucune feuille publiée ou refusée pour l'instant.
+      </div>
+
+      <div class="space-y-2">
+        <div *ngFor="let h of history"
+             class="bg-white/5 border border-white/10 rounded-lg px-5 py-3 flex flex-wrap items-center justify-between gap-3">
+          <div class="min-w-0 flex-1">
+            <p class="text-white font-bold uppercase tracking-wider text-sm">
+              WAC vs {{ h.adversaire || ('Match #' + h.matchId) }}
+              <span class="ml-2 px-2 py-0.5 rounded text-[10px] uppercase"
+                    [ngClass]="h.status === 'PUBLIEE' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'">
+                {{ h.status }}
+              </span>
+            </p>
+            <p class="text-gray-400 text-xs mt-1">
+              {{ h.convocations.length }} joueur(s) ·
+              <span *ngIf="h.status === 'PUBLIEE'">publiée le {{ (h.convocations[0]?.publishedAt || h.convocations[0]?.submittedAt) | date:'dd/MM/yyyy HH:mm' }}</span>
+              <span *ngIf="h.status === 'REFUSEE'">refusée le {{ (h.convocations[0]?.rejectedAt || h.convocations[0]?.submittedAt) | date:'dd/MM/yyyy HH:mm' }}</span>
+            </p>
+            <p *ngIf="h.refusMotif" class="text-red-400 text-[11px] mt-1 italic">Motif : {{ h.refusMotif }}</p>
+          </div>
+          <a *ngIf="h.status === 'PUBLIEE'" [href]="'/matchs'" target="_blank"
+             class="admin-btn-ghost !py-1.5 !px-3 text-xs">Voir sur le site public ↗</a>
+        </div>
+      </div>
+
       <!-- Modal refus avec motif -->
       <div *ngIf="showRejectModal" class="admin-overlay">
         <div class="admin-modal max-w-md">
@@ -105,6 +145,10 @@ export class AdminConvocationsComponent implements OnInit {
   loading = true;
   isProcessing: number | null = null;
 
+  /** PUBLIEE + REFUSEE, groupées par matchId (cf. endpoint /admin/history). */
+  history: any[] = [];
+  loadingHistory = false;
+
   showRejectModal = false;
   rejectTarget: any = null;
   rejectReason = '';
@@ -113,6 +157,7 @@ export class AdminConvocationsComponent implements OnInit {
 
   ngOnInit() {
     this.load();
+    this.loadHistory();
   }
 
   load() {
@@ -143,6 +188,36 @@ export class AdminConvocationsComponent implements OnInit {
     });
   }
 
+  /** Charge l'historique (PUBLIEE + REFUSEE) et regroupe par match. */
+  loadHistory() {
+    this.loadingHistory = true;
+    this.api.getHistorySheets().subscribe({
+      next: (rows) => {
+        const byMatch = new Map<number, any>();
+        for (const r of rows) {
+          if (!byMatch.has(r.matchId)) {
+            byMatch.set(r.matchId, {
+              matchId: r.matchId,
+              adversaire: r.adversaire || `Match #${r.matchId}`,
+              sportType: r.sportType,
+              category: r.category,
+              status: r.status,
+              refusMotif: r.refusMotif,
+              convocations: []
+            });
+          }
+          byMatch.get(r.matchId).convocations.push(r);
+        }
+        this.history = [...byMatch.values()];
+        this.loadingHistory = false;
+      },
+      error: () => {
+        // L'historique est consultatif : on n'embête pas l'admin si ça échoue
+        this.loadingHistory = false;
+      }
+    });
+  }
+
   titulaires(f: any) {
     return f.convocations.filter((c: any) => c.playerRole === 'TITULAIRE');
   }
@@ -158,6 +233,7 @@ export class AdminConvocationsComponent implements OnInit {
         this.toast.success('Feuille publiée sur le site public');
         this.isProcessing = null;
         this.load();
+        this.loadHistory();
       },
       error: (err) => {
         this.toast.error(err?.error?.message || 'Publication impossible');
@@ -181,6 +257,7 @@ export class AdminConvocationsComponent implements OnInit {
         this.showRejectModal = false;
         this.isProcessing = null;
         this.load();
+        this.loadHistory();
       },
       error: (err) => {
         this.toast.error(err?.error?.message || 'Refus impossible');

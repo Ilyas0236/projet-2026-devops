@@ -20,4 +20,12 @@ public interface MatchConvocationRepository extends JpaRepository<MatchConvocati
             SportType sportType, Category category, MatchConvocation.PublicationStatus status);
 
     List<MatchConvocation> findByStatus(MatchConvocation.PublicationStatus status);
+
+    /**
+     * Historique admin : toutes les feuilles traitées (PUBLIEE + REFUSEE).
+     * Trié du plus récent au plus ancien pour affichage direct côté front
+     * (cf. AdminConvocationsComponent section "Historique").
+     */
+    List<MatchConvocation> findByStatusInOrderByIdDesc(
+            java.util.Collection<MatchConvocation.PublicationStatus> statuses);
 }

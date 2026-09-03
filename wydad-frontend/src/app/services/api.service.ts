@@ -1067,6 +1067,15 @@ export class ApiService {
     return this.http.get<any[]>(`${this.baseUrl}/sports/match-convocations/admin/submitted`);
   }
 
+  /**
+   * Historique admin : PUBLIEE + REFUSEE, trié du plus récent au plus ancien.
+   * Permet à l'admin de voir les feuilles qu'il a déjà tranchées (cf. fix
+   * "page vide alors que 3 PUBLIEE" du 03/09/2026).
+   */
+  getHistorySheets(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/sports/match-convocations/admin/history`);
+  }
+
   publishMatchSheet(matchId: number): Observable<any> {
     return this.http.post<any>(`${this.baseUrl}/sports/match-convocations/admin/match/${matchId}/publish`, {});
   }

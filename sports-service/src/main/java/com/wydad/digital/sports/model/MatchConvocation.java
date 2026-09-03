@@ -70,6 +70,7 @@ public class MatchConvocation {
 
     private LocalDateTime submittedAt;
     private LocalDateTime publishedAt;
+    private LocalDateTime rejectedAt;
 
     @CreationTimestamp private LocalDateTime createdAt;
     @UpdateTimestamp private LocalDateTime updatedAt;

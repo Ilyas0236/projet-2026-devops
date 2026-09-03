@@ -45,8 +45,10 @@ public final class MatchConvocationDtos {
             String joueurName,
             MatchConvocation.PlayerRole playerRole,
             MatchConvocation.PublicationStatus status,
+            String rejectionReason,
             LocalDateTime submittedAt,
             LocalDateTime publishedAt,
+            LocalDateTime rejectedAt,
             LocalDateTime createdAt) {
     }
 
