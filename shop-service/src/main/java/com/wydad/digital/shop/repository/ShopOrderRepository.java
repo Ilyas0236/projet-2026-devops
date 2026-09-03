@@ -28,11 +28,14 @@ public interface ShopOrderRepository extends JpaRepository<ShopOrder, Long> {
               WHERE o.createdAt >= COALESCE(:startDate, o.createdAt)
                 AND o.createdAt <= COALESCE(:endDate,   o.createdAt)
                 AND LOWER(COALESCE(o.userEmail, '')) LIKE LOWER(CONCAT('%', COALESCE(:userEmail, ''), '%'))
-                AND (:productName IS NULL OR EXISTS (
-                      SELECT 1 FROM OrderItem i
-                       WHERE i.order = o
-                         AND LOWER(i.productName) LIKE LOWER(CONCAT('%', :productName, '%'))
-                ))
+                AND (
+                      COALESCE(:productName, '') = ''
+                      OR EXISTS (
+                        SELECT 1 FROM OrderItem i
+                         WHERE i.order = o
+                           AND LOWER(i.productName) LIKE LOWER(CONCAT('%', :productName, '%'))
+                      )
+                )
             ORDER BY o.createdAt DESC
             """)
     Page<ShopOrder> adminFilter(
