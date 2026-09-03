@@ -2,9 +2,12 @@ package com.wydad.digital.content.controller;
 
 import com.wydad.digital.content.dto.MediaResponse;
 import com.wydad.digital.content.model.Media;
+import com.wydad.digital.content.model.SponsorTier;
 import com.wydad.digital.content.repository.MediaRepository;
 import com.wydad.digital.content.service.FileTypeValidator;
+import com.wydad.digital.content.service.ImageResizeService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -22,6 +25,7 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api/content/media")
 @RequiredArgsConstructor
+@Slf4j
 // Pas de @CrossOrigin ici : le CORS est géré centralement par le CorsWebFilter
 // de l'api-gateway (CORS_ALLOWED_ORIGINS). Une annotation locale avec un défaut
 // localhost rejetait en 403 "Invalid CORS request" les POST du navigateur en
@@ -30,10 +34,13 @@ public class MediaController {
 
     private final MediaRepository mediaRepository;
     private final FileTypeValidator fileTypeValidator;
+    private final ImageResizeService imageResizeService;
 
     @PostMapping("/upload")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Map<String, String>> uploadFile(@RequestParam("file") MultipartFile file) {
+    public ResponseEntity<Map<String, String>> uploadFile(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam(value = "tier", required = false) String tier) {
         // Validation du type REEL par magic bytes : le Content-Type declare par
         // le client est forgeable, un executable renomme en .jpg est rejete ici.
         byte[] data;
@@ -48,11 +55,30 @@ public class MediaController {
         }
         String fileName = fileTypeValidator.sanitizeFileName(file.getOriginalFilename());
 
+        // Resize à l'upload selon le tier sponsor (si renseigné) — sans tier, on garde l'original.
+        if (tier != null && !tier.isBlank()) {
+            SponsorTier sponsorTier = SponsorTier.fromString(tier);
+            if (sponsorTier != null) {
+                try {
+                    int before = data.length;
+                    data = imageResizeService.resize(data, file.getContentType(),
+                            sponsorTier.width(), sponsorTier.height());
+                    // suffixe le fileName pour distinguer l'original de la version tier
+                    fileName = fileName.replaceFirst("(\\.[^.]+)?$",
+                            "_" + sponsorTier.name().toLowerCase() + "$1");
+                    log.info("Upload sponsor resize {} : {} -> {} octets ({})",
+                            sponsorTier.name(), before, data.length, fileName);
+                } catch (IOException e) {
+                    log.warn("Resize {} échoué : conservation de l'original", tier, e);
+                }
+            }
+        }
+
         Media media = Media.builder()
                 .fileName(fileName)
                 .originalName(file.getOriginalFilename())
                 .contentType(file.getContentType())
-                .size(file.getSize())
+                .size((long) data.length)
                 .data(data)
                 .build();
 

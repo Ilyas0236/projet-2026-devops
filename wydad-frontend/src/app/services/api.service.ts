@@ -338,6 +338,42 @@ export class ApiService {
     return this.http.delete<any>(`${this.baseUrl}/content/sponsors/${id}`);
   }
 
+  // SPONSORS — admin-parametres 2026-09-03 : upload avec tier pour redim auto
+  // (content-service > ImageResizeService) + bandeau footer public
+  uploadMediaForSponsor(file: File, tier: string): Observable<any> {
+    const formData = new FormData();
+    formData.append('file', file);
+    // tier passé en query param (cf. MediaController uploadFile)
+    return this.http.post<any>(
+      `${this.baseUrl}/content/media/upload?tier=${encodeURIComponent(tier)}`,
+      formData
+    );
+  }
+
+  // BACKGROUNDS VISITEUR (admin-parametres 2026-09-03) — carrousel multi-photos
+  // par page (HOME, BILLETTERIE, PALMARES, STADE, EFFECTIF, LEGENDES, ACTUALITES, CLASSEMENT)
+  getBackgroundsForPage(pageKey: string): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/content/backgrounds/public`, {
+      params: { pageKey }
+    });
+  }
+
+  getAllBackgrounds(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/content/backgrounds/admin`);
+  }
+
+  createBackgroundImage(body: { pageKey: string; imageUrl: string; caption?: string; displayOrder?: number; active?: boolean }): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/content/backgrounds/admin`, body);
+  }
+
+  updateBackgroundImage(id: number, body: { caption?: string; displayOrder?: number; active?: boolean }): Observable<any> {
+    return this.http.put<any>(`${this.baseUrl}/content/backgrounds/admin/${id}`, body);
+  }
+
+  deleteBackgroundImage(id: number): Observable<any> {
+    return this.http.delete<any>(`${this.baseUrl}/content/backgrounds/admin/${id}`);
+  }
+
   // RECLAMATIONS & SUPPORT (B.10) — identite imposee par la gateway
   createReclamation(data: { subject: string; title: string; description: string }): Observable<any> {
     return this.http.post<any>(`${this.baseUrl}/content/reclamations`, data);

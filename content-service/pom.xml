@@ -56,6 +56,16 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-security</artifactId>
         </dependency>
+        <!--
+          Redimensionnement des images à l'upload (sponsors, backgrounds, etc.).
+          Pure Java, 30 Ko, pas de binding natif : conserve le ratio + qualité 0.85.
+          GIF/WEBP/PDF non redimensionnés (cf. ImageResizeService).
+        -->
+        <dependency>
+            <groupId>net.coobird</groupId>
+            <artifactId>thumbnailator</artifactId>
+            <version>0.4.20</version>
+        </dependency>
         <!-- H2 uniquement pour les tests (revalidation PostgreSQL au deploiement) -->
         <dependency>
             <groupId>com.h2database</groupId>

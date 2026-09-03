@@ -84,7 +84,7 @@ public class ShopController {
     }
 
     @PostMapping("/cart")
-    @PreAuthorize("hasRole('ADHERENT') or hasRole('PARENT') or hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADHERENT') or hasRole('PARENT')")
     public ResponseEntity<CartItemDto> addToCart(
             @RequestHeader("X-User-Email") String userEmail,
             @Valid @RequestBody CartItemDto dto) {
@@ -92,7 +92,7 @@ public class ShopController {
     }
 
     @PutMapping("/cart/{cartItemId}")
-    @PreAuthorize("hasRole('ADHERENT') or hasRole('PARENT') or hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADHERENT') or hasRole('PARENT')")
     public ResponseEntity<Void> updateCartQuantity(
             @RequestHeader("X-User-Email") String userEmail,
             @PathVariable Long cartItemId,
@@ -102,7 +102,7 @@ public class ShopController {
     }
 
     @DeleteMapping("/cart/{cartItemId}")
-    @PreAuthorize("hasRole('ADHERENT') or hasRole('PARENT') or hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADHERENT') or hasRole('PARENT')")
     public ResponseEntity<Void> removeFromCart(
             @RequestHeader("X-User-Email") String userEmail,
             @PathVariable Long cartItemId) {

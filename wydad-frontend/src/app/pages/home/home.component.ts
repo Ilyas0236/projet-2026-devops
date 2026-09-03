@@ -3,11 +3,12 @@ import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { ApiService } from '../../services/api.service';
 import { AuthService } from '../../services/auth.service';
+import { BackgroundCarouselComponent } from '../../shared/background-carousel/background-carousel.component';
 
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, BackgroundCarouselComponent],
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.scss']
 })

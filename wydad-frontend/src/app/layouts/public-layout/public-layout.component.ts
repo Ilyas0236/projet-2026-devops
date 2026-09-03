@@ -7,11 +7,12 @@ import { AuthService } from '../../services/auth.service';
 import { ToastContainerComponent } from '../../components/toast-container/toast-container.component';
 import { ConfirmDialogComponent } from '../../components/confirm-dialog/confirm-dialog.component';
 import { NotificationBellComponent } from '../../components/notification-bell/notification-bell.component';
+import { SocialIconComponent } from '../../shared/social-icon.component';
 
 @Component({
   selector: 'app-public-layout',
   standalone: true,
-  imports: [RouterOutlet, RouterModule, CommonModule, FormsModule, ToastContainerComponent, ConfirmDialogComponent, NotificationBellComponent],
+  imports: [RouterOutlet, RouterModule, CommonModule, FormsModule, ToastContainerComponent, ConfirmDialogComponent, NotificationBellComponent, SocialIconComponent],
   templateUrl: './public-layout.component.html',
   styleUrls: ['./public-layout.component.scss']
 })
@@ -93,11 +94,6 @@ export class PublicLayoutComponent implements OnInit {
       next: (links) => (this.socialLinks = Array.isArray(links) ? links : []),
       error: () => (this.socialLinks = [])
     });
-  }
-
-  /** Initiale affichée sur l'icône sociale (ex "FACEBOOK" -> "F"). */
-  socialInitial(platform: string): string {
-    return (platform || '?').charAt(0).toUpperCase();
   }
 
   // Newsletter publique — inscription anonyme (notification-service).

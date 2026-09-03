@@ -1,6 +1,7 @@
 package com.wydad.digital.content.service;
 
 import com.wydad.digital.content.model.Sponsor;
+import com.wydad.digital.content.model.SponsorTier;
 import com.wydad.digital.content.repository.SponsorRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -72,6 +73,10 @@ public class SponsorService {
         }
         if (tier == null || tier.isBlank()) {
             throw new IllegalArgumentException("Le niveau de partenariat est obligatoire");
+        }
+        if (SponsorTier.fromString(tier) == null) {
+            throw new IllegalArgumentException(
+                    "Tier invalide : utilisez MAIN_SPONSOR, OFFICIAL_PARTNER ou SUPPLIER");
         }
     }
 }

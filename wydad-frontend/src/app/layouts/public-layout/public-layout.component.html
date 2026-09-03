@@ -125,12 +125,14 @@
         <div class="col-span-1 md:col-span-1">
           <img src="assets/images/logos/wydad-logo.png" alt="Wydad AC" class="wac-logo-3d object-contain mb-6">
           <p *ngIf="clubInfo?.description" class="text-white/80 text-sm leading-relaxed">{{ clubInfo.description }}</p>
-          <!-- B.9 : reseaux sociaux officiels — saisis par l'ADMIN, aucune URL hardcodee -->
-          <div *ngIf="socialLinks.length > 0" class="flex gap-4 mt-6">
+          <!-- B.9 : reseaux sociaux officiels — saisis par l'ADMIN, icones SVG inline
+               (admin-parametres 2026-09-03 : remplacement des cercles lettre par
+               de vrais logos Facebook/Instagram/YouTube/X via SocialIconComponent) -->
+          <div *ngIf="socialLinks.length > 0" class="flex gap-3 mt-6">
             <a *ngFor="let link of socialLinks" [href]="link.url" target="_blank" rel="noopener noreferrer"
                [attr.aria-label]="link.platform"
-               class="w-8 h-8 rounded-full bg-white/15 flex items-center justify-center hover:bg-white text-wydad-red transition-colors uppercase text-xs font-bold">
-              {{ socialInitial(link.platform) }}
+               class="w-9 h-9 rounded-full bg-white/15 flex items-center justify-center hover:bg-white text-white hover:text-wydad-red transition-colors">
+              <app-social-icon [platform]="link.platform" [size]="18" />
             </a>
           </div>
         </div>

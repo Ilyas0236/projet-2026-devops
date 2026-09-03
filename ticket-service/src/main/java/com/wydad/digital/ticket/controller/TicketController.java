@@ -30,7 +30,7 @@ public class TicketController {
     private final VipTicketService vipTicketService;
 
     @PostMapping("/purchase")
-    @PreAuthorize("hasRole('ADHERENT') or hasRole('PARENT') or hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADHERENT') or hasRole('PARENT')")
     public ResponseEntity<List<TicketResponse>> purchaseTickets(@Valid @RequestBody PurchaseTicketRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(ticketService.purchaseTickets(request));
     }
