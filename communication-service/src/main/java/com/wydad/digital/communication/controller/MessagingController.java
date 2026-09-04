@@ -68,7 +68,7 @@ public class MessagingController {
      * Côté UI, un toast d'erreur s'affiche.</p>
      */
     @PostMapping("/send-batch")
-    @PreAuthorize("hasAnyRole('ENTRAINEUR','STAFF','ADMIN','PRESIDENT')")
+    @PreAuthorize("hasAnyRole('JOUEUR','ENTRAINEUR','STAFF','ADMIN','PRESIDENT')")
     public ResponseEntity<List<Message>> sendBatch(@RequestBody SendBatchRequest body) {
         MessagingService.Attachment att = (body.attachmentPublicId() == null
                 || body.attachmentPublicId().isBlank())
