@@ -333,6 +333,45 @@ class MessagingSecurityTest {
     }
 
     @Test
+    void staffEcritAStaffAvecFicheRoster_OK() throws Exception {
+        // V2.5.bis — Le destinataire a une fiche roster STAFF (cas réel de
+        // prod : Lopez et Staf ont chacun une fiche roster STAFF avec
+        // category=null). On ne peut donc pas passer par le mock
+        // authUserInfoClient (qui sert quand theirs==null) — on stubbe
+        // directement le RosterClient pour renvoyer la fiche encadrante.
+        rosterStaff(901L, "Coach A", "FOOTBALL", "SENIOR");
+        // Stub RosterClient pour le destinataire (Lopez) — fiche STAFF SENIOR
+        when(rosterClient.findMembership(902L)).thenReturn(
+                new RosterClient.MembershipInfo(902L, "FOOTBALL", "SENIOR", "STAFF", "LOPEZ LOPY"));
+
+        mvc.perform(post("/api/sports/messaging/send")
+                        .header("X-User-Email", EMAIL)
+                        .header("X-User-Role", "STAFF")
+                        .header("X-User-Id", "901")
+                        .param("toUserId", "902")
+                        .contentType("application/json")
+                        .content("{\"content\":\"Coucou Lopez\"}"))
+                .andExpect(status().isCreated());
+    }
+
+    @Test
+    void staffEcritAStaffAvecFicheRosterAutreDiscipline_403() throws Exception {
+        // V2.5.bis — STAFF cross-discipline via fiche roster = 403.
+        rosterStaff(911L, "Coach Foot", "FOOTBALL", "SENIOR");
+        when(rosterClient.findMembership(912L)).thenReturn(
+                new RosterClient.MembershipInfo(912L, "BASKETBALL", "SENIOR", "STAFF", "Coach Basket"));
+
+        mvc.perform(post("/api/sports/messaging/send")
+                        .header("X-User-Email", EMAIL)
+                        .header("X-User-Role", "STAFF")
+                        .header("X-User-Id", "911")
+                        .param("toUserId", "912")
+                        .contentType("application/json")
+                        .content("{\"content\":\"cross\"}"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
     void staffEcritAEntraineurAutreDiscipline_403() throws Exception {
         // STAFF écrit à un ENTRAINEUR d'une AUTRE discipline = 403.
         rosterStaff(701L, "Coach Foot", "FOOTBALL", "SENIOR");

@@ -127,6 +127,18 @@ public class MessagingService {
                             "Vous ne pouvez écrire qu'aux joueurs de votre catégorie");
                 }
                 // OK — joueur de ma catégorie
+            } else if (theirs != null && "STAFF".equals(theirs.rosterRole())) {
+                // V2.5.bis — destinataire = autre membre encadrant (STAFF ou
+                // ENTRAINEUR, ce dernier ayant une fiche roster STAFF). On
+                // n'exige que la même discipline (la catégorie est souvent
+                // null sur les fiches encadrantes — ex. Lopez/Staf SENIOR
+                // sans catégorie).
+                if (mine.sportType() == null || theirs.sportType() == null
+                        || !mine.sportType().equalsIgnoreCase(theirs.sportType())) {
+                    throw new AccessDeniedException(
+                            "Vous ne pouvez écrire qu'aux collègues de votre discipline");
+                }
+                // OK — collègue de ma discipline
             } else if (theirs == null) {
                 // Cas 2 : destinataire = autre STAFF, ENTRAINEUR, OU PRÉSIDENT de
                 // MA discipline (le RosterClient ne lit que player/staff, pas les
@@ -147,7 +159,8 @@ public class MessagingService {
                             "Vous ne pouvez écrire qu'aux joueurs, collègues ou au président de votre discipline");
                 }
             } else {
-                // theirs existe mais n'est pas un joueur (cas rare) : on refuse.
+                // theirs existe avec un rosterRole inattendu (ni JOUEUR ni STAFF) :
+                // fail-closed.
                 throw new AccessDeniedException(
                         "Vous ne pouvez écrire qu'aux joueurs ou collègues de votre discipline");
             }
