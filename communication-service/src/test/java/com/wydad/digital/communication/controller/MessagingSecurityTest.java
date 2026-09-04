@@ -351,6 +351,44 @@ class MessagingSecurityTest {
     }
 
     @Test
+    void staffEcritAPresidentDeSaDiscipline_OK() throws Exception {
+        // V2.5 — STAFF/ENTRAINEUR écrit au PRÉSIDENT de SA discipline = OK
+        // (canal président dédié, symétrique du cas joueur C.21).
+        rosterStaff(721L, "Coach Foot", "FOOTBALL", "SENIOR");
+        when(authUserInfoClient.getRoleAndDiscipline(722L))
+                .thenReturn(new com.wydad.digital.communication.client.AuthUserInfoClient.UserRoleDiscipline(
+                        722L, "president-foot@wac.ma", "PRESIDENT", "FOOTBALL"));
+
+        mvc.perform(post("/api/sports/messaging/send")
+                        .header("X-User-Email", EMAIL)
+                        .header("X-User-Role", "STAFF")
+                        .header("X-User-Id", "721")
+                        .param("toUserId", "722")
+                        .contentType("application/json")
+                        .content("{\"content\":\"M. le président, rapport d entraînement\"}"))
+                .andExpect(status().isCreated());
+    }
+
+    @Test
+    void staffEcritAPresidentAutreDiscipline_403() throws Exception {
+        // V2.5 — STAFF écrit au PRÉSIDENT d'une AUTRE discipline = 403
+        // (le canal président est strictement limité à SA section).
+        rosterStaff(731L, "Coach Foot", "FOOTBALL", "SENIOR");
+        when(authUserInfoClient.getRoleAndDiscipline(732L))
+                .thenReturn(new com.wydad.digital.communication.client.AuthUserInfoClient.UserRoleDiscipline(
+                        732L, "president-basket@wac.ma", "PRESIDENT", "BASKETBALL"));
+
+        mvc.perform(post("/api/sports/messaging/send")
+                        .header("X-User-Email", EMAIL)
+                        .header("X-User-Role", "STAFF")
+                        .header("X-User-Id", "731")
+                        .param("toUserId", "732")
+                        .contentType("application/json")
+                        .content("{\"content\":\"cross-discipline president\"}"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
     void teamChat_messageAvecMedia_viaUploadPrealable_OK() throws Exception {
         // V2.5 — le front upload sur /upload puis POST /team-chat/.../messages
         // avec attachmentPublicId. MessageMediaService est mocké en @MockBean

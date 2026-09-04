@@ -128,18 +128,23 @@ public class MessagingService {
                 }
                 // OK — joueur de ma catégorie
             } else if (theirs == null) {
-                // Cas 2 : destinataire = autre STAFF ou ENTRAINEUR de MA discipline
-                // (le RosterClient ne lit que player/staff, pas les users PRESIDENT
-                // ou ADMIN ; on délègue à AuthUserInfoClient comme pour le cas C.21).
+                // Cas 2 : destinataire = autre STAFF, ENTRAINEUR, OU PRÉSIDENT de
+                // MA discipline (le RosterClient ne lit que player/staff, pas les
+                // users PRESIDENT ou ADMIN ; on délègue à AuthUserInfoClient).
+                // V2.5 — ajout PRESIDENT : un entraîneur doit pouvoir écrire au
+                // président de SA section (canal président dédié), comme un joueur
+                // peut déjà le faire (C.21).
                 AuthUserInfoClient.UserRoleDiscipline r =
                         authUserInfoClient.getRoleAndDiscipline(recipientUserId);
                 boolean sameDiscipline = r != null && r.discipline() != null
                         && r.discipline().equalsIgnoreCase(mine.sportType());
-                boolean allowedRole = r != null && ("STAFF".equalsIgnoreCase(r.role())
-                        || "ENTRAINEUR".equalsIgnoreCase(r.role()));
+                boolean allowedRole = r != null && (
+                        "STAFF".equalsIgnoreCase(r.role())
+                        || "ENTRAINEUR".equalsIgnoreCase(r.role())
+                        || "PRESIDENT".equalsIgnoreCase(r.role()));
                 if (!(sameDiscipline && allowedRole)) {
                     throw new AccessDeniedException(
-                            "Vous ne pouvez écrire qu'aux joueurs ou collègues de votre discipline");
+                            "Vous ne pouvez écrire qu'aux joueurs, collègues ou au président de votre discipline");
                 }
             } else {
                 // theirs existe mais n'est pas un joueur (cas rare) : on refuse.
