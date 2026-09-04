@@ -43,6 +43,12 @@ export class TeamChatComponent implements OnInit, OnDestroy {
   sending = false;
   loadingHistory = true;
 
+  // V2.5 — pièce jointe en attente d'envoi (photo).
+  pendingAttachment: { publicId: string; secureUrl?: string;
+                       resourceType?: string; fileName?: string;
+                       sizeBytes?: number; previewUrl?: string } | null = null;
+  uploadingPhoto = false;
+
   // Indicateur de connexion (abonné dans ngOnInit)
   connectionState: 'CONNECTING' | 'OPEN' | 'CLOSED' = 'CLOSED';
 
@@ -52,10 +58,13 @@ export class TeamChatComponent implements OnInit, OnDestroy {
   readonly MAX_LEN = 500;
 
   get canSend(): boolean {
-    return this.draft.trim().length > 0
+    const hasText = this.draft.trim().length > 0;
+    const hasAttachment = !!this.pendingAttachment;
+    return (hasText || hasAttachment)
       && this.draft.length <= this.MAX_LEN
       && this.connectionState === 'OPEN'
-      && !this.sending;
+      && !this.sending
+      && !this.uploadingPhoto;
   }
 
   ngOnInit() {
@@ -111,6 +120,26 @@ export class TeamChatComponent implements OnInit, OnDestroy {
     if (!this.canSend) { return; }
     this.sending = true;
     const content = this.draft.trim();
+    const att = this.pendingAttachment;
+    if (att) {
+      // Envoi avec photo via le repli REST directement (le WS ne porte pas
+      // l'attachment en V2.5 — on garde le STOMP pour le texte only).
+      this.api.sendTeamChatMessage(this.sportType, this.category, content, att).subscribe({
+        next: () => {
+          this.sending = false;
+          this.draft = '';
+          this.clearPendingAttachment();
+          // On recharge l'historique (le message a été persisté) — la liste
+          // se mettra à jour en WS dès que la diffusion parviendra.
+          this.refreshHistory();
+        },
+        error: (err) => {
+          this.sending = false;
+          this.toast.error(err?.error?.message || 'Échec envoi de la photo.');
+        }
+      });
+      return;
+    }
     this.chat.send(this.sportType, this.category, content);
     // Le message revient par la diffusion serveur (source de vérité) ;
     // si rien ne revient sous ~3 s, on retente via le repli REST.
@@ -130,8 +159,93 @@ export class TeamChatComponent implements OnInit, OnDestroy {
     }, 1500);
   }
 
+  /**
+   * V2.5 — sélection d'une photo : on l'upload immédiatement (réutilise
+   * l'endpoint /upload de la messagerie 1-to-1 qui prend en charge le mode
+   * Cloudinary + mode local). On garde les métadonnées pour les passer
+   * à {@code sendTeamChatMessage} à l'envoi du message.
+   */
+  onPhotoSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input?.files?.[0];
+    if (!file) { return; }
+    if (!/^image\//.test(file.type)) {
+      this.toast.error('Seules les images sont supportées dans le chat de groupe.');
+      input.value = '';
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      this.toast.error('Photo trop lourde (10 Mo max).');
+      input.value = '';
+      return;
+    }
+    this.uploadingPhoto = true;
+    this.api.uploadMessageAttachment(file).subscribe({
+      next: (res) => {
+        this.uploadingPhoto = false;
+        if (!res?.publicId) {
+          this.toast.error('Échec de l\'upload.');
+          return;
+        }
+        this.pendingAttachment = {
+          publicId: res.publicId,
+          secureUrl: res.secureUrl,
+          resourceType: res.resourceType || 'image',
+          fileName: res.fileName || file.name,
+          sizeBytes: res.sizeBytes,
+          // Aperçu local : si l'upload n'a pas renvoyé d'URL (mode local),
+          // on garde l'object URL pour que l'UI montre la photo en preview.
+          previewUrl: res.secureUrl
+              || (res.publicId ? URL.createObjectURL(file) : undefined)
+        };
+        input.value = '';
+      },
+      error: (err) => {
+        this.uploadingPhoto = false;
+        this.toast.error(err?.error?.message || 'Échec de l\'upload de la photo.');
+        input.value = '';
+      }
+    });
+  }
+
+  removePhoto(): void {
+    this.clearPendingAttachment();
+  }
+
+  private clearPendingAttachment(): void {
+    if (this.pendingAttachment?.previewUrl?.startsWith('blob:')) {
+      URL.revokeObjectURL(this.pendingAttachment.previewUrl);
+    }
+    this.pendingAttachment = null;
+  }
+
+  private refreshHistory(): void {
+    this.api.getTeamChatHistory(this.sportType, this.category).subscribe({
+      next: list => {
+        this.messages = Array.isArray(list) ? list : [];
+        this.scrollToBottom();
+      }
+    });
+  }
+
   isMine(msg: TeamChatMessage): boolean {
     return msg.senderUserId === this.myUserId;
+  }
+
+  /** V2.5 — vrai si le message porte une pièce jointe image. */
+  isImageMsg(msg: TeamChatMessage): boolean {
+    const t = (msg.mediaType || '').toUpperCase();
+    return !!msg.mediaUrl && (t === 'IMAGE' || t === 'IMAGE/JPEG' || t === 'IMAGE/PNG');
+  }
+
+  /** V2.5 — URL d'affichage de la photo (signedUrl pour les anciens messages
+   *  qui n'auraient pas l'URL directe en clair). */
+  attachmentUrlFor(msg: TeamChatMessage): string | null {
+    if (msg.mediaUrl) { return msg.mediaUrl; }
+    // Pas de cache signé ici (pas de GET /attachment sur team-chat) — on
+    // s'en remet à l'URL persistée par le serveur, qui est l'URL sécurisée
+    // Cloudinary au moment de l'envoi.
+    return null;
   }
 
   timeOf(iso: string): string {

@@ -52,6 +52,7 @@ class MessagingSecurityTest {
      *  best-effort doit avaler l'échec ; on les mocke pour contrôler le roster. */
     @MockBean com.wydad.digital.communication.client.NotificationClient notificationClient;
     @MockBean RosterClient rosterClient;
+    @MockBean com.wydad.digital.communication.service.MessageMediaService messageMediaService;
 
     private static final String EMAIL = "x-test@wydad.ma";
 
@@ -260,5 +261,113 @@ class MessagingSecurityTest {
 
         // Atomicité : 0 message persisté (pas de demi-envoi)
         assertThat(messageRepository.findAll()).isEmpty();
+    }
+
+    // ─────────── V2.5 — STAFF multi-cibles (STAFF/ENTRAINEUR) ────────────
+
+    /**
+     * Le test de l'extension STAFF→STAFF/ENTRAINEUR même discipline
+     * repose sur un mock de {@code AuthUserInfoClient} (le RosterClient
+     * ne lit que les fiches player/staff). On ne mocke que les méthodes
+     * consommées, le reste reste best-effort.
+     */
+    @MockBean com.wydad.digital.communication.client.AuthUserInfoClient authUserInfoClient;
+
+    @Test
+    void staffEcritAStaffMemeDiscipline_OK() throws Exception {
+        // 1 staff FOOTBALL, 1 autre STAFF de la même discipline (pas de fiche
+        // roster côté RosterClient — lu via AuthUserInfoClient).
+        rosterStaff(671L, "Coach A", "FOOTBALL", "SENIOR");
+        when(authUserInfoClient.getRoleAndDiscipline(672L))
+                .thenReturn(new com.wydad.digital.communication.client.AuthUserInfoClient.UserRoleDiscipline(
+                        672L, "autre@wac.ma", "STAFF", "FOOTBALL"));
+
+        mvc.perform(post("/api/sports/messaging/send")
+                        .header("X-User-Email", EMAIL)
+                        .header("X-User-Role", "STAFF")
+                        .header("X-User-Id", "671")
+                        .param("toUserId", "672")
+                        .contentType("application/json")
+                        .content("{\"content\":\"Hello collègue\"}"))
+                .andExpect(status().isCreated());
+
+        assertThat(messageRepository.findAll()).hasSize(1);
+    }
+
+    @Test
+    void staffEcritAStaffAutreDiscipline_403() throws Exception {
+        // 1 staff FOOTBALL, 1 STAFF BASKETBALL → IDOR strict = 403.
+        rosterStaff(681L, "Coach Foot", "FOOTBALL", "SENIOR");
+        when(authUserInfoClient.getRoleAndDiscipline(682L))
+                .thenReturn(new com.wydad.digital.communication.client.AuthUserInfoClient.UserRoleDiscipline(
+                        682L, "autre@wac.ma", "STAFF", "BASKETBALL"));
+
+        mvc.perform(post("/api/sports/messaging/send")
+                        .header("X-User-Email", EMAIL)
+                        .header("X-User-Role", "STAFF")
+                        .header("X-User-Id", "681")
+                        .param("toUserId", "682")
+                        .contentType("application/json")
+                        .content("{\"content\":\"cross-discipline\"}"))
+                .andExpect(status().isForbidden());
+
+        assertThat(messageRepository.findAll()).isEmpty();
+    }
+
+    @Test
+    void staffEcritAEntraineurMemeDiscipline_OK() throws Exception {
+        // STAFF écrit à un ENTRAINEUR de la même discipline = OK.
+        rosterStaff(691L, "Coach A", "FOOTBALL", "SENIOR");
+        when(authUserInfoClient.getRoleAndDiscipline(692L))
+                .thenReturn(new com.wydad.digital.communication.client.AuthUserInfoClient.UserRoleDiscipline(
+                        692L, "entraineur@wac.ma", "ENTRAINEUR", "FOOTBALL"));
+
+        mvc.perform(post("/api/sports/messaging/send")
+                        .header("X-User-Email", EMAIL)
+                        .header("X-User-Role", "STAFF")
+                        .header("X-User-Id", "691")
+                        .param("toUserId", "692")
+                        .contentType("application/json")
+                        .content("{\"content\":\"On se cale pour samedi ?\"}"))
+                .andExpect(status().isCreated());
+    }
+
+    @Test
+    void staffEcritAEntraineurAutreDiscipline_403() throws Exception {
+        // STAFF écrit à un ENTRAINEUR d'une AUTRE discipline = 403.
+        rosterStaff(701L, "Coach Foot", "FOOTBALL", "SENIOR");
+        when(authUserInfoClient.getRoleAndDiscipline(702L))
+                .thenReturn(new com.wydad.digital.communication.client.AuthUserInfoClient.UserRoleDiscipline(
+                        702L, "entraineur@wac.ma", "ENTRAINEUR", "BASKETBALL"));
+
+        mvc.perform(post("/api/sports/messaging/send")
+                        .header("X-User-Email", EMAIL)
+                        .header("X-User-Role", "STAFF")
+                        .header("X-User-Id", "701")
+                        .param("toUserId", "702")
+                        .contentType("application/json")
+                        .content("{\"content\":\"cross-discipline\"}"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void teamChat_messageAvecMedia_viaUploadPrealable_OK() throws Exception {
+        // V2.5 — le front upload sur /upload puis POST /team-chat/.../messages
+        // avec attachmentPublicId. MessageMediaService est mocké en @MockBean
+        // (on n'atteint pas /attachment ici, donc pas besoin de stub signedUrl).
+        rosterStaff(711L, "Coach Foot", "FOOTBALL", "SENIOR");
+
+        mvc.perform(post("/api/sports/team-chat/FOOTBALL/SENIOR/messages")
+                        .header("X-User-Email", EMAIL)
+                        .header("X-User-Role", "STAFF")
+                        .header("X-User-Id", "711")
+                        .contentType("application/json")
+                        .content("{\"content\":\"Photo du jour\","
+                                + "\"attachmentPublicId\":\"abc123\","
+                                + "\"attachmentSecureUrl\":\"https://example.com/p.png\","
+                                + "\"attachmentResourceType\":\"image\","
+                                + "\"attachmentFileName\":\"p.png\","
+                                + "\"attachmentSizeBytes\":12345}"))
+                .andExpect(status().isCreated());
     }
 }

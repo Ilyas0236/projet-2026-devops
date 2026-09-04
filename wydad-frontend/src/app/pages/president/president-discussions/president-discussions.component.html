@@ -111,4 +111,17 @@
       </app-schedule-call-form>
     </div>
   </div>
+
+  <!-- V2.5 — modale messagerie libre (sélecteur 1..N) depuis le bouton 1-1 -->
+  <div *ngIf="messagerieLibreOpen" class="modal-backdrop" (click)="closeMessagerieLibre()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <app-messagerie-libre
+        [contacts]="members"
+        [prefillToUserId]="prefillLibreToUserId"
+        title="Message à l'équipe"
+        (sent)="closeMessagerieLibre()"
+        (cancelled)="closeMessagerieLibre()">
+      </app-messagerie-libre>
+    </div>
+  </div>
 </div>

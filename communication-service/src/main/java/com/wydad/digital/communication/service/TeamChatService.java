@@ -6,6 +6,7 @@ import com.wydad.digital.communication.filter.UserContext;
 import com.wydad.digital.communication.util.TargetUrlResolver;
 import com.wydad.digital.communication.model.TeamMessage;
 import com.wydad.digital.communication.repository.TeamMessageRepository;
+import com.wydad.digital.communication.service.MessagingService.Attachment;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.security.access.AccessDeniedException;
@@ -68,14 +69,45 @@ public class TeamChatService {
         return sendToGroupInternal(sportType, category, content, mediaUrl, mediaType.toUpperCase());
     }
 
+    /**
+     * V2.5 — variante « upload séparé » : le front a déjà appelé /upload
+     * (Cloudinary ou local) et passe les métadonnées en JSON (content peut
+     * être vide — le front injecte "[IMAGE]" par défaut). Couvre l'UX
+     * "envoyer une photo sans légende" depuis les espaces joueur/staff/
+     * entraîneur (l'endpoint multipart /media reste utilisé par le président).
+     */
+    public TeamMessage sendToGroupWithAttachment(String sportType, String category,
+                                                 String content, Attachment attachment) {
+        if (attachment == null || attachment.publicId() == null
+                || attachment.publicId().isBlank()) {
+            throw new IllegalArgumentException("Pièce jointe invalide (publicId manquant)");
+        }
+        String mediaUrl = attachment.secureUrl() != null && !attachment.secureUrl().isBlank()
+                ? attachment.secureUrl()
+                : "local:" + attachment.publicId();
+        String mediaType = attachment.resourceType() != null && !attachment.resourceType().isBlank()
+                ? attachment.resourceType().toUpperCase()
+                : "IMAGE";
+        // Si le front n'a pas mis de légende, on remplit avec un placeholder
+        // court pour que le contenu ne soit pas totalement vide.
+        String finalContent = (content == null || content.isBlank())
+                ? "[" + mediaType + "]"
+                : content;
+        return sendToGroupInternal(sportType, category, finalContent, mediaUrl, mediaType);
+    }
+
     private TeamMessage sendToGroupInternal(String sportType, String category,
                                             String content, String mediaUrl, String mediaType) {
         Long me = requireCurrentUserId();
         String myRole = UserContext.getCurrentUserRole();
-        if (content == null || content.isBlank()) {
+        // V2.5 — un message peut être vide SI une pièce jointe est fournie
+        // (photo sans légende). Le front injecte "[IMAGE]" par défaut si
+        // l'utilisateur n'a rien tapé, mais on reste permissif.
+        if ((content == null || content.isBlank()) && (mediaUrl == null || mediaUrl.isBlank())) {
             throw new IllegalArgumentException("Le message ne peut pas être vide");
         }
-        if (content.trim().length() > 500) {
+        String safeContent = content == null ? "" : content.trim();
+        if (safeContent.length() > 500) {
             throw new IllegalArgumentException("Message trop long (maximum 500 caractères)");
         }
         requireMembership(sportType, category, me, myRole);
@@ -86,7 +118,7 @@ public class TeamChatService {
                 .senderUserId(me)
                 .senderName(resolveName(me))
                 .senderRole(myRole != null ? myRole : "INCONNU")
-                .content(content.trim())
+                .content(safeContent)
                 .mediaUrl(mediaUrl)
                 .mediaType(mediaType)
                 .build());

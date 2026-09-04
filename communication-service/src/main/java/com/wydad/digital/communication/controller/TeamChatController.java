@@ -4,6 +4,7 @@ import com.wydad.digital.communication.client.RosterClient;
 import com.wydad.digital.communication.filter.UserContext;
 import com.wydad.digital.communication.model.TeamMessage;
 import com.wydad.digital.communication.service.MessageMediaService;
+import com.wydad.digital.communication.service.MessagingService;
 import com.wydad.digital.communication.service.TeamChatService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -46,6 +47,23 @@ public class TeamChatController {
             @PathVariable String sport,
             @PathVariable String category,
             @RequestBody SendRequest body) {
+        // V2.5 — pièce jointe optionnelle : on délègue à sendToGroupWithAttachment
+        // quand le front a déjà uploadé sur /upload (légende libre, content peut
+        // être vide si attachment présent). Texte seul → sendToGroup (comportement
+        // historique inchangé).
+        boolean hasAttachment = body.attachmentPublicId() != null
+                && !body.attachmentPublicId().isBlank();
+        if (hasAttachment) {
+            MessagingService.Attachment att = new MessagingService.Attachment(
+                    body.attachmentPublicId(),
+                    body.attachmentSecureUrl(),
+                    body.attachmentResourceType(),
+                    body.attachmentFileName(),
+                    body.attachmentSizeBytes());
+            return ResponseEntity.status(HttpStatus.CREATED)
+                    .body(teamChatService.sendToGroupWithAttachment(
+                            sport, category, body.content(), att));
+        }
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(teamChatService.sendToGroup(sport, category, body.content()));
     }
@@ -99,6 +117,14 @@ public class TeamChatController {
         return ResponseEntity.status(HttpStatus.CREATED).body(saved);
     }
 
-    public record SendRequest(String content) {
+    /** V2.5 — body étendu avec pièce jointe optionnelle. {@code content} peut
+     *  être vide si {@code attachmentPublicId} est fourni (cas "photo sans légende"). */
+    public record SendRequest(
+            String content,
+            String attachmentPublicId,
+            String attachmentSecureUrl,
+            String attachmentResourceType,
+            String attachmentFileName,
+            Long attachmentSizeBytes) {
     }
 }

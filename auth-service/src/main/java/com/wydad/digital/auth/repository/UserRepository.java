@@ -26,4 +26,15 @@ public interface UserRepository extends JpaRepository<User, Long> {
             "select u from User u where u.statutCompte = com.wydad.digital.auth.model.StatutCompte.VALIDE " +
             "and u.role in (com.wydad.digital.auth.model.Role.ENTRAINEUR, com.wydad.digital.auth.model.Role.JOURNALISTE, com.wydad.digital.auth.model.Role.PRESIDENT)")
     List<User> findValidatedPrivilegedRoles();
+
+    /**
+     * V2.5 — recherche par rôle et (optionnellement) discipline demandée.
+     * Utilisé par communication-service pour résoudre « président de la
+     * discipline X » sans contact croisé entre microservices. Discipline
+     * peut être null (ex. tous les ADMIN) ; le contrôleur filtre côté
+     * service pour éviter un Optional.empty.
+     */
+    List<User> findByRoleAndDisciplineDemandee(
+            com.wydad.digital.auth.model.Role role,
+            String disciplineDemandee);
 }

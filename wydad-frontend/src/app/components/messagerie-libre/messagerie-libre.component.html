@@ -1,0 +1,98 @@
+<section class="rounded-2xl border border-paper-3 bg-white shadow-sm overflow-hidden">
+  <header class="flex items-center justify-between gap-3 px-4 py-3 bg-wydad-red text-white">
+    <div class="flex items-center gap-2 min-w-0">
+      <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round"
+              d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125"/>
+      </svg>
+      <p class="text-sm font-semibold truncate">{{ title }}</p>
+    </div>
+    <button type="button" (click)="cancel()" title="Fermer"
+            class="shrink-0 text-white/80 hover:text-white">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+      </svg>
+    </button>
+  </header>
+
+  <div class="p-4 space-y-3">
+    <!-- V2.5 — bouton "Tout / Aucun" -->
+    <div class="flex items-center justify-between">
+      <p class="text-xs text-ink-3">
+        {{ contacts.length }} contact(s) disponible(s) · cochez 1 ou N
+      </p>
+      <div class="flex gap-1.5">
+        <button type="button" (click)="selectAll()"
+                class="text-[11px] px-2 py-1 rounded border border-paper-3 text-ink-2 hover:bg-paper-1">
+          Tout
+        </button>
+        <button type="button" (click)="selectNone()"
+                class="text-[11px] px-2 py-1 rounded border border-paper-3 text-ink-2 hover:bg-paper-1">
+          Aucun
+        </button>
+      </div>
+    </div>
+
+    <!-- V2.5 — liste des contacts avec cases à cocher -->
+    <div class="max-h-64 overflow-y-auto border border-paper-3 rounded-xl divide-y divide-paper-2">
+      <label *ngFor="let c of contacts"
+             class="flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-paper-1 transition">
+        <input type="checkbox"
+               [checked]="isSelected(c.userId)"
+               (change)="toggle(c.userId)"
+               class="h-4 w-4 accent-wydad-red"/>
+        <div class="flex-1 min-w-0">
+          <p class="text-sm font-medium text-ink-1 truncate">{{ displayName(c) }}</p>
+          <p *ngIf="subLabel(c)" class="text-[11px] text-ink-3 truncate">{{ subLabel(c) }}</p>
+        </div>
+      </label>
+      <p *ngIf="contacts.length === 0"
+         class="px-3 py-6 text-sm text-ink-3 text-center">
+        Aucun contact disponible.
+      </p>
+    </div>
+
+    <!-- V2.5 — aperçu de la photo en attente -->
+    <div *ngIf="pendingAttachment" class="flex items-center gap-2 rounded-lg border border-paper-3 bg-paper-1 px-2.5 py-1.5">
+      <span class="text-xs text-ink-2 truncate flex-1">📎 {{ pendingAttachment.fileName || 'Photo' }}</span>
+      <button type="button" (click)="removePhoto()"
+              class="shrink-0 text-ink-3 hover:text-wydad-red" title="Retirer">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Zone de saisie -->
+    <form (ngSubmit)="send()" class="flex items-end gap-2">
+      <label class="shrink-0 cursor-pointer inline-flex items-center justify-center h-10 w-10 rounded-xl border border-paper-3 hover:bg-paper-1 transition"
+             [class.opacity-50]="photoUploading">
+        <svg *ngIf="!photoUploading" class="w-5 h-5 text-ink-2" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round"
+                d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"/>
+        </svg>
+        <svg *ngIf="photoUploading" class="w-5 h-5 text-ink-3 animate-spin" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+        </svg>
+        <input type="file" accept="image/*" class="hidden" (change)="onPhotoSelected($event)"/>
+      </label>
+      <textarea
+        [(ngModel)]="draft" name="draft" rows="2" maxlength="500"
+        placeholder="Votre message…"
+        class="flex-1 resize-none rounded-xl border border-paper-3 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-wydad-red/40"></textarea>
+    </form>
+    <p class="text-[11px] text-ink-3 flex justify-between">
+      <span>{{ recipientsLabel() }}</span>
+      <span>{{ draft.length }}/500</span>
+    </p>
+
+    <button type="button" (click)="send()" [disabled]="!canSend()"
+            class="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-wydad-red px-4 py-2.5 text-sm font-medium text-white hover:bg-wydad-red-dark transition disabled:opacity-40 disabled:cursor-not-allowed">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.125A59.769 59.769 0 0112 4.5c2.995 0 5.917.432 8.731 1.25L18 9.75M6 12l6-6m6 6l-1.5 8.25A59.774 59.774 0 0118 9.75M17.25 12l-5.25-5.25"/>
+      </svg>
+      Envoyer
+    </button>
+  </div>
+</section>

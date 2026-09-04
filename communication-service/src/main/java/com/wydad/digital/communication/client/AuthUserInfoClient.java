@@ -2,6 +2,8 @@ package com.wydad.digital.communication.client;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.extern.slf4j.Slf4j;
+
+import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -54,6 +56,37 @@ public class AuthUserInfoClient {
             log.warn("auth-service injoignable pour getRoleAndDiscipline({}) : {}",
                     userId, e.getMessage());
             return null;
+        }
+    }
+
+    /**
+     * V2.5 — liste les utilisateurs d'un rôle donné, optionnellement filtrés
+     * par discipline. Renvoie une liste vide si auth-service est injoignable
+     * (fail-closed : pas d'interlocuteur fantôme). Renvoie null si la
+     * discipline est demandée mais vide côté back (le contrôleur a rejeté
+     * silencieusement un role inconnu) — idem fail-closed.
+     */
+    public List<UserRoleDiscipline> findByRoleAndDiscipline(String role, String discipline) {
+        if (role == null || role.isBlank()) return List.of();
+        HttpHeaders headers = new HttpHeaders();
+        if (internalSecret != null && !internalSecret.isEmpty()) {
+            headers.set("X-Internal-Secret", internalSecret);
+        }
+        String url = baseUrl + "/users/by-role-and-discipline?role=" + role.toUpperCase()
+                + (discipline != null && !discipline.isBlank()
+                        ? "&discipline=" + discipline.toUpperCase() : "");
+        try {
+            ResponseEntity<UserRoleDiscipline[]> response = restTemplate.exchange(
+                    url,
+                    HttpMethod.GET,
+                    new HttpEntity<>(headers),
+                    UserRoleDiscipline[].class);
+            UserRoleDiscipline[] body = response.getBody();
+            return body == null ? List.of() : java.util.Arrays.asList(body);
+        } catch (RestClientException e) {
+            log.warn("auth-service injoignable pour findByRoleAndDiscipline({}, {}) : {}",
+                    role, discipline, e.getMessage());
+            return List.of();
         }
     }
 }

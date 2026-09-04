@@ -144,6 +144,36 @@ public class MessagingController {
         return ResponseEntity.ok(messagingService.getMyInbox());
     }
 
+    /**
+     * V2.5 — résout le président de la discipline du connecté (utilisé
+     * par le composant « Canal président » côté front). Renvoie 204 si
+     * le connecté n'a pas de fiche sportive (pas de discipline connue)
+     * ou si aucun président n'est enregistré pour cette discipline. 200
+     * avec le triplet (id/email/discipline) sinon.
+     */
+    @GetMapping("/my-president")
+    @PreAuthorize("hasAnyRole('JOUEUR','STAFF','ENTRAINEUR','JOURNALISTE','PARENT','ADMIN')")
+    public ResponseEntity<UserPresidentSummary> myPresident() {
+        Long me = UserContext.getCurrentUserId();
+        if (me == null) {
+            throw new AccessDeniedException("Identité introuvable dans le contexte de sécurité");
+        }
+        com.wydad.digital.communication.client.RosterClient.MembershipInfo mine =
+                messagingService.findMyRoster(me);
+        if (mine == null || mine.sportType() == null) {
+            return ResponseEntity.noContent().build();
+        }
+        java.util.List<com.wydad.digital.communication.client.AuthUserInfoClient.UserRoleDiscipline> list =
+                messagingService.findPresidentsOfDiscipline(mine.sportType());
+        if (list == null || list.isEmpty()) {
+            return ResponseEntity.noContent().build();
+        }
+        // Théoriquement 1 seul président par discipline ; on prend le 1er.
+        com.wydad.digital.communication.client.AuthUserInfoClient.UserRoleDiscipline p = list.get(0);
+        return ResponseEntity.ok(new UserPresidentSummary(
+                p.id(), p.email(), p.discipline(), p.role()));
+    }
+
     // ──────────────────────────── ANNONCES ────────────────────────────
 
     /**
@@ -189,5 +219,13 @@ public class MessagingController {
             String attachmentResourceType,
             String attachmentFileName,
             Long attachmentSizeBytes) {
+    }
+
+    /** V2.5 — réponse de {@code GET /my-president}. */
+    public record UserPresidentSummary(
+            Long userId,
+            String email,
+            String discipline,
+            String role) {
     }
 }

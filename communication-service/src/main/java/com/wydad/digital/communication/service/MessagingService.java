@@ -103,23 +103,48 @@ public class MessagingService {
             // Si le destinataire est le président de MA discipline → OK.
             boolean recipientIsPresident = theirs == null && isPresidentOfMyDiscipline(
                     mine, recipientUserId);
-            if ((!recipientIsStaff && !recipientIsTeammate && !recipientIsPresident)
-                    || (theirs != null && !sameGroup(mine, theirs))) {
+            boolean ok = (recipientIsStaff || recipientIsTeammate || recipientIsPresident)
+                    && (theirs == null || sameGroup(mine, theirs));
+            if (!ok) {
                 throw new AccessDeniedException(
                         "Vous ne pouvez écrire qu'au staff encadrant votre catégorie, "
                                 + "aux joueurs de votre équipe, ou au président de votre discipline");
             }
         } else if ("STAFF".equals(myRole) || "ENTRAINEUR".equals(myRole)) {
-            // Le destinataire doit être un joueur de MA catégorie.
+            // Le destinataire doit être un joueur de MA catégorie OU un autre
+            // membre encadrant de MA discipline (autre STAFF ou ENTRAINEUR —
+            // coordination entre entraîneurs de la même section).
             // L'ENTRAINEUR possède une fiche roster interne de rôle STAFF.
             if (mine == null || !"STAFF".equals(mine.rosterRole())) {
                 throw new AccessDeniedException("Aucun profil staff lié à votre compte");
             }
             RosterClient.MembershipInfo theirs = rosterClient.findMembership(recipientUserId);
-            boolean recipientIsPlayer = theirs != null && "JOUEUR".equals(theirs.rosterRole());
-            if (!recipientIsPlayer || !sameGroup(mine, theirs)) {
+
+            // Cas 1 : destinataire = joueur de MA catégorie (existant)
+            if (theirs != null && "JOUEUR".equals(theirs.rosterRole())) {
+                if (!sameGroup(mine, theirs)) {
+                    throw new AccessDeniedException(
+                            "Vous ne pouvez écrire qu'aux joueurs de votre catégorie");
+                }
+                // OK — joueur de ma catégorie
+            } else if (theirs == null) {
+                // Cas 2 : destinataire = autre STAFF ou ENTRAINEUR de MA discipline
+                // (le RosterClient ne lit que player/staff, pas les users PRESIDENT
+                // ou ADMIN ; on délègue à AuthUserInfoClient comme pour le cas C.21).
+                AuthUserInfoClient.UserRoleDiscipline r =
+                        authUserInfoClient.getRoleAndDiscipline(recipientUserId);
+                boolean sameDiscipline = r != null && r.discipline() != null
+                        && r.discipline().equalsIgnoreCase(mine.sportType());
+                boolean allowedRole = r != null && ("STAFF".equalsIgnoreCase(r.role())
+                        || "ENTRAINEUR".equalsIgnoreCase(r.role()));
+                if (!(sameDiscipline && allowedRole)) {
+                    throw new AccessDeniedException(
+                            "Vous ne pouvez écrire qu'aux joueurs ou collègues de votre discipline");
+                }
+            } else {
+                // theirs existe mais n'est pas un joueur (cas rare) : on refuse.
                 throw new AccessDeniedException(
-                        "Vous ne pouvez écrire qu'aux joueurs de votre catégorie");
+                        "Vous ne pouvez écrire qu'aux joueurs ou collègues de votre discipline");
             }
         } else if ("PRESIDENT".equals(myRole)) {
             // Le Président écrit aux agents (staff) et joueurs du club —
@@ -296,6 +321,30 @@ public class MessagingService {
             throw new AccessDeniedException("Identité introuvable dans le contexte de sécurité");
         }
         return id;
+    }
+
+    // ─────────────────────── V2.5 — Mon président ────────────────────────
+
+    /**
+     * Lit la fiche roster du connecté (sport+catégorie). Utilisé par
+     * {@code GET /my-president} pour résoudre la discipline du président
+     * à contacter. Renvoie null si le connecté n'a pas de fiche
+     * (ADMIN/PRESIDENT/JOURNALISTE) — dans ce cas « mon président » n'a
+     * pas de sens.
+     */
+    public RosterClient.MembershipInfo findMyRoster(Long userId) {
+        if (userId == null) return null;
+        return rosterClient.findMembership(userId);
+    }
+
+    /**
+     * Liste les présidents d'une discipline donnée. Renvoie une liste
+     * vide si aucun président n'est enregistré (cas normal pour les
+     * disciplines sans gouvernance, ou en cours de rodage).
+     */
+    public List<AuthUserInfoClient.UserRoleDiscipline> findPresidentsOfDiscipline(String discipline) {
+        if (discipline == null || discipline.isBlank()) return List.of();
+        return authUserInfoClient.findByRoleAndDiscipline("PRESIDENT", discipline);
     }
 
     /**

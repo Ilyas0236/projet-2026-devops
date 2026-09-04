@@ -15,6 +15,9 @@ export interface TeamChatMessage {
   senderRole: string;
   content: string;
   createdAt: string;
+  // V2.5 — pièce jointe (photo par défaut). Null pour les messages texte-only.
+  mediaUrl?: string | null;
+  mediaType?: string | null;
 }
 
 export interface GroupMember {

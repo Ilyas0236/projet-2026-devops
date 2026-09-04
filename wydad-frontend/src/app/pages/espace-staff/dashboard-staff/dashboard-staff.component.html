@@ -889,9 +889,37 @@
             </div>
           </div>
 
-          <!-- ═══════ ONGLET COMMS : Messagerie + Team chat ═══════ -->
+          <!-- ═══════ ONGLET COMMS : Messagerie + Team chat (V2.5 — 3 sous-onglets) ═══════ -->
           <div *ngIf="sidebarTab === 'comms'" class="space-y-6">
-            <div class="paper-card p-6 md:p-8">
+            <!-- V2.5 — barre de sous-onglets : Mon groupe | Canal président | ✏️ Nouveau message -->
+            <div class="flex flex-wrap items-center gap-2">
+              <button type="button" (click)="commSubTab = 'groupe'"
+                      class="px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-widest border transition-colors"
+                      [class.bg-wydad-red]="commSubTab === 'groupe'"
+                      [class.text-white]="commSubTab === 'groupe'"
+                      [class.border-wydad-red]="commSubTab === 'groupe'"
+                      [class.bg-white]="commSubTab !== 'groupe'"
+                      [class.text-ink-primary]="commSubTab !== 'groupe'"
+                      [class.border-paper-3]="commSubTab !== 'groupe'">
+                Mon groupe
+              </button>
+              <button type="button" (click)="commSubTab = 'president'"
+                      class="px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-widest border transition-colors"
+                      [class.bg-wydad-red]="commSubTab === 'president'"
+                      [class.text-white]="commSubTab === 'president'"
+                      [class.border-wydad-red]="commSubTab === 'president'"
+                      [class.bg-white]="commSubTab !== 'president'"
+                      [class.text-ink-primary]="commSubTab !== 'president'"
+                      [class.border-paper-3]="commSubTab !== 'president'">
+                Canal président
+              </button>
+              <button type="button" (click)="commSubTab = 'libre'; prefillLibreToUserId = null"
+                      class="ml-auto px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-widest border border-paper-3 bg-wydad-red/10 text-wydad-red hover:bg-wydad-red/20 transition-colors">
+                ✏️ Nouveau message
+              </button>
+            </div>
+
+            <div class="paper-card p-6 md:p-8" *ngIf="commSubTab === 'groupe' || commSubTab === 'president'">
               <h3 class="font-display font-bold text-lg uppercase tracking-wider border-b border-paper-2 pb-4 mb-5 flex items-center gap-2">
                 <svg class="w-5 h-5 text-wydad-red" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
                 Messagerie
@@ -945,9 +973,23 @@
               </ng-container>
             </div>
 
-            <!-- Team chat (Phase 4) — WebSocket temps réel -->
-            <div *ngIf="staff.sportType && (staff.assignedCategory || staff.category)">
+            <!-- V2.5 — sous-onglet "Mon groupe" : team-chat enrichi (photos) -->
+            <div *ngIf="commSubTab === 'groupe' && staff.sportType && (staff.assignedCategory || staff.category)">
               <app-team-chat [sportType]="staff.sportType" [category]="staff.assignedCategory || staff.category"></app-team-chat>
+            </div>
+
+            <!-- V2.5 — sous-onglet "Canal président" : 1-to-1 persistant avec le président de SA discipline -->
+            <div *ngIf="commSubTab === 'president'">
+              <app-canal-president></app-canal-president>
+            </div>
+
+            <!-- V2.5 — sous-onglet "Nouveau message" : sélecteur libre 1..N -->
+            <div *ngIf="commSubTab === 'libre'">
+              <app-messagerie-libre
+                [contacts]="contactsLibre"
+                [prefillToUserId]="prefillLibreToUserId"
+                title="Nouveau message">
+              </app-messagerie-libre>
             </div>
           </div>
 

@@ -7,6 +7,7 @@ import { ToastService } from '../../../services/toast.service';
 import { ErrorBannerComponent } from '../../../components/error-banner/error-banner.component';
 import { TeamChatComponent } from '../../../components/team-chat/team-chat.component';
 import { ScheduleCallFormComponent } from '../../../components/my-calls/schedule-call-form.component';
+import { MessagerieLibreComponent } from '../../../components/messagerie-libre/messagerie-libre.component';
 
 /**
  * Espace Président — page « Discussions » (Chantier 1 du plan qualité).
@@ -30,7 +31,7 @@ import { ScheduleCallFormComponent } from '../../../components/my-calls/schedule
 @Component({
   selector: 'app-president-discussions',
   standalone: true,
-  imports: [CommonModule, FormsModule, ErrorBannerComponent, TeamChatComponent, ScheduleCallFormComponent],
+  imports: [CommonModule, FormsModule, ErrorBannerComponent, TeamChatComponent, ScheduleCallFormComponent, MessagerieLibreComponent],
   templateUrl: './president-discussions.component.html',
   styleUrls: ['./president-discussions.component.scss']
 })
@@ -65,6 +66,11 @@ export class PresidentDiscussionsComponent implements OnInit {
   callOpen = false;
   loadError = false;
   loadErrorMessage = '';
+
+  /** V2.5 — messagerie libre (sélecteur 1..N) ouverte en modale depuis le bouton 1-1. */
+  messagerieLibreOpen = false;
+  /** V2.5 — userId du destinataire pré-coché dans la messagerie libre. */
+  prefillLibreToUserId: number | null = null;
 
   api = inject(ApiService);
   private auth = inject(AuthService);
@@ -116,14 +122,20 @@ export class PresidentDiscussionsComponent implements OnInit {
     });
   }
 
-  /** Ouvre un chat 1-1 avec un membre (mémorise le userId pour le composant chat). */
+  /**
+   * Ouvre un chat 1-1 avec un membre via le sélecteur libre V2.5
+   * pré-rempli avec cet interlocuteur. Le président peut décocher
+   * et ajouter d'autres membres de la même équipe.
+   */
   openOneToOne(member: { userId: number; fullName: string }): void {
-    // Le chat groupe TeamChatComponent est conservé pour la cible courante ;
-    // pour le 1-1 on délègue à un futur composant. Pour l'instant, message
-    // d'orientation (la messagerie 1-1 existe déjà côté /messagerie).
-    this.toast.info(
-      `Conversation privée avec ${member.fullName} : ouvrez l'onglet Messagerie privée.`
-    );
+    this.prefillLibreToUserId = member.userId;
+    this.messagerieLibreOpen = true;
+  }
+
+  /** V2.5 — fermeture du sélecteur libre. */
+  closeMessagerieLibre(): void {
+    this.messagerieLibreOpen = false;
+    this.prefillLibreToUserId = null;
   }
 
   /** Ouvre le formulaire d'appel LiveKit (Phase 5) — audience = tous les membres. */

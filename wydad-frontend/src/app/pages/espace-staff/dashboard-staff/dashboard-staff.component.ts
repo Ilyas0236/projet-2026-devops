@@ -9,11 +9,13 @@ import { ConfirmService } from '../../../services/confirm.service';
 import { TeamChatComponent } from '../../../components/team-chat/team-chat.component';
 import { MyCallsComponent } from '../../../components/my-calls/my-calls.component';
 import { ScheduleCallFormComponent } from '../../../components/my-calls/schedule-call-form.component';
+import { CanalPresidentComponent } from '../../../components/canal-president/canal-president.component';
+import { MessagerieLibreComponent } from '../../../components/messagerie-libre/messagerie-libre.component';
 
 @Component({
   selector: 'app-dashboard-staff',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FormsModule, RouterModule, TeamChatComponent, MyCallsComponent, ScheduleCallFormComponent],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, RouterModule, TeamChatComponent, MyCallsComponent, ScheduleCallFormComponent, CanalPresidentComponent, MessagerieLibreComponent],
   templateUrl: './dashboard-staff.component.html'
 })
 export class DashboardStaffComponent implements OnInit, OnDestroy {
@@ -37,6 +39,52 @@ export class DashboardStaffComponent implements OnInit, OnDestroy {
   rosterFilter: 'all' | 'apt' | 'inj' | string = 'all';
   /** Refonte pro — onglet actif de la sidebar droite (au lieu d'un mur de 8 sections). */
   sidebarTab: 'daily' | 'comms' | 'media' | 'calls' = 'daily';
+
+  /**
+   * V2.5 — sous-onglets de la messagerie : "groupe" = team-chat,
+   * "president" = canal 1-to-1 avec le président de la discipline,
+   * "libre" = sélecteur 1..N pour parler à qui on veut.
+   */
+  commSubTab: 'groupe' | 'president' | 'libre' = 'groupe';
+  /** V2.5 — destinataire pré-coché quand on ouvre le sélecteur libre. */
+  prefillLibreToUserId: number | null = null;
+  /** V2.5 — cache du président de SA discipline (pour le sélecteur libre). */
+  presidentContact: { userId: number; fullName: string; role: string; subLabel: string } | null = null;
+
+  /**
+   * V2.5 — interlocuteurs du sélecteur libre côté staff :
+   * joueurs de la catégorie + président de SA discipline.
+   */
+  get contactsLibre(): any[] {
+    const myId = Number(this.auth.getCurrentUserId());
+    const joueurs = (this.players || []).map((p: any) => ({
+      userId: p.userId,
+      fullName: p.fullName,
+      role: 'JOUEUR',
+      subLabel: `N° ${p.jerseyNumber ?? '-'}${p.position ? ' · ' + p.position : ''}`
+    })).filter((c: any) => c.userId !== myId);
+    if (this.presidentContact) joueurs.push(this.presidentContact);
+    return joueurs;
+  }
+
+  /** V2.5 — résout le président de SA discipline. */
+  loadPresidentContact() {
+    this.api.getMyPresident().subscribe({
+      next: (p) => {
+        if (p) {
+          this.presidentContact = {
+            userId: p.userId,
+            fullName: p.email,
+            role: 'PRESIDENT',
+            subLabel: `Président · ${p.discipline}`
+          };
+        } else {
+          this.presidentContact = null;
+        }
+      },
+      error: () => { this.presidentContact = null; }
+    });
+  }
   /** Phase 5 — le président n'a pas de fiche staff : vue réduite aux appels programmés. */
   isPresident = false;
   /**
@@ -190,6 +238,7 @@ export class DashboardStaffComponent implements OnInit, OnDestroy {
             data.role === 'DOCTOR' || data.role === 'PHYSIOTHERAPIST';
           this.loadDashboardData();
           this.loadRapportsFinanciers();
+          this.loadPresidentContact();
         },
         error: (err) => {
           console.error('Profil staff non trouvé', err);

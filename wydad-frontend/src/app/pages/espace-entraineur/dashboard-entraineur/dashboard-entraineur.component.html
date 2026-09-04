@@ -199,23 +199,79 @@
           <app-schedule-call-form></app-schedule-call-form>
         </section>
 
-        <!-- ═══ V2.4 — MESSAGERIE (entraîneur → joueurs) ═══ -->
-        <!-- Nouveau composant EntraineurMessagerieComponent : 2 sous-onglets
-             (Mon équipe / Individuel) + bouton photo. Remplace le team-chat
-             de groupe Phase 4 qui ne répondait pas au besoin de cibler
-             précisément 1 ou N joueurs. Le team-chat reste utilisé côté
-             joueur et staff. -->
-        <section *ngIf="activeTab === 'messagerie'" class="animate-fade-in-up">
-          <app-entraineur-messagerie
-            *ngIf="staff?.sportType && (staff?.assignedCategory || staff?.category)"
-            [staff]="staff"
-            [joueurs]="joueurs">
-          </app-entraineur-messagerie>
+        <!-- ═══ V2.5 — MESSAGERIE (3 sous-onglets : groupe | canal président | nouveau) ═══ -->
+        <section *ngIf="activeTab === 'messagerie'" class="animate-fade-in-up space-y-6">
           <p *ngIf="!staff?.sportType || !(staff?.assignedCategory || staff?.category)"
              class="text-center text-ink-tertiary py-12">
             Affectation en attente — la messagerie s'activera dès que votre
             fiche staff sera rattachée à une discipline et une catégorie.
           </p>
+
+          <ng-container *ngIf="staff?.sportType && (staff?.assignedCategory || staff?.category)">
+            <!-- V2.5 — barre de sous-onglets -->
+            <div class="flex flex-wrap items-center gap-2">
+              <button type="button" (click)="commSubTab = 'groupe'"
+                      class="px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-widest border transition-colors"
+                      [class.bg-wydad-red]="commSubTab === 'groupe'"
+                      [class.text-white]="commSubTab === 'groupe'"
+                      [class.border-wydad-red]="commSubTab === 'groupe'"
+                      [class.bg-white]="commSubTab !== 'groupe'"
+                      [class.text-ink-primary]="commSubTab !== 'groupe'"
+                      [class.border-paper-3]="commSubTab !== 'groupe'">
+                Mon groupe
+              </button>
+              <button type="button" (click)="commSubTab = 'entraineur'"
+                      class="px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-widest border transition-colors"
+                      [class.bg-wydad-red]="commSubTab === 'entraineur'"
+                      [class.text-white]="commSubTab === 'entraineur'"
+                      [class.border-wydad-red]="commSubTab === 'entraineur'"
+                      [class.bg-white]="commSubTab !== 'entraineur'"
+                      [class.text-ink-primary]="commSubTab !== 'entraineur'"
+                      [class.border-paper-3]="commSubTab !== 'entraineur'">
+                Messagerie équipe
+              </button>
+              <button type="button" (click)="commSubTab = 'president'"
+                      class="px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-widest border transition-colors"
+                      [class.bg-wydad-red]="commSubTab === 'president'"
+                      [class.text-white]="commSubTab === 'president'"
+                      [class.border-wydad-red]="commSubTab === 'president'"
+                      [class.bg-white]="commSubTab !== 'president'"
+                      [class.text-ink-primary]="commSubTab !== 'president'"
+                      [class.border-paper-3]="commSubTab !== 'president'">
+                Canal président
+              </button>
+              <button type="button" (click)="commSubTab = 'libre'; prefillLibreToUserId = null"
+                      class="ml-auto px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-widest border border-paper-3 bg-wydad-red/10 text-wydad-red hover:bg-wydad-red/20 transition-colors">
+                ✏️ Nouveau message
+              </button>
+            </div>
+
+            <!-- V2.5 — sous-onglet "Mon groupe" : team-chat enrichi (photos) -->
+            <div *ngIf="commSubTab === 'groupe'">
+              <app-team-chat [sportType]="staff.sportType" [category]="staff.assignedCategory || staff.category"></app-team-chat>
+            </div>
+
+            <!-- V2.4 — sous-onglet "Messagerie équipe" (conservé : batch 1..N joueurs) -->
+            <app-entraineur-messagerie
+              *ngIf="commSubTab === 'entraineur'"
+              [staff]="staff"
+              [joueurs]="joueurs">
+            </app-entraineur-messagerie>
+
+            <!-- V2.5 — sous-onglet "Canal président" : 1-to-1 persistant avec le président de SA discipline -->
+            <div *ngIf="commSubTab === 'president'">
+              <app-canal-president></app-canal-president>
+            </div>
+
+            <!-- V2.5 — sous-onglet "Nouveau message" : sélecteur libre 1..N (joueurs + président) -->
+            <div *ngIf="commSubTab === 'libre'">
+              <app-messagerie-libre
+                [contacts]="contactsLibre"
+                [prefillToUserId]="prefillLibreToUserId"
+                title="Nouveau message">
+              </app-messagerie-libre>
+            </div>
+          </ng-container>
         </section>
 
         <!-- ═══ REÇUS DE SALAIRE & PRIME (C.21.v2) — entraineur

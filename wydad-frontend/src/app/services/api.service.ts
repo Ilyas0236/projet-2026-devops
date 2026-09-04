@@ -1181,14 +1181,57 @@ export class ApiService {
   }
 
   /** Envoi via le repli REST (si le socket est momentanément coupé). */
-  sendTeamChatMessage(sportType: string, category: string, content: string): Observable<any> {
+  sendTeamChatMessage(sportType: string, category: string, content: string,
+                     attachment?: { publicId: string; secureUrl?: string;
+                                    resourceType?: string; fileName?: string;
+                                    sizeBytes?: number }): Observable<any> {
+    const body: any = { content };
+    if (attachment?.publicId) {
+      body.attachmentPublicId = attachment.publicId;
+      body.attachmentSecureUrl = attachment.secureUrl;
+      body.attachmentResourceType = attachment.resourceType;
+      body.attachmentFileName = attachment.fileName;
+      body.attachmentSizeBytes = attachment.sizeBytes;
+    }
     return this.http.post<any>(
-      `${this.baseUrl}/sports/team-chat/${sportType}/${category}/messages`, { content });
+      `${this.baseUrl}/sports/team-chat/${sportType}/${category}/messages`, body);
   }
 
   /** En-tête du groupe : joueurs + staff de la catégorie (contrôle serveur). */
   getTeamChatMembers(sportType: string, category: string): Observable<any[]> {
     return this.http.get<any[]>(`${this.baseUrl}/sports/team-chat/${sportType}/${category}/members`);
+  }
+
+  // ==========================================
+  // V2.5 — CANAL PRÉSIDENT + SÉLECTEUR LIBRE
+  // ==========================================
+  /**
+   * Renvoie le président de la discipline du connecté (FOOTBALL pour Hakim
+   * par ex.), ou `null` si pas de fiche sportive (ADMIN/PRESIDENT) ou si
+   * aucun président n'est enregistré pour la discipline. Utilisé par
+   * le composant `CanalPresidentComponent` pour pré-charger l'interlocuteur
+   * du canal 1-to-1 persistant.
+   */
+  getMyPresident(): Observable<{ userId: number; email: string;
+                                 discipline: string; role: string } | null> {
+    return this.http.get<{ userId: number; email: string;
+                           discipline: string; role: string } | null>(
+        `${this.baseUrl}/sports/messaging/my-president`);
+  }
+
+  /**
+   * Renvoie les utilisateurs d'un rôle et d'une discipline (sélecteur libre).
+   * Renvoie [] si le rôle est inconnu ou si personne ne correspond. Le front
+   * s'en sert pour peupler la liste des interlocuteurs de l'espace président
+   * (tous les STAFF + ENTRAINEUR + JOUEUR de la discipline).
+   */
+  getDisciplineContacts(role: string, discipline?: string): Observable<any[]> {
+    let params = new HttpParams().set('role', role);
+    if (discipline) {
+      params = params.set('discipline', discipline);
+    }
+    return this.http.get<any[]>(`${this.baseUrl}/auth/internal/users/by-role-and-discipline`,
+        { params });
   }
 
 

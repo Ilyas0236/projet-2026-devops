@@ -7,6 +7,9 @@ import { ErrorBannerComponent } from '../../../components/error-banner/error-ban
 import { MyCallsComponent } from '../../../components/my-calls/my-calls.component';
 import { ScheduleCallFormComponent } from '../../../components/my-calls/schedule-call-form.component';
 import { EntraineurMessagerieComponent } from '../../../components/entraineur-messagerie/entraineur-messagerie.component';
+import { TeamChatComponent } from '../../../components/team-chat/team-chat.component';
+import { CanalPresidentComponent } from '../../../components/canal-president/canal-president.component';
+import { MessagerieLibreComponent } from '../../../components/messagerie-libre/messagerie-libre.component';
 import { ToastService } from '../../../services/toast.service';
 
 /**
@@ -21,13 +24,56 @@ import { ToastService } from '../../../services/toast.service';
 @Component({
   selector: 'app-dashboard-entraineur',
   standalone: true,
-  imports: [CommonModule, FormsModule, ErrorBannerComponent, MyCallsComponent, ScheduleCallFormComponent, EntraineurMessagerieComponent],
+  imports: [CommonModule, FormsModule, ErrorBannerComponent, MyCallsComponent, ScheduleCallFormComponent, EntraineurMessagerieComponent, TeamChatComponent, CanalPresidentComponent, MessagerieLibreComponent],
   templateUrl: './dashboard-entraineur.component.html'
 })
 export class DashboardEntraineurComponent implements OnInit, OnDestroy {
   loading = true;
   loadError = false;
   activeTab: 'effectif' | 'seances' | 'matchs' | 'messagerie' | 'video' | 'recus' | 'vip' = 'effectif';
+
+  /**
+   * V2.5 — sous-onglets de la messagerie entraîneur :
+   * "groupe" = team-chat, "entraineur" = V2.4 batch 1..N joueurs,
+   * "president" = canal 1-to-1 avec le président, "libre" = sélecteur libre 1..N.
+   */
+  commSubTab: 'groupe' | 'entraineur' | 'president' | 'libre' = 'groupe';
+  /** V2.5 — destinataire pré-coché quand on ouvre le sélecteur libre. */
+  prefillLibreToUserId: number | null = null;
+  /** V2.5 — cache du président de SA discipline. */
+  presidentContact: { userId: number; fullName: string; role: string; subLabel: string } | null = null;
+
+  /** V2.5 — interlocuteurs du sélecteur libre côté entraîneur : joueurs + président. */
+  get contactsLibre(): any[] {
+    const myId = Number(this.auth.getCurrentUserId());
+    const joueurs = (this.joueurs || []).map((j: any) => ({
+      userId: j.userId,
+      fullName: j.fullName,
+      role: 'JOUEUR',
+      subLabel: `N° ${j.jerseyNumber ?? '-'}${j.position ? ' · ' + j.position : ''}`
+    })).filter((c: any) => c.userId !== myId);
+    if (this.presidentContact) joueurs.push(this.presidentContact);
+    return joueurs;
+  }
+
+  /** V2.5 — résout le président de SA discipline. */
+  loadPresidentContact() {
+    this.api.getMyPresident().subscribe({
+      next: (p) => {
+        if (p) {
+          this.presidentContact = {
+            userId: p.userId,
+            fullName: p.email,
+            role: 'PRESIDENT',
+            subLabel: `Président · ${p.discipline}`
+          };
+        } else {
+          this.presidentContact = null;
+        }
+      },
+      error: () => { this.presidentContact = null; }
+    });
+  }
 
   api = inject(ApiService);
   auth = inject(AuthService);
@@ -86,6 +132,7 @@ export class DashboardEntraineurComponent implements OnInit, OnDestroy {
     this.api.getStaffByUserId(userId).subscribe({
       next: (staff) => {
         this.staff = staff;
+        this.loadPresidentContact();
         this.chargerDonneesCategorie();
       },
       error: () => {

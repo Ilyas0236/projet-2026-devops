@@ -9,6 +9,8 @@ import { ToastService } from '../../../services/toast.service';
 import { ErrorBannerComponent } from '../../../components/error-banner/error-banner.component';
 import { TeamChatComponent } from '../../../components/team-chat/team-chat.component';
 import { MyCallsComponent } from '../../../components/my-calls/my-calls.component';
+import { CanalPresidentComponent } from '../../../components/canal-president/canal-president.component';
+import { MessagerieLibreComponent } from '../../../components/messagerie-libre/messagerie-libre.component';
 
 /**
  * Espace joueur connecté (B.3) : profil restreint, convocations (B.3.a),
@@ -19,7 +21,7 @@ import { MyCallsComponent } from '../../../components/my-calls/my-calls.componen
 @Component({
   selector: 'app-dashboard-joueur',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule, ErrorBannerComponent, TeamChatComponent, MyCallsComponent],
+  imports: [CommonModule, RouterModule, FormsModule, ErrorBannerComponent, TeamChatComponent, MyCallsComponent, CanalPresidentComponent, MessagerieLibreComponent],
   templateUrl: './dashboard-joueur.component.html'
 })
 export class DashboardJoueurComponent implements OnInit, OnDestroy {
@@ -108,6 +110,55 @@ export class DashboardJoueurComponent implements OnInit, OnDestroy {
 
   /** Refonte pro — onglet actif de la zone principale 8/4. */
   sidebarTab: 'daily' | 'convocs' | 'docs' | 'comms' = 'daily';
+
+  /**
+   * V2.5 — sous-onglets de la messagerie : "groupe" = team-chat,
+   * "president" = canal 1-to-1 avec le président de la discipline,
+   * "libre" = sélecteur 1..N pour parler à qui on veut.
+   */
+  commSubTab: 'groupe' | 'president' | 'libre' = 'groupe';
+  /** V2.5 — destinataire pré-coché quand on ouvre le sélecteur depuis un coéquipier. */
+  prefillLibreToUserId: number | null = null;
+
+  /**
+   * V2.5 — liste des interlocuteurs du sélecteur libre côté joueur.
+   * Combine : coéquipiers (player.sportType + player.category) + président de SA discipline.
+   * Le président est résolu via {@code api.getMyPresident()} ; en cas d'échec
+   * on retombe sur la liste des coéquipiers (le sélecteur fonctionne quand même).
+   */
+  get contactsLibre(): any[] {
+    const myId = Number(this.auth.getCurrentUserId());
+    const tm = (this.teammates || []).map((t: any) => ({
+      userId: t.userId,
+      fullName: t.fullName,
+      role: 'JOUEUR',
+      subLabel: `N° ${t.jerseyNumber ?? '-'}${t.position ? ' · ' + t.position : ''}`
+    })).filter((c: any) => c.userId !== myId);
+    if (this.presidentContact) tm.push(this.presidentContact);
+    return tm;
+  }
+
+  /** V2.5 — cache du président de SA discipline (résolu pour le sélecteur libre). */
+  presidentContact: { userId: number; fullName: string; role: string; subLabel: string } | null = null;
+
+  /** V2.5 — déclenche la résolution du président de SA discipline. */
+  loadPresidentContact() {
+    this.api.getMyPresident().subscribe({
+      next: (p) => {
+        if (p) {
+          this.presidentContact = {
+            userId: p.userId,
+            fullName: p.email, // le back ne renvoie que l'email, on l'utilise comme libellé
+            role: 'PRESIDENT',
+            subLabel: `Président · ${p.discipline}`
+          };
+        } else {
+          this.presidentContact = null;
+        }
+      },
+      error: () => { this.presidentContact = null; }
+    });
+  }
 
   /** Refonte pro — initiales de l'avatar du header (jusqu'à 2 lettres). */
   get staffInitials(): string {
@@ -319,6 +370,7 @@ export class DashboardJoueurComponent implements OnInit, OnDestroy {
         this.loadRapportsFinanciers();
         this.loadVipTickets(userId);
         this.loadTeammates();
+        this.loadPresidentContact();
         this.loadMyReceipts();
       },
       error: () => {
