@@ -7,6 +7,8 @@ import jakarta.validation.constraints.Size;
 import lombok.Builder;
 import lombok.Data;
 
+import java.math.BigDecimal;
+
 @Data
 @Builder
 public class CartItemDto {
@@ -19,6 +21,7 @@ public class CartItemDto {
     private String productName;
     private String productImage;
     private String variantInfo;
+    private BigDecimal unitPrice;
 
     @Min(1)
     private Integer quantity;

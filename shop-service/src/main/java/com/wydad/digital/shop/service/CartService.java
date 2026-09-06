@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @Service
@@ -40,6 +41,18 @@ public class CartService {
         item.setProductImage(variant.getProduct().getImages().isEmpty() ? null :
                 variant.getProduct().getImages().get(0).getUrl());
         item.setVariantInfo((variant.getSize() != null ? variant.getSize().name() : "") + " - " + variant.getColor());
+
+        // Snapshot du prix unitaire (basePrice + extraPrice personnalisation éventuelle).
+        // On fige ce prix dans le CartItem : il ne sera pas recalculé en BDD, ce qui
+        // évite un N+1 (1 SELECT produit par ligne) et garantit que l'utilisateur
+        // paie le prix qu'il a vu dans son panier. L'OrderService recalcule de toute
+        // façon côté serveur (sécurité, le front ne peut pas manipuler le prix).
+        BigDecimal snapshotPrice = variant.getProduct().getBasePrice();
+        if (dto.getCustomization() != null && Boolean.TRUE.equals(variant.getProduct().getCustomizable())) {
+            snapshotPrice = snapshotPrice.add(BigDecimal.valueOf(50.0));
+        }
+        item.setUnitPrice(snapshotPrice);
+
         item.setQuantity(item.getId() != null ? item.getQuantity() + dto.getQuantity() : dto.getQuantity());
 
         if (dto.getCustomization() != null && Boolean.TRUE.equals(variant.getProduct().getCustomizable())) {
@@ -95,6 +108,9 @@ public class CartService {
                 .productName(item.getProductName())
                 .productImage(item.getProductImage())
                 .variantInfo(item.getVariantInfo())
+                // Fallback BigDecimal.ZERO pour les CartItem créés AVANT le fix
+                // (colonne unit_price ajoutée par ddl-auto:update, valeur NULL).
+                .unitPrice(item.getUnitPrice() != null ? item.getUnitPrice() : BigDecimal.ZERO)
                 .quantity(item.getQuantity())
                 .build();
     }
