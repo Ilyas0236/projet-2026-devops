@@ -139,7 +139,7 @@ export class DashboardComponent implements OnInit {
         // CA réel = somme des commandes non annulées.
         this.totalRevenue = (Array.isArray(list) ? list : [])
           .filter(o => o?.status !== 'CANCELLED')
-          .reduce((sum, o) => sum + (Number(o?.totalAmount) || 0), 0);
+          .reduce((sum, o) => sum + (Number(o?.total) || 0), 0);
         finish();
       },
       error: () => {
@@ -202,7 +202,7 @@ export class DashboardComponent implements OnInit {
   }
 
   formatOrderAmount(order: any): string {
-    return order?.totalAmount != null ? `${order.totalAmount} MAD` : '—';
+    return order?.total != null ? `${order.total} MAD` : '—';
   }
 
   /** Le content-service renvoie date (LocalDate) + heure (LocalTime). */

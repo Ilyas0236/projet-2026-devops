@@ -54,7 +54,7 @@ import { AuthService } from '../../services/auth.service';
                 </div>
                 <div class="order-status-price">
                   <span class="status-badge" [ngClass]="getStatusClass(order.status)">{{ getStatusLabel(order.status) }}</span>
-                  <span class="order-total">{{ order.totalAmount }} DH</span>
+                  <span class="order-total">{{ order.total }} DH</span>
                 </div>
                 <span class="expand-icon">{{ expandedOrder === order.orderNumber ? '▲' : '▼' }}</span>
               </div>
@@ -81,17 +81,17 @@ import { AuthService } from '../../services/auth.service';
                     <span>Sous-total</span>
                     <span>{{ order.subtotal }} DH</span>
                   </div>
-                  <div class="summary-line" *ngIf="order.shippingCost > 0">
+                  <div class="summary-line">
                     <span>Livraison</span>
                     <span>{{ order.shippingCost }} DH</span>
                   </div>
-                  <div class="summary-line" *ngIf="order.discountAmount > 0">
+                  <div class="summary-line" *ngIf="order.discount > 0">
                     <span>Réduction</span>
-                    <span class="text-green-600">-{{ order.discountAmount }} DH</span>
+                    <span class="text-green-600">-{{ order.discount }} DH</span>
                   </div>
                   <div class="summary-line total-line">
                     <span>Total payé</span>
-                    <span>{{ order.totalAmount }} DH</span>
+                    <span>{{ order.total }} DH</span>
                   </div>
                   <div class="tracking" *ngIf="order.trackingNumber">
                     📦 Suivi : <code>{{ order.trackingNumber }}</code>

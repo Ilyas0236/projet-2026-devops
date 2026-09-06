@@ -218,7 +218,8 @@ export class CartComponent implements OnInit {
   shippingCity = '';
   shippingPhone = '';
   promoCode = '';
-  shippingCost = 0; // free shipping for demo
+  // Frais de port fixes (alignés sur le backend OrderService#createOrder : 30 DH)
+  shippingCost = 30;
 
   api = inject(ApiService);
   auth = inject(AuthService);
