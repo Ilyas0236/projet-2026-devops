@@ -7,6 +7,7 @@ import com.wydad.digital.shop.model.ProductVariant;
 import com.wydad.digital.shop.repository.CartItemRepository;
 import com.wydad.digital.shop.repository.ProductVariantRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,6 +16,7 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 @Transactional
 public class CartService {
 
@@ -22,6 +24,8 @@ public class CartService {
     private final ProductVariantRepository productVariantRepository;
 
     public CartItemDto addToCart(String userEmail, CartItemDto dto) {
+        log.info("CART v2.5.1-snapshot — addToCart user={} variant={} qty={}",
+                userEmail, dto.getProductVariantId(), dto.getQuantity());
         ProductVariant variant = productVariantRepository.findById(dto.getProductVariantId())
                 .orElseThrow(() -> new RuntimeException("Variante non trouvée"));
 
