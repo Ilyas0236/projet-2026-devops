@@ -301,6 +301,31 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+  # Déploiement automatique sur la VM prod (158.158.74.169) — ne s'exécute
+  # que si les secrets PROD_VM_HOST, PROD_VM_USER et PROD_VM_SSH_KEY sont
+  # configurés dans Settings → Secrets du repo. Sans ces secrets, le job
+  # est "skipped" silencieusement et le push n'est pas bloqué : le owner
+  # peut alors déclencher manuellement avec deploy-prod.ps1.
+  deploy-shop-prod:
+    needs: docker-shop
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && secrets.PROD_VM_SSH_KEY != ''
+    steps:
+      - name: Déploiement shop-service sur VM Azure
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.PROD_VM_HOST }}
+          username: ${{ secrets.PROD_VM_USER }}
+          key: ${{ secrets.PROD_VM_SSH_KEY }}
+          script: |
+            cd ~/wydad-digital-parent
+            git pull
+            mvn -q -T 1C package -DskipTests -f shop-service/pom.xml
+            docker compose pull shop-service
+            docker compose up -d --no-deps shop-service
+            docker compose ps shop-service
+            echo "DEPLOY_SHOP_OK at $(date -u +%FT%TZ)"
+
   docker-ticket:
     needs: build-and-test
     runs-on: ubuntu-latest
@@ -560,3 +585,39 @@ jobs:
             ${{ env.IMAGE_PREFIX }}-frontend:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  # Déploiement automatique sur la VM prod (158.158.74.169, Standard_B2s_v2).
+  # Ne s'exécute que si les 3 secrets sont configurés dans Settings → Secrets :
+  #   - PROD_VM_HOST (ex: 158.158.74.169)
+  #   - PROD_VM_USER (ex: azureuser)
+  #   - PROD_VM_SSH_KEY (clé privée SSH, format PEM complet sur UNE ligne)
+  # Sans ces secrets le job est skipped silencieusement (push non bloqué) :
+  # l'owner peut alors déclencher manuellement avec deploy-prod.ps1.
+  # Cf. memory docker-only-deployment.md (boucle git pull + mvn + compose).
+  deploy-prod:
+    needs: [docker-shop, docker-gateway, docker-auth, docker-frontend]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && secrets.PROD_VM_SSH_KEY != ''
+    steps:
+      - name: Déploiement complet sur VM Azure
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.PROD_VM_HOST }}
+          username: ${{ secrets.PROD_VM_USER }}
+          key: ${{ secrets.PROD_VM_SSH_KEY }}
+          command_timeout: 20m
+          script: |
+            set -e
+            cd ~/wydad-digital-parent
+            git pull
+            # Reconstruit TOUS les jars (cache ~/.m2 → rapide après 1er build)
+            mvn -q -T 1C package -DskipTests
+            # Pull uniquement les nouvelles images (économise la bande passante)
+            docker compose pull
+            # Relance TOUTE la stack (les services non modifiés sont no-op)
+            docker compose up -d --remove-orphans
+            # Health check rapide
+            sleep 10
+            docker compose ps
+            curl -fsS http://localhost:8080/actuator/health || echo "GATEWAY DOWN"
+            echo "DEPLOY_PROD_OK $(date -u +%FT%TZ) commit=${{ github.sha }}"
