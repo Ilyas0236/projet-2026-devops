@@ -1,0 +1,40 @@
+name: CD - Deploy to Production
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_env:
+        description: 'Target Deployment Environment'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - production
+          - staging
+
+jobs:
+  deploy-prod:
+    name: Deploy Stack on Production Host
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Deploy services via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.PROD_VM_HOST }}
+          username: ${{ secrets.PROD_VM_USER }}
+          key: ${{ secrets.PROD_VM_SSH_KEY }}
+          command_timeout: 20m
+          script: |
+            set -e
+            cd ~/wydad-digital-parent
+            git pull
+            mvn -q -T 1C package -DskipTests
+            docker compose pull
+            docker compose up -d --remove-orphans
+            sleep 10
+            docker compose ps
+            curl -fsS http://localhost:8080/actuator/health || echo "GATEWAY DOWN"
+            echo "DEPLOY_PROD_OK $(date -u +%FT%TZ) commit=${{ github.sha }}"
