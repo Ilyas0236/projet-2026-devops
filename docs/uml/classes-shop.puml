@@ -1,0 +1,327 @@
+@startuml classes-shop
+' ============================================================
+' Diagramme de classes — DOMAINE BOUTIQUE & PAIEMENT
+' Source : shop-service + payment-service
+' ============================================================
+' Conventions UML 2.5 :
+'   * classes JPA reelles avec attributs principaux
+'   * composition (cascade ALL + orphanRemoval) = cycle de vie lie
+'   * enums (OrderStatus, PaymentStatus, ProductSize, TransactionType)
+' ============================================================
+
+left to right direction
+skinparam class {
+  BackgroundColor #FFFFFF
+  BorderColor #1E3A8A
+  ArrowColor #1E3A8A
+  FontSize 11
+}
+skinparam package {
+  BackgroundColor #F5F5F5
+  BorderColor #888888
+}
+skinparam enum {
+  BackgroundColor #FFF8E1
+  BorderColor #C79100
+}
+skinparam stereotypeCBackgroundColor #E8F0FE
+skinparam shadowing false
+hide circle
+hide methods
+
+' ============================================================
+' ENUMS
+' ============================================================
+enum OrderStatus {
+  PENDING
+  PAYMENT_RECEIVED
+  PREPARATION
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  RETURN_REQUESTED
+  RETURNED
+  REFUNDED
+}
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+enum ProductSize {
+  XS
+  S
+  M
+  L
+  XL
+  XXL
+  XXXL
+  UNIQUE
+}
+enum SportSection {
+  FOOTBALL
+  BASKETBALL
+  HANDBALL
+  ALL
+}
+
+' ============================================================
+' ENTITES — PRODUIT
+' ============================================================
+class Category <<Entity>> {
+  -id : Long
+  -name : String {unique}
+  -description : String
+  -imageUrl : String
+  -slug : String
+  -displayOrder : Integer
+  -active : Boolean
+  -createdAt : LocalDateTime
+  -updatedAt : LocalDateTime
+}
+
+class Product <<Entity>> {
+  -id : Long
+  -name : String
+  -description : String
+  -basePrice : BigDecimal
+  -sku : String
+  -slug : String
+  -customizable : Boolean
+  -active : Boolean
+  -averageRating : Double
+  -reviewCount : Integer
+  -mainImageUrl : String
+  -sportSection : SportSection
+  -createdAt : LocalDateTime
+  -updatedAt : LocalDateTime
+}
+
+class ProductVariant <<Entity>> {
+  -id : Long
+  -size : ProductSize
+  -color : String
+  -colorHex : String
+  -stockQuantity : Integer
+  -sku : String
+}
+
+class ProductImage <<Entity>> {
+  -id : Long
+  -url : String
+  -altText : String
+  -displayOrder : Integer
+  -primaryImage : Boolean
+}
+
+class ProductReview <<Entity>> {
+  -id : Long
+  -userEmail : String
+  -rating : Integer
+  -comment : String
+  -createdAt : LocalDateTime
+}
+
+class JerseyCustomization <<Entity>> {
+  -id : Long
+  -playerName : String
+  -playerNumber : Integer
+  -fontFamily : String
+  -fontColor : String
+  -patchType : String
+  -extraPrice : Double
+}
+
+' ============================================================
+' ENTITES — COMMERCE
+' ============================================================
+class Store <<Entity>> {
+  -id : Long
+  -name : String
+  -address : String
+  -city : String
+  -latitude : Double
+  -longitude : Double
+  -phone : String
+  -openingHours : String
+  -instantJerseyPrinting : Boolean
+  -active : Boolean
+}
+
+class PromoCode <<Entity>> {
+  -id : Long
+  -code : String {unique}
+  -description : String
+  -discountPercent : BigDecimal
+  -maxDiscountAmount : BigDecimal
+  -minOrderAmount : BigDecimal
+  -maxUses : Integer
+  -currentUses : Integer
+  -validFrom : LocalDateTime
+  -validUntil : LocalDateTime
+  -active : Boolean
+}
+
+class CartItem <<Entity>> {
+  -id : Long
+  -userEmail : String
+  -productVariantId : Long
+  -productId : Long
+  -productName : String
+  -productImage : String
+  -variantInfo : String
+  -quantity : Integer
+}
+
+class ShopOrder <<Entity>> {
+  -id : Long
+  -orderNumber : String {unique}
+  -userEmail : String
+  -status : OrderStatus
+  -paymentStatus : PaymentStatus
+  -subtotal : BigDecimal
+  -shippingCost : BigDecimal
+  -discountAmount : BigDecimal
+  -adherentDiscount : BigDecimal
+  -totalAmount : BigDecimal
+  -promoCodeUsed : String
+  -shippingAddress : String
+  -shippingCity : String
+  -shippingPhone : String
+  -trackingNumber : String
+  -clickAndCollect : Boolean
+  -createdAt : LocalDateTime
+  -updatedAt : LocalDateTime
+}
+
+class OrderItem <<Entity>> {
+  -id : Long
+  -productId : Long
+  -variantId : Long
+  -productName : String
+  -productImage : String
+  -variantInfo : String
+  -unitPrice : BigDecimal
+  -quantity : Integer
+  -totalPrice : BigDecimal
+}
+
+class OrderStatusHistory <<Entity>> {
+  -id : Long
+  -status : OrderStatus
+  -comment : String
+  -changedAt : LocalDateTime
+}
+
+class WishlistItem <<Entity>> {
+  -id : Long
+  -userEmail : String
+  -productId : Long
+  -productName : String
+  -productImage : String
+  -createdAt : LocalDateTime
+}
+
+' ============================================================
+' ENTITES — PAIEMENT (payment-service, FK logique)
+' ============================================================
+class ECashAccount <<Entity>> {
+  -id : Long
+  -email : String {unique}
+  -balance : BigDecimal
+  -active : boolean
+  -createdAt : LocalDateTime
+  -updatedAt : LocalDateTime
+}
+
+' ============================================================
+' RELATIONS JPA
+' ============================================================
+Category "1" *-- "0..*" Product : contient (cascade ALL)
+Product "1" *-- "1..*" ProductVariant : tailles (cascade ALL + orphanRemoval)
+Product "1" *-- "0..*" ProductImage : galerie (cascade ALL + orphanRemoval)
+Product "1" --> "0..*" ProductReview : avis
+ProductVariant "1" --> "0..1" Product : appartient à
+ProductImage "1" --> "0..1" Product : appartient à
+ProductReview "1" --> "0..1" Product : concerne
+
+Product --> SportSection : discipline
+
+' Panier
+ProductVariant "1" --> "0..*" CartItem : ajouté à
+CartItem "1" *-- "0..1" JerseyCustomization : flocage (cascade ALL)
+
+' Commande
+ShopOrder "1" *-- "1..*" OrderItem : contient (cascade ALL + orphanRemoval)
+ShopOrder "1" *-- "0..*" OrderStatusHistory : historique (cascade ALL + orphanRemoval)
+ShopOrder "0..1" --> "1" Store : click & collect
+OrderItem "1" *-- "0..1" JerseyCustomization : flocage (cascade ALL)
+OrderItem --> OrderStatus : cycle
+OrderStatusHistory --> OrderStatus : transition
+
+' Paiement (FK logique vers payment-service)
+ShopOrder --> OrderStatus : statut
+ShopOrder --> PaymentStatus : paiement
+
+' Wishlist
+Product "1" --> "0..*" WishlistItem : favorisé
+
+' ============================================================
+' NOTES METIER
+' ============================================================
+note top of Product
+  **Catalogue boutique**
+  ─────────────────────
+  Composition Product → variants
+  (taille S/M/L + couleur)
+  customisable = true (maillot floqué)
+  averageRating agrégé depuis avis
+end note
+
+note right of ShopOrder
+  **B.12 — 15% adhèrent automatique**
+  ─────────────────────────────────
+  adherentDiscount calculé sur subtotal
+  Cumulable avec code promo
+  (soustraction des deux au total)
+  clickAndCollect = retrait en Store
+end note
+
+note left of OrderItem
+  **Snapshot figé à l'achat**
+  ──────────────────────────
+  productName + productImage + unitPrice
+  conservés même si produit supprimé
+  variantId permet restitution stock
+  en cas de remboursement
+end note
+
+note bottom of OrderStatusHistory
+  **Traçabilité obligatoire**
+  ──────────────────────────
+  Audit complet des transitions
+  (PENDING → CONFIRMED → SHIPPED → DELIVERED)
+  comment = motif optionnel (annulation)
+end note
+
+note right of ECashAccount
+  **Wallet E-Cash (payment-service)**
+  ──────────────────────────────
+  Email = identifiant (pas userId)
+  Les transactions (CREDIT/DEBIT/DON/REFUND)
+  vivent dans payment-service — pas ici
+  balanceAfter calculé serveur
+  Pas d'autorisation de découvert
+end note
+
+note left of PromoCode
+  **Codes promo**
+  ──────────────
+  Cumulable avec remise adhérent
+  discountPercent OU maxDiscountAmount
+  currentUses ≤ maxUses
+  validFrom/validUntil = fenêtre active
+end note
+
+@enduml

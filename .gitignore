@@ -1,49 +1,46 @@
+# ====================== Build ======================
 target/
 !.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
-.kotlin
+build/
+!**/src/main/**/build/
+!**/src/test/**/build/
 
-### IntelliJ IDEA ###
-.idea/modules.xml
-.idea/jarRepositories.xml
-.idea/compiler.xml
-.idea/libraries/
+# ==================== Frontend ====================
+wydad-frontend/node_modules/
+wydad-frontend/dist/
+wydad-frontend/.angular/
+
+# ===================== Secrets =====================
+.env
+*.pem
+*.key
+
+# =================== IDE / Editor =================
+.idea/
 *.iws
 *.iml
 *.ipr
-
-### Eclipse ###
+.vscode/
 .apt_generated
 .classpath
 .factorypath
 .project
-.settings
+.settings/
 .springBeans
 .sts4-cache
-
-### NetBeans ###
 /nbproject/private/
 /nbbuild/
 /dist/
 /nbdist/
 /.nb-gradle/
-build/
-!**/src/main/**/build/
-!**/src/test/**/build/
 
-### VS Code ###
-.vscode/
-
-### Mac OS ###
+# ==================== OS Files ====================
 .DS_Store
-### Secrets locaux ###
-.env
+Thumbs.db
+desktop.ini
 
-# Outillage dev local (Claude Code, audits, notes ops)
+# ============= Dev Tools / Internal ==============
 .claude/
-audit/
-AZURE-RUN-STOP.md
-rapport-pfa/
-plans/
-memory/
+.kotlin

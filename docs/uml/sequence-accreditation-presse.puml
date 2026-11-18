@@ -1,0 +1,119 @@
+@startuml sequence-accreditation-presse
+' Diagramme de séquence : Inscription journaliste + accréditation
+' Format Visual Paradigm
+
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam dpi 150
+skinparam sequenceArrowThickness 1
+skinparam sequenceParticipantBackgroundColor #FDF2F2
+skinparam sequenceParticipantBorderColor #B91C1C
+skinparam sequenceLifeLineBorderColor #9CA3AF
+skinparam sequenceGroupBackgroundColor #FEF3C7
+skinparam sequenceGroupBorderColor #D97706
+skinparam defaultFontSize 11
+skinparam defaultFontName "Helvetica"
+
+title Séquence 2/4 — Inscription journaliste + accréditation presse (B.17)
+
+actor "Journaliste" as J
+participant "Frontend\nAngular" as FE
+participant "API Gateway\n(JWT)" as GW
+participant "Auth\nService" as AUT
+participant "Cloudinary" as CLD
+participant "Notification\nService" as NOT
+
+== Phase 1 : Inscription multipart ==
+
+J -> FE : Remplit formulaire + photo\n(email, password, n° carte, média)
+activate FE
+FE -> GW : POST /api/auth/register-press\nmultipart/form-data
+activate GW
+GW -> AUT : route interne (sans JWT, public)
+deactivate GW
+activate AUT
+
+AUT -> AUT : Crée User\n(role=JOURNALISTE, statut=EN_ATTENTE)
+note right of AUT
+  Aucun token émis
+  car compte EN_ATTENTE
+end note
+
+opt photo jointe
+  AUT -> CLD : upload photo\n(folder profile-photos/journalist-{id})
+  activate CLD
+  CLD --> AUT : secureUrl
+  deactivate CLD
+  AUT -> AUT : setPhotoUrl(secureUrl)
+end
+
+AUT --> FE : 202 Accepted\n{status: "EN_ATTENTE"}
+deactivate AUT
+FE --> J : "Votre demande a été envoyée"
+deactivate FE
+
+== Phase 2 : Validation ADMIN ==
+
+note over J, NOT
+  ⏳ L'ADMIN examine la demande
+  dans son dashboard
+end note
+
+== Phase 3 : Demande d'accréditation (après validation) ==
+
+J -> FE : Sélectionne un match du calendrier
+activate FE
+FE -> GW : POST /api/auth/presse/accreditations\nAuthorization: Bearer JWT
+activate GW
+GW -> AUT : route (X-User-Role=JOURNALISTE)
+deactivate GW
+activate AUT
+
+AUT -> AUT : Vérifie role == JOURNALISTE\n+ photoUrl non null
+note right of AUT
+  400 PHOTO_REQUIRED
+  si photo manquante
+end note
+
+AUT -> AUT : Crée PressAccreditation\n(status=EN_ATTENTE)
+AUT --> FE : 201 Created PressAccreditationResponse
+deactivate AUT
+FE --> J : "Demande envoyée"
+deactivate FE
+
+== Phase 4 : Décision ADMIN (VALIDE / REFUSE) ==
+
+J -> FE : Consulte ses accréditations
+note over J, NOT
+  ⏳ ADMIN ouvre la file d'attente
+  GET /api/auth/admin/press/accreditations/pending
+  → PATCH /{id}/validate ou /{id}/refuse
+  (motif obligatoire en cas de refus)
+end note
+
+== Phase 5 : Téléchargement badge ==
+
+alt accréditation VALIDÉE
+  J -> FE : Demande badge
+  activate FE
+  FE -> GW : GET /api/auth/presse/accreditations/{id}/badge
+  activate GW
+  GW -> AUT : route (X-User-Role=JOURNALISTE/ADMIN)
+  deactivate GW
+  activate AUT
+  AUT -> AUT : Vérifie propriétaire OU ADMIN\n+ statut == VALIDE
+  AUT -> AUT : OpenPDF.generateBadge(...)
+  AUT --> FE : 200 application/pdf
+  deactivate AUT
+  FE --> J : Télécharge badge-accreditation-{id}.pdf
+  deactivate FE
+end
+
+note over J, NOT
+  Garanties :
+  - 1 accréditation par (user, match) — UNIQUE
+  - Notif in-app à chaque transition
+  - Motif de refus visible côté journaliste
+end note
+
+@enduml

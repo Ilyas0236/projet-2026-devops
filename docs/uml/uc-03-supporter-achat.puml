@@ -1,0 +1,160 @@
+@startuml uc-03-supporter-achat
+' ============================================================
+' UC-3 — DIAGRAMME DE CAS D'UTILISATION
+' Côté SUPPORTER — Achats, abonnements, dons & E-Cash
+' Source : ticket-service, auth-service/subscriptions, shop-service,
+'          payment-service (controllers avec @PreAuthorize)
+' ============================================================
+' Conventions UML 2.5 :
+'   * swimlanes = ADHERENT, PARENT
+'   * PARENT herite de ADHERENT (triangle creux)
+'   * B.18 : <<extend>> "Acheter pour mon fils"
+'   * B.12 : adhesion ACTIF n'est pas requise pour l'achat (seulement vote election)
+'   * Boutique : PAS de B.18 (un parent ne peut PAS acheter boutique pour enfant)
+' ============================================================
+
+left to right direction
+skinparam actorStyle awesome
+skinparam rectangle {
+  RoundCorner 15
+  BackgroundColor #FFFFFF
+  BorderColor #444444
+}
+skinparam package {
+  BackgroundColor #F5F5F5
+  BorderColor #888888
+  BorderThickness 1
+}
+skinparam usecase {
+  BackgroundColor #E8F0FE
+  BorderColor #1E3A8A
+  BorderThickness 1
+}
+skinparam note {
+  BackgroundColor #FFF8E1
+  BorderColor #C79100
+}
+skinparam defaultFontSize 11
+skinparam shadowing false
+
+' ============================================================
+' ACTEURS
+' ============================================================
+actor "ADHERENT" as ADH
+actor "PARENT" as PAR
+
+' Heritage
+PAR --|> ADH
+
+' ============================================================
+' SYSTEME
+' ============================================================
+rectangle "Plateforme Wydad Digital — Achats, abonnements & dons" {
+
+  package "Billetterie" {
+    usecase "S'authentifier" as UC_LOGIN
+    usecase "Acheter un billet" as UC_BIL
+    usecase "Acheter un billet\npour mon fils (B.18)" as UC_BILK
+    usecase "Scanner un QR code\n(STAFF/ADMIN)" as UC_SCAN
+  }
+
+  package "Abonnement saisonnier" {
+    usecase "Acheter un abonnement" as UC_SUB
+    usecase "Acheter un abonnement\npour mon fils (B.18)" as UC_SUBK
+    usecase "Telecharger ma carte\nmembre (PDF + QR)" as UC_MBR
+    usecase "Consulter mon\nabonnement actif" as UC_MYA
+  }
+
+  package "Boutique" {
+    usecase "Parcourir le catalogue" as UC_CAT
+    usecase "Gerer le panier\n(Ajouter / modifier / vider)" as UC_CART
+    usecase "Valider ma commande" as UC_ORD
+    usecase "Telecharger ma facture\nboutique (PDF)" as UC_FAC
+  }
+
+  package "Dons & E-Cash" {
+    usecase "Faire un don (50-500 DH)" as UC_DON
+    usecase "Recharger mon E-Cash" as UC_EC
+    usecase "Consulter l'historique\nE-Cash" as UC_ECH
+  }
+
+  package "Mes achats (unifies)" {
+    usecase "Consulter mes 6 onglets\n(Mes achats)" as UC_MBUY
+    usecase "Voir mes billets achetes" as UC_MBT
+    usecase "Voir mes commandes boutique" as UC_MBC
+  }
+}
+
+' ============================================================
+' INCLUDES
+' ============================================================
+note "<<include>> losange PLEIN =\ndependance OBLIGATOIRE" as N1
+
+UC_BIL  ..> UC_LOGIN : <<include>>
+UC_BILK ..> UC_LOGIN : <<include>>
+UC_SCAN ..> UC_LOGIN : <<include>>
+UC_SUB  ..> UC_LOGIN : <<include>>
+UC_SUBK ..> UC_LOGIN : <<include>>
+UC_MBR  ..> UC_LOGIN : <<include>>
+UC_MYA  ..> UC_LOGIN : <<include>>
+UC_CART ..> UC_LOGIN : <<include>>
+UC_ORD  ..> UC_LOGIN : <<include>>
+UC_FAC  ..> UC_LOGIN : <<include>>
+UC_DON  ..> UC_LOGIN : <<include>>
+UC_EC   ..> UC_LOGIN : <<include>>
+UC_ECH  ..> UC_LOGIN : <<include>>
+UC_MBUY ..> UC_LOGIN : <<include>>
+UC_MBT  ..> UC_LOGIN : <<include>>
+UC_MBC  ..> UC_LOGIN : <<include>>
+
+' ============================================================
+' EXTENDS — B.18
+' ============================================================
+note "B.18 = <<extend>> losange VIDE :\nle parent peut acheter pour son\nfils via User shadow\n(enfant-{id}@wac.parent)" as N2
+
+UC_BILK ..> UC_BIL : <<extend>>
+UC_SUBK ..> UC_SUB : <<extend>>
+
+' Facture PDF etend un achat reussi
+UC_FAC  ..> UC_ORD  : <<extend>>
+
+' ============================================================
+' ASSOCIATIONS
+' ============================================================
+
+' --- ADHERENT ---
+ADH --> UC_BIL
+ADH --> UC_SUB
+ADH --> UC_MBR
+ADH --> UC_MYA
+ADH --> UC_CAT
+ADH --> UC_CART
+ADH --> UC_ORD
+ADH --> UC_FAC
+ADH --> UC_DON
+ADH --> UC_EC
+ADH --> UC_ECH
+ADH --> UC_MBUY
+ADH --> UC_MBT
+ADH --> UC_MBC
+
+' --- PARENT (herite + B.18) ---
+PAR --> UC_BILK
+PAR --> UC_SUBK
+
+' ============================================================
+' LEGENDE
+' ============================================================
+legend right
+  | **Symbole** | **Signification** |
+  | Acteur | Personne externe au systeme |
+  | Rectangle | Frontiere du systeme |
+  | Package | Sous-domaine fonctionnel |
+  | **--** | Association acteur <-> UC |
+  | **..** | <<include>> (obligatoire) / <<extend>> (conditionnel) |
+  | **(triangle creux)** | PARENT herite de ADHERENT |
+  | **B.18** | Acheter pour mon fils (ticket OU abonnement) |
+  | Source | ticket-service, auth-service/subscriptions, shop-service, payment-service |
+endlegend
+
+@enduml

@@ -1,0 +1,123 @@
+@startuml uc-06-supporter-votes
+' ============================================================
+' UC-6 — DIAGRAMME DE CAS D'UTILISATION
+' Côté SUPPORTER — Votes & gouvernance (B.8 + B.12)
+' Source : election-service (ElectionController, PollController)
+'          ElectionService.java:218-228 (B.12 vote election)
+'          PollService.java:77-111 (PAS de B.12)
+' ============================================================
+' Conventions UML 2.5 :
+'   * swimlanes = ADHERENT, PARENT
+'   * B.12 : election = abo ACTIF obligatoire, sondage = NON
+'   * <<include>> "Verifier abonnement ACTIF" seulement pour election
+'   * <<extend>> "Acheter carte" pour proposer l'achat si non abonne
+' ============================================================
+
+left to right direction
+skinparam actorStyle awesome
+skinparam rectangle {
+  RoundCorner 15
+  BackgroundColor #FFFFFF
+  BorderColor #444444
+}
+skinparam package {
+  BackgroundColor #F5F5F5
+  BorderColor #888888
+  BorderThickness 1
+}
+skinparam usecase {
+  BackgroundColor #E8F0FE
+  BorderColor #1E3A8A
+  BorderThickness 1
+}
+skinparam note {
+  BackgroundColor #FFF8E1
+  BorderColor #C79100
+}
+skinparam defaultFontSize 11
+skinparam shadowing false
+
+' ============================================================
+' ACTEURS
+' ============================================================
+actor "ADHERENT" as ADH
+actor "PARENT" as PAR
+
+' Heritage
+PAR --|> ADH
+
+' ============================================================
+' SYSTEME
+' ============================================================
+rectangle "Plateforme Wydad Digital — Votes & gouvernance" {
+
+  package "Authentification" {
+    usecase "S'authentifier" as UC_LOGIN
+  }
+
+  package "Sondages (sans B.12)" {
+    usecase "Voter a un sondage" as UC_POLL
+    usecase "Consulter les resultats\nd'un sondage" as UC_PRES
+  }
+
+  package "Elections presidente (B.12)" {
+    usecase "Voter a une election" as UC_ELEC
+    usecase "Verifier abonnement ACTIF\n(B.12 — regle metier)" as UC_CHK
+    usecase "Consulter les resultats\nd'une election" as UC_ERES
+  }
+
+  package "B.12 — Fallback achat" {
+    usecase "Acheter une carte\nd'abonnement" as UC_BUY
+  }
+}
+
+' ============================================================
+' INCLUDES
+' ============================================================
+note "<<include>> losange PLEIN =\ndependance OBLIGATOIRE" as N1
+
+UC_POLL ..> UC_LOGIN : <<include>>
+UC_PRES ..> UC_LOGIN : <<include>>
+UC_ELEC ..> UC_LOGIN : <<include>>
+UC_ERES ..> UC_LOGIN : <<include>>
+
+' B.12 : election inclut verif abo ACTIF
+UC_ELEC ..> UC_CHK : <<include>>
+note "B.12 : abonnement ACTIF obligatoire\npour voter une election.\nLes sondages (PollService) ne sont\nPAS soumis a cette regle." as N2
+
+' ============================================================
+' EXTENDS — conditionnel
+' ============================================================
+note "<<extend>> losange VIDE =\ndependance CONDITIONNELLE" as N3
+
+' Si non abonne, proposer l'achat (CTA "Acheter ma carte")
+UC_CHK ..> UC_BUY : <<extend>>\n(CTA "Acheter carte")
+
+' ============================================================
+' ASSOCIATIONS
+' ============================================================
+
+' --- ADHERENT ---
+ADH --> UC_POLL
+ADH --> UC_PRES
+ADH --> UC_ELEC
+ADH --> UC_ERES
+ADH --> UC_BUY
+
+' --- PARENT (herite de ADHERENT) ---
+
+' ============================================================
+' LEGENDE
+' ============================================================
+legend right
+  | **Symbole** | **Signification** |
+  | Acteur | ADHERENT |
+  | Rectangle | Frontiere du systeme |
+  | Package | Sous-domaine fonctionnel |
+  | **--** | Association acteur <-> UC |
+  | **..** | <<include>> (obligatoire) / <<extend>> (conditionnel) |
+  | **B.12** | Election = abo ACTIF obligatoire (ADMIN exempt) |
+  | Source | election-service/ElectionService.java:218-228 |
+endlegend
+
+@enduml

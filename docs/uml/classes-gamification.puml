@@ -1,0 +1,321 @@
+@startuml classes-gamification
+' ============================================================
+' Diagramme de classes — DOMAINE GOUVERNANCE, GAMIFICATION & MESSAGERIE
+' Source : election-service + gamification-service + communication-service
+' ============================================================
+' Conventions UML 2.5 :
+'   * classes JPA reelles avec attributs principaux
+'   * cardinalites des @OneToMany / @ManyToOne
+'   * enums (ElectionStatus, ChallengeType, PressAccreditationStatus, ...)
+' ============================================================
+
+left to right direction
+skinparam class {
+  BackgroundColor #FFFFFF
+  BorderColor #1E3A8A
+  ArrowColor #1E3A8A
+  FontSize 11
+}
+skinparam package {
+  BackgroundColor #F5F5F5
+  BorderColor #888888
+}
+skinparam enum {
+  BackgroundColor #FFF8E1
+  BorderColor #C79100
+}
+skinparam stereotypeCBackgroundColor #E8F0FE
+skinparam shadowing false
+hide circle
+hide methods
+
+' ============================================================
+' ENUMS
+' ============================================================
+enum ElectionStatus {
+  OPEN
+  CLOSED
+}
+enum ChallengeType {
+  SUBMIT_PREDICTIONS
+  WIN_EXACT_SCORES
+  REACH_POINTS
+}
+enum UserChallenge.Status {
+  IN_PROGRESS
+  COMPLETED
+}
+
+' ============================================================
+' 1) GOUVERNANCE (election-service, 8089)
+' ============================================================
+package "Gouvernance" {
+  class Election <<Entity>> {
+    -id : Long
+    -title : String
+    -startsAt : LocalDateTime
+    -endsAt : LocalDateTime
+    -status : ElectionStatus
+    -published : boolean
+    -winnerCandidateId : Long
+    -createdByEmail : String
+    -closedAt : LocalDateTime
+    -resultsHidden : boolean
+    -createdAt : LocalDateTime
+  }
+
+  class ElectionCandidate <<Entity>> {
+    -id : Long
+    -fullName : String
+    -presentation : String
+    -photoUrl : String
+    -displayOrder : int
+    -userId : Long
+  }
+
+  class ElectionVote <<Entity>> {
+    -id : Long
+    -userId : Long
+    -votedAt : LocalDateTime
+  }
+
+  class Poll <<Entity>> {
+    -id : Long
+    -question : String
+    -options : List<String>
+    -active : boolean
+    -closesAt : LocalDateTime
+    -createdByEmail : String
+    -createdAt : LocalDateTime
+  }
+
+  class PollVote <<Entity>> {
+    -id : Long
+    -userId : Long
+    -optionIndex : int
+    -votedAt : LocalDateTime
+  }
+}
+
+' ============================================================
+' 2) GAMIFICATION (gamification-service, 8088)
+' ============================================================
+package "Gamification" {
+  class UserPoints <<Entity>> {
+    -userId : Long
+    -totalPoints : Integer
+    -level : Integer
+    -lastUpdatedAt : LocalDateTime
+  }
+
+  class PointTransaction <<Entity>> {
+    -id : Long
+    -userId : Long
+    -amount : Integer
+    -source : String
+    -refId : Long
+    -label : String
+    -createdAt : LocalDateTime
+  }
+
+  class PointRule <<Entity>> {
+    -id : Long
+    -ruleKey : String {unique}
+    -label : String
+    -description : String
+    -value : Integer
+    -createdAt : LocalDateTime
+    -updatedAt : LocalDateTime
+  }
+
+  class BadgeDefinition <<Entity>> {
+    -id : Long
+    -code : String {unique}
+    -name : String
+    -description : String
+    -minPoints : Integer
+    -active : boolean
+    -createdAt : LocalDateTime
+    -updatedAt : LocalDateTime
+  }
+
+  class UserBadge <<Entity>> {
+    -id : Long
+    -userId : Long
+    -awardedAt : LocalDateTime
+  }
+
+  class Challenge <<Entity>> {
+    -id : Long
+    -title : String
+    -description : String
+    -challengeType : ChallengeType
+    -target : Integer
+    -rewardPoints : Integer
+    -startsAt : LocalDateTime
+    -endsAt : LocalDateTime
+    -active : boolean
+    -createdAt : LocalDateTime
+  }
+
+  class UserChallenge <<Entity>> {
+    -id : Long
+    -userId : Long
+    -challengeId : Long
+    -progress : Integer
+    -status : Status
+    -createdAt : LocalDateTime
+    -completedAt : LocalDateTime
+  }
+
+  class Prediction <<Entity>> {
+    -id : Long
+    -userId : Long
+    -matchId : Long
+    -predictedHomeScore : Integer
+    -predictedAwayScore : Integer
+    -status : String
+    -pointsEarned : Integer
+    -predictedAt : LocalDateTime
+  }
+}
+
+' ============================================================
+' 3) MESSAGERIE (communication-service, 8090)
+' ============================================================
+package "Messagerie & Annonces" {
+  class Message <<Entity>> {
+    -id : Long
+    -senderUserId : Long
+    -senderName : String
+    -senderRole : String
+    -recipientUserId : Long
+    -content : String
+    -readAt : LocalDateTime
+    -attachmentPublicId : String
+    -attachmentSecureUrl : String
+    -attachmentResourceType : String
+    -attachmentFileName : String
+    -attachmentSizeBytes : Long
+    -createdAt : LocalDateTime
+  }
+
+  class TeamMessage <<Entity>> {
+    -id : Long
+    -sportType : String
+    -category : String
+    -senderUserId : Long
+    -senderName : String
+    -senderRole : String
+    -content : String
+    -mediaUrl : String
+    -mediaType : String
+    -createdAt : LocalDateTime
+  }
+
+  class Announcement <<Entity>> {
+    -id : Long
+    -title : String
+    -body : String
+    -sportType : String
+    -category : String
+    -createdByStaffId : Long
+    -createdByName : String
+    -createdAt : LocalDateTime
+  }
+}
+
+' ============================================================
+' RELATIONS JPA
+' ============================================================
+Election "1" *-- "0..*" ElectionCandidate : candidats
+Election "1" *-- "0..*" ElectionVote : votes
+ElectionCandidate "1" --> "0..*" ElectionVote : reçu
+Election --> ElectionStatus : cycle de vie
+ElectionCandidate --> Election : candidat à
+ElectionVote --> Election : vote pour
+ElectionVote --> ElectionCandidate : choix
+
+Poll "1" *-- "0..*" PollVote : votes
+Poll "1" *-- "0..*" String : options (ElementCollection + OrderColumn)
+PollVote --> Poll : réponse
+
+UserPoints "1" *-- "0..*" PointTransaction : historique
+UserPoints "1" *-- "0..*" UserBadge : badges obtenus
+BadgeDefinition "1" --> "0..*" UserBadge : palier atteint
+Challenge "1" --> "0..*" UserChallenge : progression
+UserChallenge --> UserChallenge.Status : cycle
+Prediction --> "0..1" Match : FK logique (content-service)
+
+' Messagerie — pas de FK JPA (sender/recipient = userId Long)
+Message --> User : expéditeur (FK logique)
+Message --> User : destinataire (FK logique)
+TeamMessage --> User : expéditeur (FK logique)
+Announcement --> User : auteur (FK logique)
+
+' ============================================================
+' NOTES METIER
+' ============================================================
+note top of Election
+  **B.8 — Cycle de vie à sens unique**
+  ────────────────────────────────
+  OPEN → CLOSED (one-shot)
+  closeOnly gèle sans publier
+  publishResults exige votes == éligibles
+  resultsHidden : masque résultats partiels
+  pendant le scrutin (B.8.e)
+end note
+
+note right of ElectionVote
+  **Contrainte d'unicité**
+  ──────────────────────
+  UNIQUE (election_id, user_id)
+  Rempart BDD contre double vote
+  même en concurrence
+end note
+
+note left of UserPoints
+  **Solde agrégé**
+  ───────────────
+  userId = PK (1 ligne/user)
+  totalPoints = somme de PointTransaction
+  level = totalPoints / 500 (seuil)
+  Pas de mise à jour manuelle
+end note
+
+note right of Challenge
+  **B.8.c — Défi temporel**
+  ────────────────────────
+  3 types objectifs
+  rewardPoints crédite auto
+  à progress >= target
+  Evaluation à la demande ou fin de match
+end note
+
+note left of Prediction
+  **B.8 — Pronostics**
+  ───────────────────
+  PENDING → WON / LOST
+  Points crédités à la résolution
+  (exact = +25, signe = +10, bonus = +10)
+  Match issu de content-service (matchId Long)
+end note
+
+note bottom of Message
+  **V2.5 — Messagerie unifiée**
+  ───────────────────────────
+  Message 1-to-1 + pièce jointe (V2.3)
+  TeamMessage 1-to-N (chat groupe)
+  Attachment Cloudinary signed URL
+  Couvre joueurs, staff, entraîneurs, président
+end note
+
+note right of TeamMessage
+  **Phase 4 — Chat WhatsApp-like**
+  ──────────────────────────────
+  Groupe = sportType + category
+  Adhésion déduite du roster (pas stockée)
+  Média URL (photo) depuis V2.5
+end note
+
+@enduml

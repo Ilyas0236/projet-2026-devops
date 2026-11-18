@@ -1,0 +1,204 @@
+@startuml uc-10-club-messagerie
+' ============================================================
+' UC-10 — DIAGRAMME DE CAS D'UTILISATION
+' Côté CLUB INTERNE — Messagerie unifiée (V2.5)
+' Source : communication-service/MessagingController, TeamChatController
+'          TeamChatService, MessagingService
+'          TeamChatAuthInterceptor (verif roster STOMP SUBSCRIBE)
+'          AuthUserInfoClient.findByRoleAndDiscipline (interne V2.5)
+'          MessageMediaService (V2.3 upload)
+' ============================================================
+' Conventions UML 2.5 :
+'   * swimlanes = JOUEUR, STAFF, ENTRAINEUR, PRESIDENT
+'   * ENTRAINEUR herite de STAFF
+'   * 3 canaux : team-chat (groupe discipline), 1-to-1, canal president
+'   * Anti-IDOR strict sameGroup (sportType + category, equalsIgnoreCase)
+'   * V2.5 = team-chat photos + 1-to-1 persistant + canal president + libre
+'   * V2.4 = batch 1..N destinataires (meme discipline)
+' ============================================================
+
+left to right direction
+skinparam actorStyle awesome
+skinparam rectangle {
+  RoundCorner 15
+  BackgroundColor #FFFFFF
+  BorderColor #444444
+}
+skinparam package {
+  BackgroundColor #F5F5F5
+  BorderColor #888888
+  BorderThickness 1
+}
+skinparam usecase {
+  BackgroundColor #E8F0FE
+  BorderColor #1E3A8A
+  BorderThickness 1
+}
+skinparam note {
+  BackgroundColor #FFF8E1
+  BorderColor #C79100
+}
+skinparam defaultFontSize 11
+skinparam shadowing false
+
+' ============================================================
+' ACTEURS
+' ============================================================
+actor "JOUEUR" as JEU
+actor "STAFF" as STA
+actor "ENTRAINEUR" as ENT
+actor "PRESIDENT" as PRE
+
+' Heritage : ENTRAINEUR herite de STAFF
+ENT --|> STA
+
+' ============================================================
+' SYSTEME
+' ============================================================
+rectangle "Plateforme Wydad Digital — Messagerie unifiée (V2.5)" {
+
+  package "Authentification" {
+    usecase "S'authentifier" as UC_LOGIN
+  }
+
+  package "Team-chat groupe (STOMP /topic)" {
+    usecase "Chatter en groupe\n(team-chat WS STOMP)" as UC_TC
+    usecase "Poster un message\navec photo (REST /messages etendu)" as UC_TCP
+    usecase "Uploader un media\nmultipart /media (REST)" as UC_UPM
+    usecase "Telecharger l'historique\ndu groupe (REST)" as UC_TCH
+  }
+
+  package "Messagerie 1-to-1" {
+    usecase "Envoyer un message\n1-to-1 (avec photo)" as UC_M1
+    usecase "Envoyer un message\na 1..N destinataires (batch)" as UC_MN
+    usecase "Lire la conversation\navec un interlocuteur" as UC_MC
+    usecase "Voir ma boite\nde reception" as UC_MI
+    usecase "Recuperer l'URL d'un\nattachment (signed URL)" as UC_MURL
+  }
+
+  package "Canal president (V2.5)" {
+    usecase "Resoudre le president\nde ma discipline" as UC_PRES
+    usecase "Ecrire au president\nde ma discipline" as UC_PW
+  }
+
+  package "Selection libre (V2.5)" {
+    usecase "Lister les contacts\nde ma discipline (interne)" as UC_LCD
+    usecase "Nouveau message libre\n(selection 1..N parmi discipline)" as UC_NL
+  }
+
+  package "Annonces equipe" {
+    usecase "Publier une annonce\nequipe (STAFF/ADMIN)" as UC_ANN
+    usecase "Lire les annonces" as UC_ANNR
+  }
+
+  package "Medias (V2.3)" {
+    usecase "Uploader une piece jointe\n(multipart)" as UC_UPL
+  }
+}
+
+' ============================================================
+' INCLUDES
+' ============================================================
+note "<<include>> losange PLEIN =\ndependance OBLIGATOIRE" as N1
+
+UC_TC   ..> UC_LOGIN : <<include>>
+UC_TCP  ..> UC_LOGIN : <<include>>
+UC_UPM  ..> UC_LOGIN : <<include>>
+UC_TCH  ..> UC_LOGIN : <<include>>
+UC_M1   ..> UC_LOGIN : <<include>>
+UC_MN   ..> UC_LOGIN : <<include>>
+UC_MC   ..> UC_LOGIN : <<include>>
+UC_MI   ..> UC_LOGIN : <<include>>
+UC_MURL ..> UC_LOGIN : <<include>>
+UC_PRES ..> UC_LOGIN : <<include>>
+UC_PW   ..> UC_LOGIN : <<include>>
+UC_LCD  ..> UC_LOGIN : <<include>>
+UC_NL   ..> UC_LOGIN : <<include>>
+UC_ANN  ..> UC_LOGIN : <<include>>
+UC_ANNR ..> UC_LOGIN : <<include>>
+UC_UPL  ..> UC_LOGIN : <<include>>
+
+' --- Endpoints internes ---
+UC_LCD  ..> UC_UPL : <<extend>>\n[getMyPresident + filter discipline]
+UC_NL   ..> UC_LCD  : <<include>>
+UC_TCP  ..> UC_UPM  : <<include>>\n[POST /messages avec attachment]
+UC_M1   ..> UC_UPL  : <<include>>
+UC_MN   ..> UC_UPL  : <<include>>
+
+' ============================================================
+' ASSOCIATIONS
+' ============================================================
+
+' --- JOUEUR ---
+JEU --> UC_TC
+JEU --> UC_TCP
+JEU --> UC_TCH
+JEU --> UC_M1
+JEU --> UC_MN
+JEU --> UC_MC
+JEU --> UC_MI
+JEU --> UC_MURL
+JEU --> UC_PRES
+JEU --> UC_PW
+JEU --> UC_LCD
+JEU --> UC_NL
+JEU --> UC_ANNR
+JEU --> UC_UPL
+JEU --> UC_UPM
+
+' --- STAFF ---
+STA --> UC_TC
+STA --> UC_TCP
+STA --> UC_TCH
+STA --> UC_M1
+STA --> UC_MN
+STA --> UC_MC
+STA --> UC_MI
+STA --> UC_MURL
+STA --> UC_PRES
+STA --> UC_PW
+STA --> UC_LCD
+STA --> UC_NL
+STA --> UC_ANN
+STA --> UC_ANNR
+STA --> UC_UPL
+STA --> UC_UPM
+
+' --- ENTRAINEUR (herite) ---
+
+' --- PRESIDENT ---
+PRE --> UC_TC
+PRE --> UC_TCP
+PRE --> UC_TCH
+PRE --> UC_M1
+PRE --> UC_MN
+PRE --> UC_MC
+PRE --> UC_MI
+PRE --> UC_MURL
+PRE --> UC_LCD
+PRE --> UC_NL
+PRE --> UC_ANN
+PRE --> UC_ANNR
+PRE --> UC_UPL
+PRE --> UC_UPM
+
+' ============================================================
+' LEGENDE
+' ============================================================
+legend right
+  | **Symbole** | **Signification** |
+  | Acteur | JOUEUR, STAFF, ENTRAINEUR, PRESIDENT |
+  | Rectangle | Frontiere du systeme |
+  | Package | Sous-domaine fonctionnel |
+  | **--** | Association acteur <-> UC |
+  | **..** | <<include>> (obligatoire) |
+  | **V2.5** | Photos + 1-to-1 persistant + canal president + libre |
+  | **V2.4** | Batch 1..N destinataires (meme discipline) |
+  | **V2.3** | Photos dans la messagerie 1-to-1 |
+  | **V2.2** | STOMP team-chat (Phase 4) |
+  | **Anti-IDOR** | sameGroup sportType+category equalsIgnoreCase |
+  | **Interne** | /api/auth/users/by-role-and-discipline (X-Internal-Secret) |
+  | Source | communication-service, TeamChatAuthInterceptor |
+endlegend
+
+@enduml

@@ -1,0 +1,116 @@
+@startuml uc-04-supporter-academie
+' ============================================================
+' UC-4 — DIAGRAMME DE CAS D'UTILISATION
+' Côté SUPPORTER — Academie PARENT (B.18)
+' Source : sports-service/academy (controllers + StaffController)
+'          wydad-frontend/src/app/pages/academie/**
+' ============================================================
+' Conventions UML 2.5 :
+'   * swimlanes = PARENT (herite de ADHERENT)
+'   * PARENT herite de ADHERENT (triangle creux)
+'   * 4 etapes d'inscription obligatoires
+' ============================================================
+
+left to right direction
+skinparam actorStyle awesome
+skinparam rectangle {
+  RoundCorner 15
+  BackgroundColor #FFFFFF
+  BorderColor #444444
+}
+skinparam package {
+  BackgroundColor #F5F5F5
+  BorderColor #888888
+  BorderThickness 1
+}
+skinparam usecase {
+  BackgroundColor #E8F0FE
+  BorderColor #1E3A8A
+  BorderThickness 1
+}
+skinparam note {
+  BackgroundColor #FFF8E1
+  BorderColor #C79100
+}
+skinparam defaultFontSize 11
+skinparam shadowing false
+
+' ============================================================
+' ACTEURS
+' ============================================================
+actor "ADHERENT" as ADH
+actor "PARENT" as PAR
+
+' Heritage
+PAR --|> ADH
+
+' ============================================================
+' SYSTEME
+' ============================================================
+rectangle "Plateforme Wydad Digital — Academie (PARENT)" {
+
+  package "Inscription academie (4 etapes)" {
+    usecase "S'authentifier" as UC_LOGIN
+    usecase "Remplir infos enfant\n(etape 1)" as UC_S1
+    usecase "Uploader acte naissance\n(etape 2)" as UC_S2
+    usecase "Uploader certificat medical\n(etape 3)" as UC_S3
+    usecase "Uploader photo enfant\n(etape 4)" as UC_S4
+    usecase "Inscrire un enfant" as UC_INS
+  }
+
+  package "Suivi des enfants" {
+    usecase "Voir mes enfants inscrits" as UC_LIST
+    usecase "Consulter le planning\nd'un enfant" as UC_PLAN
+    usecase "Telecharger les documents\nd'un enfant (PDF)" as UC_DOC
+  }
+
+  package "B.18 — Achats lies" {
+    usecase "Acheter un abonnement\npour mon fils" as UC_SUBK
+    usecase "Acheter un billet\npour mon fils" as UC_BILK
+  }
+}
+
+' ============================================================
+' INCLUDES — 4 etapes d'inscription sont obligatoires
+' ============================================================
+note "<<include>> losange PLEIN =\ndependance OBLIGATOIRE" as N1
+
+UC_LIST ..> UC_LOGIN : <<include>>
+UC_PLAN ..> UC_LOGIN : <<include>>
+UC_DOC  ..> UC_LOGIN : <<include>>
+UC_SUBK ..> UC_LOGIN : <<include>>
+UC_BILK ..> UC_LOGIN : <<include>>
+
+UC_INS ..> UC_S1 : <<include>>
+UC_INS ..> UC_S2 : <<include>>
+UC_INS ..> UC_S3 : <<include>>
+UC_INS ..> UC_S4 : <<include>>
+UC_INS ..> UC_LOGIN : <<include>>
+
+' ============================================================
+' ASSOCIATIONS
+' ============================================================
+
+' --- PARENT ---
+PAR --> UC_INS
+PAR --> UC_LIST
+PAR --> UC_PLAN
+PAR --> UC_DOC
+PAR --> UC_SUBK
+PAR --> UC_BILK
+
+' ============================================================
+' LEGENDE
+' ============================================================
+legend right
+  | **Symbole** | **Signification** |
+  | Acteur | PARENT (heritier de ADHERENT) |
+  | Rectangle | Frontiere du systeme |
+  | Package | Sous-domaine fonctionnel |
+  | **--** | Association acteur <-> UC |
+  | **..** | <<include>> (obligatoire) |
+  | **B.18** | Bandeau 'Pour mon fils' (achats pour enfant) |
+  | Source | sports-service/academy, ChildUserService (auth-service) |
+endlegend
+
+@enduml

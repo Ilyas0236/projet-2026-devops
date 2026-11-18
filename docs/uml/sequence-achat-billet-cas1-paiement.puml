@@ -1,0 +1,116 @@
+@startuml sequence-achat-billet-cas1-paiement
+' ============================================================
+' Diagramme de sequence : Achat d'un billet match
+' PARTIE 1.bis/3 - Detail paiement E-Cash (402 vs 200)
+' Scenario PFA - Ilyas Ait Maina (EMSI Maroc)
+' Sources : code qui compile (ticket-service, payment-service)
+' Regles : B.12 (debit E-Cash), verrous pessimistes
+'          Flux achat global = sequence-achat-billet-cas1-visiteur.puml
+' ============================================================
+
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam dpi 200
+skinparam sequenceArrowThickness 1
+skinparam sequenceParticipantBackgroundColor #FDF2F2
+skinparam sequenceParticipantBorderColor #B91C1C
+skinparam sequenceLifeLineBorderColor #9CA3AF
+skinparam sequenceMessageAlign center
+skinparam sequenceGroupBackgroundColor #FEF3C7
+skinparam sequenceGroupBorderColor #D97706
+skinparam defaultFontSize 11
+skinparam defaultFontName "Helvetica"
+
+title Achat billet - Paiement E-Cash (cas 402 solde insuffisant vs 200 success)
+
+participant ":TicketService\n:ticket-service"                          as TSV
+participant ":PaymentClient\n:RestTemplate X-Internal-Secret"           as PCI
+participant ":PaymentController\n:payment-service :8083"                as PAY
+participant ":PaymentService\n:payment-service"                         as PSY
+participant ":NotificationClient\n:RestTemplate X-Internal-Secret"      as NCI
+participant ":NotificationService\n:notification-service :8086"        as NOT
+actor "Adherent"                                                       as AH
+
+== Preambule : billets crees en BDD, places debitees ==
+note over TSV
+  Vient de : sequence-achat-billet-cas1-visiteur.puml
+  - INSERT tickets x quantity (status=PAID, qrCodeImage)
+  - UPDATE sections SET available_seats -= qty
+  - UPDATE events    SET sold_tickets += qty
+  -> transaction ticket_db commit
+  -> appel paiement ci-dessous
+end note
+
+TSV -> PCI : debitEcash(email, total, "WAC-TICKET-"+eventId)
+activate PCI
+PCI -> PAY : POST /api/payment/internal/debit\n              X-Internal-Secret\n              { email, amount, reference }
+activate PAY
+PAY -> PAY : isInternalCallAuthorized(secret) -> true
+PAY -> PSY : internalDebit(email, amount, reference)
+activate PSY
+
+== Cas A - solde insuffisant (402 Payment Required) ==
+alt [Solde E-Cash < montant]
+  PSY -> PSY : SQL SELECT e_cash_accounts\n                 WHERE email=:e FOR UPDATE
+  note right of PSY
+    payment_db : verrou pessimiste 2s
+    sur la ligne e_cash_accounts
+    -> anti double-debit concurentiel
+  end note
+  PSY -> PSY : balance < amount
+  PSY --> PAY : throw InsufficientFundsException
+  deactivate PSY
+  PAY --> PCI : 402 Payment Required\n                { error:"INSUFFICIENT_FUNDS",\n                  available, required }
+  PCI --> TSV : 402 InsufficientFundsException
+  deactivate PAY
+  deactivate PCI
+
+  note over TSV
+    @Transactional -> ROLLBACK
+    INSERT tickets + UPDATE sections/events
+    -> placees liberees, aucun billet fantome.
+    Le client n'a rien achete.
+  end note
+
+  TSV --> AH : 402 "Solde E-cash insuffisant (disponible : X DH)"
+  note right of AH
+    Cote front : BilletterieDetailComponent
+    bandeau "Recharger votre E-Cash"
+    (lien /profil/e-cash) + panier
+    conserve pour re-essai apres recharge.
+  end note
+
+== Cas B - debit reussi (200 OK) ==
+else [Solde E-Cash >= montant]
+  PSY -> PSY : SQL SELECT e_cash_accounts\n                 WHERE email=:e FOR UPDATE
+  PSY -> PSY : balance >= amount
+  PSY -> PSY : SQL UPDATE e_cash_accounts\n                 SET balance = balance - amount
+  PSY -> PSY : SQL INSERT transactions\n                 (type=DEBIT, ref, balanceAfter,\n                  amount, created_at)
+  PSY --> PAY : TransactionResponse { ref, balanceAfter }
+  deactivate PSY
+  PAY --> PCI : 200 OK
+  deactivate PAY
+  PCI --> TSV : TransactionResponse { ref, balanceAfter }
+  deactivate PCI
+
+  note over TSV
+    Paiement OK -> flux achat poursuit :
+    - notifyUser() best-effort
+    - 201 Created TicketResponse
+    - Redirect /profil/billets
+    (cf. fin de sequence-achat-billet-cas1-visiteur.puml)
+  end note
+end
+
+note over TSV, NOT
+  Garanties paiement (B.12) :
+  --------------------------------------
+  * Verrou pessimiste 2s sur e_cash_accounts (anti double-debit)
+  * 402 dedie via InsufficientFundsException (mappe 402, pas 500)
+  * ROLLBACK transactionnel : places liberees si KO
+  * TransactionResponse.reference unique = tracabilite
+  * Pas d'appel PSP externe (ECash = wallet interne)
+  * Paiement carte = log-only (mock V1) -> pas de passage ici
+end note
+
+@enduml

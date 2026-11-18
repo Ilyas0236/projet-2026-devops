@@ -1,0 +1,141 @@
+@startuml sequence-parent-academie
+' ============================================================
+' Séquence — Espace Parent : CRUD dossier enfant académie (B.18)
+'
+' Source code réelle (audit 2026-09-04) :
+'   sports-service/.../controller/AcademyController.java
+'     POST  /api/sports/academy/register                 (PARENT/ADMIN)
+'     GET   /api/sports/academy/parent/{parentUserId}    (PARENT proprio/STAFF/ADMIN)
+'     GET   /api/sports/academy/all                      (STAFF/ADMIN)
+'     PATCH /api/sports/academy/{id}/status?active=...   (STAFF/ADMIN)
+'     POST  /api/sports/academy/{id}/documents  multipart (PARENT proprio/ADMIN)
+'           + docType ∈ {BIRTH_CERTIFICATE, MEDICAL_CERTIFICATE, PHOTO}
+'           + file (JPEG/PNG/WebP/PDF, ≤ 5 Mo)
+'     GET   /api/sports/academy/{id}/documents           (PARENT proprio/STAFF/ADMIN)
+'     GET   /api/sports/academy/{id}/documents/{docType} (download)
+'     GET   /api/sports/academy/internal/{id}            (X-Internal-Secret — auth/ticket)
+'
+' Sécurité IDOR stricte (verifyMembership) :
+'   - Un parent ne peut inscrire / uploader / voir
+'     que les enfants DONT parentUserId == son propre id
+'   - Sans session = pas d'accès (sauf admin)
+' ============================================================
+
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam dpi 150
+skinparam classAttributeIconSize 0
+skinparam nodesep 60
+skinparam ranksep 50
+
+skinparam sequence {
+  ArrowColor #1E3A8A
+  LifeLineBorderColor #1E3A8A
+  LifeLineBackgroundColor #E3F2FD
+  ParticipantBorderColor #1E3A8A
+  ParticipantBackgroundColor #FFFFFF
+  FontSize 11
+  FontStyle bold
+}
+skinparam defaultFontSize 11
+skinparam defaultFontName "Helvetica"
+
+title Séquence 8/9 — Parent : inscription enfant + dépôt pièces académie (B.18)
+
+actor "Parent\n(Khalid, id=42)" as K #E1F5FE
+participant "Frontend\nAngular" as FE #E3F2FD
+participant "API Gateway\n(JWT)" as GW #BBDEFB
+participant "Sports\nService" as SPO #E3F2FD
+database "sports_db" as DB #FFF9C4
+participant "Cloudinary" as CLD #E1BEE7
+
+== Phase 1 — Inscription d'un enfant (Khalid déclare Yassine) ==
+
+K -> FE : 1) Espace Parent > "Mes enfants"\n> + Ajouter enfant (Yassine, 2014-05-12)
+FE -> GW : 2) POST /api/sports/academy/register\n{parentUserId:42, childFullName:"Yassine",\n childBirthDate:2014-05-12, sportType:FOOTBALL, ...}
+GW -> SPO : 3) route (X-User-Role=PARENT, id=42)
+SPO -> SPO : 4) @PreAuthorize hasRole('PARENT')\n+ SportsUserContext.getCurrentUserId()=42
+alt [IDOR : parentUserId != me]
+  SPO --> FE : 403 Inscription pour un autre parent interdite
+  FE --> K : "Vous ne pouvez inscrire que vos propres enfants"
+else [parentUserId == me]
+  SPO -> SPO : 5) AcademyService.registerChild(dto)\n→ INSERT academy_members (id=87, parentUserId=42, active=true)
+  SPO --> FE : 6) 201 Created + AcademyMemberDto
+  FE --> K : 7) "Yassine inscrit (dossier #87)"
+end
+
+== Phase 2 — Dépôt d'une pièce justificative (photo + certificat médical) ==
+
+K -> FE : 8) Sélection photo Yassine + certificat médical PDF
+FE -> FE : 9) Validation front :\nJPEG/PNG/WebP/PDF ≤ 5 Mo, docType ∈ whitelist
+FE -> GW : 10) POST /api/sports/academy/87/documents\n  multipart/form-data\n  - file=@photo.jpg (2.1 Mo, image/jpeg)\n  - docType=PHOTO
+GW -> SPO : 11) route (X-User-Role=PARENT)
+SPO -> SPO : 12) ALLOWED_DOC_KINDS.contains("PHOTO") ✓
+SPO -> SPO : 13) ALLOWED_DOC_TYPES.contains("image/jpeg") ✓\nfile.getSize()=2.1 Mo ≤ 5 Mo ✓
+SPO -> DB : 14) SELECT FROM academy_members WHERE id=87
+DB --> SPO : 15) row (parentUserId=42)
+SPO -> SPO : 16) Vérif IDOR : parentUserId==me(42) ✓
+alt [IDOR : autre parent]
+  SPO --> FE : 403 Ce dossier appartient à un autre parent
+else [propriétaire]
+  SPO -> DB : 17) DELETE ancien docType=PHOTO\nsi présent (ré-upload = remplacement)
+  SPO -> DB : 18) INSERT academy_documents\n(academyMemberId=87, docType=PHOTO,\n fileName=UUID.jpg, data=byte[], size=2.1 Mo,\n ownerUserId=42)
+  SPO --> FE : 19) 201 {docType:PHOTO, fileName:UUID.jpg, size:2202009}
+  FE --> K : 20) "Photo enregistrée"
+end
+
+K -> FE : 21) Idem pour MEDICAL_CERTIFICATE (PDF 800 Ko)
+FE -> GW : 22) POST /api/sports/academy/87/documents\n  multipart\n  - file=@certif.pdf (application/pdf)\n  - docType=MEDICAL_CERTIFICATE
+GW -> SPO : 23) route PARENT + vérifs MIME/taille ✓
+SPO -> DB : 24) INSERT (idem phase 2, docType=MEDICAL)
+SPO --> FE : 25) 201 Created
+FE --> K : 26) "Certificat médical enregistré"
+
+== Phase 3 — Lecture des pièces par STAFF (entraineur Lopez) ==
+
+actor "Staff\n(Lopez, id=8)" as STF #FFF3E0
+STF -> FE : 27) Espace Staff > "Dossiers académie"\n> dossier Yassine
+FE -> GW : 28) GET /api/sports/academy/parent/42
+GW -> SPO : 29) route (X-User-Role=STAFF)
+SPO -> SPO : 30) @PreAuthorize hasRole('STAFF') ✓\npas de check parentUserId (STAFF lit tout)
+SPO -> DB : 31) SELECT FROM academy_members WHERE parentUserId=42
+DB --> SPO : 32) [Yassine, ...]
+SPO --> FE : 33) 200 [AcademyMemberDto]
+FE -> GW : 34) GET /api/sports/academy/87/documents
+GW -> SPO : 35) route STAFF → assertFolderVisible(87)\n(Lopez n'est pas parent mais STAFF → OK)
+SPO --> FE : 36) 200 [{docType:PHOTO, ...},\n  {docType:MEDICAL_CERTIFICATE, ...}]
+STF -> FE : 37) Clique "Télécharger certificat médical"
+FE -> GW : 38) GET /api/sports/academy/87/documents/MEDICAL_CERTIFICATE
+GW -> SPO : 39) route STAFF + assertFolderVisible ✓
+SPO -> DB : 40) SELECT academy_documents WHERE academyMemberId=87\n  AND docType='MEDICAL_CERTIFICATE'
+DB --> SPO : 41) row (data=byte[] PDF)
+SPO --> FE : 42) 200 application/pdf (inline)
+FE --> STF : 43) Affiche PDF dans le navigateur
+
+== Phase 4 — Désactivation du dossier par STAFF ==
+
+STF -> FE : 44) Désactive le dossier (Yassine quitte l'académie)
+FE -> GW : 45) PATCH /api/sports/academy/87/status?active=false
+GW -> SPO : 46) route (X-User-Role=STAFF)
+SPO -> SPO : 47) @PreAuthorize hasRole('STAFF') ✓
+SPO -> DB : 48) UPDATE academy_members SET active=false WHERE id=87
+DB --> SPO : 49) 1 row updated
+SPO --> FE : 50) 200 OK
+FE --> STF : 51) "Dossier désactivé"
+
+legend right
+  |= Phase |= N°
+  | Inscription enfant | 1-7 |
+  | Dépôt photo + certif | 8-26 |
+  | Lecture par STAFF | 27-43 |
+  | Désactivation STAFF | 44-51 |
+  | **IDOR parent** | parentUserId == X-User-Id sinon 403 |
+  | **Whitelist docType** | BIRTH_CERTIFICATE / MEDICAL_CERTIFICATE / PHOTO |
+  | **Whitelist MIME** | image/jpeg, image/png, image/webp, application/pdf |
+  | **Taille max** | 5 Mo par fichier |
+  | **Ré-upload** | DELETE ancien + INSERT (1 seul doc par type) |
+  | **BYTEA natif** | pas @Lob (Hibernate 6 PostgreSQL) |
+  | **STAFF bypass** | voit tous les dossiers, peut désactiver |
+endlegend
+
+@enduml

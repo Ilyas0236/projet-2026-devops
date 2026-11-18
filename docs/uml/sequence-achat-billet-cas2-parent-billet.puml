@@ -1,0 +1,152 @@
+@startuml sequence-achat-billet-cas2-parent-billet
+' ============================================================
+' Diagramme de sequence : Achat d'un billet match
+' PARTIE 2.bis/3 - Cas 2 Parent (B.18) - Billets + Paiement + Notification
+' Scenario PFA - Ilyas Ait Maina (EMSI Maroc)
+' Sources : code qui compile (ticket-service, payment-service,
+'           notification-service, api-gateway)
+' Regles : B.18 wallet PARENT debite / billet au nom ENFANT,
+'          parentPayerEmail renseigne (tracabilite),
+'          verrous pessimistes, @Transactional rollback.
+' Flux achat global :
+'   Cas 1+3 = sequence-achat-billet-cas1-visiteur.puml
+'   Paiement detail 402/200 = sequence-achat-billet-cas1-paiement.puml
+'   Anti-IDOR + shadow = sequence-achat-billet-cas2-parent.puml
+' ============================================================
+
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam dpi 200
+skinparam sequenceArrowThickness 1
+skinparam sequenceParticipantBackgroundColor #FDF2F2
+skinparam sequenceParticipantBorderColor #B91C1C
+skinparam sequenceLifeLineBorderColor #9CA3AF
+skinparam sequenceMessageAlign center
+skinparam sequenceGroupBackgroundColor #FEF3C7
+skinparam sequenceGroupBorderColor #D97706
+skinparam defaultFontSize 11
+skinparam defaultFontName "Helvetica"
+
+title Achat billet - Cas 2 Parent (B.18) - Billets + Paiement + Notification
+
+participant ":TicketService\n:ticket-service"                          as TSV
+participant ":Clients internes (RestTemplate)\n:8083 :8086"            as CI
+participant ":PaymentService\n:payment-service :8083"                    as PAY
+database    "ticket_db / payment_db"                                     as DB
+participant ":NotificationService\n:notification-service :8086"          as NOT
+participant ":BilletterieDetailComponent\n:wydad-frontend"               as FE
+actor "Parent (PARENT)"                                                  as P
+
+== Preambule : User shadow enfant deja cree (Phase 2 OK) ==
+note over TSV
+  Vient de : sequence-achat-billet-cas2-parent.puml
+  - Anti-IDOR strict OK (parentUserId == X-User-Id)
+  - User shadow 'enfant-{id}@wac.parent' cree
+  - effectiveUserId = childUserId (enfant)
+  - effectiveUserEmail = email (enfant)
+  - parentPayerEmail = X-User-Email (parent)
+  - beneficiaryAcademyMemberId = hicham.id
+end note
+
+== Phase 3 - Generation des billets (sur le wallet ENFANT) ==
+loop [pour chaque billet, quantity fois]
+  TSV -> TSV : ticketNumber = "WAC-" + UUID[0..8]\nqrData = "WAC-TICKET:" + n + ":EVENT:" + id\n         + ":USER:" + effectiveUserId\n         + ":PARENT:" + parentPayerEmail
+  TSV -> DB : INSERT ticket\n(status=PAID, qrCodeImage,\n beneficiary_academy_member_id=hicham.id,\n parent_payer_email=p@...)
+  activate DB
+  DB --> TSV : Ticket persiste (lie a l'enfant)
+  deactivate DB
+end
+
+TSV -> DB : UPDATE sections SET available_seats -= qty
+TSV -> DB : UPDATE events    SET sold_tickets += qty
+
+note over TSV, CI
+  Le paiement E-Cash debite le wallet de l'ENFANT
+  (effectiveUserEmail = email du User shadow),
+  PAS celui du parent.
+  TicketService.purchaseTickets L155-158 :
+  paymentClient.debitEcash(
+      effectiveUserEmail,  // email du shadow
+      total,
+      "WAC-TICKET-" + event.getId());
+  Le billet final est au nom de l'enfant,
+  et parentPayerEmail (X-User-Email du parent)
+  est conserve UNIQUEMENT pour la tracabilite BDD
+  (champ ticket.parentPayerEmail).
+end note
+
+== Phase 4 - Paiement E-Cash (B.12 verrous, B.18 tracabilite) ==
+TSV -> CI : debitEcash(effectiveUserEmail, total, "WAC-TICKET-"+event.id)\n  (X-Internal-Secret)
+activate CI
+CI -> PAY : POST /api/payment/internal/debit\n            X-Internal-Secret\n            { email:effectiveUserEmail, amount, reference }
+activate PAY
+PAY -> PAY : isInternalCallAuthorized(secret) -> true
+PAY -> PAY : internalDebit(effectiveUserEmail, amount, ref)
+PAY -> DB : SELECT e_cash_accounts WHERE email=effectiveUserEmail FOR UPDATE
+activate DB
+DB --> PAY : ECashAccount enfant (verrou pessimiste 2s)
+deactivate DB
+
+alt [balance < amount] solde insuffisant
+  PAY --> CI : 402 InsufficientFundsException
+  deactivate PAY
+  CI --> TSV : 402
+  deactivate CI
+  TSV --> FE : 402 "Solde E-cash insuffisant"
+  FE --> P : Bandeau "Recharger votre E-Cash"\n          (lien /profil/e-cash)
+  note right of TSV
+    @Transactional -> ROLLBACK
+    INSERT tickets + UPDATE sections/events
+    -> placees liberees, aucun billet fantome.
+    User shadow enfant reste cree (idempotent).
+  end note
+else [balance >= amount] debit OK
+  PAY -> DB : UPDATE e_cash_accounts SET balance = balance - amount
+  PAY -> DB : INSERT transactions\n(type=DEBIT, ref, balanceAfter)
+  deactivate PAY
+  PAY --> CI : 200 TransactionResponse { ref, balanceAfter }
+  CI --> TSV : 200 TransactionResponse
+  deactivate CI
+
+  TSV -> CI : notifyUser(parentUserId, parentPayerEmail,\n                       "Achat pour Hicham confirme",\n                       "1 billet pour " + event.title,\n                       "/profil/billets")
+  activate CI
+  note right of CI
+    POST /api/notification/internal/send
+    -> notification-service
+    best-effort, RestClientException ignoree
+  end note
+  CI -> NOT : notifyUser(parentUserId, ...)
+  activate NOT
+  NOT --> CI : 200 (succes)
+  deactivate NOT
+  CI --> TSV : (void - succes)
+  deactivate CI
+
+  TSV --> FE : 201 Created [TicketResponse...]\n              { id, ticketNumber, status:PAID,\n                beneficiaryAcademyMemberId:hicham.id,\n                parentPayerEmail:p@... }
+  FE --> P : Redirect /profil/billets\n           Affiche "Paiement effectue pour Hicham !"
+end
+
+note over P, CI
+  Garanties & invariants (B.18 + B.12) :
+  --------------------------------------
+  * Anti-IDOR PARENT : child.parentUserId == X-User-Id
+    (verifie en sequence-achat-billet-cas2-parent.puml)
+  * User shadow idempotent : plusieurs achats meme enfant
+    -> meme childUserId (pas de doublon)
+  * Wallet debite de l'ENFANT (effectiveUserEmail = shadow email)
+  * parentPayerEmail TOUJOURS renseigne (tracabilite B.18,
+    champ ticket.parentPayerEmail)
+  * Verrou pessimiste 2s sur e_cash_accounts de l'enfant
+  * 402 -> rollback transactionnel (placees liberees)
+  * 2 INSERT tickets (au nom enfant) + UPDATE sections/events
+  * Notification best-effort (jamais de rollback)
+  * Parent payeur peut voir PDF/QR/invoice du billet enfant
+    via TicketController.assertOwnership()
+  * Paiement carte = mock V1 (memes regles que Cas 1)
+  * Disclaimer : le wallet de l'ENFANT est debite. Si le club
+    veut rebasculer sur le wallet du PARENT (intuitif mais
+    E-Cash lie a l'utilisateur dans le code actuel), c'est
+    un point a clarifier avec le porteur produit.
+end note
+
+@enduml

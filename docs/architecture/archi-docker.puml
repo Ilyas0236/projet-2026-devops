@@ -1,0 +1,53 @@
+@startuml archi-docker
+!theme cerulean
+skinparam backgroundColor #FAFAFA
+skinparam defaultFontSize 11
+
+title Architecture Docker - docker-compose\n(15 services, reseau interne wydad-network)
+
+node "Hote (VM Azure Standard_B2s_v2 : 2 vCPU / 4 Go RAM / 30 Go SSD)" as HOST {
+
+  package "Reseau wydad-network (bridge, DNS interne)" {
+    [frontend\nAngular 19\nnginx 1.27\n:4200] as FE
+    [api-gateway\nSpring Cloud Gateway\n:8080] as GW
+    [auth-service\n:8081] as AU
+    [content-service\n:8082] as CO
+    [payment-service\n:8083] as PA
+    [shop-service\n:8084] as SH
+    [ticket-service\n:8085] as TI
+    [notification-service\n:8086] as NO
+    [sports-service\n:8087\nSTOMP/WS] as SP
+    [gamification-service\n:8088] as GA
+    [election-service\n:8089] as EL
+    [communication-service\n:8090\nSTOMP/WS] as CM
+    [postgres:16\n:5432\n(10 BDDs)] as PG
+    [redis:7-alpine\n:6379\n(auth-service)] as RD
+    [pgadmin\n:5050\n(loopback)] as PGA
+  }
+}
+
+FE --> GW : HTTP
+GW --> AU
+GW --> CO
+GW --> PA
+GW --> SH
+GW --> TI
+GW --> NO
+GW --> SP
+GW --> GA
+GW --> EL
+GW --> CM
+
+AU --> PG
+AU --> RD
+CO --> PG
+PA --> PG
+SH --> PG
+TI --> PG
+NO --> PG
+SP --> PG
+GA --> PG
+EL --> PG
+CM --> PG
+
+@enduml

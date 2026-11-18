@@ -1,0 +1,41 @@
+@startuml archi-cicd
+!theme cerulean
+skinparam backgroundColor #FAFAFA
+skinparam defaultFontSize 11
+
+title Pipeline CI/CD - GitHub Actions + Azure VM
+
+actor "Developpeur\n(commit + push)" as DEV
+
+package "GitHub" {
+  [Repository\nwydad-digital-parent] as REPO
+  database "GitHub Actions\nRunners" as GA
+}
+
+package "Azure Cloud (Spain Central)" {
+  [VM Standard_B2s_v2\n158.158.74.169] as VM
+  [nginx :80/:443\n(reverse proxy\n+ Let's Encrypt)] as NGX
+}
+
+DEV --> REPO : git push main
+REPO --> GA : trigger on push
+
+GA --> GA : 1) Checkout code
+GA --> GA : 2) Install JDK 21 + Maven
+GA --> GA : 3) mvn -B package\n(11 microservices Spring Boot 3.3.5)
+GA --> GA : 4) ng build (Angular 19)
+GA --> GA : 5) Tests JUnit 5 + Karma
+GA --> REPO : status check
+
+REPO --> VM : SSH deploy
+VM --> VM : git pull origin main
+VM --> VM : mvn -B package
+VM --> VM : docker compose build --no-cache
+VM --> VM : docker compose up -d --force-recreate --no-deps
+VM --> VM : healthcheck /actuator/health
+
+node "Utilisateur final" as USER
+USER --> NGX : HTTPS
+NGX --> VM : :4200 (frontend)\n:8080 (gateway)\n:8090 (WS STOMP)
+
+@enduml

@@ -1,0 +1,172 @@
+@startuml uc-09-club-president
+' ============================================================
+' UC-9 — DIAGRAMME DE CAS D'UTILISATION
+' Côté CLUB INTERNE — Espace PRESIDENT (de SA discipline)
+' Source : auth-service/SalaryReceiptController (emission recus PDF, IDOR proprio)
+'          content-service/PresidentDocumentController (brouillon → admin)
+'          communication-service/MessagingController (/my-president, /send)
+'          sports-service/PlayerController (annuaire discipline)
+'          communication-service/TeamChatController (team-chat photos REST /messages
+'          + multipart /media pour le president)
+'          auth-service/SubscriptionController (B.12 — peut acheter son abonnement)
+' ============================================================
+' Conventions UML 2.5 :
+'   * swimlanes = PRESIDENT
+'   * Regle metier : president agit sur SA discipline uniquement
+'   * PRESIDENT peut consommer team-chat (lecture/ecriture) + 1-to-1
+'   * PRESIDENT n'a PAS de "canal president" (c'est lui le president)
+'   * IDOR strict sur emis/mine PDF
+' ============================================================
+
+left to right direction
+skinparam actorStyle awesome
+skinparam rectangle {
+  RoundCorner 15
+  BackgroundColor #FFFFFF
+  BorderColor #444444
+}
+skinparam package {
+  BackgroundColor #F5F5F5
+  BorderColor #888888
+  BorderThickness 1
+}
+skinparam usecase {
+  BackgroundColor #E8F0FE
+  BorderColor #1E3A8A
+  BorderThickness 1
+}
+skinparam note {
+  BackgroundColor #FFF8E1
+  BorderColor #C79100
+}
+skinparam defaultFontSize 11
+skinparam shadowing false
+
+' ============================================================
+' ACTEURS
+' ============================================================
+actor "PRESIDENT\n(de SA discipline)" as PRE
+
+' ============================================================
+' SYSTEME
+' ============================================================
+rectangle "Plateforme Wydad Digital — Espace Président" {
+
+  package "Authentification" {
+    usecase "S'authentifier" as UC_LOGIN
+  }
+
+  package "Annuaire de SA discipline" {
+    usecase "Consulter l'annuaire" as UC_DIR
+    usecase "Lister joueurs de MA\ndiscipline/categorie" as UC_LJ
+    usecase "Lister staff de MA discipline" as UC_LS
+    usecase "Lister entrain. de MA discipline" as UC_LE
+  }
+
+  package "Recus salaire / prime" {
+    usecase "Emettre un reçu de salaire\nou prime (joueur/entraineur)" as UC_REC
+    usecase "Telecharger PDF d'un reçu\n(IDOR proprio + ADMIN)" as UC_RECP
+    usecase "Lister les reçus émis" as UC_RECL
+  }
+
+  package "Documents president" {
+    usecase "Creer un document\npresident (brouillon)" as UC_PD_C
+    usecase "Modifier un document\npresident" as UC_PD_E
+    usecase "Lister MES documents\npresident" as UC_PD_M
+    usecase "Soumettre un document\na validation ADMIN" as UC_PD_S
+  }
+
+  package "Messagerie unifiee (V2.5)" {
+    usecase "Chatter en groupe\n(team-chat discipline/categ)" as UC_TC
+    usecase "Poster un message\navec photo (REST /media)" as UC_TCP
+    usecase "Envoyer un message\n1-to-1 (avec photo)" as UC_M1
+    usecase "Envoyer un message\na 1..N destinataires (batch)" as UC_MN
+    usecase "Lire la conversation" as UC_MC
+    usecase "Voir ma boite\nde reception" as UC_MI
+    usecase "Nouveau message libre\n(selection parmi MA discipline)" as UC_NL
+  }
+
+  package "Supporter — Achats (B.12)" {
+    usecase "Acheter un abonnement\nsaisonnier (B.12)" as UC_ABS
+    usecase "Telecharger ma carte\nabonnement PDF" as UC_ABS_PDF
+    usecase "Telecharger ma facture" as UC_ABS_FAC
+  }
+}
+
+' ============================================================
+' INCLUDES
+' ============================================================
+note "<<include>> losange PLEIN =\ndependance OBLIGATOIRE" as N1
+
+UC_DIR  ..> UC_LOGIN : <<include>>
+UC_LJ   ..> UC_LOGIN : <<include>>
+UC_LS   ..> UC_LOGIN : <<include>>
+UC_LE   ..> UC_LOGIN : <<include>>
+UC_REC  ..> UC_LOGIN : <<include>>
+UC_RECP ..> UC_LOGIN : <<include>>
+UC_RECL ..> UC_LOGIN : <<include>>
+UC_PD_C ..> UC_LOGIN : <<include>>
+UC_PD_E ..> UC_LOGIN : <<include>>
+UC_PD_M ..> UC_LOGIN : <<include>>
+UC_PD_S ..> UC_LOGIN : <<include>>
+UC_TC   ..> UC_LOGIN : <<include>>
+UC_TCP  ..> UC_LOGIN : <<include>>
+UC_M1   ..> UC_LOGIN : <<include>>
+UC_MN   ..> UC_LOGIN : <<include>>
+UC_MC   ..> UC_LOGIN : <<include>>
+UC_MI   ..> UC_LOGIN : <<include>>
+UC_NL   ..> UC_LOGIN : <<include>>
+UC_ABS  ..> UC_LOGIN : <<include>>
+UC_ABS_PDF ..> UC_LOGIN : <<include>>
+UC_ABS_FAC ..> UC_LOGIN : <<include>>
+
+UC_RECL ..> UC_REC : <<include>>
+UC_RECP ..> UC_REC : <<include>>
+UC_ABS_PDF ..> UC_ABS : <<include>>
+UC_ABS_FAC ..> UC_ABS : <<include>>
+
+' ============================================================
+' ASSOCIATIONS
+' ============================================================
+
+' --- PRESIDENT ---
+PRE --> UC_DIR
+PRE --> UC_LJ
+PRE --> UC_LS
+PRE --> UC_LE
+PRE --> UC_REC
+PRE --> UC_RECP
+PRE --> UC_RECL
+PRE --> UC_PD_C
+PRE --> UC_PD_E
+PRE --> UC_PD_M
+PRE --> UC_PD_S
+PRE --> UC_TC
+PRE --> UC_TCP
+PRE --> UC_M1
+PRE --> UC_MN
+PRE --> UC_MC
+PRE --> UC_MI
+PRE --> UC_NL
+PRE --> UC_ABS
+PRE --> UC_ABS_PDF
+PRE --> UC_ABS_FAC
+
+' ============================================================
+' LEGENDE
+' ============================================================
+legend right
+  | **Symbole** | **Signification** |
+  | Acteur | PRESIDENT de SA discipline |
+  | Rectangle | Frontiere du systeme |
+  | Package | Sous-domaine fonctionnel |
+  | **--** | Association acteur <-> UC |
+  | **..** | <<include>> (obligatoire) |
+  | Regle | President agit uniquement sur SA discipline |
+  | **V2.5** | Team-chat photos + selection libre dans MA discipline |
+  | **Pas de canal president** | C'est lui le president (boucle fermée) |
+  | **IDOR PDF** | proprietaire + ADMIN uniquement |
+  | Source | auth-service/SalaryReceipt, content-service/PresidentDocument |
+endlegend
+
+@enduml

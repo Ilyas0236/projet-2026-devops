@@ -1,0 +1,195 @@
+@startuml uc-08-club-staff-entraineur
+' ============================================================
+' UC-8 — DIAGRAMME DE CAS D'UTILISATION
+' Côté CLUB INTERNE — Espace STAFF + ENTRAINEUR
+' Source : sports-service (SessionController, MatchConvocationController,
+'          StaffController, ScheduledCallController, AcademyController)
+'          communication-service (MessagingController /send + /send-batch,
+'          V2.5 STAFF→STAFF et STAFF→ENTRAINEUR même discipline)
+'          auth-service/PressAccreditationController (B.17 interne)
+'          wydad-frontend/src/app/pages/espace-staff/**
+'          wydad-frontend/src/app/pages/espace-entraineur/**
+' ============================================================
+' Conventions UML 2.5 :
+'   * swimlanes = STAFF, ENTRAINEUR
+'   * ENTRAINEUR herite de STAFF (meme table staff, StaffRole.HEAD_COACH)
+'   * B.18.b = feuille de match cochable (batch)
+'   * V2.5 = STAFF peut écrire à STAFF/ENTRAINEUR/PRESIDENT même discipline
+'   * Anti-IDOR strict sportType + category
+' ============================================================
+
+left to right direction
+skinparam actorStyle awesome
+skinparam rectangle {
+  RoundCorner 15
+  BackgroundColor #FFFFFF
+  BorderColor #444444
+}
+skinparam package {
+  BackgroundColor #F5F5F5
+  BorderColor #888888
+  BorderThickness 1
+}
+skinparam usecase {
+  BackgroundColor #E8F0FE
+  BorderColor #1E3A8A
+  BorderThickness 1
+}
+skinparam note {
+  BackgroundColor #FFF8E1
+  BorderColor #C79100
+}
+skinparam defaultFontSize 11
+skinparam shadowing false
+
+' ============================================================
+' ACTEURS
+' ============================================================
+actor "STAFF" as STA
+actor "ENTRAINEUR" as ENT
+
+' Heritage : ENTRAINEUR herite de STAFF
+ENT --|> STA
+
+' ============================================================
+' SYSTEME
+' ============================================================
+rectangle "Plateforme Wydad Digital — Univers sportif (club)" {
+
+  package "Authentification" {
+    usecase "S'authentifier" as UC_LOGIN
+  }
+
+  package "Seances d'entrainement" {
+    usecase "Creer une seance" as UC_CR_S
+    usecase "Consulter les seances" as UC_LI_S
+  }
+
+  package "Convocations (B.18.b feuille cochable)" {
+    usecase "Cocher les joueurs d'une\nseance (B.18.b batch)" as UC_CNV_S
+    usecase "Cocher la feuille\nde match (B.18.b batch)" as UC_CNV_M
+    usecase "Voir les reponses\njoueurs d'une seance" as UC_RES
+  }
+
+  package "Feuille de match" {
+    usecase "Soumettre une feuille\nde match a l'ADMIN" as UC_FMS
+  }
+
+  package "Dossier joueur" {
+    usecase "Saisir une stat de match" as UC_STA
+    usecase "Poser le statut medical\n(APT/INAPTE)" as UC_MED
+    usecase "Partager un document\navec un joueur" as UC_SHR
+    usecase "Envoyer un media\n(image/video) a un joueur" as UC_MED2
+  }
+
+  package "Appels video (LiveKit)" {
+    usecase "Programmer un appel video" as UC_CAL
+    usecase "Annuler un appel programme" as UC_CALX
+  }
+
+  package "Annonces equipe" {
+    usecase "Publier une annonce equipe" as UC_ANN
+  }
+
+  package "Messagerie unifiee (V2.5)" {
+    usecase "Chatter en groupe\n(team-chat WS STOMP)" as UC_TC
+    usecase "Poster un message\navec photo" as UC_TCP
+    usecase "Envoyer un message\n1-to-1 (avec photo)" as UC_M1
+    usecase "Envoyer un message\na 1..N destinataires (batch)" as UC_MN
+    usecase "Lire la conversation" as UC_MC
+    usecase "Voir ma boite\nde reception" as UC_MI
+    usecase "Resoudre le president\nde ma discipline" as UC_PRES
+    usecase "Ecrire au president\nde ma discipline" as UC_PW
+    usecase "Ecrire a STAFF/ENTRAINEUR\nmeme discipline (V2.5)" as UC_M2
+    usecase "Nouveau message libre\n(selection 1..N contacts)" as UC_NL
+  }
+}
+
+' ============================================================
+' INCLUDES
+' ============================================================
+note "<<include>> losange PLEIN =\ndependance OBLIGATOIRE" as N1
+
+UC_CR_S  ..> UC_LOGIN : <<include>>
+UC_LI_S  ..> UC_LOGIN : <<include>>
+UC_CNV_S ..> UC_LOGIN : <<include>>
+UC_CNV_M ..> UC_LOGIN : <<include>>
+UC_RES   ..> UC_LOGIN : <<include>>
+UC_FMS   ..> UC_LOGIN : <<include>>
+UC_STA   ..> UC_LOGIN : <<include>>
+UC_MED   ..> UC_LOGIN : <<include>>
+UC_SHR   ..> UC_LOGIN : <<include>>
+UC_MED2  ..> UC_LOGIN : <<include>>
+UC_CAL   ..> UC_LOGIN : <<include>>
+UC_CALX  ..> UC_LOGIN : <<include>>
+UC_ANN   ..> UC_LOGIN : <<include>>
+UC_TC    ..> UC_LOGIN : <<include>>
+UC_TCP   ..> UC_LOGIN : <<include>>
+UC_M1    ..> UC_LOGIN : <<include>>
+UC_MN    ..> UC_LOGIN : <<include>>
+UC_MC    ..> UC_LOGIN : <<include>>
+UC_MI    ..> UC_LOGIN : <<include>>
+UC_PRES  ..> UC_LOGIN : <<include>>
+UC_PW    ..> UC_LOGIN : <<include>>
+UC_M2    ..> UC_LOGIN : <<include>>
+UC_NL    ..> UC_LOGIN : <<include>>
+
+' ============================================================
+' ASSOCIATIONS
+' ============================================================
+
+' --- STAFF ---
+STA --> UC_CR_S
+STA --> UC_LI_S
+STA --> UC_CNV_S
+STA --> UC_CNV_M
+STA --> UC_RES
+STA --> UC_STA
+STA --> UC_MED
+STA --> UC_SHR
+STA --> UC_MED2
+STA --> UC_CAL
+STA --> UC_CALX
+STA --> UC_ANN
+STA --> UC_TC
+STA --> UC_TCP
+STA --> UC_M1
+STA --> UC_MN
+STA --> UC_MC
+STA --> UC_MI
+STA --> UC_PRES
+STA --> UC_PW
+STA --> UC_M2
+STA --> UC_NL
+
+' --- ENTRAINEUR (herite de STAFF) ---
+ENT --> UC_FMS
+ENT --> UC_TC
+ENT --> UC_TCP
+ENT --> UC_M1
+ENT --> UC_MN
+ENT --> UC_MC
+ENT --> UC_MI
+ENT --> UC_PRES
+ENT --> UC_PW
+ENT --> UC_M2
+ENT --> UC_NL
+
+' ============================================================
+' LEGENDE
+' ============================================================
+legend right
+  | **Symbole** | **Signification** |
+  | Acteur | STAFF, ENTRAINEUR (heritier) |
+  | Rectangle | Frontiere du systeme |
+  | Package | Sous-domaine fonctionnel |
+  | **--** | Association acteur <-> UC |
+  | **..** | <<include>> (obligatoire) |
+  | **(triangle creux)** | ENTRAINEUR herite de STAFF |
+  | **B.18.b** | Feuille de match cochable (TITULAIRE/REMPLAÇANT) |
+  | **V2.5** | STAFF↔STAFF et STAFF→ENTRAINEUR même discipline |
+  | **LiveKit** | Appels video organises par STAFF/ENTRAINEUR |
+  | Source | sports-service, communication-service, wydad-frontend |
+endlegend
+
+@enduml

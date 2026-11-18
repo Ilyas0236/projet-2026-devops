@@ -1,0 +1,185 @@
+@startuml sequence-feuille-match
+' ============================================================
+' Diagramme de sequence : B.18.b - Feuille de match cochable
+' Scenario PFA - Ilyas Ait Maina (EMSI Maroc)
+' Sources : code qui compile (sports-service,
+'           content-service, notification-service,
+'           DashboardEntraineurComponent Angular,
+'           AdminConvocationsComponent Angular)
+' Regles : IDOR strict (sportType+category du MATCH font foi,
+'                        jamais celles annoncees par le client),
+'          cycle DRAFT -> SOUMISE -> PUBLIEE/REFUSEE,
+'          notification in-app au DRAFT (best-effort).
+' ============================================================
+
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam dpi 200
+skinparam sequenceArrowThickness 1
+skinparam sequenceParticipantBackgroundColor #FDF2F2
+skinparam sequenceParticipantBorderColor #B91C1C
+skinparam sequenceLifeLineBorderColor #9CA3AF
+skinparam sequenceMessageAlign center
+skinparam sequenceGroupBackgroundColor #FEF3C7
+skinparam sequenceGroupBorderColor #D97706
+skinparam defaultFontSize 11
+skinparam defaultFontName "Helvetica"
+
+title Sequence 3/4 - B.18.b Feuille de match (entraineur -> admin -> public)
+
+actor "ENTRAINEUR\n(Lopez, FOOTBALL/SENIOR)"  as E
+actor "ADMIN"                                 as A
+actor "JOUEUR\n(Hakim, FOOTBALL/SENIOR)"      as J
+
+participant ":DashboardEntraineur\n:AdminConvocations\n:wydad-frontend"    as FE
+participant ":API Gateway"                                  as GW
+participant ":sports-service\nMatchConvocationController"  as SVC
+participant ":MatchConvocationService\n(@Transactional)"   as CSV
+participant ":content-service"                              as CT
+participant ":notification-service"                         as NOTIF
+database    "BDD sports_db\nmatch_convocations"             as DB
+
+== Phase 1 - Cas nominal : Lopez coche 18 joueurs ==
+E -> FE : ouvre onglet "Feuille de match"\n+ selectionne un match
+FE -> GW : GET /match-convocations/match/{id}/selectable
+GW -> SVC : (JWT + X-User-*)
+SVC -> CT : fetchMatch(matchId)
+CT --> SVC : MatchInfo{FOOTBALL, SENIOR, ...}
+SVC -> CSV : listSelectable(matchId)
+activate CSV
+CSV -> CSV : requireCoachOfGroup()\n             (staff.sportType=FOOTBALL\n ET assignedCategory=SENIOR)
+CSV -> DB : SELECT * FROM players\nWHERE sport_type=FOOTBALL\n  AND category=SENIOR
+DB --> CSV : 25 joueurs selectionnables
+CSV --> SVC : List<Player> x25
+deactivate CSV
+SVC --> GW : 200 OK
+GW --> FE : 200 OK
+E -> FE : coche 11 TITULAIRES\n+ 7 REMPLACANTS (18/25)
+
+alt [Bonne categorie : SENIOR]
+  FE -> GW : POST /match-convocations/match/{id}\n              {players:[{joueurUserId,playerRole}x18]}
+  GW -> SVC : @PreAuthorize hasAnyRole\n(ENTRAINEUR,STAFF,ADMIN)
+  SVC -> CSV : convocateBatch(request)
+  activate CSV
+  CSV -> CT : fetchMatch (re-verif)
+  CT --> CSV : OK
+  CSV -> CSV : requireCoachOfGroup (re-verif)
+  loop pour chaque joueur (x18)
+    CSV -> DB : SELECT player WHERE user_id=:id
+    DB --> CSV : Player
+    CSV -> CSV : verif player.sportType==FOOTBALL\n         && player.category==SENIOR
+    CSV -> DB : INSERT match_convocations\n                 (status=DRAFT, createdByStaffUserId=lopez)
+    par notification in-app best-effort (1 appel / joueur)
+      CSV -> NOTIF : POST /api/notification/internal/send\n                      +X-Internal-Secret\n                      {userId, title:"Convocation",\n                       targetUrl:"/convocations"}
+      NOTIF --> CSV : 200 (silently loggue si KO)
+    end
+  end
+  CSV --> SVC : BatchResult{created:18, rejected:[]}
+  deactivate CSV
+  SVC --> GW : 201 Created
+  GW --> FE : 201 Created
+
+else [Mauvaise categorie : joueur U17 inclus]
+  FE -> GW : POST /match-convocations/match/{id}\n              {players:[..., joueurU17]}
+  GW -> SVC :
+  SVC -> CSV : convocateBatch
+  CSV -> CT : fetchMatch
+  CSV -> CSV : requireCoachOfGroup (OK SENIOR)
+  loop pour chaque joueur
+    CSV -> DB : SELECT player WHERE user_id=:id
+    CSV -> CSV : if player.category<>SENIOR\n  -> IllegalArgumentException
+    note right : ligne mise dans\nBatchResult.rejected[]
+  end
+  CSV --> SVC : BatchResult{created:17, rejected:["U17 hors groupe"]}
+  SVC --> GW : 201 Created
+  GW --> FE : 201 Created (front affiche toast d'avertissement)
+
+else [Staff d'une autre discipline/categorie]
+  FE -> GW : POST /match-convocations/match/{id}
+  GW -> SVC :
+  SVC -> CSV : convocateBatch
+  CSV -> CSV : requireCoachOfGroup\n  -> AccessDeniedException
+  CSV --> SVC : throw
+  SVC --> GW : 403 IDOR_CROSS_CATEGORY
+  GW --> FE : 403
+end
+
+== Phase 2 - Soumission ADMIN : DRAFT -> SOUMISE -> PUBLIEE/REFUSEE ==
+E -> FE : clique "Soumettre"
+FE -> GW : POST /match-convocations/match/{id}/submit
+GW -> SVC :
+SVC -> CSV : submitToAdmin(@Transactional)\n             status DRAFT/REFUSEE -> SOUMISE\n submittedAt = now()
+CSV -> DB : UPDATE match_convocations\n             WHERE match_id=:id\n               AND status IN (DRAFT,REFUSEE)
+DB --> CSV : 18 lignes
+CSV --> SVC : List<MatchConvocation> x18
+SVC --> GW : 200 OK
+GW --> FE : 200 OK
+
+A -> FE : ouvre /admin/convocations
+FE -> GW : GET /match-convocations/admin/submitted
+GW -> SVC : @PreAuthorize hasRole('ADMIN')
+SVC -> CSV : listSubmitted()
+CSV -> DB : SELECT * FROM match_convocations\nWHERE status='SOUMISE'
+DB --> CSV : lignes SOUMISE
+CSV --> SVC : List<MatchConvocation>
+SVC --> GW : 200 OK
+GW --> FE : 200 OK
+
+loop tant que feuille non validee
+  alt [ADMIN Publie]
+    A -> FE : clique "Publier"
+    FE -> GW : POST /admin/match/{id}/publish
+    GW -> SVC :
+    SVC -> CSV : publish(@Transactional)\n                 status -> PUBLIEE, publishedAt=now()
+    CSV -> DB : UPDATE match_convocations\n                 SET status='PUBLIEE', published_at=now()\n                 WHERE match_id=:id
+    DB --> CSV : 18 lignes
+    CSV --> SVC : List<MatchConvocation> x18
+    SVC --> GW : 200 OK
+    GW --> FE : 200 OK (toast "Feuille publiee")
+    note right of SVC
+      Spec PFA : notif post-PUBLIEE.
+      Code actuel : notif uniquement au DRAFT.
+      -> a ajouter dans publish() si besoin.
+    end note
+
+  else [ADMIN Refuse avec motif]
+    A -> FE : clique "Refuser"\n+ saisit motif (<= 500 car.)
+    FE -> GW : POST /admin/match/{id}/reject\n                { reason: "Joueur X inapte" }
+    GW -> SVC :
+    SVC -> CSV : reject(@Transactional)\n                 status SOUMISE -> REFUSEE\n                 rejectionReason=:reason, rejectedAt=now()
+    CSV -> DB : UPDATE match_convocations\n                 SET status='REFUSEE',\n                     rejection_reason=:reason,\n                     rejected_at=now()
+    DB --> CSV : 18 lignes
+    CSV --> SVC : List<MatchConvocation> x18
+    SVC --> GW : 200 OK
+    GW --> FE : 200 OK (toast "Feuille renvoyee\na l'entraineur")
+  end
+end
+
+== Phase 3 - Joueur consulte sa convocation ==
+J -> FE : ouvre /espace-joueur/dashboard
+FE -> GW : GET /match-convocations/my
+GW -> SVC : @PreAuthorize hasRole('JOUEUR')
+SVC -> CSV : listMine(joueurUserId)
+CSV -> DB : SELECT * FROM match_convocations\n             WHERE joueur_user_id=:me\n               AND status='PUBLIEE'
+DB --> CSV : 1 ligne (Hakim)
+CSV --> SVC : List<MatchConvocation>
+SVC --> GW : 200 OK
+GW --> FE : 200 OK
+FE --> J : carte "Vous ete convoque\nWAC vs Adversaire"
+
+note over E, SVC
+  Regles section 24/26 (feuille de match) :
+  -----------------------------------------
+  * discipline+categorie du MATCH font foi
+    (jamais celles annoncees par le client)
+  * IDOR strict via requireCoachOfGroup
+  * @Transactional sur convocateBatch /
+    submitToAdmin / publish / reject
+  * Notification in-app best-effort
+    (echec loggue, n'echoue pas l'appel)
+  * Cycle de vie :
+    DRAFT -> SOUMISE -> PUBLIEE
+              |-> REFUSEE -> (corrige) -> DRAFT
+end note
+
+@enduml

@@ -1,0 +1,138 @@
+@startuml sequence-convocations
+' Diagramme de séquence : Convoquer un joueur et sa réponse
+' Format Visual Paradigm
+
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam dpi 150
+skinparam sequenceArrowThickness 1
+skinparam sequenceParticipantBackgroundColor #FDF2F2
+skinparam sequenceParticipantBorderColor #B91C1C
+skinparam sequenceLifeLineBorderColor #9CA3AF
+skinparam sequenceGroupBackgroundColor #FEF3C7
+skinparam sequenceGroupBorderColor #D97706
+skinparam defaultFontSize 11
+skinparam defaultFontName "Helvetica"
+
+title Séquence 4/4 — Convoquer un joueur et sa réponse (espace joueur)
+
+actor "Entraîneur" as E
+participant "Frontend\nAngular" as FE
+participant "API Gateway\n(JWT)" as GW
+participant "Sports\nService" as SPO
+participant "Notification\nService" as NOT
+participant "Auth\nService" as AUT
+actor "Joueur" as J
+
+== Phase 1 : Création de la convocation ==
+
+E -> FE : Convoque un joueur\n(joueurUserId, sessionId)
+activate FE
+FE -> GW : POST /api/sports/my-space/staff/convocations\n?joueurUserId=X&sessionId=Y
+activate GW
+GW -> SPO : route (X-User-Role=ENTRAINEUR/STAFF/ADMIN)
+deactivate GW
+activate SPO
+
+SPO -> SPO : @PreAuthorize\nhasAnyRole(ENTRAINEUR,STAFF,ADMIN)
+SPO -> SPO : ensureStaffCanManage(joueurUserId)\n→ staff.sportType == player.sportType\nET staff.category == player.category
+note right of SPO
+  Anti-isolation :
+  un entraîneur U17 Football
+  ne peut PAS convoquer
+  un joueur U17 Basketball
+end note
+
+SPO -> SPO : INSERT convocations\n(createdByStaffId)
+SPO -> NOT : POST /internal/notifications\n(type=CONVOCATION_RECEIVED)
+activate NOT
+NOT --> SPO : 202 Accepted
+deactivate NOT
+
+SPO --> FE : 201 Created ConvocationResponse
+deactivate SPO
+FE --> E : "Convocation envoyée"
+deactivate FE
+
+== Phase 2 : Le joueur reçoit la convocation ==
+
+J -> FE : Ouvre son espace joueur
+activate FE
+FE -> GW : GET /api/sports/my-space/convocations
+activate GW
+GW -> SPO : route (X-User-Role=JOUEUR)
+deactivate GW
+activate SPO
+
+SPO -> AUT : GET /internal/users/{X-User-Id}
+activate AUT
+AUT --> SPO : {email, role}
+deactivate AUT
+
+SPO -> SPO : SELECT convocations\nWHERE joueurUserId = X-User-Id
+SPO --> FE : 200 List<ConvocationResponse>
+deactivate SPO
+FE --> J : Affiche mes convocations
+deactivate FE
+
+== Phase 3 : Le joueur accuse réception ==
+
+J -> FE : Ouvre la convocation
+activate FE
+FE -> GW : POST /api/sports/my-space/convocations/{id}/read
+activate GW
+GW -> SPO : route (X-User-Role=JOUEUR)
+deactivate GW
+activate SPO
+SPO -> SPO : UPDATE readAt = now()\n(idempotent)
+SPO --> FE : 200 ConvocationResponse
+deactivate SPO
+deactivate FE
+
+== Phase 4 : Le joueur répond ==
+
+J -> FE : Clique "Confirmer" (ou ABSENT/RETARD)
+activate FE
+FE -> GW : POST /api/sports/my-space/convocations/{id}/respond\n{responseStatus, justification?}
+activate GW
+GW -> SPO : route
+deactivate GW
+activate SPO
+
+SPO -> SPO : Vérifie propriétaire (X-User-Id == joueurUserId)
+
+alt responseStatus = ABSENT ou RETARD
+  SPO -> SPO : UPDATE responseStatus, responseJustification, respondedAt
+else responseStatus = CONFIRME
+  SPO -> SPO : UPDATE responseStatus, respondedAt
+end
+
+SPO --> FE : 200 ConvocationResponse
+deactivate SPO
+FE --> J : "Réponse enregistrée"
+deactivate FE
+
+== Phase 5 : L'entraîneur consulte les réponses ==
+
+E -> FE : Ouvre la feuille de la séance
+activate FE
+FE -> GW : GET /api/sports/my-space/staff/sessions/{id}/responses
+activate GW
+GW -> SPO : route
+deactivate GW
+activate SPO
+SPO -> SPO : ensureStaffOwnsSession(sessionId)\n(staff.sportType+category == session.sportType+category)
+SPO -> SPO : SELECT convocations\nWHERE session_id = X
+SPO --> FE : 200 List<StaffConvocationView>
+deactivate SPO
+FE --> E : Affiche les réponses de sa séance
+deactivate FE
+
+note over E, J
+  Garanties :
+  - Isolation discipline+catégorie serveur-side
+  - Ownership strict (X-User-Id == joueurUserId)
+  - Notif in-app à la création
+end note
+
+@enduml

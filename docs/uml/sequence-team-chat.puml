@@ -1,0 +1,154 @@
+@startuml sequence-team-chat
+' ============================================================
+' Diagramme de sequence : Phase 4 - Team-chat STOMP
+' Scenario PFA - Ilyas Ait Maina (EMSI Maroc)
+' Sources : code qui compile (communication-service,
+'           TeamChatWsController, TeamChatService,
+'           TeamChatAuthInterceptor, RosterClient,
+'           TeamChatComponent Angular)
+' Regles : JWT en header STOMP natif (pas HTTP upgrade),
+'          adhesion deduite du roster (pas de table Membership),
+'          V2.5 : photo via fallback REST puis diffusion WS.
+' ============================================================
+
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam dpi 200
+skinparam sequenceArrowThickness 1
+skinparam sequenceParticipantBackgroundColor #FDF2F2
+skinparam sequenceParticipantBorderColor #B91C1C
+skinparam sequenceLifeLineBorderColor #9CA3AF
+skinparam sequenceMessageAlign center
+skinparam sequenceGroupBackgroundColor #FEF3C7
+skinparam sequenceGroupBorderColor #D97706
+skinparam defaultFontSize 11
+skinparam defaultFontName "Helvetica"
+
+title Sequence 4/4 - Team-chat STOMP (envoi + diffusion temps reel)
+
+actor "Joueur : Hakim\n(FOOTBALL/SENIOR)"      as Hakim
+actor "Entraineur : Lopez\n(FOOTBALL/SENIOR)"   as Lopez
+
+participant ":TeamChatComponent\n(Hakim)"                       as TC_H
+participant ":TeamChatService-front\n(StompJS/SockJS)"           as TCS_F
+participant ":WebSocketBroker\n(/topic, /app)"                  as WSB
+participant ":TeamChatAuthInterceptor\n(ChannelInterceptor)"     as TAI
+participant ":TeamChatWsController\n(@MessageMapping)"           as TCWC
+participant ":TeamChatService\n(metier)"                         as TCS
+participant ":RosterClient\n(RestTemplate X-Internal-Secret)"   as RC
+participant ":TeamMessageRepository\n(JPA)"                      as TMR
+database    "BDD team_messages"                                  as TCDB
+participant ":TeamChatComponent\n(Lopez)"                        as TC_L
+
+== Phase 0 - Handshake WebSocket + SUBSCRIBE ==
+Hakim -> TC_H : ouvre espace joueur
+TC_H -> TCS_F : connect("FOOTBALL", "SENIOR")
+TCS_F -> WSB : SockJS /ws/team-chat (HTTP upgrade -> 101)
+TCS_F -> WSB : CONNECT
+note right of WSB
+  N1 - JWT en header natif STOMP
+  (pas en HTTP Authorization) ;
+  intercepteur valide HMAC + claims id/role.
+end note
+WSB -> TAI : preSend(CONNECT)
+TAI -> TAI : Jwts.parser().verifyWith(hmacKey)\n-> claims id, role -> TeamChatPrincipal
+TCS_F -> WSB : SUBSCRIBE /topic/chat/FOOTBALL/SENIOR
+WSB -> TAI : preSend(SUBSCRIBE)
+TAI -> RC : GET /api/sports/internal/roster/membership/{id}\n             X-Internal-Secret
+RC --> TAI : { sportType, category, rosterRole:"JOUEUR" }
+note right of TAI
+  N2 - adhesion deduite du roster ;
+  ADMIN bypass, JOUEUR/STAFF match.
+  PRESIDENT non whitelist cote SUBSCRIBE
+  (cf. limite V2.5).
+end note
+... idem Lopez en parallele (memes etapes, rosterRole:"ENTRAINEUR") ...
+
+== Phase 1 - Envoi "Hello" (canal STOMP) ==
+Hakim -> TC_H : tape "Hello" + Entree
+TC_H -> TCS_F : chat.send("FOOTBALL","SENIOR","Hello")
+
+alt message TEXTE pur (canal STOMP temps reel)
+  TCS_F -> WSB : SEND\n                /app/chat/football/senior/send\n                { content:"Hello" }
+  WSB -> TCWC : @MessageMapping(.../send)\n                 sport="football" category="senior"
+  TCWC -> TCWC : UserContext.set(principal.userId, principal.role)
+  TCWC -> TCS : sendToGroup("football","senior","Hello")
+  TCS -> RC : findMembership(userId)
+  RC --> TCS : MembershipInfo (FOOTBALL/SENIOR/JOUEUR)
+  TCS -> TCS : requireMembership() OK
+  note right of TCS
+    N3 - identite portee par Principal
+    puis ThreadLocal UserContext.
+  end note
+  TCS -> TMR : save(TeamMessage.builder()...)
+  TMR -> TCDB : INSERT INTO team_messages\n                 (sport_type, category, sender_user_id,\n                  sender_name, sender_role, content, media_url,\n                  media_type, created_at)
+  TCDB --> TMR : ligne (id, createdAt)
+  TMR --> TCS : TeamMessage saved
+  TCS --> TCWC : saved
+  TCWC -> WSB : SimpMessagingTemplate.convertAndSend\n                /topic/chat/football/senior, saved
+  note right of WSB
+    N4 - fan-out broker : tous les abonnes
+    du topic recoivent la MESSAGE.
+  end note
+  WSB --> TCS_F : MESSAGE /topic/chat/football/senior
+  WSB --> TC_L : MESSAGE (broadcast a tous abonnes)
+  TCS_F --> TC_H : onIncomingMessage(msg) -> affichage bulle
+  TC_L --> Lopez : bulle affichee (par Hakim, cote Lopez)
+  note over TCWC, TCDB #LightYellow
+    N5 - notif in-app best-effort aux membres
+    hors ligne (max 30, skip emetteur + connectes) ;
+    echec silencieux (log warn).
+  end note
+
+else message avec PHOTO (V2.5, fallback REST + diffusion WS)
+  Hakim -> TC_H : send() avec pendingAttachment <> null
+  note right of TC_H
+    commentaire code :
+    "le WS ne porte pas l'attachment en V2.5"
+    -> bypass STOMP, chemin REST.
+  end note
+  TC_H -> WSB : (court-circuit STOMP ignore)
+  TC_H -> TCWC : POST /api/sports/team-chat/{sport}/{cat}/messages\n                  multipart: content, publicId, secureUrl,\n                  fileName, sizeBytes
+  TCWC -> TCS : sendToGroupWithAttachment(sport, cat, content, attachment)
+  TCS -> TCS : si content vide -> finalContent = "[IMAGE]"
+  TCS -> TMR : save(media_url=secureUrl, media_type="IMAGE")
+  TMR -> TCDB : INSERT
+  TCDB --> TMR : ligne
+  TMR --> TCS : saved
+  TCS --> TCWC : saved
+  TCWC -> WSB : convertAndSend /topic/chat/.../message
+  WSB --> TC_H : MESSAGE
+  WSB --> TC_L : MESSAGE
+  TCWC --> TC_H : 200 OK
+  TC_H -> TC_H : refreshHistory() (recharge REST l'historique)
+end
+
+== Section 2 - alt : Mauvaise discipline (Hakim -> BASKETBALL/SENIOR) ==
+TCS_F -> WSB : SEND /app/chat/basketball/senior/send
+WSB -> TCWC : @MessageMapping(.../send) sport="basketball"
+TCWC -> TCS : sendToGroup("basketball","senior", ...)
+TCS -> RC : findMembership(8) renvoie FOOTBALL/SENIOR (mismatch)
+TCS --> TCWC : throw AccessDeniedException
+TCWC --> WSB : STOMP ERROR
+WSB --> TCS_F : ERROR frame
+TCS_F --> TC_H : toast.error("Echec envoi...")
+
+note over Hakim, Lopez
+  Authentification et diffusion :
+  - 3 frames STOMP : CONNECT (JWT natif),
+    SUBSCRIBE /topic/chat/{sport}/{category} (adhesion verifiee
+    par intercepteur), SEND /app/chat/.../send (service reverifie).
+  - Auth a 2 etages : CONNECT + SUBSCRIBE + SEND
+    (defense en profondeur).
+  - Persistance + diffusion sequentiels dans le controleur ;
+    les abonnes WS recoivent en parallele.
+  - V2.5 photo : bypass STOMP, REST POST puis diffusion WS.
+  - Adhesion deduite du roster (pas de table Membership).
+  - Limite V2.5 : PRESIDENT whitelist cote envoi
+    (requireMembership) mais PAS cote SUBSCRIBE
+    (verifyTopicMembership) a harmoniser en V2.6.
+  - Reconnect auto : reconnectDelay 5000,
+    heartbeatIn/Out 10000.
+end note
+
+@enduml

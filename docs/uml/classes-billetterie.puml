@@ -1,0 +1,265 @@
+@startuml classes-billetterie
+' ============================================================
+' Diagramme de classes — DOMAINE BILLETTERIE & CONTENU
+' Source : ticket-service + content-service
+' ============================================================
+' Conventions UML 2.5 :
+'   * classes JPA reelles
+'   * Match (content-service) reference par Long (FK logique)
+'   * enums (EventStatus, EventType, TicketStatus, TicketCategory)
+' ============================================================
+
+left to right direction
+skinparam class {
+  BackgroundColor #FFFFFF
+  BorderColor #1E3A8A
+  ArrowColor #1E3A8A
+  FontSize 11
+}
+skinparam package {
+  BackgroundColor #F5F5F5
+  BorderColor #888888
+}
+skinparam enum {
+  BackgroundColor #FFF8E1
+  BorderColor #C79100
+}
+skinparam stereotypeCBackgroundColor #E8F0FE
+skinparam shadowing false
+hide circle
+hide methods
+
+' ============================================================
+' ENUMS
+' ============================================================
+enum EventStatus {
+  UPCOMING
+  ONGOING
+  COMPLETED
+  CANCELLED
+  POSTPONED
+}
+enum EventType {
+  FOOTBALL
+  BASKETBALL
+  HANDBALL
+  VOLLEYBALL
+  SWIMMING
+  JUDO
+  ATHLETICS
+  AUTRE
+}
+enum TicketStatus {
+  RESERVED
+  PAID
+  USED
+  CANCELLED
+  EXPIRED
+  REFUNDED
+}
+enum TicketCategory {
+  TRIBUNE_OFFICIELLE
+  TRIBUNE_HONNEUR
+  VIRAGE_NORD
+  VIRAGE_SUD
+  VIP
+  ULTRA
+}
+enum SeatType {
+  STANDARD
+  VIP
+  PREMIUM
+  ACCESSIBLE
+}
+enum EventCategory {
+  U15
+  U17
+  U18
+  U20
+  SENIOR
+}
+enum MatchStatut {
+  PROGRAMME
+  EN_COURS
+  TERMINE
+  REPORTE
+}
+enum SportSection {
+  FOOTBALL
+  BASKETBALL
+  HANDBALL
+  VOLLEYBALL
+  NATATION
+  JUDO
+  ATHLETISME
+  GENERAL
+}
+enum MatchCategory {
+  U15
+  U17
+  U18
+  U20
+  SENIOR
+}
+
+' ============================================================
+' ENTITES — BILLETTERIE (ticket-service)
+' ============================================================
+class Event <<Entity>> {
+  -id : Long
+  -title : String
+  -description : String
+  -eventType : EventType
+  -status : EventStatus
+  -homeTeam : String
+  -awayTeam : String
+  -venue : String
+  -competition : String
+  -category : EventCategory
+  -adversaireLogoUrl : String
+  -eventDate : LocalDateTime
+  -gateOpenTime : LocalDateTime
+  -exceptional : Boolean
+  -basePrice : BigDecimal
+  -totalCapacity : Integer
+  -availableSeats : Integer
+  -soldTickets : Integer
+  -posterUrl : String
+  -matchId : Long
+  -createdAt : LocalDateTime
+  -updatedAt : LocalDateTime
+}
+
+class Section <<Entity>> {
+  -id : Long
+  -name : String
+  -category : TicketCategory
+  -seatType : SeatType
+  -capacity : Integer
+  -availableSeats : Integer
+  -price : BigDecimal
+}
+
+class Ticket <<Entity>> {
+  -id : Long
+  -ticketNumber : String {unique}
+  -userId : Long
+  -userFullName : String
+  -userEmail : String
+  -category : TicketCategory
+  -status : TicketStatus
+  -price : BigDecimal
+  -seatNumber : String
+  -qrCodeData : String {unique}
+  -qrCodeImage : byte[]
+  -beneficiaryAcademyMemberId : Long
+  -parentPayerEmail : String
+  -validatedAt : LocalDateTime
+  -cancelledAt : LocalDateTime
+  -createdAt : LocalDateTime
+  -updatedAt : LocalDateTime
+}
+
+' ============================================================
+' ENTITES — CONTENU (content-service, FK logique)
+' ============================================================
+class Match <<Entity>> {
+  -id : Long
+  -date : LocalDate
+  -heure : LocalTime
+  -adversaire : String
+  -adversaireLogoUrl : String
+  -competition : String
+  -lieu : String
+  -scoreWydad : Integer
+  -scoreAdversaire : Integer
+  -statut : MatchStatut
+  -sport : SportSection
+  -categorie : MatchCategory
+  -createdAt : LocalDateTime
+}
+
+class Article <<Entity>> {
+  -id : Long
+  -titre : String
+  -contenu : String
+  -imageUrl : String
+  -sport : SportSection
+  -auteur : String
+  -published : boolean
+  -createdAt : LocalDateTime
+  -updatedAt : LocalDateTime
+}
+
+class Media <<Entity>> {
+  -id : Long
+  -publicId : String
+  -secureUrl : String
+  -resourceType : String
+  -fileName : String
+  -size : Long
+  -contentType : String
+  -uploadedAt : LocalDateTime
+}
+
+' ============================================================
+' RELATIONS JPA
+' ============================================================
+Event "1" *-- "1..*" Section : tarif (cascade ALL + orphanRemoval)
+Event "1" *-- "0..*" Ticket : billet vendu (cascade ALL)
+Section "1" --> "0..*" Ticket : zone attribuée
+
+Event --> EventStatus : statut
+Event --> EventType : type
+Event --> EventCategory : §26 catégorie
+Section --> TicketCategory : catégorie
+Section --> SeatType : siège
+Ticket --> TicketStatus : cycle de vie
+Ticket --> TicketCategory : tarif
+
+' FK logique inter-service (Match du content-service)
+Event "0..1" --> "1" Match : adossé à (matchId Long)
+Match --> MatchStatut : statut
+Match --> SportSection : discipline
+Match --> MatchCategory : §26 catégorie
+
+' ============================================================
+' NOTES METIER
+' ============================================================
+note top of Event
+  **Billetterie événementielle**
+  ────────────────────────────
+  BasePrice = tarif plancher
+  Sections = grille tarifaire éditable
+  exceptional = B.12 (fenêtre 48h
+  pour abonnés avant public)
+end note
+
+note right of Ticket
+  **QR code + PDF**
+  ────────────────
+  byte[] → BYTEA (PostgreSQL,
+  pas @Lob → bug Hibernate 6)
+  status : PAID → USED (B.28 direct)
+  B.18 : beneficiaryAcademyMemberId
+  pour achat PARENT pour enfant
+end note
+
+note left of Section
+  **Grille tarifaire éditable**
+  ───────────────────────────
+  ADMIN pilote via PATCH /sections/{id}
+  (in-place, pas de versionning)
+  Tarification par catégorie
+  + section capacity
+end note
+
+note bottom of Match
+  **§26 — Discipline + Catégorie figées**
+  ────────────────────────────────────
+  Pas de mélange Football U17 sur
+  un match Basketball U17
+  Couplage billetterie = matchId (FK logique)
+end note
+
+@enduml

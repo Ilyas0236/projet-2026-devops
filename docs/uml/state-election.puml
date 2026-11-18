@@ -1,0 +1,99 @@
+@startuml state-election
+' Diagramme d'états — Cycle de vie d'une Election
+' B.8 / B.8.b / B.8.c / B.8.e / B.8.h : ADMIN crée, scheduler gèle,
+' dépublication possible, toggle résultats partiels, garde-fou 2 candidats,
+' éligibilité vote = titulaire ACTIF + ADMIN exempt
+' Code source : election-service/.../model/Election.java
+'                ElectionService.closeOnlyInternal (gèle SANS publier)
+'                ElectionService.publishResultsInternal (publie, NOT_ALL_VOTED=409)
+'                ElectionService.unpublishForAdmin (B.8.b)
+'                ElectionService.toggleResultsHidden (B.8.e)
+'                ElectionService.closeAndPublish (alias rétro-compat)
+' Format Visual Paradigm
+
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam dpi 150
+skinparam stateBorderColor #1565C0
+skinparam stateFontSize 12
+skinparam stateFontStyle bold
+skinparam arrowColor #1565C0
+skinparam arrowFontSize 10
+skinparam defaultFontSize 11
+skinparam defaultFontName "Helvetica"
+
+title État — Cycle de vie d'une Election (B.8 / B.8.b / B.8.c / B.8.e / B.8.h)
+
+state "OPEN\n(published=false)" as O #D1FAE5
+state "CLOSED\n(published=false)" as C #FFE4E6
+state "PUBLISHED\n(status=CLOSED,\npublished=true)" as PB #DBEAFE
+
+[*] --> O : ADMIN crée\n(status=OPEN,\npublished=false,\nstartsAt < endsAt)
+
+O --> O : votes acceptés\n(POST /api/elections/{id}/vote\n isActiveSubscriber OU ADMIN\n +1 fois par (election,userId))
+
+O --> O : admin ajoute/retire\ncandidat (tant que OPEN\n+ pas de vote pour lui)
+
+O --> O : toggle résultats\npartiels (B.8.e)\n(resultsHidden=!resultsHidden)
+
+O --> C : scheduler @Scheduled fixedDelay=60s\nOU ADMIN /close manuel\n(closeOnlyInternal\nstatus=CLOSED, published=false)\nGARDE-FOU : nbCandidats >= 2\nsinon IllegalStateException
+
+C --> C : votes refusés (409)
+
+C --> PB : ADMIN /publish manuel\n(publishResultsInternal\nstatus=CLOSED, published=true,\nwinnerCandidateId figé)\n409 NOT_ALL_VOTED si votes < eligibles\n409 PUBLISH_NO_ELIGIBLE_SNAPSHOT si\nactiveMembersClient.countActiveAt=0\n (auth-service down = fail-closed)
+
+PB --> C : ADMIN /unpublish (B.8.b)\n(published=false,\nwinnerCandidateId conservé,\nstatus reste CLOSED)
+
+PB --> [*] : résultats publics\nvisibles sans auth
+
+C --> [*] : annulation définitive\n(suppression admin\nsi 0 vote, sinon refus\n409 "utiliser Dépublier")
+
+note right of O
+  **B.8 / B.8.h** — Vote :
+  - statut OPEN + dans la fenêtre
+  - + 1 carte abonnement ACTIVE
+    (snapshot à endsAt)
+  - ADMIN exempté
+  - fail-closed si auth-service down
+  - 1 vote par (election, userId)
+    (contrainte SQL unique)
+end note
+
+note right of C
+  **B.8 — Cycle close / publish** :
+  - `close` (scheduler ou admin) :
+    gèle SANS publier
+  - `publish` (admin uniquement) :
+    exige TOUS titulaires votés
+    sinon 409 NOT_ALL_VOTED
+  - `closeAndPublish` (rétro-compat
+    bouton admin « tout-en-un »)
+  - `unpublish` (admin) : retour à
+    published=false (status=CLOSED)
+  - Garde-fou : ≥ 2 candidats
+    (B.8.c, scrutin invalide sinon)
+end note
+
+note left of PB
+  **B.8 — Publication** :
+  - gagnant figé
+    (winnerCandidateId)
+  - résultats publics sans auth
+  - notif broadcast + in-app
+    (best-effort, ne bloque pas)
+  - `toggleResultsHidden`
+    interdit une fois publié
+end note
+
+legend right
+  |= État |= ElectionStatus + published
+  | OPEN | Vote ouvert + fenêtre startsAt/endsAt
+  | CLOSED (published=false) | Gelé, pas de résultats
+  | PUBLISHED | Résultats publics (winner figé)
+  | **B.8.b** | unpublish (published=false, status=CLOSED)
+  | **B.8.c** | garde-fou ≥ 2 candidats avant close
+  | **B.8.e** | toggle resultsHidden (OPEN uniquement)
+  | **B.8.h** | canVote = titulaire ACTIF + ADMIN exempt
+endlegend
+
+@enduml

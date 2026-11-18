@@ -1,0 +1,82 @@
+@startuml state-press-accred
+' Diagramme d'états — Cycle de vie d'une PressAccreditation
+' B.17 : journaliste crée (multipart photo+média+n° carte)
+'        ADMIN valide ou refuse avec motif obligatoire
+'        Badge PDF 19 Ko auto-généré (OpenPDF) sur demande VALIDE
+' Code source : auth-service/.../PressAccreditationController
+'               PressAccreditationService (create / validate / refuse)
+' Format Visual Paradigm
+
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam dpi 150
+skinparam stateBorderColor #6A1B9A
+skinparam stateFontSize 12
+skinparam stateFontStyle bold
+skinparam arrowColor #6A1B9A
+skinparam arrowFontSize 10
+skinparam defaultFontSize 11
+skinparam defaultFontName "Helvetica"
+
+title État 4/4 — Cycle de vie d'une PressAccreditation (B.17)
+
+state "EN_ATTENTE" as EA #FEF3C7
+state "VALIDE" as V #D1FAE5
+state "REFUSE" as R #FFE4E6
+
+[*] --> EA : journaliste crée\nPOST /api/auth/presse/accreditations\n(multipart : photo + média\n + n° carte presse,\n statut=EN_ATTENTE,\n dateCreation=now)
+
+EA --> V : ADMIN /validate\n(statut=VALIDE,\n decidedAt=now,\n motifRefus=null)
+
+EA --> R : ADMIN /refuse\n(statut=REFUSE,\n motifRefus obligatoire\n @Valid size>=5,\n decidedAt=now)
+
+V --> [*] : badge PDF\ntéléchargeable\nGET /accreditations/{id}/badge\n(OpenPDF, 19 Ko,\n self ou ADMIN)
+
+R --> [*] : motif visible\ncôté journaliste\n(pas de re-soumission :\n doit créer une\n nouvelle demande)
+
+note right of V
+  Après validation :
+  - GET /api/auth/presse/accreditations/{id}/badge
+  - PDF généré à la demande (OpenPDF)
+  - Inclut photo, nom, média, n° carte
+  - QR code de contrôle
+  - Accès : journaliste proprio
+    OU ADMIN (X-User-Role=ADMIN)
+  - sinon 403 IDOR strict
+end note
+
+note right of R
+  Après refus :
+  - motif obligatoire (size >= 5)
+  - visible par le journaliste
+  - notif in-app (NotificationService)
+  - PAS de re-soumission
+    sur la même demande :
+    le journaliste doit
+    POST /accreditations
+    pour repartir d'EN_ATTENTE
+end note
+
+note left of EA
+  En attente :
+  - Visible dans la file ADMIN
+  - Pas de badge téléchargeable
+  - Le journaliste suit le statut
+  - Multipart obligatoire :
+    photo (JPEG/PNG),
+    média (URL),
+    n° carte presse
+end note
+
+legend right
+  |= État |= Effet
+  | EN_ATTENTE | File d'attente ADMIN
+  | VALIDE | Badge PDF téléchargeable
+  | REFUSE | Motif notifié (terminal)
+  | **5 statuts Phase 0** | utilisateur : EN_ATTENTE/VALIDE/REFUSE
+  | **B.17** | accréditation presse multi-matchs
+  | **IDOR badge** | self OU ADMIN (X-User-Role)
+  | **Motif obligatoire** | @Valid si refus
+endlegend
+
+@enduml

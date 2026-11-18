@@ -1,0 +1,189 @@
+@startuml uc-07-club-joueur
+' ============================================================
+' UC-7 — DIAGRAMME DE CAS D'UTILISATION
+' Côté CLUB INTERNE — Espace JOUEUR
+' Source : sports-service/PlayerSpaceController (@PreAuthorize hasRole('JOUEUR'))
+'          ticket-service/TicketController (B.28 direct)
+'          auth-service/SubscriptionController (B.12 — 1 ACTIVE/saison)
+'          communication-service/TeamChatController + MessagingController
+'          (V2.5 : team-chat photos + 1-to-1 persistant + canal président)
+'          wydad-frontend/src/app/pages/espace-joueur/**
+' ============================================================
+' Conventions UML 2.5 :
+'   * swimlanes = JOUEUR
+'   * JOUEUR = authentifié, profil roster FOOTBALL/SENIOR etc.
+'   * B.18.b = feuille de match cochable (TITULAIRE/REMPLAÇANT)
+'   * B.12 = 1 abonnement ACTIVE max par saison (sinon 409)
+'   * B.28 = billet VISITEUR PARENT JOUEUR (PAID direct)
+'   * V2.5 = team-chat photos + canal président + sélecteur libre
+' ============================================================
+
+left to right direction
+skinparam actorStyle awesome
+skinparam rectangle {
+  RoundCorner 15
+  BackgroundColor #FFFFFF
+  BorderColor #444444
+}
+skinparam package {
+  BackgroundColor #F5F5F5
+  BorderColor #888888
+  BorderThickness 1
+}
+skinparam usecase {
+  BackgroundColor #E8F0FE
+  BorderColor #1E3A8A
+  BorderThickness 1
+}
+skinparam note {
+  BackgroundColor #FFF8E1
+  BorderColor #C79100
+}
+skinparam defaultFontSize 11
+skinparam shadowing false
+
+' ============================================================
+' ACTEURS
+' ============================================================
+actor "JOUEUR" as JEU
+
+' ============================================================
+' SYSTEME
+' ============================================================
+rectangle "Plateforme Wydad Digital — Espace Joueur" {
+
+  package "Authentification" {
+    usecase "S'authentifier" as UC_LOGIN
+  }
+
+  package "Convocations (B.18.b feuille cochable)" {
+    usecase "Consulter mes convocations" as UC_MCN
+    usecase "Repondre a une convocation\n(PRESENT/ABSENT/RETARD + motif)" as UC_RCN
+    usecase "Marquer convocation comme lue" as UC_LCN
+  }
+
+  package "Feuille de match (B.18.b)" {
+    usecase "Consulter la feuille\nde match publique" as UC_FM
+  }
+
+  package "Presence & documents" {
+    usecase "Saisir ma presence" as UC_PRE
+    usecase "Consulter mes documents" as UC_DOC
+    usecase "Deposer mes pieces KYC\n(Phase 0, EN_ATTENTE)" as UC_KYC
+  }
+
+  package "Profil & stats" {
+    usecase "Consulter mon profil" as UC_PROF
+    usecase "Modifier mon profil" as UC_PROFMODIF
+    usecase "Uploader ma photo" as UC_PHO
+    usecase "Consulter mes stats" as UC_STA
+  }
+
+  package "Supporter — Achats (B.12 / B.28)" {
+    usecase "Acheter un abonnement\nsaisonnier (B.12, ADHERENT)" as UC_ABS
+    usecase "Telecharger ma carte\nabonnement PDF (85x54mm)" as UC_ABS_PDF
+    usecase "Telecharger ma facture" as UC_ABS_FAC
+    usecase "Acheter un billet\nmatch (B.28, PAID direct)" as UC_BIL
+    usecase "Consulter mes billets + QR" as UC_BIL_Q
+  }
+
+  package "Messagerie unifiee (V2.5)" {
+    usecase "Chatter en groupe\n(team-chat WS STOMP)" as UC_TC
+    usecase "Poster un message\navec photo (REST /messages)" as UC_TCP
+    usecase "Envoyer un message\n1-to-1 (avec photo)" as UC_M1
+    usecase "Envoyer un message\na 1..N destinataires (batch)" as UC_MN
+    usecase "Lire la conversation" as UC_MC
+    usecase "Voir ma boite\nde reception" as UC_MI
+    usecase "Resoudre le president\nde ma discipline" as UC_PRES
+    usecase "Ecrire au president\nde ma discipline" as UC_PW
+    usecase "Nouveau message libre\n(selection 1..N contacts)" as UC_NL
+  }
+}
+
+' ============================================================
+' INCLUDES
+' ============================================================
+note "<<include>> losange PLEIN =\ndependance OBLIGATOIRE" as N1
+
+' --- Auth precondition ---
+UC_MCN  ..> UC_LOGIN : <<include>>
+UC_RCN  ..> UC_LOGIN : <<include>>
+UC_LCN  ..> UC_LOGIN : <<include>>
+UC_FM   ..> UC_LOGIN : <<include>>
+UC_PRE  ..> UC_LOGIN : <<include>>
+UC_DOC  ..> UC_LOGIN : <<include>>
+UC_KYC  ..> UC_LOGIN : <<include>>
+UC_PROF ..> UC_LOGIN : <<include>>
+UC_PROFMODIF ..> UC_LOGIN : <<include>>
+UC_PHO  ..> UC_LOGIN : <<include>>
+UC_STA  ..> UC_LOGIN : <<include>>
+UC_ABS  ..> UC_LOGIN : <<include>>
+UC_ABS_PDF ..> UC_LOGIN : <<include>>
+UC_ABS_FAC ..> UC_LOGIN : <<include>>
+UC_BIL  ..> UC_LOGIN : <<include>>
+UC_BIL_Q ..> UC_LOGIN : <<include>>
+UC_TC   ..> UC_LOGIN : <<include>>
+UC_TCP  ..> UC_LOGIN : <<include>>
+UC_M1   ..> UC_LOGIN : <<include>>
+UC_MN   ..> UC_LOGIN : <<include>>
+UC_MC   ..> UC_LOGIN : <<include>>
+UC_MI   ..> UC_LOGIN : <<include>>
+UC_PRES ..> UC_LOGIN : <<include>>
+UC_PW   ..> UC_LOGIN : <<include>>
+UC_NL   ..> UC_LOGIN : <<include>>
+
+' --- PDF achat inclut achat ---
+UC_ABS_PDF ..> UC_ABS : <<include>>
+UC_ABS_FAC ..> UC_ABS : <<include>>
+UC_BIL_Q   ..> UC_BIL : <<include>>
+
+' ============================================================
+' ASSOCIATIONS
+' ============================================================
+
+' --- JOUEUR ---
+JEU --> UC_MCN
+JEU --> UC_RCN
+JEU --> UC_LCN
+JEU --> UC_FM
+JEU --> UC_PRE
+JEU --> UC_DOC
+JEU --> UC_KYC
+JEU --> UC_PROF
+JEU --> UC_PROFMODIF
+JEU --> UC_PHO
+JEU --> UC_STA
+JEU --> UC_ABS
+JEU --> UC_ABS_PDF
+JEU --> UC_ABS_FAC
+JEU --> UC_BIL
+JEU --> UC_BIL_Q
+JEU --> UC_TC
+JEU --> UC_TCP
+JEU --> UC_M1
+JEU --> UC_MN
+JEU --> UC_MC
+JEU --> UC_MI
+JEU --> UC_PRES
+JEU --> UC_PW
+JEU --> UC_NL
+
+' ============================================================
+' LEGENDE
+' ============================================================
+legend right
+  | **Symbole** | **Signification** |
+  | Acteur | JOUEUR |
+  | Rectangle | Frontiere du systeme |
+  | Package | Sous-domaine fonctionnel |
+  | **--** | Association acteur <-> UC |
+  | **..** | <<include>> (obligatoire) |
+  | **B.18.b** | Feuille de match cochable (TITULAIRE/REMPLAÇANT) |
+  | **B.12** | 1 abonnement ACTIVE max par saison (409 sinon) |
+  | **B.28** | Achat billet = PAID direct (statut PAID) |
+  | **V2.5** | Team-chat photos + canal président + libre |
+  | **Phase 0** | Inscription JOUEUR = EN_ATTENTE → KYC + ADMIN |
+  | Source | sports-service, ticket-service, auth-service, communication-service |
+endlegend
+
+@enduml

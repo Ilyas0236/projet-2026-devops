@@ -1,0 +1,235 @@
+@startuml uc-11-club-admin
+' ============================================================
+' UC-11 — DIAGRAMME DE CAS D'UTILISATION
+' Côté CLUB INTERNE — Back-office ADMIN
+' Source : 29 sous-pages admin dans wydad-frontend/src/app/pages/admin/**
+'          controllers ADMIN dans tous les *-service
+'          Phase 0 : AuthController.kyc/upload-file + kyc/verify
+'                    AuthController.admin/accounts/{id}/validate|refuse
+'          C3 (gamification) : point_rules CRUD
+'          B.17 : PressAccreditationController (valider/rejeter)
+'          B.18 : AcademyController.admin (toutes academies)
+'          AuthController (mots de passe, KYC, validation comptes)
+' ============================================================
+' Conventions UML 2.5 :
+'   * swimlanes = ADMIN (seul)
+'   * 29 sous-pages admin (cf. cartographie du code)
+'   * 9 roles geres (Role enum : VISITEUR, ADHERENT, PARENT, JOUEUR,
+'                   ENTRAINEUR, STAFF, JOURNALISTE, PRESIDENT, ADMIN)
+'   * Phase 0 = validation comptes EN_ATTENTE + KYC
+' ============================================================
+
+left to right direction
+skinparam actorStyle awesome
+skinparam rectangle {
+  RoundCorner 15
+  BackgroundColor #FFFFFF
+  BorderColor #444444
+}
+skinparam package {
+  BackgroundColor #F5F5F5
+  BorderColor #888888
+  BorderThickness 1
+}
+skinparam usecase {
+  BackgroundColor #E8F0FE
+  BorderColor #1E3A8A
+  BorderThickness 1
+}
+skinparam note {
+  BackgroundColor #FFF8E1
+  BorderColor #C79100
+}
+skinparam defaultFontSize 10
+skinparam shadowing false
+
+' ============================================================
+' ACTEURS
+' ============================================================
+actor "ADMIN\n(back-office)" as ADM
+
+' ============================================================
+' SYSTEME
+' ============================================================
+rectangle "Plateforme Wydad Digital — Back-office ADMIN" {
+
+  package "Authentification" {
+    usecase "S'authentifier" as UC_LOGIN
+  }
+
+  package "Utilisateurs & comptes (auth-service)" {
+    usecase "Lister les utilisateurs\n(9 roles + filtres)" as UC_AU_L
+    usecase "Creer un compte\n(9 roles + discipline)" as UC_AU_C
+    usecase "Activer/desactiver\nun compte" as UC_AU_T
+    usecase "Changer le role" as UC_AU_R
+    usecase "Supprimer un compte" as UC_AU_D
+    usecase "Lister les comptes\nen attente" as UC_AD_L
+    usecase "Valider/Refuser un\ncompte EN_ATTENTE" as UC_AD_V
+    usecase "Lister les pieces KYC" as UC_AD_K
+    usecase "Valider/Rejeter une\npiece KYC (POST /verify)" as UC_AD_KV
+    usecase "Reclamer support\n(repondre)" as UC_REC
+  }
+
+  package "Contenu & sport (content/sports-service)" {
+    usecase "CRUD Actualites" as UC_AN
+    usecase "CRUD Medias\n(mediatheque)" as UC_AME
+    usecase "CRUD Matchs +\nsaisir score final" as UC_AM
+    usecase "CRUD Classements" as UC_ACL
+    usecase "CRUD Seances" as UC_AS
+    usecase "CRUD Convocations" as UC_ACN
+    usecase "Publier/rejeter une\nfeuille de match" as UC_AFM
+    usecase "CRUD Effectif joueurs" as UC_AEF
+    usecase "CRUD Fiches publiques" as UC_AEFP
+    usecase "CRUD Fiches staff" as UC_AST
+    usecase "CRUD Palmares\n(upload photo + URL)" as UC_APA
+    usecase "CRUD Legendes du club" as UC_ALE
+    usecase "CRUD Sponsors\n(upload logo, 2x retina)" as UC_ASPO
+    usecase "CRUD Carrousels backgrounds\n(7 pages publiques)" as UC_ABG
+    usecase "CRUD Reseaux sociaux\n(SVG/URL)" as UC_ARS
+    usecase "CRUD Stade (cover)" as UC_ASTC
+    usecase "Parametres du club" as UC_APA2
+  }
+
+  package "Billetterie & boutique" {
+    usecase "CRUD Evenements billetterie" as UC_ABIL
+    usecase "CRUD Plans abonnement" as UC_APL
+    usecase "CRUD Produits boutique" as UC_ASHO
+    usecase "Suivre les commandes" as UC_ACMD
+    usecase "Inventaire transactions\n(4 onglets CSV/PDF)" as UC_AACH
+    usecase "Filtrer les dons" as UC_ADON
+  }
+
+  package "Gamification, votes, systeme" {
+    usecase "CRUD Sondages" as UC_ASON
+    usecase "CRUD Elections\n(candidats, scrutin, cloture)" as UC_AELE
+    usecase "CRUD Badges\n(seed + defis + assig.)" as UC_ABDG
+    usecase "CRUD Defis temporels\n(SUBMIT/WIN/REACH)" as UC_ADEF
+    usecase "Modifier le bareme\nde points (C3)" as UC_APTS
+    usecase "CRUD Academie (B.18)" as UC_AACA
+    usecase "Approuver/publier un\ndocument president" as UC_APD
+    usecase "Valider/Rejeter une\ndemande presse (B.17)" as UC_APRE
+    usecase "CRUD Recus salaire" as UC_AREC
+  }
+}
+
+' ============================================================
+' INCLUDES
+' ============================================================
+note "<<include>> losange PLEIN =\ndependance OBLIGATOIRE" as N1
+
+' Tous les UC ADMIN incluent login
+UC_AU_L  ..> UC_LOGIN : <<include>>
+UC_AU_C  ..> UC_LOGIN : <<include>>
+UC_AU_T  ..> UC_LOGIN : <<include>>
+UC_AU_R  ..> UC_LOGIN : <<include>>
+UC_AU_D  ..> UC_LOGIN : <<include>>
+UC_AD_L  ..> UC_LOGIN : <<include>>
+UC_AD_V  ..> UC_LOGIN : <<include>>
+UC_AD_K  ..> UC_LOGIN : <<include>>
+UC_AD_KV ..> UC_LOGIN : <<include>>
+UC_REC   ..> UC_LOGIN : <<include>>
+UC_AN    ..> UC_LOGIN : <<include>>
+UC_AME   ..> UC_LOGIN : <<include>>
+UC_AM    ..> UC_LOGIN : <<include>>
+UC_ACL   ..> UC_LOGIN : <<include>>
+UC_AS    ..> UC_LOGIN : <<include>>
+UC_ACN   ..> UC_LOGIN : <<include>>
+UC_AFM   ..> UC_LOGIN : <<include>>
+UC_AEF   ..> UC_LOGIN : <<include>>
+UC_AEFP  ..> UC_LOGIN : <<include>>
+UC_AST   ..> UC_LOGIN : <<include>>
+UC_APA   ..> UC_LOGIN : <<include>>
+UC_ALE   ..> UC_LOGIN : <<include>>
+UC_ASPO  ..> UC_LOGIN : <<include>>
+UC_ABG   ..> UC_LOGIN : <<include>>
+UC_ARS   ..> UC_LOGIN : <<include>>
+UC_ASTC  ..> UC_LOGIN : <<include>>
+UC_APA2  ..> UC_LOGIN : <<include>>
+UC_ABIL  ..> UC_LOGIN : <<include>>
+UC_APL   ..> UC_LOGIN : <<include>>
+UC_ASHO  ..> UC_LOGIN : <<include>>
+UC_ACMD  ..> UC_LOGIN : <<include>>
+UC_AACH  ..> UC_LOGIN : <<include>>
+UC_ADON  ..> UC_LOGIN : <<include>>
+UC_ASON  ..> UC_LOGIN : <<include>>
+UC_AELE  ..> UC_LOGIN : <<include>>
+UC_ABDG  ..> UC_LOGIN : <<include>>
+UC_ADEF  ..> UC_LOGIN : <<include>>
+UC_APTS  ..> UC_LOGIN : <<include>>
+UC_AACA  ..> UC_LOGIN : <<include>>
+UC_APD   ..> UC_LOGIN : <<include>>
+UC_APRE  ..> UC_LOGIN : <<include>>
+UC_AREC  ..> UC_LOGIN : <<include>>
+
+' --- Enchainements metier ---
+UC_AD_V  ..> UC_AD_L  : <<include>>
+UC_AD_KV ..> UC_AD_K  : <<include>>
+
+' ============================================================
+' ASSOCIATIONS
+' ============================================================
+
+' --- ADMIN ---
+ADM --> UC_AU_L
+ADM --> UC_AU_C
+ADM --> UC_AU_T
+ADM --> UC_AU_R
+ADM --> UC_AU_D
+ADM --> UC_AD_L
+ADM --> UC_AD_V
+ADM --> UC_AD_K
+ADM --> UC_AD_KV
+ADM --> UC_REC
+ADM --> UC_AN
+ADM --> UC_AME
+ADM --> UC_AM
+ADM --> UC_ACL
+ADM --> UC_AS
+ADM --> UC_ACN
+ADM --> UC_AFM
+ADM --> UC_AEF
+ADM --> UC_AEFP
+ADM --> UC_AST
+ADM --> UC_APA
+ADM --> UC_ALE
+ADM --> UC_ASPO
+ADM --> UC_ABG
+ADM --> UC_ARS
+ADM --> UC_ASTC
+ADM --> UC_APA2
+ADM --> UC_ABIL
+ADM --> UC_APL
+ADM --> UC_ASHO
+ADM --> UC_ACMD
+ADM --> UC_AACH
+ADM --> UC_ADON
+ADM --> UC_ASON
+ADM --> UC_AELE
+ADM --> UC_ABDG
+ADM --> UC_ADEF
+ADM --> UC_APTS
+ADM --> UC_AACA
+ADM --> UC_APD
+ADM --> UC_APRE
+ADM --> UC_AREC
+
+' ============================================================
+' LEGENDE
+' ============================================================
+legend right
+  | **Symbole** | **Signification** |
+  | Acteur | ADMIN (back-office) |
+  | Rectangle | Frontiere du systeme |
+  | Package | Sous-domaine fonctionnel |
+  | **--** | Association acteur <-> UC |
+  | **..** | <<include>> (obligatoire) |
+  | 9 roles | VISITEUR/ADHERENT/PARENT/JOUEUR/ENTRAINEUR/STAFF/JOURNALISTE/PRESIDENT/ADMIN |
+  | 29 pages | /admin/* (wydad-frontend) |
+  | **Phase 0** | Validation comptes + KYC (5 statuts) |
+  | **B.17** | Validation demandes presse |
+  | **B.18** | CRUD académie (PARENT) |
+  | **C3** | Barème points gami |
+  | Source | controllers ADMIN dans tous les *-service |
+endlegend
+
+@enduml

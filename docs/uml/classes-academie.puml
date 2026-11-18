@@ -1,0 +1,121 @@
+@startuml classes-academie
+' ============================================================
+' Diagramme de classes — DOMAINE ACADEMIE (B.18)
+' Source : sports-service/src/main/java/.../model/Academy*.java
+' ============================================================
+' Conventions UML 2.5 :
+'   * 2 classes JPA reelles : AcademyMember + AcademyDocument
+'   * FK logique parentUserId vers auth-service User
+'   * Documents BYTEA (Hibernate 6 natif, pas @Lob)
+' ============================================================
+
+left to right direction
+skinparam class {
+  BackgroundColor #FFFFFF
+  BorderColor #1E3A8A
+  ArrowColor #1E3A8A
+  FontSize 11
+}
+skinparam package {
+  BackgroundColor #F5F5F5
+  BorderColor #888888
+}
+skinparam enum {
+  BackgroundColor #FFF8E1
+  BorderColor #C79100
+}
+skinparam stereotypeCBackgroundColor #E8F0FE
+skinparam shadowing false
+hide circle
+hide methods
+
+' ============================================================
+' ENUMS (reutilise SportType de sports-service)
+' ============================================================
+enum SportType {
+  FOOTBALL
+  BASKETBALL
+  HANDBALL
+  VOLLEYBALL
+  SWIMMING
+  JUDO
+  ATHLETICS
+  AUTRE
+}
+
+' ============================================================
+' ENTITE — ACADEMY MEMBER (dossier enfant)
+' ============================================================
+class AcademyMember <<Entity>> {
+  -id : Long
+  -parentUserId : Long {not null, FK auth-service}
+  -childFullName : String
+  -childBirthDate : LocalDate
+  -sportType : SportType
+  -level : String {Débutant/Intermédiaire/Avancé}
+  -medicalHistory : String
+  -bloodType : String
+  -allergies : String
+  -emergencyContactName : String
+  -emergencyContactPhone : String
+  -active : Boolean = true
+  -createdAt : LocalDateTime
+  -updatedAt : LocalDateTime
+}
+
+note right of AcademyMember
+  **B.18 — Dossier académie PARENT**
+  ──────────────────────────────
+  1 ligne = 1 enfant déclaré
+  parentUserId = FK logique User (rôle PARENT)
+  sportType : 8 disciplines (§26)
+  Anti-IDOR strict :
+  GET /academy/parent/{parentUserId} = X-User-Id
+  Données médicales sensibles (RGPD)
+end note
+
+' ============================================================
+' ENTITE — ACADEMY DOCUMENT (pièce justificative)
+' ============================================================
+class AcademyDocument <<Entity>> {
+  -id : Long
+  -academyMemberId : Long {not null}
+  -docType : String
+  -fileName : String
+  -contentType : String
+  -size : Long
+  -data : byte[] {BYTEA natif, pas @Lob}
+  -ownerUserId : Long {not null, contrôle accès}
+  -uploadedAt : LocalDateTime
+}
+
+note right of AcademyDocument
+  **B.18 — Pièces justificatives**
+  ──────────────────────────────
+  docType ∈ {BIRTH_CERTIFICATE,
+             MEDICAL_CERTIFICATE,
+             PHOTO}
+  byte[] → BYTEA PostgreSQL
+  (Hibernate 6, pas @Lob)
+  ownerUserId pour contrôle d'accès
+  sans jointure academy_members
+end note
+
+' ============================================================
+' RELATIONS JPA
+' ============================================================
+AcademyMember "1" *-- "0..*" AcademyDocument : pièces (cascade ALL)
+AcademyMember --> SportType : discipline
+
+' ============================================================
+' FK LOGIQUE
+' ============================================================
+note bottom of AcademyMember
+  **FK logique** : parentUserId et ownerUserId
+  pointent vers auth-service User (rôle PARENT)
+  Pas de JPA cross-service — vérifié
+  côté service (sports-service) avec
+  appels internes (X-Internal-Secret)
+end note
+
+@enduml

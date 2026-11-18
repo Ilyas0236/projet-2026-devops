@@ -1,0 +1,173 @@
+@startuml uc-01b-vue-globale-club
+' ============================================================
+' UC-1b — DIAGRAMME DE CAS D'UTILISATION GLOBAL
+' Plateforme Wydad Digital — Côté CLUB INTERNE (vue agrégée)
+' Source : code qui compile (Angular routes + Spring @PreAuthorize)
+' ============================================================
+' Conventions UML 2.5 :
+'   * 4 acteurs CLUB : STAFF, ENTRAINEUR, PRESIDENT, ADMIN
+'   * PAS D'HERITAGE entre acteurs (STAFF et ENTRAINEUR : rôles distincts)
+'   * B.18.b : ENTRAINEUR prepare la feuille, ADMIN publie (pas heritage)
+'   * <<include>> = losange PLEIN  (dependance OBLIGATOIRE)
+'   * <<extend>> = losange VIDE   (dependance CONDITIONNELLE)
+'   * B.17 : presse multi-matchs (geree par ADMIN)
+'   * B.18.b : Feuille de match cochable (TITULAIRE/REMPLAÇANT)
+' ============================================================
+
+left to right direction
+skinparam actorStyle awesome
+skinparam rectangle {
+  RoundCorner 15
+  BackgroundColor #FFFFFF
+  BorderColor #444444
+}
+skinparam package {
+  BackgroundColor #F5F5F5
+  BorderColor #888888
+  BorderThickness 1
+}
+skinparam usecase {
+  BackgroundColor #E8F0FE
+  BorderColor #1E3A8A
+  BorderThickness 1
+}
+skinparam note {
+  BackgroundColor #FFF8E1
+  BorderColor #C79100
+}
+skinparam defaultFontSize 11
+skinparam shadowing false
+
+' ============================================================
+' ACTEURS (4 swimlanes, AUCUN heritage)
+' ============================================================
+actor "STAFF" as STA
+actor "ENTRAINEUR" as ENT
+actor "PRESIDENT\n(de SA discipline)" as PRE
+actor "ADMIN\n(back-office)" as ADM
+
+' PAS d'heritage : ENTRAINEUR et STAFF sont 2 rôles distincts
+' (B.18.b = ENTRAINEUR prepare, ADMIN publie — flux croises)
+
+' ============================================================
+' SYSTEME
+' ============================================================
+rectangle "Plateforme Wydad Digital — Côté CLUB INTERNE" {
+
+  package "Authentification" {
+    usecase "S'authentifier\n(login 9 rôles)" as UC_LOGIN
+  }
+
+  package "Univers sportif (club)" {
+    usecase "Creer une seance" as UC_SEA
+    usecase "Cocher une feuille\nde match (B.18.b)" as UC_FM
+    usecase "Saisir une stat de match" as UC_STA2
+    usecase "Programmer un appel video" as UC_CAL
+  }
+
+  package "Messagerie (V2.5)" {
+    usecase "Echanger en team-chat" as UC_TC
+    usecase "Ecrire au president\nde sa discipline" as UC_PMSG
+    usecase "Envoyer un media" as UC_MED
+  }
+
+  package "Gouvernance PRESIDENT" {
+    usecase "Annuaire de SA discipline" as UC_DIR
+    usecase "Emettre un reçu de salaire" as UC_REC
+    usecase "Publier un document president" as UC_PD
+  }
+
+  package "Presse (B.17)" {
+    usecase "Valider/Refuser une\ndemande presse" as UC_AP
+  }
+
+  package "Back-office ADMIN" {
+    usecase "CRUD Utilisateurs (9 rôles)" as UC_AU
+    usecase "CRUD Contenu + Matchs" as UC_AC
+    usecase "CRUD Billetterie + Boutique" as UC_AB
+    usecase "Gerer Elections + Sondages" as UC_AE
+    usecase "CRUD Badges + Defis + Points" as UC_AG
+  }
+}
+
+' ============================================================
+' INCLUDES — dependances OBLIGATOIRES
+' ============================================================
+note "<<include>> losange PLEIN = obligatoire" as N1
+
+UC_SEA  ..> UC_LOGIN : <<include>>
+UC_FM   ..> UC_LOGIN : <<include>>
+UC_STA2 ..> UC_LOGIN : <<include>>
+UC_CAL  ..> UC_LOGIN : <<include>>
+
+UC_TC   ..> UC_LOGIN : <<include>>
+UC_PMSG ..> UC_LOGIN : <<include>>
+UC_MED  ..> UC_LOGIN : <<include>>
+
+UC_DIR  ..> UC_LOGIN : <<include>>
+UC_REC  ..> UC_LOGIN : <<include>>
+UC_PD   ..> UC_LOGIN : <<include>>
+
+UC_AP   ..> UC_LOGIN : <<include>>
+
+UC_AU   ..> UC_LOGIN : <<include>>
+UC_AC   ..> UC_LOGIN : <<include>>
+UC_AB   ..> UC_LOGIN : <<include>>
+UC_AE   ..> UC_LOGIN : <<include>>
+UC_AG   ..> UC_LOGIN : <<include>>
+
+' ============================================================
+' ASSOCIATIONS ACTEUR <-> UC
+' ============================================================
+
+' --- STAFF ---
+STA --> UC_SEA
+STA --> UC_FM
+STA --> UC_STA2
+STA --> UC_CAL
+STA --> UC_TC
+STA --> UC_PMSG
+STA --> UC_MED
+
+' --- ENTRAINEUR (rôle distinct) ---
+ENT --> UC_SEA
+ENT --> UC_FM
+ENT --> UC_STA2
+ENT --> UC_CAL
+ENT --> UC_TC
+ENT --> UC_PMSG
+ENT --> UC_MED
+
+' --- PRESIDENT (de SA discipline) ---
+PRE --> UC_DIR
+PRE --> UC_REC
+PRE --> UC_PD
+PRE --> UC_TC
+PRE --> UC_PMSG
+PRE --> UC_MED
+
+' --- ADMIN (back-office) ---
+ADM --> UC_AU
+ADM --> UC_AC
+ADM --> UC_AB
+ADM --> UC_AP
+ADM --> UC_AE
+ADM --> UC_AG
+
+' ============================================================
+' LEGENDE
+' ============================================================
+legend right
+  | **Symbole** | **Signification** |
+  | Acteur | STAFF, ENTRAINEUR, PRESIDENT, ADMIN |
+  | Rectangle | Frontiere du systeme |
+  | Package | Sous-domaine fonctionnel |
+  | **--** | Association acteur <-> UC |
+  | **..** | <<include>> (obligatoire) |
+  | **(aucun triangle)** | Pas d'héritage : ENTRAINEUR et STAFF sont 2 rôles distincts (B.18.b) |
+  | **B.17** | Presse : ADMIN valide/rejette demande |
+  | **B.18.b** | Feuille de match cochable (TITULAIRE/REMPLAÇANT) |
+  | Source | Code qui compile : routes Angular + @PreAuthorize Spring |
+endlegend
+
+@enduml

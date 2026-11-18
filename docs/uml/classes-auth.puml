@@ -1,0 +1,259 @@
+@startuml classes-auth
+' ============================================================
+' Diagramme de classes — DOMAINE AUTH & IDENTITE
+' Source : auth-service/src/main/java/com/wydad/digital/auth/model/**
+' ============================================================
+' Conventions UML 2.5 :
+'   * classes JPA reelles avec attributs principaux
+'   * enums (Role, StatutCompte, MembershipLevel, etc.)
+'   * cardinalites tirees de @OneToMany / @ManyToOne
+' ============================================================
+
+left to right direction
+skinparam class {
+  BackgroundColor #FFFFFF
+  BorderColor #1E3A8A
+  ArrowColor #1E3A8A
+  FontSize 11
+}
+skinparam package {
+  BackgroundColor #F5F5F5
+  BorderColor #888888
+}
+skinparam enum {
+  BackgroundColor #FFF8E1
+  BorderColor #C79100
+}
+skinparam stereotypeCBackgroundColor #E8F0FE
+skinparam shadowing false
+hide circle
+hide methods
+
+' ============================================================
+' ENUMS
+' ============================================================
+enum Role {
+  VISITEUR
+  ADHERENT
+  PARENT
+  JOUEUR
+  ENTRAINEUR
+  STAFF
+  JOURNALISTE
+  PRESIDENT
+  ADMIN
+}
+enum StatutCompte {
+  EN_ATTENTE
+  VALIDE
+  REFUSE
+}
+enum MembershipLevel {
+  ROUGE
+  OR
+  DIAMANT
+  LEGENDE
+  JUNIOR
+}
+enum UserSubscriptionStatus {
+  PENDING_PAYMENT
+  ACTIVE
+  CANCELLED
+  REPLACED
+  EXPIRED
+}
+enum PressAccreditationStatus {
+  EN_ATTENTE
+  VALIDE
+  REFUSE
+}
+
+' ============================================================
+' ENTITES PRINCIPALES
+' ============================================================
+class User <<Entity>> {
+  -id : Long
+  -email : String {unique, not null}
+  -phone : String {unique, not null}
+  -password : String
+  -firstName : String
+  -lastName : String
+  -membershipLevel : MembershipLevel {nullable, deprecated B.12}
+  -role : Role {not null}
+  -statutCompte : StatutCompte = VALIDE
+  -motifRefus : String
+  -membershipExpiresAt : LocalDateTime
+  -referralCode : String
+  -referredBy : String
+  -ville : String
+  -langue : String = "fr"
+  -timezone : String = "Africa/Casablanca"
+  -bio : String
+  -disciplineDemandee : String
+  -categorieDemandee : String
+  -organismePresse : String
+  -numeroCartePresse : String
+  -photoUrl : String
+  -matchId : Long
+  -matchSouhaite : String
+  -kycVerified : boolean = false
+  -active : boolean = true
+  -createdAt : LocalDateTime
+  -updatedAt : LocalDateTime
+}
+
+class ActiveSession <<Entity>> {
+  -id : Long
+  -email : String
+  -token : String
+  -ipAddress : String
+  -userAgent : String
+  -expiresAt : LocalDateTime
+  -revoked : boolean
+  -createdAt : LocalDateTime
+}
+
+class KycDocument <<Entity>> {
+  -id : Long
+  -email : String
+  -documentType : String
+  -documentNumber : String
+  -filePath : String
+  -secureUrl : String
+  -verified : boolean
+  -uploadedAt : LocalDateTime
+}
+
+class SubscriptionPlan <<Entity>> {
+  -id : Long
+  -code : String {unique}
+  -name : String
+  -regularPrice : BigDecimal
+  -adherentPrice : BigDecimal
+  -benefits : String
+  -isActive : Boolean
+  -displayOrder : Integer
+  -exceptionalPriority : Boolean
+  -season : String
+  -cardImageUrl : String
+  -createdAt : LocalDateTime
+  -updatedAt : LocalDateTime
+}
+
+class UserSubscription <<Entity>> {
+  -id : Long
+  -zoneCode : SubscriptionZoneCode
+  -season : String
+  -paidAmount : BigDecimal
+  -transactionRef : String
+  -paidAt : LocalDateTime
+  -validFrom : LocalDateTime
+  -validTo : LocalDateTime
+  -status : UserSubscriptionStatus
+  -qrCodeBase64 : String
+  -pdfPath : String
+  -beneficiaryAcademyMemberId : Long
+  -parentPayerEmail : String
+}
+
+class PressAccreditation <<Entity>> {
+  -id : Long
+  -matchId : Long
+  -matchLabel : String
+  -matchDate : LocalDate
+  -organismePresse : String
+  -statut : PressAccreditationStatus
+  -motifRefus : String
+  -createdAt : LocalDateTime
+  -decidedAt : LocalDateTime
+}
+
+class SalaryReceipt <<Entity>> {
+  -id : Long
+  -userId : Long
+  -userFullName : String
+  -userEmail : String
+  -receiptType : String
+  -amount : BigDecimal
+  -currency : String
+  -periode : String
+  -motif : String
+  -reference : String {unique}
+  -paymentDate : LocalDate
+  -issuedByUserId : Long
+  -issuedByName : String
+  -createdAt : LocalDateTime
+}
+
+enum SubscriptionZoneCode {
+  PELOUSE_ZONE_4
+  PELOUSE_ZONE_6
+  TRIBUNE
+  PREMIUM
+  VIP
+  VIP_ADHERENT
+  VVIP
+  VVIP_ADHERENT
+  VVIP_PARKING
+  VVIP_PARKING_ADHERENT
+}
+
+' ============================================================
+' RELATIONS JPA
+' ============================================================
+User "1" *-- "0..*" ActiveSession : possède
+User "1" --> "0..*" KycDocument : soumet (par email)
+User "1" *-- "0..*" UserSubscription : souscrit
+SubscriptionPlan "1" --> "0..*" UserSubscription : consommé par
+UserSubscription --> SubscriptionZoneCode : legacy audit
+UserSubscription --> UserSubscriptionStatus : statut
+User "1" *-- "0..*" PressAccreditation : dépose (B.17)
+PressAccreditation --> PressAccreditationStatus : statut
+User "0..1" --> "0..*" PressAccreditation : décide (decidedBy)
+User "1" *-- "0..*" SalaryReceipt : bénéficiaire
+User "0..1" --> "0..*" SalaryReceipt : émetteur (issuedBy)
+
+User --> Role : rôle principal
+User --> StatutCompte : circuit validation
+User --> MembershipLevel : carte héritée (deprecated)
+
+' ============================================================
+' NOTES METIER
+' ============================================================
+note top of User
+  **Rôle central du SI**
+  ─────────────────────
+  9 rôles (Role enum)
+  VISITEUR = non authentifié (pas en base)
+  Phase 0 : circuit de validation
+  (EN_ATTENTE → VALIDE/REFUSE)
+  pour ENTRAINEUR/JOURNALISTE/PRESIDENT
+  B.17 : matchId + matchSouhaite = match
+  que le journaliste veut couvrir
+end note
+
+note bottom of SubscriptionPlan
+  **B.12 — Pilote l'offre saison**
+  ─────────────────────────────
+  Supporte l'ancien SubscriptionZoneCode
+  par dérivation (legacy audit)
+  isActive : on désactive sans supprimer
+end note
+
+note right of PressAccreditation
+  **B.17 — Multi-matchs**
+  ────────────────────
+  Unique (user_id, match_id)
+  Champs dénormalisés (matchLabel/Date)
+  pour badge figé même si match renommé
+end note
+
+note left of UserSubscription
+  **Règle B.12 — 1 ACTIF/saison**
+  ─────────────────────────────
+  REPLACED si rachat en cours
+  beneficiaryAcademyMemberId :
+  B.18 achat PARENT pour enfant
+end note
+
+@enduml

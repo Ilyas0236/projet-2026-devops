@@ -1,0 +1,222 @@
+@startuml collab-accreditation
+' ============================================================
+' Diagramme de COLLABORATION (UML 2.5) — Accréditation presse B.17
+' Qui communique avec qui + Quel message + Dans quel ordre.
+' Format Visual Paradigm : objets, liens de communication,
+' messages numérotés (ordre des interactions), responsabilités.
+' ============================================================
+' Source : code qui compile (auth-service, notification-service,
+'           content-service, api-gateway, wydad-frontend)
+'   - PressAccreditationService (createAccreditation / validate / refuse)
+'   - PressAccreditationController (POST/GET/badge)
+'   - ContentClient.fetchMatchLabel(matchId)
+'   - NotificationClient.notifyUser(...)  (best-effort)
+'   - PdfService.generatePressBadge(...)  (OpenPDF, 19 Ko)
+' Regles :
+'   * 4 acteurs/objets (Journaliste, Front, Gateway, Auth, Content,
+'     Notification, BDD)
+'   * Messages numerotes 1..N
+'   * Liens = canaux de communication (HTTP / WebSocket / JDBC)
+'   * Alt = branches conditionnelles sur garde
+'   * Anti-doublon (user, match) = 409 DUPLICATE_ACCREDITATION
+'   * Badge = self OU ADMIN (X-User-Role=ADMIN)
+' ============================================================
+
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam dpi 150
+skinparam nodesep 70
+skinparam ranksep 60
+skinparam classAttributeIconSize 0
+
+skinparam class {
+  BackgroundColor #FFFFFF
+  BorderColor #6A1B9A
+  FontSize 11
+  FontStyle bold
+}
+skinparam defaultFontSize 11
+skinparam defaultFontName "Helvetica"
+
+title Collaboration 1/1 — Accréditation presse B.17 (journaliste + admin)
+
+' ============================================================
+' OBJETS (acteurs + participants + base)
+' ============================================================
+actor "Journaliste\n(role=JOURNALISTE,\nstatut=VALIDE)"              as J   #FFE4E6
+actor "Admin\n(role=ADMIN)"                                            as A   #E1F5FE
+
+participant "Frontend Angular\n:4200"                                 as FE  #E3F2FD
+participant "API Gateway\n(JWT filter)\n:8080"                        as GW  #BBDEFB
+participant "PressAccreditation\nController\n:auth-service :8081"     as CTR #E1F5FE
+participant "PressAccreditation\nService\n(@Transactional)"           as SVC #E1F5FE
+participant "ContentClient\n(RestTemplate\nX-Internal-Secret)"        as CCO #FFF9C4
+participant "NotificationClient\n(RestTemplate\nX-Internal-Secret)"   as NOT #E1BEE7
+participant "PdfService\n(OpenPDF 19 Ko)"                             as PDFS #E1BEE7
+database    "auth_db"                                                  as DB  #FFF9C4
+
+' ============================================================
+' LIENS DE COMMUNICATION (canaux entre objets)
+' ============================================================
+J   --> FE
+A   --> FE
+FE  --> GW
+GW  --> CTR
+CTR --> SVC
+SVC --> CCO
+SVC --> NOT
+SVC --> PDFS
+SVC --> DB
+
+' ============================================================
+' PHASE 1 — CREATION DE LA DEMANDE (par le journaliste)
+' ============================================================
+note over J, DB
+  **Phase 1 — Création de la demande**
+  5 gardes (cf. PressAccreditationService L92-124) :
+  1) email + role (X-User-*) non nuls
+  2) role = JOURNALISTE
+  3) statutCompte = VALIDE
+  4) photoUrl non null
+  5) matchId réel (content-service) + pas de doublon
+end note
+
+J   -> FE   : 1) Choisit un match\n   du calendrier officiel
+FE  -> GW   : 2) POST /api/auth/presse/accreditations\n   Authorization: Bearer JWT\n   { matchId }
+GW  -> GW   : 3) JwtAuthenticationFilter (HS256)\n   parse claims -> id, email, role\n   inject X-User-Email, X-User-Role
+GW  -> CTR  : 4) route interne (X-User-* propages)
+CTR -> CTR  : 5) email & role non nuls\n   sinon 401 UNAUTHORIZED
+CTR -> CTR  : 6) role == JOURNALISTE\n   sinon 403 FORBIDDEN
+CTR -> SVC  : 7) createAccreditation(email, request)
+
+' --- Garde : photo obligatoire ---
+SVC -> DB   : 8) SELECT user WHERE email = :email
+DB  --> SVC : 9) User (photoUrl, statutCompte, role)
+SVC -> SVC  : 10) si photoUrl == null\n    -> 400 PHOTO_REQUIRED
+
+' --- Garde : match réel (inter-service) ---
+SVC -> CCO  : 11) GET /api/content/internal/matches/{id}/label\n    X-Internal-Secret
+CCO --> SVC : 12) String label (ou null)
+SVC -> SVC  : 13) si label == null\n    -> 400 MATCH_NOT_FOUND
+
+' --- Garde : pas de doublon (user, match) ---
+SVC -> DB   : 14) SELECT count(*) FROM press_accreditations\n    WHERE user_id = :me AND match_id = :id
+DB  --> SVC : 15) 0 ou 1
+SVC -> SVC  : 16) si count > 0\n    -> 409 DUPLICATE_ACCREDITATION
+
+' --- INSERT + notif admin (best-effort) ---
+SVC -> DB   : 17) INSERT press_accreditation\n    (user_id, match_id, label, statut='EN_ATTENTE')
+DB  --> SVC : 18) PressAccreditation persiste
+SVC -> NOT  : 19) notifyUser(null, 'admin@wac.ma',\n    'Nouvelle demande d'accreditation',\n    'Hicham Journaliste — WAC vs Raja le 05/09',\n    '/admin/presse/demandes')
+NOT --> SVC : 20) 202 (best-effort, log warn si KO)
+SVC --> CTR : 21) PressAccreditationResponse (statut=EN_ATTENTE)
+CTR --> GW  : 22) 201 Created
+GW  --> FE  : 23) 201 OK
+FE  --> J   : 24) Toast "Demande envoyee"
+
+' ============================================================
+' PHASE 2 — DECISION ADMIN (validation ou refus)
+' ============================================================
+note over J, DB
+  **Phase 2 — Décision ADMIN**
+  POST /api/auth/admin/press/accreditations/{id}/validate|refuse
+  3 gardes : statut EN_ATTENTE / VALIDE verrouillé / REFUSE verrouillé
+end note
+
+A   -> FE   : 25) Ouvre /admin/presse/demandes
+FE  -> GW   : 26) GET /api/auth/admin/press/accreditations/pending
+GW  -> CTR  : 27) route (X-User-Role=ADMIN)
+CTR -> SVC  : 28) listPending()
+SVC -> DB   : 29) SELECT * WHERE statut='EN_ATTENTE'\n    ORDER BY created_at ASC
+DB  --> SVC : 30) List<PressAccreditation>
+SVC --> CTR : 31) liste
+CTR --> GW  : 32) 200 OK
+GW  --> FE  : 33) 200 OK
+FE  --> A   : 34) Affiche la file d'attente
+
+alt Validation
+  A   -> FE   : 35) Clic "Valider" sur une demande
+  FE  -> GW   : 36) POST /api/auth/admin/press/accreditations/{id}/validate
+  GW  -> CTR  : 37) route (X-User-Role=ADMIN)
+  CTR -> SVC  : 38) validate(id, adminEmail)
+  SVC -> DB   : 39) SELECT press_accreditation WHERE id=:id
+  DB  --> SVC : 40) PressAccreditation
+  SVC -> SVC  : 41) gardes :\n    - deja VALIDE -> no-op\n    - REFUSE -> IllegalState
+  SVC -> DB   : 42) UPDATE press_accreditation\n    SET statut='VALIDE', decided_at=now,\n    decided_by=admin, motif_refus=null
+  DB  --> SVC : 43) 1 ligne
+  SVC -> NOT  : 44) notifyUser(journalistId, email,\n    'Accreditation validee',\n    'Votre demande pour "WAC vs Raja" a ete acceptee',\n    '/journaliste/accueil')
+  NOT --> SVC : 45) 202 (best-effort)
+  SVC --> CTR : 46) PressAccreditationResponse (statut=VALIDE)
+  CTR --> GW  : 47) 200 OK
+  GW  --> FE  : 48) 200 OK
+  FE  --> A   : 49) Toast "Accreditation validee"
+
+else Refus (motif obligatoire, size >= 5)
+  A   -> FE   : 50) Clic "Refuser" + motif
+  FE  -> GW   : 51) POST /api/auth/admin/press/accreditations/{id}/refuse\n    { motif: "carte expiree" }
+  GW  -> CTR  : 52) route (X-User-Role=ADMIN)
+  CTR -> SVC  : 53) refuse(id, motif, adminEmail)
+  SVC -> SVC  : 54) si motif null|blank\n    -> 400 MOTIF_REQUIRED
+  SVC -> DB   : 55) SELECT press_accreditation WHERE id=:id
+  DB  --> SVC : 56) PressAccreditation
+  SVC -> SVC  : 57) gardes :\n    - deja REFUSE -> no-op\n    - VALIDE -> IllegalState
+  SVC -> DB   : 58) UPDATE press_accreditation\n    SET statut='REFUSE', decided_at=now,\n    decided_by=admin, motif_refus=:motif
+  DB  --> SVC : 59) 1 ligne
+  SVC -> NOT  : 60) notifyUser(journalistId, email,\n    'Accreditation refusee',\n    'Votre demande pour "WAC vs Raja" a ete refusee.\n     Motif : carte expiree',\n    '/journaliste/demandes')
+  NOT --> SVC : 61) 202 (best-effort)
+  SVC --> CTR : 62) PressAccreditationResponse (statut=REFUSE)
+  CTR --> GW  : 63) 200 OK
+  GW  --> FE  : 64) 200 OK
+  FE  --> A   : 65) Toast "Accreditation refusee"
+end
+
+' ============================================================
+' PHASE 3 — TELECHARGEMENT DU BADGE (journaliste VALIDE ou ADMIN)
+' ============================================================
+note over J, DB
+  **Phase 3 — Badge PDF**
+  GET /api/auth/presse/accreditations/{id}/badge
+  Garde IDOR : self OU ADMIN (sinon 403)
+  Garde cycle : statut == VALIDE (sinon IllegalState)
+  PDF genere a la volee (OpenPDF, 19 Ko) :
+  photo + nom + media + n° carte + match + QR controle
+end note
+
+J   -> FE   : 66) Clic "Telecharger mon badge"
+FE  -> GW   : 67) GET /api/auth/presse/accreditations/{id}/badge\n    Authorization: Bearer JWT
+GW  -> GW   : 68) inject X-User-Email, X-User-Role
+GW  -> CTR  : 69) route interne
+CTR -> CTR  : 70) si !JOURNALISTE && !ADMIN\n    -> 403 FORBIDDEN
+CTR -> SVC  : 71) generateBadgeFor(id, email, isAdmin)
+SVC -> DB   : 72) SELECT press_accreditation WHERE id=:id
+DB  --> SVC : 73) PressAccreditation
+SVC -> SVC  : 74) si statut != VALIDE\n    -> 409 BADGE_NOT_AVAILABLE_YET
+SVC -> SVC  : 75) si !isAdmin :\n    requesterId == accreditation.user.id ?\n    sinon -> 404 IDOR
+SVC -> PDFS : 76) generatePressBadge(accreditation, user)
+PDFS --> SVC : 77) byte[] (OpenPDF, ~19 Ko)
+SVC --> CTR : 78) byte[]
+CTR --> GW  : 79) 200 OK\n    Content-Type: application/pdf\n    Content-Disposition: attachment;\n      filename=badge-accreditation-{id}.pdf
+GW  --> FE  : 80) 200 OK (PDF stream)
+FE  --> J   : 81) Navigateur declenche le telechargement
+
+' ============================================================
+' LEGENDE
+' ============================================================
+legend right
+  |= Étape |= Acteur / Service
+  | 1-10   | Phase 1 : création (Journaliste → Front)
+  | 11-20  | Phase 1 : gardes inter-service
+  | 17-24  | Phase 1 : INSERT + notif admin
+  | 25-34  | Phase 2 : file d'attente ADMIN
+  | 35-49  | Phase 2 : validation
+  | 50-65  | Phase 2 : refus (motif obligatoire)
+  | 66-81  | Phase 3 : téléchargement badge
+  | -----  | --------------------------------
+  | **5 gardes** | rôle + statut VALIDE + photo + match réel + anti-doublon
+  | **IDOR badge** | self OU ADMIN (X-User-Role)
+  | **Best-effort** | notif in-app (échec ne bloque pas)
+  | **OpenPDF** | ~19 Ko, photo + QR + média + n° carte
+  | Source | auth-service + PressAccreditationService L92-258
+endlegend
+
+@enduml

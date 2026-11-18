@@ -1,0 +1,154 @@
+@startuml uc-02-supporter-public
+' ============================================================
+' UC-2 — DIAGRAMME DE CAS D'UTILISATION
+' Côté SUPPORTER — Consultation publique (VISITEUR + ADHERENT)
+' Source : wydad-frontend/src/app/app.routes.ts (public-layout)
+'          auth-service : permitAll catalogue public
+' ============================================================
+' Conventions UML 2.5 :
+'   * swimlanes verticales = 2 acteurs (VISITEUR, ADHERENT)
+'   * VISITEUR = non authentifie (pseudonyme pour la lisibilite)
+'   * ADHERENT = authentifie, peut lire tout public + ses onglets perso
+'   * <<include>> = losange PLEIN  (dependance OBLIGATOIRE)
+'   * cardinalites acteur <-> UC explicites
+' ============================================================
+
+left to right direction
+skinparam actorStyle awesome
+skinparam rectangle {
+  RoundCorner 15
+  BackgroundColor #FFFFFF
+  BorderColor #444444
+}
+skinparam package {
+  BackgroundColor #F5F5F5
+  BorderColor #888888
+  BorderThickness 1
+}
+skinparam usecase {
+  BackgroundColor #E8F0FE
+  BorderColor #1E3A8A
+  BorderThickness 1
+}
+skinparam note {
+  BackgroundColor #FFF8E1
+  BorderColor #C79100
+}
+skinparam defaultFontSize 11
+skinparam shadowing false
+
+' ============================================================
+' ACTEURS
+' ============================================================
+actor "VISITEUR\n(non authentifie)" as VIS
+actor "ADHERENT\n(supporter authentifie)" as ADH
+
+' ============================================================
+' SYSTEME
+' ============================================================
+rectangle "Plateforme Wydad Digital — Consultation publique" {
+
+  package "Authentification" {
+    usecase "Se connecter" as UC_LOGIN
+    usecase "Creer un compte" as UC_REG
+  }
+
+  package "Home & actualites" {
+    usecase "Consulter la home\n(hero + prochain match + 3 actus)" as UC_HOME
+    usecase "Consulter la liste\ndes actualites" as UC_NEWS
+    usecase "Lire le detail\nd'une actualite" as UC_ND
+  }
+
+  package "Calendrier & palmaress" {
+    usecase "Consulter le calendrier\ndes matchs" as UC_CAL
+    usecase "Consulter les classements" as UC_RANK
+    usecase "Consulter la feuille\nde match publique" as UC_FP
+    usecase "Consulter l'effectif" as UC_SQD
+    usecase "Consulter le palmares" as UC_PAL
+    usecase "Consulter les legendes" as UC_HOF
+    usecase "Consulter la fiche stade" as UC_STA
+    usecase "Telecharger la\ntransparence (PDF)" as UC_TRA
+  }
+
+  package "Catalogue billetterie / boutique" {
+    usecase "Lister les evenements\nde billetterie" as UC_BIL
+    usecase "Lister les plans\nd'abonnement" as UC_PLA
+    usecase "Lister les produits\nde la boutique" as UC_SHO
+    usecase "Lister les sondages actifs" as UC_LSP
+    usecase "Lister les elections publiees" as UC_LEL
+  }
+
+  package "Newsletter" {
+    usecase "S'inscrire a la newsletter" as UC_NL
+  }
+}
+
+' ============================================================
+' INCLUDES
+' ============================================================
+note "<<include>> losange PLEIN =\ndependance OBLIGATOIRE" as N1
+
+' Authentification : certains details profil / kyc exigent login
+' Semantique : consulter la liste inclut lire le detail d'une actualite
+UC_NEWS ..> UC_ND : <<include>>
+
+' ============================================================
+' ASSOCIATIONS ACTEUR <-> UC
+' ============================================================
+
+' --- VISITEUR (consultation anonyme) ---
+VIS --> UC_LOGIN
+VIS --> UC_REG
+VIS --> UC_HOME
+VIS --> UC_NEWS
+VIS --> UC_ND
+VIS --> UC_CAL
+VIS --> UC_FP
+VIS --> UC_RANK
+VIS --> UC_SQD
+VIS --> UC_PAL
+VIS --> UC_HOF
+VIS --> UC_STA
+VIS --> UC_TRA
+VIS --> UC_BIL
+VIS --> UC_PLA
+VIS --> UC_SHO
+VIS --> UC_LSP
+VIS --> UC_LEL
+VIS --> UC_NL
+
+' --- ADHERENT : herite de tout VISITEUR, + actions profil ---
+ADH --> UC_LOGIN
+ADH --> UC_REG
+ADH --> UC_HOME
+ADH --> UC_NEWS
+ADH --> UC_ND
+ADH --> UC_CAL
+ADH --> UC_FP
+ADH --> UC_RANK
+ADH --> UC_SQD
+ADH --> UC_PAL
+ADH --> UC_HOF
+ADH --> UC_STA
+ADH --> UC_TRA
+ADH --> UC_BIL
+ADH --> UC_PLA
+ADH --> UC_SHO
+ADH --> UC_LSP
+ADH --> UC_LEL
+ADH --> UC_NL
+
+' ============================================================
+' LEGENDE
+' ============================================================
+legend right
+  | **Symbole** | **Signification** |
+  | Acteur | Personne externe au systeme |
+  | Rectangle | Frontiere du systeme |
+  | Package | Sous-domaine fonctionnel |
+  | **--** | Association acteur <-> UC |
+  | **..** | <<include>> (obligatoire) |
+  | Source | wydad-frontend/src/app/app.routes.ts (public-layout) |
+endlegend
+
+@enduml

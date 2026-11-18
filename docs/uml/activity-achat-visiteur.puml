@@ -1,0 +1,167 @@
+@startuml activity-achat-visiteur
+' Diagramme d'activité — Processus d'achat d'un billet VISITEUR (B.28)
+' Code source : ticket-service/.../TicketController#purchaseTickets
+'               TicketService#purchaseTickets (lignes 42-173)
+'               payment-service/.../PaymentController#/debit
+' Format Visual Paradigm
+
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam dpi 150
+skinparam activityBorderColor #1E40AF
+skinparam activityBackgroundColor #DBEAFE
+skinparam activityFontSize 11
+skinparam activityFontStyle bold
+skinparam arrowColor #1E40AF
+skinparam arrowFontSize 10
+skinparam defaultFontSize 11
+skinparam defaultFontName "Helvetica"
+skinparam noteBorderColor #6B7280
+skinparam noteBackgroundColor #F9FAFB
+
+title Activité 1/1 — Processus d'achat d'un billet VISITEUR (B.28)
+
+|#LightBlue|VISITEUR|
+|#LightYellow|Front Angular 19|
+|#LightGreen|ticket-service|
+|#LightPink|payment-service|
+
+|VISITEUR|
+start
+
+:Choisir événement et catégorie
+(section TRIBUNE/VIP/ULTRA/VIRAGE,
+quantité) ;
+
+|Front Angular 19|
+:Saisir email + téléphone ;
+note right
+  B.28 — phone UNIQUE en base.
+  Email sert d'identifiant
+  de compte si inscription
+  automatique.
+end note
+
+:Sélectionner mode de paiement
+(CARTE / E-CASH) ;
+
+|VISITEUR|
+:Confirmer l'achat ;
+
+|Front Angular 19|
+:POST /api/auth/register si pas
+de compte (role=ADHERENT) ;
+
+|ticket-service|
+:Verrou pessimiste SELECT ... FOR UPDATE
+sur Event et Section
+(anti-surbooking concurrent) ;
+
+if (Événement exceptionnel
+ET fenêtre 48h pré-ouverture ?) then (oui)
+  if (Utilisateur est ADHÉRENT ?) then (oui)
+    :Autoriser l'achat ;
+  else (non)
+    :Lever IllegalStateException
+    "Match en vente prioritaire
+    ADHÉRENTS — ouverture au
+    public dans Xh" ;
+    stop
+  endif
+else (non)
+endif
+
+:Charger Section par eventId
++ category (TicketCategory) ;
+
+if (Places disponibles ≥ qty ?) then (oui)
+else (non)
+  :Lever IllegalStateException
+  "Pas assez de places" ;
+  stop
+endif
+
+:Branche B.18 PARENT —
+beneficiaryAcademyMemberId
+présent ? ;
+
+if (Achat "pour enfant" ?) then (oui)
+  :Lookup sports-service :
+  parentUserId + childFullName ;
+  if (Enfant rattaché à CE parent ?) then (oui)
+    :Appel auth-service :
+    créer/récupérer User shadow
+    "enfant-{academyId}@wac.parent" ;
+  else (non)
+    :Lever AccessDeniedException
+    IDOR strict parent/enfant ;
+    stop
+  endif
+else (non)
+  :Identité depuis JWT
+  (effectiveUserId, effectiveEmail) ;
+endif
+
+:Pour chaque billet (qty fois) :
+- Générer ticketNumber "WAC-XXXXXXXX"
+- Encoder QR "WAC-TICKET:...:EVENT:...:USER:..."
+- Construire Ticket(PAID, qrCodeImage, ...) ;
+:Sauvegarder N Ticket ;
+:section.availableSeats -= qty ;
+:event.soldTickets += qty
+event.availableSeats -= qty ;
+
+note right
+  Verrou pessimiste tenu
+  pendant toute la transaction
+  @Transactional — pas de race
+  condition sur les places.
+end note
+
+switch (PaymentMethod reçu ?)
+case (ECASH)
+  |payment-service|
+  :POST /api/payment/debit
+  sur wallet E-cash
+  (email JWT, montant total) ;
+  if (Solde suffisant ?) then (oui)
+    :Débiter le wallet ;
+    :Retourner TransactionResponse ;
+  else (non)
+    :Lever exception solde
+    insuffisant ;
+    stop
+  endif
+case (CARD)
+  |payment-service|
+  :Simulation carte bancaire
+  (log info, pas de PSP réel) ;
+case (autre)
+  :Rejeter 400 Bad Request
+  "PaymentMethod inconnu" ;
+  stop
+endswitch
+
+|ticket-service|
+:Best-effort notifier utilisateur
+(NotificationClient.notifyUser) ;
+note left
+  Best-effort : une panne
+  de notification n'annule
+  PAS l'achat (@Transactional
+  rollback uniquement sur
+  exception métier).
+end note
+
+:Retourner 201 CREATED
++ List<TicketResponse> ;
+
+|Front Angular 19|
+:Afficher confirmation
++ QR codes de chaque billet ;
+:Bouton "Télécharger PDF" / "Voir QR" ;
+
+|VISITEUR|
+stop
+
+@enduml

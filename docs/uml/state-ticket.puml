@@ -1,0 +1,59 @@
+@startuml state-ticket
+' Diagramme d'états — Cycle de vie d'un Ticket
+' B.28 + B.18 : billets VIP parent/enfant + QR + scan
+' Code source : ticket-service/.../enums/TicketStatus.java
+'                TicketService.purchaseTickets (PAID direct, pas RESERVED)
+'                TicketService.validateTicket (USED, pas VALIDATED)
+' Format Visual Paradigm
+
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam dpi 150
+skinparam stateBorderColor #B91C1C
+skinparam stateFontSize 12
+skinparam stateFontStyle bold
+skinparam arrowColor #B91C1C
+skinparam arrowFontSize 10
+skinparam defaultFontSize 11
+skinparam defaultFontName "Helvetica"
+
+title État — Cycle de vie d'un Ticket (B.28)
+
+state "PAID" as P #FEF3C7
+state "USED" as U #D1FAE5
+state "CANCELLED" as C #F3F4F6
+state "REFUNDED" as R #DBEAFE
+
+[*] --> P : achat (INSERT ticket\nstatus=PAID direct\n+ QR généré)
+
+P --> U : scan QR à l'entrée\n(TicketService.validateTicket\nstatus=USED, validatedAt=now)
+
+P --> C : annulation avant match\n(statut=CANCELLED)
+
+P --> R : annulation après paiement\n(refund E-Cash OK\nstatus=REFUNDED)
+
+U --> [*] : billet consommé
+C --> [*]
+R --> [*]
+
+legend right
+  |= État |= Enum TicketStatus
+  | PAID | Paiement validé
+  | USED | QR scanné à l'entrée
+  | CANCELLED | Annulé
+  | REFUNDED | Remboursé
+  | EXPIRED | (déclaré enum, jamais affecté :\n  aucun scheduler n'écrit setStatus(EXPIRED)\n  dans le code — état mort)
+endlegend
+
+note right of P
+  **B.28** : ticket créé DIRECTEMENT
+  en PAID (pas de phase RESERVED
+  transitoire). Le verrou pessimiste
+  sur l'event + sections est dans
+  la même transaction.
+  **EXPIRED** : valeur d'enum définie
+  mais aucun code ne l'affecte
+  actuellement (pas de scheduler).
+end note
+
+@enduml

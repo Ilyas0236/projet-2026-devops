@@ -1,0 +1,367 @@
+@startuml classes-macro
+' ============================================================
+' Diagramme de classes — VUE MACRO
+' Plateforme Wydad Digital — domaines métiers
+' Source : 9 microservices Spring Boot + 1 Angular
+'   (auth / content / payment / shop / ticket / notification
+'    / sports / gamification / election)
+' ============================================================
+' Conventions UML 2.5 :
+'   * packages = domaines métiers / microservices
+'   * classes principales uniquement (5-7 par package)
+'   * cardinalités réelles des @OneToMany / @ManyToOne
+'   * composition losange PLEIN = cycle de vie lié
+'   * agregation losange VIDE = collection partagée
+'   * association simple = reference (FK logique Long)
+' ============================================================
+
+left to right direction
+skinparam class {
+  BackgroundColor #FFFFFF
+  BorderColor #1E3A8A
+  ArrowColor #1E3A8A
+  FontSize 11
+}
+skinparam package {
+  BackgroundColor #F5F5F5
+  BorderColor #888888
+  BorderThickness 1
+}
+skinparam stereotypeCBackgroundColor #E8F0FE
+skinparam shadowing false
+hide circle
+hide methods
+
+' ============================================================
+' 1) AUTH & IDENTITE (auth-service, 8081)
+' ============================================================
+package "Auth & Identite" {
+  class User <<Entity>> {
+    id : Long
+    email : String
+    role : Role
+    statutCompte : StatutCompte
+  }
+  class UserSubscription <<Entity>> {
+    id : Long
+    season : String
+    status : UserSubscriptionStatus
+  }
+  class SubscriptionPlan <<Entity>> {
+    id : Long
+    code : String
+    regularPrice : BigDecimal
+  }
+  class PressAccreditation <<Entity>> {
+    id : Long
+    matchId : Long
+    statut : PressAccreditationStatus
+  }
+  class SalaryReceipt <<Entity>> {
+    id : Long
+    receiptType : String
+    amount : BigDecimal
+  }
+}
+
+' ============================================================
+' 2) CONTENU (content-service, 8082)
+' ============================================================
+package "Contenu & Medias" {
+  class Match <<Entity>> {
+    id : Long
+    date : LocalDate
+    statut : MatchStatut
+    sport : SportSection
+  }
+  class Article <<Entity>> {
+    id : Long
+    titre : String
+    published : boolean
+  }
+  class Media <<Entity>> {
+    id : Long
+    publicId : String
+    resourceType : String
+  }
+  class Sponsor <<Entity>> {
+    id : Long
+    nom : String
+    tier : SponsorTier
+  }
+  class PresidentDocument <<Entity>> {
+    id : Long
+    titre : String
+    fileName : String
+  }
+}
+
+' ============================================================
+' 3) SPORTS & ROSTER (sports-service, 8087)
+' ============================================================
+package "Sports & Roster" {
+  class Player <<Entity>> {
+    id : Long
+    userId : Long
+    sportType : SportType
+    category : Category
+  }
+  class Staff <<Entity>> {
+    id : Long
+    userId : Long
+    role : StaffRole
+    sportType : SportType
+  }
+  class Session <<Entity>> {
+    id : Long
+    title : String
+    sessionDate : LocalDateTime
+  }
+  class Convocation <<Entity>> {
+    id : Long
+    responseStatus : ResponseStatus
+  }
+  class MatchConvocation <<Entity>> {
+    id : Long
+    matchId : Long
+    playerRole : PlayerRole
+    status : PublicationStatus
+  }
+  class AcademyMember <<Entity>> {
+    id : Long
+    parentUserId : Long
+    childFullName : String
+  }
+}
+
+' ============================================================
+' 4) BILLETTERIE (ticket-service, 8085)
+' ============================================================
+package "Billetterie" {
+  class Event <<Entity>> {
+    id : Long
+    title : String
+    eventDate : LocalDateTime
+    exceptional : Boolean
+  }
+  class Section <<Entity>> {
+    id : Long
+    name : String
+    price : BigDecimal
+  }
+  class Ticket <<Entity>> {
+    id : Long
+    ticketNumber : String
+    status : TicketStatus
+    beneficiaryAcademyMemberId : Long
+  }
+}
+
+' ============================================================
+' 5) BOUTIQUE & PAIEMENT (shop + payment)
+' ============================================================
+package "Boutique & Paiement" {
+  class Product <<Entity>> {
+    id : Long
+    name : String
+    basePrice : BigDecimal
+  }
+  class ProductVariant <<Entity>> {
+    id : Long
+    size : ProductSize
+    stockQuantity : Integer
+  }
+  class ShopOrder <<Entity>> {
+    id : Long
+    orderNumber : String
+    status : OrderStatus
+  }
+  class OrderItem <<Entity>> {
+    id : Long
+    quantity : Integer
+    unitPrice : BigDecimal
+  }
+  class PromoCode <<Entity>> {
+    id : Long
+    code : String
+    discountPercent : BigDecimal
+  }
+  class ECashAccount <<Entity>> {
+    id : Long
+    email : String
+    balance : BigDecimal
+  }
+  class Transaction <<Entity>> {
+    id : Long
+    amount : BigDecimal
+    type : TransactionType
+  }
+}
+
+' ============================================================
+' 6) GOUVERNANCE (election-service, 8089)
+' ============================================================
+package "Gouvernance" {
+  class Election <<Entity>> {
+    id : Long
+    title : String
+    status : ElectionStatus
+  }
+  class ElectionCandidate <<Entity>> {
+    id : Long
+    fullName : String
+    userId : Long
+  }
+  class ElectionVote <<Entity>> {
+    id : Long
+    userId : Long
+  }
+  class Poll <<Entity>> {
+    id : Long
+    question : String
+    active : boolean
+  }
+  class PollVote <<Entity>> {
+    id : Long
+    optionIndex : int
+  }
+}
+
+' ============================================================
+' 7) GAMIFICATION (gamification-service, 8088)
+' ============================================================
+package "Gamification" {
+  class UserPoints <<Entity>> {
+    userId : Long
+    totalPoints : Integer
+    level : Integer
+  }
+  class PointTransaction <<Entity>> {
+    id : Long
+    userId : Long
+    amount : Integer
+    source : String
+  }
+  class BadgeDefinition <<Entity>> {
+    id : Long
+    code : String
+    minPoints : Integer
+  }
+  class UserBadge <<Entity>> {
+    id : Long
+    userId : Long
+  }
+  class Challenge <<Entity>> {
+    id : Long
+    title : String
+    challengeType : ChallengeType
+  }
+  class UserChallenge <<Entity>> {
+    id : Long
+    userId : Long
+    progress : Integer
+  }
+  class Prediction <<Entity>> {
+    id : Long
+    userId : Long
+    matchId : Long
+    status : String
+  }
+}
+
+' ============================================================
+' 8) MESSAGERIE (communication-service, 8090)
+' ============================================================
+package "Messagerie & Annonces" {
+  class Message <<Entity>> {
+    id : Long
+    senderUserId : Long
+    recipientUserId : Long
+  }
+  class TeamMessage <<Entity>> {
+    id : Long
+    sportType : String
+    category : String
+  }
+  class Announcement <<Entity>> {
+    id : Long
+    title : String
+    body : String
+  }
+}
+
+' ============================================================
+' RELATIONS TRANSVERSES (FK logique = Long pour découplage
+' microservice ; pas de JPA cross-service)
+' ============================================================
+
+' Auth ↔ contenu
+User "1" --> "0..*" PressAccreditation : dépose
+User "1" --> "0..*" UserSubscription : achète
+SubscriptionPlan "1" --> "0..*" UserSubscription : consommé par
+
+' Auth ↔ sports
+User "1" --> "0..1" Player : profil joueur
+User "1" --> "0..1" Staff : profil staff
+User "1" --> "0..*" AcademyMember : parent de
+
+' Auth ↔ billetterie
+User "1" --> "0..*" Ticket : achète
+AcademyMember "1" --> "0..*" Ticket : bénéficiaire (B.18)
+AcademyMember "1" --> "0..*" UserSubscription : bénéficiaire (B.18)
+
+' Auth ↔ gamification
+User "1" --> "0..1" UserPoints : détient
+User "1" --> "0..*" PointTransaction : génère
+User "1" --> "0..*" UserBadge : reçoit
+User "1" --> "0..*" UserChallenge : progresse
+User "1" --> "0..*" Prediction : soumet
+
+' Auth ↔ gouvernance
+User "1" --> "0..1" ElectionCandidate : candidat
+User "1" --> "0..1" ElectionVote : vote
+User "1" --> "0..1" PollVote : vote
+
+' Sports ↔ contenu
+Player "1" --> "0..*" Convocation : convoqué
+Session "1" --> "0..*" Convocation : génère
+Player "1" --> "0..*" MatchConvocation : sélectionné
+Match "1" --> "0..*" MatchConvocation : alignement
+
+' Billetterie ↔ contenu
+Match "1" --> "0..1" Event : adossé (matchId FK)
+Event "1" *-- "1..*" Section : tarif
+Event "1" *-- "0..*" Ticket : billet vendu
+Section "1" --> "0..*" Ticket : zone attribuée
+
+' Boutique ↔ paiement
+Product "1" *-- "1..*" ProductVariant : tailles
+Product "1" --> "0..*" OrderItem : ligne
+ShopOrder "1" *-- "1..*" OrderItem : contient
+ShopOrder "1" *-- "0..*" Transaction : paiement
+ECashAccount "1" *-- "0..*" Transaction : mouvement
+
+' Gamification ↔ gouvernance
+BadgeDefinition "1" --> "0..*" UserBadge : attribue
+Challenge "1" --> "0..*" UserChallenge : suivi
+
+' Messagerie ↔ sports
+Player "1" --> "0..*" Message : envoie/reçoit
+Staff "1" --> "0..*" Message : envoie/reçoit
+Player "1" --> "0..*" TeamMessage : chat groupe
+Staff "1" --> "0..*" TeamMessage : chat groupe
+
+' ============================================================
+' LEGENDE
+' ============================================================
+legend right
+  | **Symbole** | **Signification** |
+  | *-- | Composition (cycle de vie lie) |
+  | --> | Association / FK |
+  | 1, 0..*, 1..* | Cardinalites JPA reelles |
+  | <<Entity>> | Classe JPA (@Entity) |
+  | Domaines | 8 packages = 8 microservice(s) |
+  | Source | pom.xml / model/*.java |
+endlegend
+
+@enduml

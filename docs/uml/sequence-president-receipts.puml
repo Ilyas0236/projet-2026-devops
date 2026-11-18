@@ -1,0 +1,126 @@
+@startuml sequence-president-receipts
+' ============================================================
+' Séquence — Espace Président : émission + téléchargement PDF
+' des reçus de salaire / primes (§11-§15)
+'
+' Source code réelle (audit 2026-09-04) :
+'   auth-service/.../controller/SalaryReceiptController.java
+'     POST   /api/auth/salary-receipts         (PRESIDENT/ADMIN)
+'     GET    /api/auth/salary-receipts         (PRESIDENT/ADMIN)
+'     GET    /api/auth/salary-receipts/mine    (tout authentifié)
+'     GET    /api/auth/salary-receipts/{id}/pdf (bénéficiaire proprio + PRESIDENT/ADMIN)
+'   auth-service/.../service/SalaryReceiptService.java
+'     emettre(...) / listAll() / listForUser() / genererPdf(...)
+'
+' Sécurité §24 (défense en profondeur) :
+'   - Headers X-User-Email + X-User-Role obligatoires
+'     (sans eux = appel hors gateway = 401 GatewayIdentityMissing)
+'   - IDOR strict : téléchargement PDF réservé au propriétaire,
+'     ou PRESIDENT/ADMIN ; sinon 403.
+'   - Compte bénéficiaire doit être actif (sinon 400).
+' ============================================================
+
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam dpi 150
+skinparam classAttributeIconSize 0
+skinparam nodesep 60
+skinparam ranksep 50
+
+skinparam sequence {
+  ArrowColor #6A1B9A
+  LifeLineBorderColor #6A1B9A
+  LifeLineBackgroundColor #F3E5F5
+  ParticipantBorderColor #6A1B9A
+  ParticipantBackgroundColor #FFFFFF
+  FontSize 11
+  FontStyle bold
+}
+skinparam defaultFontSize 11
+skinparam defaultFontName "Helvetica"
+
+title Séquence 7/9 — Émission + téléchargement d'un reçu de salaire (Espace Président)
+
+actor "Président\n(Brahim, FOOTBALL)" as P #EDE9FE
+actor "Bénéficiaire\n(Lopez, ENTRAINEUR)" as B #E1F5FE
+participant "Frontend\nAngular" as FE #F3E5F5
+participant "API Gateway\n(JWT + X-User-*)" as GW #E1BEE7
+participant "Auth\nService" as AUT #F3E5F5
+database "auth_db" as DB #FFF9C4
+
+== Phase 1 — Le président ÉMET un reçu pour Lopez ==
+
+P -> FE : 1) Espace président > "Reçus salaires"\n> Saisir {userId=8, type=SALAIRE, montant=12000, période=2026-08, motif=...}
+FE -> GW : 2) POST /api/auth/salary-receipts\n+ headers X-User-Email, X-User-Role
+GW -> AUT : 3) route (X-User-Role=PRESIDENT,\n@PreAuthorize hasAnyRole('PRESIDENT','ADMIN'))
+AUT -> AUT : 4) requireGatewayIdentity(email, role)\n(§24 — sans headers = 401)
+AUT -> DB : 5) SELECT issuer FROM users WHERE email=?
+DB --> AUT : 6) issuer (Président Brahim)
+AUT -> DB : 7) SELECT beneficiaire FROM users WHERE id=8
+DB --> AUT : 8) row (Lopez, isActive=true)
+alt [bénéficiaire inactif]
+  AUT --> FE : 400 Compte bénéficiaire désactivé
+  FE --> P : "Impossible : compte désactivé"
+else [bénéficiaire actif]
+  AUT -> AUT : 9) SalaryReceiptService.emettre(\n  userId, fullName, email, type, amount,\n  periode, motif, issuerId, issuerName)
+  AUT -> DB : 10) INSERT salary_receipt\n(reference=SAL-2026-08-0007, generated_pdf_url=null)
+  DB --> AUT : 11) row persistée
+  AUT --> FE : 12) 201 Created + SalaryReceipt
+  FE --> P : 13) "Reçu SAL-2026-08-0007 émis pour Lopez"
+end
+
+== Phase 2 — Lopez (bénéficiaire) LISTE SES reçus ==
+
+B -> FE : 14) Login + onglet "Mes reçus"
+FE -> GW : 15) GET /api/auth/salary-receipts/mine
+GW -> AUT : 16) route (X-User-Role=ENTRAINEUR)
+AUT -> AUT : 17) requireGatewayIdentity
+AUT -> DB : 18) SELECT me FROM users WHERE email=?
+DB --> AUT : 19) me (Lopez, id=8)
+AUT -> AUT : 20) listForUser(me.id) — IDOR strict
+AUT --> FE : 21) 200 OK [Reçu SAL-2026-08-0007, ...]
+FE --> B : 22) Affiche la liste de ses propres reçus
+
+== Phase 3 — Lopez TÉLÉCHARGE le PDF (IDOR test) ==
+
+B -> FE : 23) Clique "Télécharger PDF" sur SAL-2026-08-0007
+FE -> GW : 24) GET /api/auth/salary-receipts/42/pdf\n(42 = id du reçu)
+GW -> AUT : 25) route (X-User-Role=ENTRAINEUR)
+AUT -> AUT : 26) requireGatewayIdentity
+AUT -> AUT : 27) listAll() → filter id=42
+alt [reçu inexistant]
+  AUT --> FE : 400 Reçu non trouvé
+  FE --> B : "Reçu introuvable"
+else [reçu trouvé]
+  AUT -> AUT : 28) Vérif rôle gateway\n=PRESIDENT|ADMIN ?
+  alt [NON — Lopez n'est pas président]
+    AUT -> DB : 29) SELECT me FROM users WHERE email=?
+    AUT -> AUT : 30) receipt.userId == me.id ?
+    alt [NON — reçu d'un autre]
+      AUT --> FE : 403 Forbidden
+      FE --> B : "Accès refusé"
+    else [OUI — reçu bien à moi]
+      AUT -> AUT : 31) genererPdf(receipt)\n(OpenPDF / iText byte[])
+      AUT --> FE : 32) 200 application/pdf\nContent-Disposition: attachment;\nfilename=recu-SAL-2026-08-0007.pdf
+      FE --> B : 33) Télécharge recu-SAL-2026-08-0007.pdf
+    end
+  else [OUI — président ou admin]
+    AUT -> AUT : 31') genererPdf(receipt) direct
+    AUT --> FE : 32') 200 application/pdf
+    FE --> P : 33') Téléchargement direct
+  end
+end
+
+legend right
+  |= Phase |= N°
+  | Émission par président | 1-13 |
+  | Liste mes reçus | 14-22 |
+  | Téléchargement PDF + IDOR | 23-33 |
+  | **Rôle émission** | PRESIDENT + ADMIN (@PreAuthorize) |
+  | **Headers §24** | X-User-Email + X-User-Role obligatoires |
+  | **IDOR PDF** | bénéficiaire = proprio sinon 403 |
+  | **Compte actif** | bénéficiaire.isActive()==true sinon 400 |
+  | **Pas de scheduler** | PDF généré à la demande (OpenPDF) |
+endlegend
+
+@enduml

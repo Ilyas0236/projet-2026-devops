@@ -301,7 +301,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  # Déploiement automatique sur la VM prod (158.158.74.169) — ne s'exécute
+  # Déploiement automatique sur la VM prod — ne s'exécute
   # que si les secrets PROD_VM_HOST, PROD_VM_USER et PROD_VM_SSH_KEY sont
   # configurés dans Settings → Secrets du repo. Sans ces secrets, le job
   # est "skipped" silencieusement et le push n'est pas bloqué : le owner
@@ -586,9 +586,9 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  # Déploiement automatique sur la VM prod (158.158.74.169, Standard_B2s_v2).
+  # Déploiement automatique sur la VM prod (ex: Azure VM Standard_B2s_v2).
   # Ne s'exécute que si les 3 secrets sont configurés dans Settings → Secrets :
-  #   - PROD_VM_HOST (ex: 158.158.74.169)
+  #   - PROD_VM_HOST (ex: 20.x.x.x ou nom de domaine)
   #   - PROD_VM_USER (ex: azureuser)
   #   - PROD_VM_SSH_KEY (clé privée SSH, format PEM complet sur UNE ligne)
   # Sans ces secrets le job est skipped silencieusement (push non bloqué) :

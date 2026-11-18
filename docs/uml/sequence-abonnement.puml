@@ -1,0 +1,154 @@
+@startuml sequence-abonnement
+' ============================================================
+' Séquence — Achat abonnement saisonnier (B.12) + carte PDF
+'
+' Source code réelle (audit 2026-09-04) :
+'   auth-service/.../subscription/SubscriptionController.java
+'     GET   /api/auth/subscriptions/zones?includeSoldOut=...  (public)
+'     POST  /api/auth/subscriptions/purchase                   (ADHERENT/PARENT)
+'     GET   /api/auth/subscriptions/me/active                  (auth)
+'     GET   /api/auth/subscriptions/me/history                 (auth)
+'     GET   /api/auth/subscriptions/internal/is-adherent       (X-Internal-Secret)
+'     GET   /api/auth/subscriptions/{id}/pdf                   (auth proprio + ADMIN)
+'     GET   /api/auth/subscriptions/{id}/invoice               (auth proprio + ADMIN)
+'     GET   /api/auth/subscriptions/admin/filter               (ADMIN)
+'
+'   payment-service/.../controller/PaymentController.java
+'     POST  /api/payment/don          (montant libre)
+'     POST  /api/payment/card/checkout (OTP mock 000000)
+'     GET   /api/payment/internal/debit?amount=... (X-Internal-Secret)
+'     GET   /api/payment/ecash/balance
+'
+' Règle B.12 (audit 2026-08-30) : "un seul abonnement ACTIVE par saison"
+' → si user a déjà un ACTIVE sur la même saison → 409 ALREADY_SUBSCRIBED
+' → suppression de /api/auth/upgrade (pas d'upgrade gratuit)
+' → carte PDF = 85x54mm (taille CB) + QR code d'accès
+'
+' Rôles autorisés à acheter : ADHERENT + PARENT (séparation BUYER vs MANAGER)
+' Rôles interdits achat : JOUEUR/ENTRAINEUR/STAFF/JOURNALISTE/PRESIDENT/ADMIN
+' ============================================================
+
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam dpi 150
+skinparam classAttributeIconSize 0
+skinparam nodesep 60
+skinparam ranksep 50
+
+skinparam sequence {
+  ArrowColor #1565C0
+  LifeLineBorderColor #1565C0
+  LifeLineBackgroundColor #E3F2FD
+  ParticipantBorderColor #1565C0
+  ParticipantBackgroundColor #FFFFFF
+  FontSize 11
+  FontStyle bold
+}
+skinparam defaultFontSize 11
+skinparam defaultFontName "Helvetica"
+
+title Séquence 10/9 — Achat abonnement saisonnier (B.12) + carte PDF
+
+actor "Supporter\n(Ilyas, ADHERENT)" as I #E1F5FE
+participant "Frontend\nAngular" as FE #E3F2FD
+participant "API Gateway\n(JWT)" as GW #BBDEFB
+participant "Auth\nService" as AUT #E3F2FD
+participant "Payment\nService" as PAY #FFF3E0
+database "auth_db" as DB #FFF9C4
+database "payment_db" as PAYDB #FFF9C4
+
+== Phase 1 — Catalogue public des zones ==
+
+I -> FE : 1) Visiteur / Abonnements > liste zones
+FE -> GW : 2) GET /api/auth/subscriptions/zones
+GW -> AUT : 3) route (public, permitAll)
+AUT -> DB : 4) SELECT FROM subscription_zones\nWHERE active=true AND soldOut=false\nORDER BY displayOrder
+DB --> AUT : 5) [VIRAGE_NORD 250 DH, TRIBUNE_OFFICIELLE 800, VIP 1500]
+AUT --> FE : 6) 200 OK [zones commercialisées]
+FE --> I : 7) Affiche catalogue
+
+== Phase 2 — Achat abonnement (B.12 strict) ==
+
+I -> FE : 8) Sélectionne VIRAGE_NORD 250 DH > "Adhérer"\n+ paiement CB (OTP 000000 mock)
+FE -> FE : 9) Vérif E-cash balance ≥ 250 DH\n(sinon recharger via /api/payment/card/checkout)
+FE -> GW : 10) GET /api/payment/ecash/balance
+GW -> PAY : 11) route
+PAY --> FE : 12) 300 DH ✓
+FE -> FE : 13) Crédit E-cash déjà OK (300 ≥ 250)
+FE -> GW : 14) POST /api/auth/subscriptions/purchase\n{zoneCode:VIRAGE_NORD, season:2026-2027,\n paymentRef:PAY-2026-09-04-007}
+GW -> AUT : 15) route (@PreAuthorize hasRole('ADHERENT') OR hasRole('PARENT'))
+AUT -> DB : 16) SELECT user FROM email
+AUT -> DB : 17) SELECT subscription_active\nWHERE userId=me AND season='2026-2027' AND status='ACTIVE'
+DB --> AUT : 18) row ?
+alt [déjà ACTIVE — B.12 strict]
+  AUT --> FE : 409 ALREADY_SUBSCRIBED
+  FE --> I : 19) "Vous avez déjà un abonnement actif pour 2026-2027"
+else [pas d'ACTIVE]
+  AUT -> PAY : 20) GET /api/payment/internal/debit?amount=250\n+X-Internal-Secret (gateway-only)
+  PAY -> PAYDB : 21) UPDATE e_cash SET balance=balance-250\nWHERE userId=me AND balance≥250
+  PAYDB --> PAY : 22) 1 row updated
+  PAY --> AUT : 23) 200 OK {newBalance:50, ref:PAY-2026-09-04-007}
+  AUT -> DB : 24) INSERT user_subscriptions\n(zone_code=VIRAGE_NORD, season=2026-2027,\n status=ACTIVE, startDate=2026-09-01, endDate=2027-06-30,\n paymentRef=PAY-2026-09-04-007)
+  DB --> AUT : 25) row (id=23)
+  AUT -> AUT : 26) SubscriptionService.purchase(email, req)\n→ SubscriptionResponse
+  AUT --> FE : 27) 201 Created + SubscriptionResponse
+  FE --> I : 28) "Bienvenue chez les Wydadis ! Abonnement #23"
+end
+
+== Phase 3 — Téléchargement de la carte PDF (taille CB) ==
+
+I -> FE : 29) Mon compte > "Ma carte" > Télécharger
+FE -> GW : 30) GET /api/auth/subscriptions/23/pdf
+GW -> AUT : 31) route (isAuthenticated())\nJWT → email
+AUT -> AUT : 32) loadOwnedSubscription(23, req)\n→ SELECT FROM user_subscriptions WHERE id=23
+AUT -> AUT : 33) Vérif IDOR :\nsub.user.email == me.email ?
+alt [IDOR : pas propriétaire]
+  AUT --> FE : 403 Vous n'avez pas accès à cet abonnement
+  FE --> I : 34) "Accès refusé"
+else [propriétaire]
+  AUT -> AUT : 35) PdfService.buildSubscriptionPdfBytes(sub, owner)\nFormat carte bancaire 85x54mm\n+ QR code (JSON: {userId, subId, season, zoneCode})\n+ nom, prénom, n° abonné, photo
+  AUT --> FE : 36) 200 application/pdf\nContent-Disposition: attachment;\nfilename=carte-abonnement-wac-23.pdf
+  FE --> I : 37) Télécharge la carte (PDF 14 Ko)
+end
+
+== Phase 4 — Téléchargement de la facture (A4 comptable) ==
+
+I -> FE : 38) "Ma facture" > Télécharger
+FE -> GW : 39) GET /api/auth/subscriptions/23/invoice
+GW -> AUT : 40) route (isAuthenticated(), IDOR strict idem phase 3)
+AUT -> AUT : 41) PdfService.buildSubscriptionInvoicePdfBytes(sub, owner)\nA4 avec TVA + montants + référence paiement
+AUT --> FE : 42) 200 application/pdf\nfilename=facture-abonnement-wac-23.pdf
+FE --> I : 43) Télécharge facture (PDF 22 Ko)
+
+== Phase 5 — Vérif adhérent (interne, shop + ticket) ==
+
+participant "Ticket\nService" as TIC #F3E5F5
+I -> FE : 44) Achète un billet match\n> accès tarif abonné (-20%)
+FE -> GW : 45) POST /api/ticket/...\n+ JWT
+GW -> TIC : 46) route
+TIC -> GW : 47) GET /api/auth/subscriptions/internal/is-adherent?email=...
+GW -> AUT : 48) route (X-Internal-Secret validé par gateway)
+AUT -> DB : 49) SELECT active sub WHERE userId=me
+DB --> AUT : 50) row
+AUT --> TIC : 51) 200 OK true
+TIC -> TIC : 52) Applique tarif abonné (-20%)
+TIC --> FE : 53) 201 Created Ticket (prix réduit)
+FE --> I : 54) Billet acheté à tarif abonné
+
+legend right
+  |= Phase |= N°
+  | Catalogue public | 1-7 |
+  | Achat (B.12 strict) | 8-28 |
+  | Carte PDF (taille CB) | 29-37 |
+  | Facture A4 | 38-43 |
+  | Avantage tarif abonné | 44-54 |
+  | **B.12 strict** | 1 ACTIVE max par saison sinon 409 |
+  | **Rôles acheteurs** | ADHERENT + PARENT uniquement |
+  | **E-cash d'abord** | débit avant INSERT (sinon rollback) |
+  | **OTP mock** | 000000 en dev/test |
+  | **IDOR PDF/invoice** | propriétaire OU ADMIN sinon 403 |
+  | **PDF à la volée** | bytes non stockés (économie RAM VM 1 Go) |
+  | **Interne shop+ticket** | X-Internal-Secret, pas de JWT |
+endlegend
+
+@enduml

@@ -1,0 +1,148 @@
+@startuml sequence-achat-billet-cas1-visiteur
+' ============================================================
+' Diagramme de sequence : Achat d'un billet match
+' PARTIE 1/3 - Cas 3 (Visiteur) + Cas 1 (Adherent achete pour lui-meme)
+' Scenario PFA - Ilyas Ait Maina (EMSI Maroc)
+' Sources : code qui compile (ticket-service, payment-service,
+'           auth-service, sports-service, api-gateway)
+' Regles : B.12 (debit E-Cash), B.18 (Parent achete pour enfant)
+'          Cas 2 Parent B.18 = sequence-achat-billet-cas2-parent.puml
+'          Paiement ECash = sequence-achat-billet-cas1-paiement.puml
+' ============================================================
+
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam dpi 200
+skinparam sequenceArrowThickness 1
+skinparam sequenceParticipantBackgroundColor #FDF2F2
+skinparam sequenceParticipantBorderColor #B91C1C
+skinparam sequenceLifeLineBorderColor #9CA3AF
+skinparam sequenceMessageAlign center
+skinparam sequenceGroupBackgroundColor #FEF3C7
+skinparam sequenceGroupBorderColor #D97706
+skinparam defaultFontSize 11
+skinparam defaultFontName "Helvetica"
+
+title Achat billet - Cas 3 Visiteur + Cas 1 Adherent (etape achat)
+
+actor "Visiteur"        as V
+actor "Adherent"        as AH
+
+participant ":BilletterieDetailComponent\n:wydad-frontend"           as FE
+participant ":JwtAuthenticationFilter\n:api-gateway :8080"           as GW
+participant ":TicketController\n:ticket-service :8085"               as TIC
+participant ":TicketService\n:ticket-service"                        as TSV
+participant ":Clients internes (RestTemplate)\n:8081 :8083 :8086 :8087" as CI
+
+== Phase 0 - Preambule commun : catalogue public ==
+V -> FE : GET /billetterie
+FE -> GW : GET /api/ticket/events
+note right of GW
+  Bypass public (path commence par /api/ticket/events)
+  -> pas de JWT requis
+end note
+GW -> TIC : route interne (anon OK)
+TIC --> FE : 200 OK [events UPCOMING]
+
+== Cas 3 - Visiteur : bouton Acheter desactive ==
+FE -> FE : isLoggedIn = auth.isTokenValid() -> false
+FE --> V : Bouton "Se connecter pour acheter"
+V -> FE : Clic -> router.navigate('/login?returnUrl=...')
+note over V, FE
+  Fin du Cas 3.
+  Apres login JWT, V devient AH :
+  flux strictement identique au Cas 1 ci-dessous.
+end note
+
+== Cas 1 (defaut) - Adherent achete pour LUI-MEME ==
+AH -> FE : Clic "Acheter" -> /billetterie/:id
+activate FE
+FE -> GW : POST /api/ticket/tickets/purchase\nAuthorization: Bearer JWT\n{ eventId, category, quantity:1, paymentMethod:"ECASH" }
+activate GW
+GW -> GW : JwtAuthenticationFilter (HS256)\n1) drop X-User-* client\n2) parse claims -> email, role, id\n3) inject X-User-Email/Role/Id
+GW -> TIC : route interne (X-User-* propages)
+deactivate GW
+activate TIC
+
+TIC -> TIC : @PreAuthorize hasRole(ADHERENT/PARENT) OK
+TIC -> TSV : purchaseTickets(request)
+activate TSV
+
+TSV -> CI : SQL verrouille: SELECT events WHERE id FOR UPDATE
+note right of CI
+  ticket_db : verrou pessimiste 3s
+  sur la ligne event (anti surreservation)
+end note
+CI --> TSV : Event (verrou OK)
+
+opt [event.exceptional == true ET now < eventDate - 48h]
+  TSV -> CI : isActiveAdherent(email)\n  (X-Internal-Secret)
+  activate CI
+  note right of CI
+    GET /api/auth/subscriptions/internal/is-adherent
+    -> auth-service (SELECT user_subscriptions ACTIVE)
+  end note
+  CI --> TSV : true
+  deactivate CI
+  note right of TSV
+    Si false -> IllegalStateException
+    "match en vente prioritaire ADHERENT" -> 403
+  end note
+end
+
+TSV -> CI : SQL section WHERE event_id AND category
+CI --> TSV : Section (availableSeats)
+TSV -> TSV : assert availableSeats >= quantity\nsinon 409 "Pas assez de places"
+
+note over TSV
+  Cas 1 : Adherent achete pour LUI-MEME
+  effectiveUserId    = X-User-Id
+  effectiveUserEmail = X-User-Email
+  parentPayerEmail   = null
+  beneficiaryAcademyMemberId = null
+end note
+
+TSV -> TSV : loop x quantity:\n  ticketNumber = "WAC-" + UUID[0..8]\n  qrData + QRCodeService.generateQrCode() -> byte[]\n  INSERT ticket (status=PAID, qrCodeImage)
+TSV -> CI : SQL UPDATE sections SET available_seats -= qty\n           SQL UPDATE events    SET sold_tickets += qty
+note over CI
+  ticket_db : 2 UPDATE en une seule
+  transaction atomique
+end note
+
+note over TSV, CI
+  Paiement ECash :
+  voir sequence-achat-billet-cas1-paiement.puml
+  (402 solde insuffisant / 200 success)
+end note
+
+TSV -> CI : debitEcash(effectiveUserEmail, total, "WAC-TICKET-"+eventId)\n  (X-Internal-Secret)
+activate CI
+note right of CI
+  POST /api/payment/internal/debit
+  -> payment-service
+  (detail 402/200 : voir sequence-achat-billet-cas1-paiement.puml)
+end note
+
+CI --> TSV : 200 TransactionResponse { ref, balanceAfter }
+deactivate CI
+
+TSV -> CI : notifyUser(userId, email, "Achat confirme",\n                        qty + " billet(s) pour [" + event.title + "]",\n                        "/profil/billets")
+activate CI
+CI --> TSV : (void - succes, best-effort)
+deactivate CI
+
+TSV --> TIC : List<TicketResponse>
+deactivate TSV
+TIC --> FE  : 201 Created [TicketResponse...]\n              { id, ticketNumber, status:PAID, qrCodeData,\n                beneficiaryAcademyMemberId, parentPayerEmail }
+deactivate TIC
+FE --> AH : Redirect /profil/billets\n           Affiche "Paiement effectue avec succes !"
+deactivate FE
+
+note over V, CI
+  Garanties B.12 : SELECT FOR UPDATE anti-surreservation +
+  wallet derive du JWT + 402 dedie + paiement carte mock V1.
+  Paiement 402 : voir sequence-achat-billet-cas1-paiement.puml
+  Cas 2 Parent (B.18) : voir sequence-achat-billet-cas2-parent.puml
+end note
+
+@enduml

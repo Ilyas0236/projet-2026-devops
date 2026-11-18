@@ -1,0 +1,128 @@
+@startuml sequence-vote-election
+' ============================================================
+' Diagramme de sequence : Vote a une election presidentielle
+' PARTIE 1/2 - Cas nominal seul
+' Scenario PFA - Ilyas Ait Maina (EMSI Maroc)
+' Sources : code qui compile (election-service, auth-service,
+'           api-gateway, MesElectionsComponent Angular)
+' Regles : B.8.h (titulaire actif au moment du vote,
+'                  ADMIN exempt, fail-closed si auth-service down)
+'          B.12 (1 abonnement ACTIF par saison)
+' Flux vote global :
+'   Cas nominal = sequence-vote-election.puml
+'   Alts (Election non ouverte + Non eligible + Doublon + ADMIN + auth-service DOWN)
+'     = sequence-vote-election-failures.puml
+' ============================================================
+
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam dpi 200
+skinparam sequenceArrowThickness 1
+skinparam sequenceParticipantBackgroundColor #FDF2F2
+skinparam sequenceParticipantBorderColor #B91C1C
+skinparam sequenceLifeLineBorderColor #9CA3AF
+skinparam sequenceMessageAlign center
+skinparam sequenceGroupBackgroundColor #FEF3C7
+skinparam sequenceGroupBorderColor #D97706
+skinparam defaultFontSize 11
+skinparam defaultFontName "Helvetica"
+
+title Vote election - Cas nominal (B.8.h, B.12)
+
+actor "Adherent\n(ADHERENT/PARENT)"   as U
+
+boundary ":MesElectionsComponent\n(Angular)"      as FE
+control  ":ApiService\n(Angular)"                  as API
+control  ":Gateway\n:8080"                          as GW
+control  ":ElectionController\n(election-service)"  as CTRL
+control  ":UserContext\n(Filter + holder)"         as UC
+control  ":ElectionService\n(@Transactional)"      as SVC
+control  ":AuthSubscriptionClient\n(RestTemplate)"  as AUTHCLI
+control  ":InternalMembershipController\n(auth-service)" as AUTHCTRL
+control  ":SubscriptionService\n(auth-service)"      as AUTHSVC
+entity   ":ElectionRepository"                      as ER
+entity   ":ElectionVoteRepository"                  as EVR
+entity   ":UserSubscriptionRepository"              as USR
+database "election_votes\n(UNIQUE election_id+user_id)" as DB
+database "user_subscriptions"                        as USUB
+
+== Cas nominal : Adherent avec carte ACTIVE ==
+U -> FE : clic "Voter" (candidateId)
+activate FE
+FE -> FE : votingElectionId = election.id\n(anti double-clic)
+FE -> API : voteElection(id, candidateId)
+activate API
+API -> GW : POST /api/elections/{id}/vote\n             Authorization: Bearer <JWT>\n             {"candidateId":X}
+activate GW
+GW -> GW : valide JWT (signature, exp)
+GW -> CTRL : (re)POST /api/elections/{id}/vote\n              X-User-Id, X-User-Email, X-User-Role
+deactivate GW
+activate CTRL
+note right of CTRL
+  @PreAuthorize("hasAnyRole(VISITEUR,ADHERENT,
+  PARENT,JOUEUR,STAFF,ENTRAINEUR,
+  JOURNALISTE,PRESIDENT,ADMIN)")
+end note
+CTRL -> UC : getCurrentUserId/Email/isAdmin()
+UC --> CTRL : userId, email, isAdmin
+CTRL -> SVC : vote(electionId, candidateId)
+activate SVC
+SVC -> ER : findById(electionId)
+ER --> SVC : Election{status=OPEN, startsAt..endsAt}
+
+opt [isAdmin() == false] (B.8.h : ADMIN exempt)
+  SVC -> AUTHCLI : isActiveSubscriber(email)
+  activate AUTHCLI
+  AUTHCLI -> AUTHCTRL : GET /api/auth/internal/is-active-subscriber?email=...\n                         X-Internal-Secret: ...
+  activate AUTHCTRL
+  AUTHCTRL -> AUTHSVC : isActiveAdherent(email)
+  activate AUTHSVC
+  AUTHSVC -> USR : findByEmail(email).flatMap(findActiveByUser)
+  activate USR
+  USR -> USUB : SELECT * FROM user_subscriptions\nWHERE user_id=? AND status='ACTIVE'
+  activate USUB
+  USUB --> USR : subscription
+  deactivate USUB
+  USR --> AUTHSVC : subscription (status=ACTIVE, validTo>now)
+  deactivate USR
+  AUTHSVC --> AUTHCTRL : true
+  deactivate AUTHSVC
+  AUTHCTRL --> AUTHCLI : {email, active:true}
+  deactivate AUTHCTRL
+  AUTHCLI --> SVC : true
+  deactivate AUTHCLI
+end
+
+SVC -> EVR : findById(candidateId)
+EVR --> SVC : ElectionCandidate{election.id==electionId}
+SVC -> EVR : findByElectionIdAndUserId(electionId, userId)
+EVR --> SVC : Optional.empty
+SVC -> EVR : save(ElectionVote.builder()...build())
+EVR -> DB : INSERT INTO election_votes\n(election_id, user_id, candidate_id)
+activate DB
+DB --> EVR : OK
+deactivate DB
+EVR --> SVC : ElectionVote persiste
+SVC --> CTRL : ElectionView{myVoteIndex, canVote=false}
+deactivate SVC
+CTRL --> API : 200 OK {...election mise a jour...}
+deactivate CTRL
+API --> FE : Observable.next(updated)
+deactivate API
+FE -> U : toast.success("Votre vote a ete enregistre.")
+deactivate FE
+
+note over U, DB
+  Garanties B.8.h etape 1/2 (Cas nominal) :
+  --------------------------------------
+  * isActiveSubscriber() saute pour ADMIN (bypass complet)
+  * isActiveAdherent() : SELECT status='ACTIVE' AND validTo>now
+  * INSERT election_votes (UNIQUE election_id+user_id) = anti-doublon BDD
+  * canVote=false apres vote (re-vote = 409)
+  * Front : toast.success (pas de banniere)
+  * Suite : 5 alts (Election non ouverte / Non eligible / Doublon
+    / ADMIN bypass / auth-service DOWN)
+    = sequence-vote-election-failures.puml
+end note
+
+@enduml

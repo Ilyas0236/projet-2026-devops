@@ -1,0 +1,125 @@
+@startuml uc-05-supporter-gamification
+' ============================================================
+' UC-5 — DIAGRAMME DE CAS D'UTILISATION
+' Côté SUPPORTER — Espace supporter (gamification C1/C2/C3)
+' Source : gamification-service (8 controllers ADMIN + 5 public)
+'          wydad-frontend/src/app/pages/espace-fan/**
+' ============================================================
+' Conventions UML 2.5 :
+'   * swimlanes = ADHERENT, PARENT
+'   * Gamification = points + leaderboard + predictions + badges + challenges
+'   * Pronostics bloques si match EN_COURS / TERMINE / inexistant / doublon (400)
+'   * Bareme public editable par ADMIN
+' ============================================================
+
+left to right direction
+skinparam actorStyle awesome
+skinparam rectangle {
+  RoundCorner 15
+  BackgroundColor #FFFFFF
+  BorderColor #444444
+}
+skinparam package {
+  BackgroundColor #F5F5F5
+  BorderColor #888888
+  BorderThickness 1
+}
+skinparam usecase {
+  BackgroundColor #E8F0FE
+  BorderColor #1E3A8A
+  BorderThickness 1
+}
+skinparam note {
+  BackgroundColor #FFF8E1
+  BorderColor #C79100
+}
+skinparam defaultFontSize 11
+skinparam shadowing false
+
+' ============================================================
+' ACTEURS
+' ============================================================
+actor "ADHERENT" as ADH
+actor "PARENT" as PAR
+
+' Heritage
+PAR --|> ADH
+
+' ============================================================
+' SYSTEME
+' ============================================================
+rectangle "Plateforme Wydad Digital — Espace supporter (gamification)" {
+
+  package "Authentification" {
+    usecase "S'authentifier" as UC_LOGIN
+  }
+
+  package "Pronostics" {
+    usecase "Soumettre un pronostic" as UC_PRED
+    usecase "Voir mes pronostics" as UC_MYP
+  }
+
+  package "Classement & niveaux" {
+    usecase "Consulter le leaderboard\n(rang + podium + percentile)" as UC_LB
+    usecase "Voir mon solde +\nhistorique de points" as UC_PTS
+  }
+
+  package "Badges" {
+    usecase "Consulter mes badges\n(verrouilles / debloques)" as UC_BDG
+    usecase "Consulter le catalogue\nde badges" as UC_CB
+  }
+
+  package "Defis temporels (C2)" {
+    usecase "Voir mes defis en cours" as UC_CH
+  }
+
+  package "Bareme public (C3)" {
+    usecase "Consulter le bareme\nde points public" as UC_PRU
+  }
+}
+
+' ============================================================
+' INCLUDES
+' ============================================================
+note "<<include>> losange PLEIN =\ndependance OBLIGATOIRE" as N1
+
+UC_PRED ..> UC_LOGIN : <<include>>
+UC_MYP  ..> UC_LOGIN : <<include>>
+UC_LB   ..> UC_LOGIN : <<include>>
+UC_PTS  ..> UC_LOGIN : <<include>>
+UC_BDG  ..> UC_LOGIN : <<include>>
+UC_CB   ..> UC_LOGIN : <<include>>
+UC_CH   ..> UC_LOGIN : <<include>>
+UC_PRU  ..> UC_LOGIN : <<include>>
+
+' ============================================================
+' ASSOCIATIONS
+' ============================================================
+
+' --- ADHERENT ---
+ADH --> UC_PRED
+ADH --> UC_MYP
+ADH --> UC_LB
+ADH --> UC_PTS
+ADH --> UC_BDG
+ADH --> UC_CB
+ADH --> UC_CH
+ADH --> UC_PRU
+
+' ============================================================
+' LEGENDE
+' ============================================================
+legend right
+  | **Symbole** | **Signification** |
+  | Acteur | ADHERENT (PARENT herite) |
+  | Rectangle | Frontiere du systeme |
+  | Package | Sous-domaine fonctionnel |
+  | **--** | Association acteur <-> UC |
+  | **..** | <<include>> (obligatoire) |
+  | **C1** | Bareme de points (predictionBonus, predictionExact, predictionSign) |
+  | **C2** | Defis temporels (SUBMIT_PREDICTIONS, WIN_EXACT_SCORES, REACH_POINTS) |
+  | **C3** | Bareme editable par ADMIN (cache memoire) |
+  | Source | gamification-service, wydad-frontend/src/app/pages/espace-fan |
+endlegend
+
+@enduml

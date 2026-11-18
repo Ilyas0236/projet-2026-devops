@@ -1,0 +1,39 @@
+@startuml archi-azure
+!theme cerulean
+skinparam backgroundColor #FAFAFA
+skinparam defaultFontSize 11
+
+title Deploiement Azure - VM Standard_B2s_v2 (Spain Central)
+
+cloud "Internet" as NET
+
+package "Azure Subscription\n(RG: wydad-digital-rg)" {
+  package "VM Standard_B2s_v2\n(Spain Central)" as VM {
+    package "OS Ubuntu 22.04 LTS\n+ ufw firewall\n+ Docker Engine 24+\n+ docker compose v2" as OS
+    package "Reseau wydad-network (bridge)" as DOCKNET {
+      [postgres:16\n:5432 (10 BDDs)] as PG
+      [redis:7-alpine\n:6379] as REDIS
+    }
+    package "Conteneurs applicatifs" as APPS {
+      [frontend\nAngular 19\nnginx 1.27] as FE
+      [api-gateway\nSpring Cloud Gateway\n:8080] as GW
+      [11 microservices\nSpring Boot 3.3.5\n:8081-8090] as MS
+    }
+  }
+  [Public IP statique\n158.158.74.169] as PIP
+  [Network Security Group\n(sg-wydad-web)] as NSG
+  [Disque SSD 30 Go\n(B2s Premium)] as DISK
+}
+
+NET --> PIP : HTTPS/HTTP
+PIP --> NSG : ports 22/80/443
+NSG --> OS : trafic autorise
+OS --> FE : :80
+OS --> GW : :8080
+OS --> MS : :8081-8090
+MS --> PG
+MS --> REDIS
+OS --> PG : volume postgres_data
+OS --> REDIS : volume redis_data
+
+@enduml

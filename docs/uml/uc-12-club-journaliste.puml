@@ -1,0 +1,68 @@
+@startuml uc-12-club-journaliste
+' ============================================================
+' UC-12 — DIAGRAMME DE CAS D'UTILISATION
+' Plateforme Wydad Digital — Espace JOURNALISTE
+' Code qui compile (Angular routes + Spring @PreAuthorize)
+' ============================================================
+' 1 acteur : JOURNALISTE
+' Routes Angular :
+'   /journaliste/accueil  -> DashboardJournalisteComponent
+'   /journaliste/demandes -> MesDemandesJournalisteComponent
+' @PreAuthorize hasRole('JOURNALISTE') sur ces routes
+' B.17 : accréditation presse multi-matchs
+' ============================================================
+
+left to right direction
+skinparam actorStyle awesome
+skinparam rectangle {
+  RoundCorner 15
+  FontSize 13
+  FontStyle bold
+}
+
+actor "Journaliste\n(JOURNALISTE)" as JOU #E0E7FF
+
+rectangle "Espace Journaliste\n(/journaliste/**)" {
+  usecase "UC_J1\nS'authentifier" as UC_LOGIN
+  usecase "UC_J2\nConsulter tableau\nde bord journaliste" as UC_DASH
+  usecase "UC_J3\nVoir les matchs\ndisponibles" as UC_MATCHS
+  usecase "UC_J4\nSoumettre une\ndemande d'accréditation\n(photo + média + n° carte)" as UC_DEM
+  usecase "UC_J5\nConsulter mes\ndemandes" as UC_MES
+  usecase "UC_J6\nSuivre le statut\nd'une demande\n(EN_ATTENTE/VALIDE/REFUSE)" as UC_STAT
+  usecase "UC_J7\nConsulter le motif\nde refus" as UC_MOTIF
+  usecase "UC_J8\nTélécharger le\nbadge PDF" as UC_BADGE
+  usecase "UC_J9\nRecevoir notification\nin-app décision" as UC_NOTIF
+}
+
+JOU --> UC_LOGIN
+JOU --> UC_DASH
+JOU --> UC_MATCHS
+JOU --> UC_DEM
+JOU --> UC_MES
+JOU --> UC_STAT
+JOU --> UC_MOTIF
+JOU --> UC_BADGE
+JOU --> UC_NOTIF
+
+UC_DASH ..> UC_LOGIN : <<include>>
+UC_DEM ..> UC_LOGIN : <<include>>
+UC_MES ..> UC_LOGIN : <<include>>
+UC_STAT ..> UC_MES : <<include>>
+UC_MOTIF ..> UC_STAT : <<extend>>\n[statut=REFUSE]
+UC_BADGE ..> UC_STAT : <<extend>>\n[statut=VALIDE]
+UC_NOTIF ..> UC_STAT : <<extend>>
+
+note right of UC_DEM
+  **B.17 — Workflow accréditation** :
+  POST /api/auth/press/accreditations
+  (multipart : photo + média + n° carte)
+  statut = EN_ATTENTE
+  ADMIN valide ou refuse
+end note
+
+note right of UC_BADGE
+  **GET /api/auth/press/accreditations/{id}/badge**
+  PDF 19 Ko auto-généré (OpenPDF)
+end note
+
+@enduml

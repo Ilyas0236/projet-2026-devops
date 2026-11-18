@@ -1,0 +1,112 @@
+@startuml archi-microservices
+!theme cerulean
+skinparam backgroundColor #FAFAFA
+skinparam defaultFontSize 12
+skinparam rectangle {
+  RoundCorner 12
+}
+
+title Architecture Microservices - Wydad Digital\n(11 services Spring Boot 3.3.5 + API Gateway + Angular 19 + PostgreSQL multi-bases + Redis)
+
+actor "Visiteur /\nAdherent /\nParent" as SUP
+actor "Joueur /\nStaff /\nEntraineur" as CLUB
+actor "President /\nJournaliste /\nAdmin" as ADMIN
+
+package "Frontend Angular 19 (standalone)" {
+  [Pages publiques] as FE_PUB
+  [Espace joueur /\nstaff / entraineur] as FE_CLUB
+  [Espace president /\njournaliste / admin] as FE_ADM
+  [Espace fan] as FE_FAN
+  [Messagerie WebSocket\n(STOMP/SockJS)] as FE_WS
+}
+
+node "API Gateway :8080\n(Spring Cloud Gateway + JWT filter + X-Internal-Secret)" as GW
+
+package "Microservices metier (Spring Boot 3.3.5 + JPA + Flyway + WebSocket)" {
+  [auth-service\n:8081\nJWT + OAuth2 + KYC] as AUTH
+  [content-service\n:8082\nActualites / Palmares] as CONT
+  [payment-service\n:8083\nE-Cash / Dons / Salaires] as PAY
+  [shop-service\n:8084\nProduits / Panier] as SHOP
+  [ticket-service\n:8085\nEvenements / Billets / QR] as TICK
+  [notification-service\n:8086\nPush in-app] as NOTIF
+  [sports-service\n:8087\nSeances / Convocations] as SPO
+  [gamification-service\n:8088\nPoints / Badges] as GAMI
+  [election-service\n:8089\nElections B.8] as ELEC
+  [communication-service\n:8090\nTeam-chat WS + 1-to-1] as COMM
+}
+
+package "Persistance PostgreSQL 16 (multi-bases) + Redis" {
+  database "auth_db" as DB_AUTH
+  database "content_db" as DB_CONT
+  database "payment_db" as DB_PAY
+  database "shop_db" as DB_SHOP
+  database "ticket_db" as DB_TICK
+  database "notification_db" as DB_NOTIF
+  database "sports_db" as DB_SPO
+  database "wydad_gamification" as DB_GAMI
+  database "elections_db" as DB_ELEC
+  database "communication_db" as DB_COMM
+  database "Redis 7\n(auth-service)" as DB_REDIS
+}
+
+cloud "Cloudinary\n(medias + thumbnails)" as CLOUD
+cloud "LiveKit Cloud\n(appels WebRTC)" as LIVEKIT
+
+SUP --> FE_PUB
+SUP --> FE_FAN
+CLUB --> FE_CLUB
+ADMIN --> FE_ADM
+
+FE_PUB --> GW : HTTPS /api/**
+FE_CLUB --> GW : HTTPS /api/**
+FE_ADM --> GW : HTTPS /api/**
+FE_FAN --> GW : HTTPS /api/**
+FE_WS --> GW : WSS /ws (STOMP)
+
+GW --> AUTH
+GW --> CONT
+GW --> PAY
+GW --> SHOP
+GW --> TICK
+GW --> NOTIF
+GW --> SPO
+GW --> GAMI
+GW --> ELEC
+GW --> COMM
+
+AUTH --> DB_AUTH
+CONT --> DB_CONT
+PAY --> DB_PAY
+SHOP --> DB_SHOP
+TICK --> DB_TICK
+NOTIF --> DB_NOTIF
+SPO --> DB_SPO
+GAMI --> DB_GAMI
+ELEC --> DB_ELEC
+COMM --> DB_COMM
+AUTH --> DB_REDIS
+
+COMM --> CLOUD : upload photos
+COMM --> LIVEKIT : generation jeton JWT
+GAMI --> CLOUD : badges images
+TICK --> CLOUD : QR codes
+
+COMM ..> AUTH : getUserRole
+COMM ..> SPO : findMembership
+AUTH ..> CONT : KYC verify
+GAMI ..> ELEC : challenge vote
+ELEC ..> AUTH : canVote titulaire ACTIF
+SPO ..> NOTIF : push convocations
+TICK ..> PAY : debit E-Cash
+SHOP ..> PAY : debit E-Cash
+
+note right of GW
+  Pattern API Gateway
+  - Routage dynamique (Spring Cloud Gateway)
+  - JWT filter extraction userId/role
+  - X-Internal-Secret pour appels
+    inter-services (RestTemplate)
+  - CORS allowlist
+end note
+
+@enduml

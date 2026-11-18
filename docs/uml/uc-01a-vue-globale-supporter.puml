@@ -1,0 +1,177 @@
+@startuml uc-01a-vue-globale-supporter
+' ============================================================
+' UC-1a — DIAGRAMME DE CAS D'UTILISATION GLOBAL
+' Plateforme Wydad Digital — Côté SUPPORTER (vue agrégée)
+' Source : code qui compile (Angular routes + Spring @PreAuthorize)
+' ============================================================
+' Conventions UML 2.5 :
+'   * 4 acteurs SUPPORTER : VISITEUR, ADHERENT, PARENT, JOUEUR
+'   * PAS D'HERITAGE entre acteurs (rôles distincts en base + @PreAuthorize)
+'   * PARENT et ADHERENT : 2 rôles distincts (commit C.1b aligne hasRole)
+'   * <<include>> = losange PLEIN  (dependance OBLIGATOIRE)
+'   * <<extend>> = losange VIDE   (dependance CONDITIONNELLE)
+'   * VISITEUR elimine : tout est derriere authentification
+'   * B.18 PARENT : "Acheter pour mon fils" etend Acheter billet/abonnement
+'   * B.12 : abonnement ACTIF obligatoire pour vote election (pas sondage)
+' ============================================================
+
+left to right direction
+skinparam actorStyle awesome
+skinparam rectangle {
+  RoundCorner 15
+  BackgroundColor #FFFFFF
+  BorderColor #444444
+}
+skinparam package {
+  BackgroundColor #F5F5F5
+  BorderColor #888888
+  BorderThickness 1
+}
+skinparam usecase {
+  BackgroundColor #E8F0FE
+  BorderColor #1E3A8A
+  BorderThickness 1
+}
+skinparam note {
+  BackgroundColor #FFF8E1
+  BorderColor #C79100
+}
+skinparam defaultFontSize 11
+skinparam shadowing false
+
+' ============================================================
+' ACTEURS (4 swimlanes, AUCUN heritage)
+' ============================================================
+actor "VISITEUR\n(non authentifie)" as VIS
+actor "ADHERENT\n(supporter authentifie)" as ADH
+actor "PARENT\n(supporter + enfant)" as PAR
+actor "JOUEUR" as JEU
+
+' PAS d'heritage UML : ADHERENT et PARENT sont 2 rôles distincts
+' (tables JPA distinctes, @PreAuthorize distincts, capacités distinctes)
+
+' ============================================================
+' SYSTEME
+' ============================================================
+rectangle "Plateforme Wydad Digital — Côté SUPPORTER" {
+
+  package "Authentification & compte" {
+    usecase "S'authentifier\n(login / register)" as UC_LOGIN
+    usecase "Creer un compte" as UC_REG
+    usecase "Soumettre dossier KYC" as UC_KYC
+  }
+
+  package "Achats & abonnements" {
+    usecase "Acheter un billet" as UC_BIL
+    usecase "Acheter un abonnement" as UC_SUB
+    usecase "Acheter en boutique" as UC_SHO
+    usecase "Donner au club" as UC_DON
+    usecase "Acheter pour mon fils (B.18)" as UC_KID
+  }
+
+  package "Espace supporter" {
+    usecase "Pronostiquer un match" as UC_PRED
+    usecase "Consulter classement" as UC_LB
+    usecase "Voter a un sondage" as UC_POLL
+    usecase "Voter a une election\n(B.12 abo ACTIF)" as UC_ELEC
+  }
+
+  package "Academie PARENT (B.18)" {
+    usecase "Inscrire un enfant" as UC_INS
+    usecase "Suivre mes enfants" as UC_KIDS
+  }
+
+  package "Espace JOUEUR" {
+    usecase "Repondre a une convocation" as UC_CNV
+    usecase "Consulter mes documents" as UC_DOC
+    usecase "Echanger en team-chat" as UC_TC
+    usecase "Ecrire au president de sa discipline" as UC_PMSG
+  }
+}
+
+' ============================================================
+' INCLUDES — dependances OBLIGATOIRES
+' ============================================================
+note "<<include>> losange PLEIN = obligatoire\n<<extend>> losange VIDE = conditionnel" as N1
+
+UC_BIL ..> UC_LOGIN : <<include>>
+UC_SUB ..> UC_LOGIN : <<include>>
+UC_SHO ..> UC_LOGIN : <<include>>
+UC_DON ..> UC_LOGIN : <<include>>
+UC_KID ..> UC_LOGIN : <<include>>
+UC_KID ..> UC_BIL : <<extend>>
+UC_KID ..> UC_SUB : <<extend>>
+
+UC_PRED ..> UC_LOGIN : <<include>>
+UC_LB   ..> UC_LOGIN : <<include>>
+UC_POLL ..> UC_LOGIN : <<include>>
+UC_ELEC ..> UC_LOGIN : <<include>>
+
+UC_INS  ..> UC_LOGIN : <<include>>
+UC_KIDS ..> UC_LOGIN : <<include>>
+
+UC_CNV  ..> UC_LOGIN : <<include>>
+UC_DOC  ..> UC_LOGIN : <<include>>
+UC_TC   ..> UC_LOGIN : <<include>>
+UC_PMSG ..> UC_LOGIN : <<include>>
+
+' ============================================================
+' ASSOCIATIONS ACTEUR <-> UC
+' ============================================================
+
+' --- VISITEUR : consultation anonyme (publie) ---
+VIS --> UC_REG
+VIS --> UC_PRED
+VIS --> UC_LB
+VIS --> UC_POLL
+
+' --- ADHERENT ---
+ADH --> UC_LOGIN
+ADH --> UC_BIL
+ADH --> UC_SUB
+ADH --> UC_SHO
+ADH --> UC_DON
+ADH --> UC_PRED
+ADH --> UC_LB
+ADH --> UC_POLL
+ADH --> UC_ELEC
+
+' --- PARENT (rôle distinct, + academie + achat pour fils) ---
+PAR --> UC_LOGIN
+PAR --> UC_BIL
+PAR --> UC_SUB
+PAR --> UC_SHO
+PAR --> UC_DON
+PAR --> UC_PRED
+PAR --> UC_LB
+PAR --> UC_POLL
+PAR --> UC_ELEC
+PAR --> UC_INS
+PAR --> UC_KIDS
+PAR --> UC_KID
+
+' --- JOUEUR ---
+JEU --> UC_CNV
+JEU --> UC_DOC
+JEU --> UC_TC
+JEU --> UC_PMSG
+JEU --> UC_PRED
+JEU --> UC_LB
+
+' ============================================================
+' LEGENDE
+' ============================================================
+legend right
+  | **Symbole** | **Signification** |
+  | Acteur | VISITEUR, ADHERENT, PARENT, JOUEUR |
+  | Rectangle | Frontiere du systeme |
+  | Package | Sous-domaine fonctionnel |
+  | **--** | Association acteur <-> UC |
+  | **..** | <<include>> (obligatoire) / <<extend>> (conditionnel) |
+  | **(aucun triangle)** | Pas d'héritage : ADHERENT et PARENT sont 2 rôles distincts (commit C.1b) |
+  | **B.12** | Abonnement ACTIF obligatoire pour election |
+  | **B.18** | PARENT achete pour son fils via User shadow |
+  | Source | Code qui compile : routes Angular + @PreAuthorize Spring |
+endlegend
+
+@enduml

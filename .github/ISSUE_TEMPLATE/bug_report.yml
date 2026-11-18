@@ -1,0 +1,43 @@
+name: Bug Report
+description: Signaler un dysfonctionnement ou une anomalie
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Merci de remplir ce rapport avec le plus de précisions possible.
+  - type: dropdown
+    id: component
+    attributes:
+      label: Composant concerné
+      description: Choisissez le microservice ou module impacté
+      options:
+        - api-gateway
+        - auth-service
+        - content-service
+        - payment-service
+        - shop-service
+        - ticket-service
+        - notification-service
+        - sports-service
+        - gamification-service
+        - election-service
+        - communication-service
+        - wydad-frontend
+        - devops / ci-cd
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: Description de l'anomalie
+      placeholder: Décrivez clairement le comportement observé vs attendu
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Étapes pour reproduire
+      placeholder: 1. Aller sur...\n2. Cliquer sur...\n3. Observer l'erreur
+    validations:
+      required: true

@@ -1,0 +1,43 @@
+name: Feature Request
+description: Proposer une nouvelle fonctionnalité ou amélioration
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Merci de décrire votre idée d'amélioration pour la plateforme Wydad Digital.
+  - type: dropdown
+    id: component
+    attributes:
+      label: Composant concerné
+      description: Choisissez le microservice ou module impacté
+      options:
+        - api-gateway
+        - auth-service
+        - content-service
+        - payment-service
+        - shop-service
+        - ticket-service
+        - notification-service
+        - sports-service
+        - gamification-service
+        - election-service
+        - communication-service
+        - wydad-frontend
+        - devops / ci-cd
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problème ou besoin utilisateur
+      placeholder: Quel problème cette fonctionnalité résout-elle ?
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Solution proposée
+      placeholder: Décrivez la solution ou le comportement souhaité
+    validations:
+      required: true

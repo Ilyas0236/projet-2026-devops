@@ -1,0 +1,170 @@
+@startuml sequence-vote-election-failures
+' ============================================================
+' Diagramme de sequence : Vote a une election presidentielle
+' PARTIE 2/2 - 5 alts : Election non ouverte + Non eligible
+'                    + Doublon + ADMIN + auth-service DOWN
+' Scenario PFA - Ilyas Ait Maina (EMSI Maroc)
+' Sources : code qui compile (election-service, auth-service)
+' Regles : B.8.h (titulaire actif au moment du vote,
+'                  ADMIN exempt, fail-closed si auth-service down)
+' Flux vote global :
+'   Cas nominal = sequence-vote-election.puml
+'   5 alts (Election non ouverte + Non eligible + Doublon + ADMIN + auth-service DOWN)
+'     = sequence-vote-election-failures.puml
+' ============================================================
+
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam dpi 200
+skinparam sequenceArrowThickness 1
+skinparam sequenceParticipantBackgroundColor #FDF2F2
+skinparam sequenceParticipantBorderColor #B91C1C
+skinparam sequenceLifeLineBorderColor #9CA3AF
+skinparam sequenceMessageAlign center
+skinparam sequenceGroupBackgroundColor #FEF3C7
+skinparam sequenceGroupBorderColor #D97706
+skinparam defaultFontSize 11
+skinparam defaultFontName "Helvetica"
+
+title Vote election - 5 alts (B.8.h) - non ouverte / non eligible / doublon / ADMIN / down
+
+actor "Adherent\n(ADHERENT/PARENT)"   as U
+actor "Admin"                            as ADM
+
+boundary ":MesElectionsComponent\n(Angular)"      as FE
+control  ":ApiService\n(Angular)"                  as API
+control  ":ElectionService\n(@Transactional)"      as SVC
+control  ":AuthSubscriptionClient\n(RestTemplate)"  as AUTHCLI
+control  ":InternalMembershipController\n(auth-service)" as AUTHCTRL
+entity   ":ElectionVoteRepository"                  as EVR
+database "election_votes\n(UNIQUE election_id+user_id)" as DB
+
+== Preambule : Cas nominal deja joue (sequence-vote-election.puml) ==
+note over SVC
+  Vient de : sequence-vote-election.puml
+  - vote(electionId, candidateId) sur election OPEN
+  - isActiveSubscriber(email) = true (ou ADMIN exempt)
+  - findByElectionIdAndUserId = empty (1er vote)
+  - INSERT election_votes OK
+end note
+
+== alt 1/5 : Election non ouverte ==
+note over SVC
+  status <> OPEN OU now<startsAt OU now>endsAt
+  -> IllegalStateException ou IllegalArgumentException
+end note
+SVC --> CTRL : throw IllegalStateException
+CTRL --> API : 400/409 {"message":"Cette election est cloturee"\n                        | "Le vote ouvre le ..."\n                        | "Le vote est clos depuis le ..."}
+API --> FE : Observable.error
+FE -> U : toast.error(message)
+
+== alt 2/5 : Non eligible (pas d'abonnement ACTIF) ==
+SVC -> AUTHCLI : isActiveSubscriber(email)
+activate AUTHCLI
+AUTHCLI -> AUTHCTRL : GET ...?email=...
+AUTHCTRL --> AUTHCLI : {active:false}
+AUTHCLI --> SVC : false
+deactivate AUTHCLI
+SVC --> CTRL : throw IllegalStateException("VOTE_REQUIRES_MEMBERSHIP")
+note right of CTRL
+  GlobalExceptionHandler intercepte
+  le code AVANT le catch-all
+  (sinon 409 Conflict generique)
+end note
+CTRL --> API : 403 Forbidden\n                {"code":"VOTE_REQUIRES_MEMBERSHIP",\n                 "message":"Pour voter... vous devez avoir\n                            une carte d'abonnement saisonnier active."}
+API --> FE : Observable.error
+FE -> FE : membershipRequiredMsg = err.error.message
+FE -> U : affiche banniere + bouton "Acheter ma carte"
+U -> FE : clic "Acheter ma carte"
+FE -> U : router.navigate(['/abonnement'])
+
+== alt 3/5 : Doublon (a deja vote) ==
+U -> SVC : vote(electionId, candidateId)  ' 2eme tentative
+activate SVC
+SVC -> EVR : findByElectionIdAndUserId(electionId, userId)
+activate EVR
+EVR --> SVC : Optional<ElectionVote> present
+deactivate EVR
+SVC --> U : throw IllegalStateException("Vous avez deja vote pour cette election")
+note right of SVC
+  Front MesElectionsComponent :
+  canVote=false apres le 1er vote,
+  bouton "Voter" desactive ou cache
+  -> 409 cote controleur (catch-all) ou 400
+end note
+SVC -> U : 409 Conflict {"message":"Vous avez deja vote pour cette election"}
+deactivate SVC
+
+== alt 4/5 : ADMIN (bypass complet) ==
+ADM -> SVC : vote(electionId, candidateId)  ' avec role=ADMIN
+activate SVC
+note right of SVC
+  Branche isActiveSubscriber()
+  ENTIEREMENT sautee : ADMIN peut voter
+  meme si auth-service est DOWN.
+  Cf. opt [isAdmin() == false] sequence-vote-election.puml
+end note
+SVC -> EVR : findByElectionIdAndUserId(electionId, userId) -> empty
+activate EVR
+EVR --> SVC : empty
+SVC -> EVR : save(ElectionVote)
+EVR -> DB : INSERT INTO election_votes ...
+activate DB
+DB --> EVR : OK
+deactivate DB
+EVR --> SVC : ElectionVote persiste
+deactivate EVR
+SVC --> ADM : 200 OK ElectionView{myVoteIndex}
+deactivate SVC
+
+== alt 5/5 : auth-service DOWN (fail-closed B.8.h) ==
+U -> SVC : vote(electionId, candidateId)  ' non-admin, pas ADMIN
+activate SVC
+SVC -> AUTHCLI : isActiveSubscriber(email)
+activate AUTHCLI
+AUTHCLI -> AUTHCTRL : GET /api/auth/internal/is-active-subscriber?email=...
+activate AUTHCTRL
+note right of AUTHCLI
+  RestTemplate.exchange lance
+  ResourceAccessException
+  (timeout / connection refused)
+end note
+AUTHCTRL -[#red]x AUTHCLI : (timeout / connection refused)
+deactivate AUTHCTRL
+AUTHCLI -> AUTHCLI : catch (Exception)\nlog.warn(...)\nreturn false
+AUTHCLI --> SVC : false
+deactivate AUTHCLI
+SVC --> U : throw IllegalStateException("VOTE_REQUIRES_MEMBERSHIP")
+note right of SVC
+  Regle B.8.h : "preferer un faux negatif
+  (refus a tort) a un faux positif
+  (vote valide sans verif)".
+  Memoire : deploye 02/09/2026 (commit 98e0b09)
+end note
+SVC -> U : 403 Forbidden {code:"VOTE_REQUIRES_MEMBERSHIP"}
+deactivate SVC
+note over U
+  Cote front : meme chemin que
+  alt "Non eligible" -> banniere
+  "Acheter ma carte" + lien /abonnement
+end note
+
+note over ADM, DB
+  Garanties B.8.h etape 2/2 (5 alts) :
+  --------------------------------------
+  * Election non ouverte : 400/409 avec message contextuel
+    ("cloturee" / "ouvre le ..." / "clos depuis ...")
+  * Non eligible : 403 dedie VOTE_REQUIRES_MEMBERSHIP
+    + banniere front + CTA /abonnement
+  * Doublon : 409 dedie (UNIQUE election_id+user_id en BDD)
+  * ADMIN : opt [isAdmin() == false] entierement saute,
+    peut voter meme si abonnement down
+  * Fail-closed : si auth-service DOWN ou timeout
+    -> isActiveSubscriber() renvoie false
+    -> 403 VOTE_REQUIRES_MEMBERSHIP (pas de bypass implicite)
+  * Pas de bypass pour utilisateur non-admin :
+    preferer refus a tort que vote non verifie
+  * canVote=front reactive (mis a jour apres vote OK)
+end note
+
+@enduml

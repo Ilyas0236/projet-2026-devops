@@ -1,0 +1,160 @@
+@startuml sequence-admin-validation-comptes
+' ============================================================
+' Séquence — Espace Admin : validation des comptes EN_ATTENTE
+' (Phase 0 — circuit de validation des comptes)
+'
+' Source code réelle (audit 2026-09-04) :
+'   auth-service/.../controller/AuthController.java
+'     GET   /api/auth/admin/accounts/pending          (ADMIN)
+'     PATCH /api/auth/admin/accounts/{id}/validate    (ADMIN)
+'     PATCH /api/auth/admin/accounts/{id}/refuse      (ADMIN)
+'           body: { motif: String } @Valid
+'     POST  /api/auth/kyc/upload-file   multipart     (utilisateur ou admin)
+'     POST  /api/auth/kyc/verify        ?email=...    (ADMIN)
+'
+' Rôle flow (Phase 0) :
+'   - Inscription JOUEUR/ENTRAINEUR/STAFF/JOURNALISTE → statutCompte=EN_ATTENTE
+'   - L'utilisateur dépose son KYC (pièce identité)
+'   - ADMIN voit la file EN_ATTENTE + pièces KYC
+'   - ADMIN valide (statutCompte=VALIDE + role=ACTIVE)
+'     ou refuse avec motif obligatoire
+'   - L'utilisateur peut ensuite se loguer (login = 200 + JWT)
+' ============================================================
+
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam dpi 150
+skinparam classAttributeIconSize 0
+skinparam nodesep 60
+skinparam ranksep 50
+
+skinparam sequence {
+  ArrowColor #C62828
+  LifeLineBorderColor #C62828
+  LifeLineBackgroundColor #FFEBEE
+  ParticipantBorderColor #C62828
+  ParticipantBackgroundColor #FFFFFF
+  FontSize 11
+  FontStyle bold
+}
+skinparam defaultFontSize 11
+skinparam defaultFontName "Helvetica"
+
+title Séquence 9/9 — Admin : validation / refus d'un compte EN_ATTENTE (Phase 0)
+
+actor "Candidat\n(Hakim, JOUEUR)" as C #E1F5FE
+participant "Frontend\nAngular" as FE #FFEBEE
+participant "API Gateway\n(JWT)" as GW #FFCDD2
+participant "Auth\nService" as AUT #FFEBEE
+database "auth_db" as DB #FFF9C4
+participant "Cloudinary" as CLD #E1BEE7
+participant "Notification\nService" as NOT #E1BEE7
+actor "Admin\n(Youness, id=1)" as A #FCE4EC
+
+== Phase 1 — Inscription d'un candidat (déjà EN_ATTENTE) ==
+
+C -> FE : 1) Formulaire inscription JOUEUR\n+ rôle, + discipline, + catégorie, + n° maillot
+FE -> GW : 2) POST /api/auth/register {firstName, lastName, email, password, role:JOUEUR, ...}
+GW -> AUT : 3) route (public, permitAll)
+AUT -> AUT : 4) Vérif email unique + force password
+AUT -> CLD : 5) (optionnel) upload photo profil
+CLD --> AUT : 6) secureUrl
+AUT -> DB : 7) INSERT user (role=JOUEUR,\nstatutCompte=EN_ATTENTE, isActive=false)
+AUT -> NOT : 8) notif ADMIN "Nouveau JOUEUR à valider"
+NOT --> A : 9) push + email ADMIN
+AUT --> FE : 10) 202 Accepted\n{status:"EN_ATTENTE", message:"en attente de validation admin"}
+FE --> C : 11) "Votre demande est envoyée, vous serez notifié"
+
+== Phase 2 — Le candidat dépose son justificatif (KYC) ==
+
+C -> FE : 12) Connexion par email+pwd (statut=EN_ATTENTE)\n> onglet "Mes documents" > upload CIN
+FE -> GW : 13) POST /api/auth/kyc/upload-file\n  multipart\n  - file=@cin.jpg\n  - documentType=CIN\n  - documentNumber=AB123456
+GW -> AUT : 14) route (@PreAuthorize ADHERENT/JOURNALISTE/ENTRAINEUR/ADMIN)\n+ X-User-Email, X-User-Role
+note over AUT
+  Hakim a déjà un token (login passé)
+  → PreAuthorize OK
+end note
+AUT -> CLD : 15) Upload CIN sur Cloudinary (folder=kyc)
+CLD --> AUT : 16) secureUrl (URL signée 1h)
+AUT -> DB : 17) INSERT kyc_document (userId=Hakim,\n  documentType=CIN, documentNumber=AB123456,\n  url=secureUrl, status=EN_ATTENTE)
+DB --> AUT : 18) row
+AUT --> FE : 19) 200 OK {kycStatus:EN_ATTENTE, url}
+FE --> C : 20) "CIN envoyée, en attente de vérification"
+
+== Phase 3 — Admin consulte la file + pièces KYC ==
+
+A -> FE : 21) Espace Admin > "Comptes à valider"
+FE -> GW : 22) GET /api/auth/admin/accounts/pending
+GW -> AUT : 23) route (X-User-Role=ADMIN, @PreAuthorize hasRole('ADMIN'))
+AUT -> DB : 24) SELECT FROM users WHERE statutCompte='EN_ATTENTE'\nORDER BY createdAt DESC
+DB --> AUT : 25) [Hakim JOUEUR, ...]
+AUT --> FE : 26) 200 [UserProfileResponse]
+FE --> A : 27) Affiche 3 comptes EN_ATTENTE\n(Hakim, autres joueurs/entraineurs)
+
+A -> FE : 28) Clique sur Hakim > "Voir pièces"
+FE -> GW : 29) GET /api/auth/admin/kyc/{userId} (interne)
+GW -> AUT : 30) route ADMIN
+AUT -> DB : 31) SELECT kyc_document WHERE userId=Hakim.id
+DB --> AUT : 32) row (URL signée Cloudinary)
+AUT --> FE : 33) 200 [CIN EN_ATTENTE + URL preview]
+FE --> A : 34) Affiche preview CIN dans modale
+
+== Phase 4 — Admin VALIDE le compte ==
+
+A -> FE : 35) Vérif OK > clique "Valider"
+FE -> GW : 36) PATCH /api/auth/admin/accounts/15/validate\n(15 = id de Hakim)
+GW -> AUT : 37) route (X-User-Role=ADMIN)
+AUT -> AUT : 38) AuthService.validateAccount(15)
+AUT -> DB : 39) UPDATE users SET statutCompte='VALIDE',\n  isActive=true, role=ACTIVE WHERE id=15
+DB --> AUT : 40) 1 row
+AUT -> DB : 41) (optionnel) UPDATE kyc_document\nSET status='VALIDE' WHERE userId=15
+AUT -> NOT : 42) notif HAKIM "Compte validé — bienvenue !"
+NOT --> C : 43) push + email HAKIM
+AUT --> FE : 44) 200 OK + UserProfileResponse
+FE --> A : 45) "Hakim validé avec succès"
+
+== Phase 5 — Candidat se connecte pour la 1re fois ==
+
+C -> FE : 46) Re-login avec email+pwd
+FE -> GW : 47) POST /api/auth/login {email, password}
+GW -> AUT : 48) route (public)
+AUT -> DB : 49) SELECT user WHERE email=?
+DB --> AUT : 50) row (statut=VALIDE, isActive=true) ✓
+AUT -> AUT : 51) Génère JWT (24h) + RefreshToken
+AUT --> FE : 52) 200 OK {accessToken, refreshToken, role:JOUEUR}
+FE --> C : 53) Connecté > redirection /espace-joueur
+
+== Phase 6 (alternative) — Admin REFUSE avec motif ==
+
+A -> FE : 54) Si vérif KO > "Refuser"\n> saisit motif "Photo CIN illisible"
+FE -> GW : 55) PATCH /api/auth/admin/accounts/15/refuse\n  body {motif:"Photo CIN illisible"}
+GW -> AUT : 56) route ADMIN + @Valid motif (obligatoire)
+alt [motif manquant]
+  AUT --> FE : 400 motif obligatoire
+  FE --> A : "Motif de refus obligatoire"
+else [motif présent]
+  AUT -> AUT : 57) refuseAccount(15, motif)
+  AUT -> DB : 58) UPDATE users SET statutCompte='REFUSE',\n  motifRefus=?, isActive=false
+  AUT -> NOT : 59) notif HAKIM "Compte refusé — motif: ..."
+  NOT --> C : 60) push + email HAKIM
+  AUT --> FE : 61) 200 OK
+  FE --> A : 62) "Hakim refusé (motif enregistré)"
+end
+
+legend right
+  |= Phase |= N°
+  | Inscription EN_ATTENTE | 1-11 |
+  | Dépôt KYC candidat | 12-20 |
+  | Admin file + preview KYC | 21-34 |
+  | Admin VALIDE | 35-45 |
+  | Candidat se connecte | 46-53 |
+  | Admin REFUSE (motif) | 54-62 |
+  | **5 statuts** | EN_ATTENTE / VALIDE / REFUSE / ACTIVE / DÉSACTIVÉ |
+  | **202 Accepted** | inscription sans token (pas de session) |
+  | **Motif obligatoire** | si REFUSE — @Valid côté back |
+  | **Notif email + push** | ADMIN (création) + USER (décision) |
+  | **3 rôles concernés** | JOUEUR / ENTRAINEUR / STAFF / JOURNALISTE |
+  | **ADHERENT auto-validé** | inscription directe (pas de circuit KYC) |
+endlegend
+
+@enduml

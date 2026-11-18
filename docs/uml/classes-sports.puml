@@ -1,0 +1,379 @@
+@startuml classes-sports
+' ============================================================
+' Diagramme de classes — DOMAINE SPORTS & ROSTER
+' Source : sports-service/src/main/java/com/wydad/digital/sports/model/**
+' ============================================================
+' Conventions UML 2.5 :
+'   * classes JPA reelles avec attributs principaux
+'   * cardinalites des @OneToMany / @ManyToOne
+'   * enums sportifs (SportType, Category, StaffRole, MedicalStatus)
+' ============================================================
+
+left to right direction
+skinparam class {
+  BackgroundColor #FFFFFF
+  BorderColor #1E3A8A
+  ArrowColor #1E3A8A
+  FontSize 11
+}
+skinparam package {
+  BackgroundColor #F5F5F5
+  BorderColor #888888
+}
+skinparam enum {
+  BackgroundColor #FFF8E1
+  BorderColor #C79100
+}
+skinparam stereotypeCBackgroundColor #E8F0FE
+skinparam shadowing false
+hide circle
+hide methods
+
+' ============================================================
+' ENUMS SPORTIFS
+' ============================================================
+enum SportType {
+  FOOTBALL
+  BASKETBALL
+  HANDBALL
+  VOLLEYBALL
+  SWIMMING
+  JUDO
+  ATHLETICS
+  AUTRE
+}
+enum Category {
+  U15
+  U17
+  U18
+  U20
+  SENIOR
+}
+enum StaffRole {
+  HEAD_COACH
+  ASSISTANT_COACH
+  FITNESS_COACH
+  DOCTOR
+  PHYSIOTHERAPIST
+  MANAGER
+}
+enum MedicalStatus {
+  APT
+  INAPTE
+}
+enum PlayerDocumentMediaType {
+  VIDEO
+  PHOTO
+  DOCUMENT
+}
+
+' ============================================================
+' ENTITES — ROSTER
+' ============================================================
+class Player <<Entity>> {
+  -id : Long
+  -userId : Long {unique}
+  -fullName : String
+  -sportType : SportType
+  -category : Category
+  -position : String
+  -jerseyNumber : Integer
+  -height : Double
+  -weight : Double
+  -bmi : Double
+  -birthDate : LocalDate
+  -nationality : String
+  -photoUrl : String
+  -matchesPlayed : Integer = 0
+  -goals : Integer = 0
+  -assists : Integer = 0
+  -medicalStatus : MedicalStatus = APT
+  -medicalNote : String
+  -medicalUpdatedAt : LocalDateTime
+  -medicalUpdatedByStaffId : Long
+  -createdAt : LocalDateTime
+  -updatedAt : LocalDateTime
+}
+
+class Staff <<Entity>> {
+  -id : Long
+  -userId : Long {unique}
+  -fullName : String
+  -role : StaffRole
+  -sportType : SportType
+  -assignedCategory : Category
+  -createdAt : LocalDateTime
+  -updatedAt : LocalDateTime
+}
+
+' ============================================================
+' ENTITES — CONVOCATIONS
+' ============================================================
+class Session <<Entity>> {
+  -id : Long
+  -title : String
+  -description : String
+  -location : String
+  -sessionDate : LocalDateTime
+  -sportType : SportType
+  -category : Category
+  -createdByStaffId : Long
+  -createdAt : LocalDateTime
+  -updatedAt : LocalDateTime
+}
+
+class Convocation <<Entity>> {
+  -id : Long
+  -joueurUserId : Long
+  -responseStatus : ConvocationResponseStatus
+  -responseJustification : String
+  -respondedAt : LocalDateTime
+  -readAt : LocalDateTime
+  -createdByStaffId : Long
+  -createdAt : LocalDateTime
+  -updatedAt : LocalDateTime
+}
+
+enum ConvocationResponseStatus {
+  CONFIRME
+  ABSENT
+  RETARD
+}
+
+class SessionConvocation <<Entity>> {
+  -id : Long
+  -sessionId : Long
+  -sportType : SportType
+  -category : Category
+  -joueurUserId : Long
+  -status : SessionConvocationStatus
+  -createdByStaffUserId : Long
+  -createdAt : LocalDateTime
+  -updatedAt : LocalDateTime
+}
+
+enum SessionConvocationStatus {
+  DRAFT
+  CONVOQUE
+}
+
+class MatchConvocation <<Entity>> {
+  -id : Long
+  -matchId : Long
+  -sportType : SportType
+  -category : Category
+  -joueurUserId : Long
+  -playerRole : MatchPlayerRole
+  -status : MatchPublicationStatus
+  -createdByStaffUserId : Long
+  -rejectionReason : String
+  -submittedAt : LocalDateTime
+  -publishedAt : LocalDateTime
+  -rejectedAt : LocalDateTime
+  -createdAt : LocalDateTime
+  -updatedAt : LocalDateTime
+}
+
+enum MatchPlayerRole {
+  TITULAIRE
+  REMPLACANT
+}
+
+enum MatchPublicationStatus {
+  DRAFT
+  SOUMISE
+  PUBLIEE
+  REFUSEE
+}
+
+' ============================================================
+' ENTITES — STATS & MEDIAS
+' ============================================================
+class MatchStat <<Entity>> {
+  -id : Long
+  -joueurUserId : Long
+  -sportType : SportType
+  -category : Category
+  -opponent : String
+  -matchDate : LocalDate
+  -goals : int
+  -assists : int
+  -minutesPlayed : Integer
+  -competition : String
+  -createdByStaffId : Long
+  -createdAt : LocalDateTime
+}
+
+class PlayerDocument <<Entity>> {
+  -id : Long
+  -senderUserId : Long
+  -mediaType : PlayerDocumentMediaType
+  -joueurUserId : Long
+  -title : String
+  -message : String
+  -url : String
+  -publicId : String
+  -sportType : SportType
+  -category : Category
+  -wholeTeam : boolean
+  -dateAjout : LocalDateTime
+}
+
+class ScheduledCall <<Entity>> {
+  -id : Long
+  -title : String
+  -roomName : String {unique}
+  -sportType : SportType
+  -category : Category
+  -organizerUserId : Long
+  -organizerName : String
+  -organizerRole : String
+  -scheduledAt : LocalDateTime
+  -durationMinutes : Integer
+  -status : ScheduledCallStatus
+  -participantUserIds : Set<Long>
+  -createdAt : LocalDateTime
+  -updatedAt : LocalDateTime
+}
+
+enum ScheduledCallStatus {
+  PROGRAMME
+  EN_COURS
+  TERMINE
+  ANNULE
+}
+
+' ============================================================
+' ENTITES — ACADEMIE (B.18)
+' ============================================================
+class AcademyMember <<Entity>> {
+  -id : Long
+  -parentUserId : Long
+  -childFullName : String
+  -childBirthDate : LocalDate
+  -sportType : SportType
+  -level : String
+  -medicalHistory : String
+  -bloodType : String
+  -allergies : String
+  -emergencyContactName : String
+  -emergencyContactPhone : String
+  -active : Boolean
+  -createdAt : LocalDateTime
+  -updatedAt : LocalDateTime
+}
+
+class AcademyDocument <<Entity>> {
+  -id : Long
+  -academyMemberId : Long
+  -docType : String
+  -fileName : String
+  -contentType : String
+  -size : Long
+  -data : byte[]
+  -ownerUserId : Long
+  -uploadedAt : LocalDateTime
+}
+
+' ============================================================
+' RELATIONS JPA
+' ============================================================
+Session "1" *-- "0..*" Convocation : génère (B.3.a)
+Convocation --> ConvocationResponseStatus : cycle de vie
+
+' MatchConvocation B.18.b — feuille de match cochable
+' (TITULAIRE/REMPLAÇANT) — sans FK JPA (FK logique vers Match content-service)
+Player "1" --> "0..*" MatchConvocation : sélectionné
+MatchConvocation --> MatchPlayerRole : poste
+MatchConvocation --> MatchPublicationStatus : cycle de vie
+
+' SessionConvocation (Phase 4) — déclaratif par staff
+SessionConvocation --> SessionConvocationStatus : cycle de vie
+SessionConvocation "0..*" --> "1" Session : par sessionId
+
+' Stats agrégées
+Player "1" --> "0..*" MatchStat : stats brutes (B.4)
+' agrégats (matchesPlayed/goals/assists) calculés depuis MatchStat — pas de FK JPA
+
+' Médias tactiques
+Player "1" <-- "0..*" PlayerDocument : destinataire
+PlayerDocument --> PlayerDocumentMediaType : type
+
+' Appels vidéo (Phase 5)
+ScheduledCall "1" *-- "0..*" Long : participantUserIds (ElementCollection)
+ScheduledCall --> ScheduledCallStatus : cycle de vie
+
+' Académie (B.18)
+AcademyMember "1" *-- "0..*" AcademyDocument : pièces justificatives
+
+' Enums
+Player --> SportType : discipline
+Player --> Category : catégorie
+Player --> MedicalStatus : statut médical
+Staff --> StaffRole : rôle
+Staff --> SportType : discipline
+Staff --> Category : catégorie affectée
+Session --> SportType : discipline
+Session --> Category : catégorie
+MatchConvocation --> SportType : discipline figée
+MatchConvocation --> Category : catégorie figée
+MatchStat --> SportType : sport
+MatchStat --> Category : catégorie
+
+' ============================================================
+' NOTES METIER
+' ============================================================
+note top of Player
+  **Profil joueur**
+  ────────────────
+  userId = FK logique vers auth-service
+  sportType + category TOUJOURS
+  renseignés (FOOTBALL U19, etc.)
+  Stats agrégées depuis MatchStat
+  (jamais figées manuellement)
+end note
+
+note right of Convocation
+  **B.3.a — Workflow joueur**
+  ─────────────────────────
+  null = en attente
+  CONFIRME / ABSENT / RETARD
+  readAt : accusé de lecture Phase 3
+  responseJustification : si ABSENT/RETARD
+end note
+
+note left of MatchConvocation
+  **B.18.b — Feuille de match**
+  ───────────────────────────
+  ENTRAINEUR prépare
+  ADMIN consulte et PUBLIE
+  playerRole = TITULAIRE/REMPLACANT
+  (cycle DRAFT → SOUMISE → PUBLIEE/REFUSEE)
+end note
+
+note bottom of SessionConvocation
+  **Phase 4 — Déclaratif**
+  ──────────────────────
+  1 ligne = (séance, joueur)
+  DRAFT (créé par entraîneur)
+  → CONVOQUE (notif envoyée)
+end note
+
+note right of ScheduledCall
+  **Phase 5 — Appels LiveKit**
+  ──────────────────────────
+  roomName unique généré serveur
+  Liste fermée de participants
+  (ElementCollection)
+  ANNULE sans préavis si pas commencé
+end note
+
+note left of AcademyMember
+  **B.18 — Académie PARENT**
+  ─────────────────────────
+  parentUserId = FK logique vers User
+  active = false : sortie du club
+  Données médicales sensibles (RGPD)
+end note
+
+@enduml

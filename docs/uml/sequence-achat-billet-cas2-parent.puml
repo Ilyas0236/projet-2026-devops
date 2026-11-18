@@ -1,0 +1,143 @@
+@startuml sequence-achat-billet-cas2-parent
+' ============================================================
+' Diagramme de sequence : Achat d'un billet match
+' PARTIE 2/3 - Cas 2 Parent (B.18) - Anti-IDOR + User shadow
+' Scenario PFA - Ilyas Ait Maina (EMSI Maroc)
+' Sources : code qui compile (ticket-service, sports-service,
+'           auth-service, api-gateway)
+' Regles : B.18 Parent achete pour enfant academie,
+'          anti-IDOR strict (parentUserId == X-User-Id),
+'          User shadow 'enfant-{id}@wac.parent' idempotent.
+' Flux achat global :
+'   Cas 1+3 = sequence-achat-billet-cas1-visiteur.puml
+'   Paiement = sequence-achat-billet-cas1-paiement.puml
+'   Billets+notification = sequence-achat-billet-cas2-parent-billet.puml
+' ============================================================
+
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam dpi 200
+skinparam sequenceArrowThickness 1
+skinparam sequenceParticipantBackgroundColor #FDF2F2
+skinparam sequenceParticipantBorderColor #B91C1C
+skinparam sequenceLifeLineBorderColor #9CA3AF
+skinparam sequenceMessageAlign center
+skinparam sequenceGroupBackgroundColor #FEF3C7
+skinparam sequenceGroupBorderColor #D97706
+skinparam defaultFontSize 11
+skinparam defaultFontName "Helvetica"
+
+title Achat billet - Cas 2 Parent (B.18) - Anti-IDOR + User shadow
+
+actor "Parent (PARENT)"   as P
+
+participant ":BilletterieDetailComponent\n:wydad-frontend"           as FE
+participant ":JwtAuthenticationFilter\n:api-gateway :8080"           as GW
+participant ":TicketController\n:ticket-service :8085"               as TIC
+participant ":TicketService\n:ticket-service"                        as TSV
+participant ":Clients internes (RestTemplate)\n:8081 :8087"           as CI
+database    "ticket_db / auth_db"                                    as DB
+
+== Phase 0 - Selection du beneficiaire (B.18) ==
+P -> FE : GET /billetterie/:id\n(Dropdown "Pour qui ?" enfants)
+activate FE
+FE -> GW : GET /api/sports/academy/parent/{parentUserId}\nAuthorization: Bearer JWT
+activate GW
+GW -> GW : JwtAuthenticationFilter (HS256)\nparse claims -> email, role=PARENT, id\ninject X-User-*
+GW -> CI : route interne (X-User-* propages)
+deactivate GW
+activate CI
+note right of CI
+  GET /api/sports/academy/parent/{parentUserId}
+  X-Internal-Secret -> sports-service
+  IDOR strict : parentUserId == X-User-Id
+end note
+CI -> DB : SELECT academy_members\nWHERE parent_user_id=:me AND active=true
+activate DB
+DB --> CI : List<AcademyMember>
+deactivate DB
+CI --> FE : 200 OK [enfants: id, childFullName, sportType]
+deactivate CI
+
+FE --> P : Dropdown [Hicham U17, Sara U15]
+P -> FE : Selectionne "Hicham U17"
+FE -> FE : beneficiaryAcademyMemberId = hicham.id
+
+P -> FE : Clic "Acheter pour Hicham"
+FE -> GW : POST /api/ticket/tickets/purchase\nBearer JWT role=PARENT\n{ eventId, category, quantity:1,\n  paymentMethod:"ECASH",\n  beneficiaryAcademyMemberId:hicham.id }
+activate GW
+GW -> GW : JwtAuthenticationFilter (HS256)\ninject X-User-Id=P, X-User-Email=p@...
+GW -> TIC : route interne
+deactivate GW
+activate TIC
+TIC -> TIC : @PreAuthorize hasAnyRole(ADHERENT,PARENT) OK
+TIC -> TSV : purchaseTickets(request)
+activate TSV
+TSV -> DB : SELECT ... FROM events WHERE id=:id FOR UPDATE
+activate DB
+DB --> TSV : Event (verrou pessimiste 3s)
+deactivate DB
+TSV -> DB : SELECT section WHERE event_id AND category
+DB --> TSV : Section (availableSeats)
+TSV -> TSV : assert availableSeats >= quantity\nsinon 409
+
+== Phase 1 - Anti-IDOR strict : enfant est-il bien le SIEN ? ==
+TSV -> CI : lookup(beneficiaryAcademyMemberId)\n  (X-Internal-Secret)
+activate CI
+note right of CI
+  GET /api/sports/academy/internal/{id}
+  -> sports-service
+end note
+CI -> DB : SELECT academy_members WHERE id=:id
+activate DB
+DB --> CI : { id, parentUserId, childFullName }
+deactivate DB
+CI --> TSV : AcademyMember
+deactivate CI
+
+TSV -> TSV : Anti-IDOR strict\nif !isAdmin && parentUserId <> X-User-Id\n  throw AccessDeniedException
+note right of TSV
+  Si parentUserId != X-User-Id :
+  403 FORBIDDEN_PARENT_NOT_CHILD_OWNER
+  -> pas de billet, pas de User shadow cree.
+end note
+
+== Phase 2 - Creation du User shadow enfant (lazy, idempotent) ==
+TSV -> CI : ensureChildUser(parentUserId, childFullName, academyMemberId)\n  (X-Internal-Secret)
+activate CI
+note right of CI
+  POST /api/auth/internal/ensure-child-user
+  -> auth-service
+  Idempotent : deja cree -> meme childUserId.
+  User shadow 'enfant-{id}@wac.parent'
+  role=JOUEUR, statut EN_ATTENTE
+end note
+CI -> DB : SELECT users WHERE email='enfant-{id}@wac.parent'
+activate DB
+alt [User shadow existe deja]
+  DB --> CI : User existant
+  CI --> TSV : { childUserId, email } (memes valeurs)
+else [Premier achat : a creer]
+  DB --> CI : vide
+  CI -> DB : INSERT users\n(email='enfant-...@wac.parent',\n full_name=childFullName,\n role=JOUEUR, statut=EN_ATTENTE,\n parent_shadow=true)
+  DB --> CI : User cree
+  CI --> TSV : { childUserId, email }
+end
+deactivate DB
+deactivate CI
+
+TSV -> TSV : effectiveUserId    = childUserId (enfant)\n              effectiveUserEmail = email (enfant)\n              parentPayerEmail   = X-User-Email (parent)\n              beneficiaryAcademyMemberId = academyMemberId
+
+note over P, CI
+  Garanties B.18 etape 1/2 :
+  --------------------------------------
+  * Anti-IDOR PARENT strict : child.parentUserId == X-User-Id
+    sinon 403 sans creer de User shadow
+  * User shadow idempotent : plusieurs achats meme enfant
+    -> meme childUserId (pas de doublon)
+  * parentPayerEmail TOUJOURS renseigne (tracabilite)
+  * Suite : billets + paiement + notification
+    = sequence-achat-billet-cas2-parent-billet.puml
+end note
+
+@enduml

@@ -1,0 +1,158 @@
+@startuml classes-election
+' ============================================================
+' Diagramme de classes — DOMAINE ELECTIONS & SONDAGES
+' Source : election-service/src/main/java/.../model/**
+' ============================================================
+' Conventions UML 2.5 :
+'   * classes JPA reelles avec attributs principaux
+'   * ElectionStatus enum : OPEN/CLOSED (published = boolean separe)
+'   * contraintes SQL unique (election_id,user_id) et (poll_id,user_id)
+' ============================================================
+
+left to right direction
+skinparam class {
+  BackgroundColor #FFFFFF
+  BorderColor #1E3A8A
+  ArrowColor #1E3A8A
+  FontSize 11
+}
+skinparam package {
+  BackgroundColor #F5F5F5
+  BorderColor #888888
+}
+skinparam enum {
+  BackgroundColor #FFF8E1
+  BorderColor #C79100
+}
+skinparam stereotypeCBackgroundColor #E8F0FE
+skinparam shadowing false
+hide circle
+hide methods
+
+' ============================================================
+' ENUMS
+' ============================================================
+enum ElectionStatus {
+  OPEN
+  CLOSED
+}
+
+' ============================================================
+' ENTITES — ELECTION PRESIDENTIELLE (B.8)
+' ============================================================
+class Election <<Entity>> {
+  -id : Long
+  -title : String
+  -startsAt : LocalDateTime
+  -endsAt : LocalDateTime
+  -status : ElectionStatus = OPEN
+  -published : boolean = false
+  -winnerCandidateId : Long
+  -createdByEmail : String
+  -createdAt : LocalDateTime
+  -closedAt : LocalDateTime
+  -resultsHidden : boolean = false
+}
+
+class ElectionCandidate <<Entity>> {
+  -id : Long
+  -fullName : String
+  -presentation : String
+  -photoUrl : String
+  -displayOrder : int = 0
+  -userId : Long {nullable}
+}
+
+class ElectionVote <<Entity>> {
+  -id : Long
+  -userId : Long {not null, du JWT}
+  -votedAt : LocalDateTime
+}
+
+note right of Election
+  **B.8 — Cycle de vie election**
+  ────────────────────────────
+  OPEN → CLOSED(published=false)
+  → CLOSED(published=true)
+  close ≠ publish (deux endpoints)
+  B.8.e : resultsHidden masque les
+  voix pendant le scrutin
+  B.8.h : ADMIN exempté de l'éligibilité
+end note
+
+note left of ElectionCandidate
+  **Candidats B.8**
+  ────────────────
+  userId nullable (rétro-compat)
+  Unique (election_id, user_id)
+  Pas de @ManyToOne User
+  (consommé via ActiveMembersClient)
+end note
+
+note right of ElectionVote
+  **Vote unique B.8**
+  ───────────────
+  Unique (election_id, user_id)
+  au niveau SQL (pas seulement code)
+  userId vient du X-User-Id
+  jamais du body
+end note
+
+' ============================================================
+' ENTITES — SONDAGES (B.2)
+' ============================================================
+class Poll <<Entity>> {
+  -id : Long
+  -question : String
+  -options : List<String>
+  -active : boolean = true
+  -closesAt : LocalDateTime
+  -createdByEmail : String
+  -createdAt : LocalDateTime
+}
+
+class PollVote <<Entity>> {
+  -id : Long
+  -userId : Long {not null, du JWT}
+  -optionIndex : int
+  -votedAt : LocalDateTime
+}
+
+note right of Poll
+  **B.2 — Sondages**
+  ────────────────
+  Pas d'éligibilité (vs élection)
+  → tout authentifié peut voter
+  Options en ElementCollection
+  avec @OrderColumn
+end note
+
+note left of PollVote
+  **Vote unique B.2**
+  ───────────────
+  Unique (poll_id, user_id)
+  au niveau SQL
+  optionIndex = index dans Poll.options
+end note
+
+' ============================================================
+' RELATIONS JPA
+' ============================================================
+Election "1" *-- "0..*" ElectionCandidate : contient
+Election "1" *-- "0..*" ElectionVote : reçoit
+ElectionCandidate "1" *-- "0..*" ElectionVote : choisi par
+Poll "1" *-- "0..*" PollVote : reçoit
+Election --> ElectionStatus : cycle de vie
+
+' ============================================================
+' NOTES METIER
+' ============================================================
+note bottom of Election
+  **FK logique** : winnerCandidateId, userId (votes),
+  candidate.userId pointent vers auth-service User
+  (pas de JPA cross-service)
+  ADMIN peut annuler publier (unpublish),
+  toggle visibility, add/remove candidate
+end note
+
+@enduml
